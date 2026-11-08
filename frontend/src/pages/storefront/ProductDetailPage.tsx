@@ -185,12 +185,12 @@ export function ProductDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
         {/* Product Media Display */}
         <div className="space-y-4">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-muted/40 border flex items-center justify-center relative shadow-sm">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50/80 dark:bg-slate-900/40 border p-6 flex items-center justify-center relative shadow-sm">
             {activeImage ? (
               <img
                 src={activeImage}
                 alt={product.name}
-                className="w-full h-full object-cover transition-all"
+                className="w-full h-full object-contain max-h-full max-w-full transition-all"
               />
             ) : (
               <div className="text-center text-muted-foreground p-8">

@@ -489,12 +489,13 @@ export function ProductsPage() {
                   >
                     <div>
                       {/* Product Media */}
-                      <Link to={`/products/${p.slug || p.id}`} className="block relative aspect-square bg-muted/30 overflow-hidden">
+                      <Link to={`/products/${p.slug || p.id}`} className="block relative aspect-square bg-slate-50/80 dark:bg-slate-900/40 p-4 overflow-hidden flex items-center justify-center">
                         {p.image_url ? (
                           <img
                             src={p.image_url}
                             alt={p.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

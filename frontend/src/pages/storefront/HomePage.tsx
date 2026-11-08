@@ -229,13 +229,13 @@ export function HomePage() {
               return (
                 <Card key={p.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
                   <div>
-                    <div className="relative aspect-square overflow-hidden bg-muted">
-                      <Link to={`/products/${p.slug || p.id}`} className="block w-full h-full">
+                    <div className="relative aspect-square overflow-hidden bg-slate-50/80 dark:bg-slate-900/40 p-4 flex items-center justify-center">
+                      <Link to={`/products/${p.slug || p.id}`} className="w-full h-full flex items-center justify-center">
                         {p.image_url ? (
                           <img
                             src={p.image_url}
                             alt={p.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                           />
                         ) : (

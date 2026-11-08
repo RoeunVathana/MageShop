@@ -54,11 +54,12 @@ export function WishlistPage() {
             const isFreeEligible = item.price <= 30
             return (
               <Card key={item.id} className="overflow-hidden group hover:shadow-xl transition-all">
-                <div className="aspect-video relative bg-muted overflow-hidden">
+                <div className="aspect-square relative bg-slate-50/80 dark:bg-slate-900/40 p-4 overflow-hidden flex items-center justify-center">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform"
+                    loading="lazy"
                   />
                   {isFreeEligible && (
                     <Badge className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] gap-1">

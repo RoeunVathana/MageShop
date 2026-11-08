@@ -1016,7 +1016,7 @@ export function CartPage() {
                       <img
                         src={fp.image_url}
                         alt={fp.name}
-                        className="w-12 h-12 rounded-xl object-cover bg-muted shrink-0"
+                        className="w-12 h-12 rounded-xl object-contain p-1 bg-muted shrink-0"
                       />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-xs line-clamp-1">{fp.name}</h4>
@@ -1125,7 +1125,7 @@ export function CartPage() {
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover bg-muted border shrink-0"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain p-2 bg-muted/60 border shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <Link
@@ -1189,7 +1189,7 @@ export function CartPage() {
                         <img
                           src={freeRewardItem.image_url}
                           alt={freeRewardItem.name}
-                          className="w-14 h-14 rounded-2xl object-cover border border-emerald-500/40"
+                          className="w-14 h-14 rounded-2xl object-contain p-1.5 border border-emerald-500/40 bg-white dark:bg-slate-900"
                         />
                         <div>
                           <Badge className="bg-emerald-600 text-white text-[10px] border-0">
