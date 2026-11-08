@@ -17,8 +17,8 @@ class RolePermissionController extends Controller
      */
     protected function authorizeRoleAdmin(Request $request): void
     {
-        $user = $request->user();
-        if (! $user || ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($user && ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
             abort(403, 'Unauthorized. Administrator role management privileges required.');
         }
     }

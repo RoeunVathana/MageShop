@@ -96,8 +96,8 @@ class StoreSettingsController extends Controller
 
     protected function authorizeAdmin(Request $request): void
     {
-        $user = $request->user();
-        if (! $user || ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($user && ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             abort(403, 'Unauthorized. Administrative permissions required.');
         }
     }

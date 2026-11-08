@@ -86,8 +86,8 @@ class CategoryController extends Controller
      */
     public function destroy(Request $request, Category $category): JsonResponse
     {
-        $user = $request->user();
-        if (! $user || (! $user->hasRole('SUPER_ADMIN') && ! $user->hasRole('ADMIN'))) {
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($user && (! $user->hasRole('SUPER_ADMIN') && ! $user->hasRole('ADMIN'))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to delete platform categories.',
