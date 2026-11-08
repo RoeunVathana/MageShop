@@ -67,9 +67,10 @@ class SyncMediaToCloud extends Command
                 }
             }
 
-            if (!$sourceFile) {
+            if (! $sourceFile) {
                 $this->warn("Source not found for {$cloudKey}, skipping.");
                 $skipped++;
+
                 continue;
             }
 
@@ -80,9 +81,10 @@ class SyncMediaToCloud extends Command
                 // Ignore existence check exception and attempt upload
             }
 
-            if ($alreadyExists && !$this->option('force')) {
+            if ($alreadyExists && ! $this->option('force')) {
                 $this->line("<fg=yellow>[EXISTS]</> {$cloudKey} (use --force to overwrite)");
                 $skipped++;
+
                 continue;
             }
 
@@ -104,7 +106,7 @@ class SyncMediaToCloud extends Command
                     $failed++;
                 }
             } catch (\Throwable $e) {
-                $this->error("<fg=red>[ERROR]</> {$cloudKey}: " . $e->getMessage());
+                $this->error("<fg=red>[ERROR]</> {$cloudKey}: ".$e->getMessage());
                 $failed++;
             }
         }
@@ -115,4 +117,3 @@ class SyncMediaToCloud extends Command
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 }
-

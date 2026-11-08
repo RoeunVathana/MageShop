@@ -15,6 +15,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  security-audit:
+    name: Enterprise 12-Gate Security Audit (OWASP & Railway Hardening)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+      - name: Execute 12-Gate Security Audit Script
+        run: bash ./security-audit.sh
+
   backend:
     name: Backend CI (PHP 8.2 • PostgreSQL • Redis • PHPUnit)
     runs-on: ubuntu-latest

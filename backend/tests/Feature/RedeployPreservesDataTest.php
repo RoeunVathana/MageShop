@@ -59,4 +59,3 @@ class RedeployPreservesDataTest extends TestCase
         $this->assertSame(4, DB::table('seeder_runs')->count());
     }
 }
-

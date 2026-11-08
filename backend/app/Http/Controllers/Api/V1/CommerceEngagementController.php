@@ -71,7 +71,7 @@ class CommerceEngagementController extends Controller
         if ($subtotal < (float) $coupon->min_order_amount) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Coupon '{$code}' requires a minimum order of $" . number_format((float) $coupon->min_order_amount, 2) . '.',
+                'message' => "Coupon '{$code}' requires a minimum order of $".number_format((float) $coupon->min_order_amount, 2).'.',
             ], 422);
         }
 
@@ -87,7 +87,7 @@ class CommerceEngagementController extends Controller
 
         return response()->json([
             'status' => 'ok',
-            'message' => "Coupon '{$coupon->code}' applied! You saved $" . number_format($discount, 2),
+            'message' => "Coupon '{$coupon->code}' applied! You saved $".number_format($discount, 2),
             'data' => [
                 'code' => $coupon->code,
                 'description' => $coupon->description,
@@ -244,7 +244,7 @@ class CommerceEngagementController extends Controller
             if ($availablePoints < self::POINTS_FOR_FREE_ITEM) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'You need at least 100 loyalty points to redeem a free item. Current points: ' . $availablePoints,
+                    'message' => 'You need at least 100 loyalty points to redeem a free item. Current points: '.$availablePoints,
                 ], 422);
             }
 
@@ -257,7 +257,7 @@ class CommerceEngagementController extends Controller
         $tax = round($afterSubtotal * 0.0, 2); // 0% extra fee for KHQR promotion
         $totalAmount = round($afterSubtotal + $tax, 2);
 
-        $orderNumber = 'ORD-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5));
+        $orderNumber = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
 
         $order = Order::create([
             'order_number' => $orderNumber,
@@ -295,7 +295,7 @@ class CommerceEngagementController extends Controller
                 'order_id' => $order->id,
                 'product_id' => $item['product_id'] ?? null,
                 'product_name' => $item['name'],
-                'product_sku' => 'SKU-' . ($item['product_id'] ?? 'ITEM'),
+                'product_sku' => 'SKU-'.($item['product_id'] ?? 'ITEM'),
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (float) $item['price'],
                 'total_price' => round((float) $item['price'] * (int) $item['quantity'], 2),
@@ -307,7 +307,7 @@ class CommerceEngagementController extends Controller
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $freeProduct->id,
-                'product_name' => '[FREE 100-PT REWARD] ' . $freeProduct->name,
+                'product_name' => '[FREE 100-PT REWARD] '.$freeProduct->name,
                 'product_sku' => $freeProduct->sku,
                 'quantity' => 1,
                 'unit_price' => 0.00,
@@ -317,7 +317,7 @@ class CommerceEngagementController extends Controller
 
         Payment::create([
             'order_id' => $order->id,
-            'transaction_reference' => 'TXN-' . strtoupper(Str::random(10)),
+            'transaction_reference' => 'TXN-'.strtoupper(Str::random(10)),
             'payment_method' => $order->payment_method,
             'amount' => $totalAmount,
             'currency' => 'USD',
@@ -402,7 +402,7 @@ class CommerceEngagementController extends Controller
             ], 422);
         }
 
-        $orderNumber = 'RWD-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5));
+        $orderNumber = 'RWD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $order = Order::create([
             'order_number' => $orderNumber,
             'user_id' => $user?->id,
@@ -436,7 +436,7 @@ class CommerceEngagementController extends Controller
         OrderItem::create([
             'order_id' => $order->id,
             'product_id' => $product->id,
-            'product_name' => '[FREE 100-PT EXCHANGE] ' . $product->name,
+            'product_name' => '[FREE 100-PT EXCHANGE] '.$product->name,
             'product_sku' => $product->sku,
             'quantity' => 1,
             'unit_price' => 0.00,
@@ -546,7 +546,7 @@ class CommerceEngagementController extends Controller
                     [
                         'title' => 'Arriving at Customer Address',
                         'location' => $order?->delivery_address ?? 'Phnom Penh, Cambodia',
-                        'time' => 'Est. ' . ($order?->estimated_arrival ?? '14 mins'),
+                        'time' => 'Est. '.($order?->estimated_arrival ?? '14 mins'),
                         'done' => false,
                     ],
                 ],
@@ -641,7 +641,7 @@ class CommerceEngagementController extends Controller
             'message' => ['required', 'string', 'max:3000'],
         ]);
 
-        $ticketNumber = 'SUP-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
+        $ticketNumber = 'SUP-'.now()->format('Ymd').'-'.strtoupper(Str::random(4));
         $user = $request->user('sanctum');
 
         DB::table('support_tickets')->insert([
@@ -723,7 +723,7 @@ class CommerceEngagementController extends Controller
         if (! $existingResp->successful() || ($existingResp->json('status') !== 'SUCCESS')) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Porkbun API authentication failed: ' . ($existingResp->json('message') ?? $existingResp->body()),
+                'message' => 'Porkbun API authentication failed: '.($existingResp->json('message') ?? $existingResp->body()),
             ], 422);
         }
 
@@ -775,7 +775,7 @@ class CommerceEngagementController extends Controller
 
         return response()->json([
             'status' => 'ok',
-            'message' => "Successfully removed " . count($deletedIds) . " parked records and provisioned all 8 Railway DNS & SSL verification records for {$domain}!",
+            'message' => 'Successfully removed '.count($deletedIds)." parked records and provisioned all 8 Railway DNS & SSL verification records for {$domain}!",
             'data' => [
                 'deleted_record_ids' => $deletedIds,
                 'created_records' => $created,

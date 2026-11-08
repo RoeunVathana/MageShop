@@ -35,13 +35,14 @@ class MediaController extends Controller
                     ]);
                 }
             } catch (\Throwable $e) {
-                Log::warning("S3 media fetch failed for path: {$path}. Error: " . $e->getMessage());
+                Log::warning("S3 media fetch failed for path: {$path}. Error: ".$e->getMessage());
             }
         }
 
         // Check public storage disk
         if (Storage::disk('public')->exists($path)) {
             $fullPath = Storage::disk('public')->path($path);
+
             return response()->file($fullPath, [
                 'Cache-Control' => 'public, max-age=86400',
             ]);
@@ -49,15 +50,15 @@ class MediaController extends Controller
 
         // Check Laravel public directory
         $publicFile = public_path($path);
-        if (file_exists($publicFile) && !is_dir($publicFile)) {
+        if (file_exists($publicFile) && ! is_dir($publicFile)) {
             return response()->file($publicFile, [
                 'Cache-Control' => 'public, max-age=86400',
             ]);
         }
 
         // Check frontend public directory for monorepo dev fallback
-        $frontendPublic = base_path('../frontend/public/' . $path);
-        if (file_exists($frontendPublic) && !is_dir($frontendPublic)) {
+        $frontendPublic = base_path('../frontend/public/'.$path);
+        if (file_exists($frontendPublic) && ! is_dir($frontendPublic)) {
             return response()->file($frontendPublic, [
                 'Cache-Control' => 'public, max-age=86400',
             ]);
@@ -65,7 +66,7 @@ class MediaController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'Media file not found: ' . $path,
+            'message' => 'Media file not found: '.$path,
         ], 404);
     }
 
@@ -90,7 +91,7 @@ class MediaController extends Controller
         // Determine target disk: prefer s3 if configured, else public
         $disk = config('filesystems.disks.s3.key') ? 's3' : config('filesystems.default', 'public');
 
-        $filename = time() . '_' . bin2hex(random_bytes(4)) . '.' . $file->getClientOriginalExtension();
+        $filename = time().'_'.bin2hex(random_bytes(4)).'.'.$file->getClientOriginalExtension();
         $key = $folder ? "{$folder}/{$filename}" : $filename;
 
         try {
@@ -122,15 +123,14 @@ class MediaController extends Controller
                 ],
             ], 201);
         } catch (\Throwable $e) {
-            Log::error('Cloud storage upload error: ' . $e->getMessage(), [
+            Log::error('Cloud storage upload error: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to upload to cloud storage: ' . $e->getMessage(),
+                'message' => 'Failed to upload to cloud storage: '.$e->getMessage(),
             ], 500);
         }
     }
 }
-
