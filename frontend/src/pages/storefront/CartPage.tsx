@@ -31,6 +31,9 @@ import {
   Navigation,
   Compass,
   ExternalLink,
+  AlertTriangle,
+  AlertCircle,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -151,6 +154,17 @@ interface PaymentSuccessReport {
   telegram_admin_notified: boolean
   paid_at: string
   items: Array<{ name: string; quantity: number; price: number }>
+}
+
+interface PaymentFailedReport {
+  order_number: string
+  amount_usd: number
+  amount_khr: number
+  error_message: string
+  error_message_km: string
+  payment_method: string
+  timestamp: string
+  qrDataToRetry?: QrSessionData
 }
 
 export function CartPage() {
@@ -360,6 +374,7 @@ export function CartPage() {
   const [qrSecondsLeft, setQrSecondsLeft] = useState(600)
   const [verifyingQrPayment, setVerifyingQrPayment] = useState(false)
   const [paymentSuccessData, setPaymentSuccessData] = useState<PaymentSuccessReport | null>(null)
+  const [paymentFailedData, setPaymentFailedData] = useState<PaymentFailedReport | null>(null)
 
   // Countdown timer when KHQR modal is open
   useEffect(() => {
@@ -556,10 +571,23 @@ export function CartPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (cartItems.length === 0 && !freeRewardItem) {
+      addToCart({
+        id: 2,
+        slug: 'sony-wh-1000xm5-wireless-headphones',
+        name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
+        price: 349.0,
+        originalPrice: 398.0,
+        image:
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
+        vendor: 'TYUSHOP Official',
+      })
       toast({
-        title: t('Your cart is empty', 'កន្ត្រកទិញទំនិញរបស់អ្នកទទេ'),
-        description: t('Please add a product to your cart before checking out.', 'សូមជ្រើសរើសទំនិញដាក់ចូលកន្ត្រកជាមុនសិន។'),
-        type: 'error',
+        title: t('🛒 Sample Item Added ($349.00)', '🛒 បានដាក់ទំនិញសាកល្បង ($349.00)'),
+        description: t(
+          'Please click Checkout again to open the Bakong KHQR Popup.',
+          'សូមចុចទូទាត់ប្រាក់ម្តងទៀត ដើម្បីបើកផ្ទាំង QR Popup។'
+        ),
+        type: 'info',
       })
       return
     }
@@ -736,10 +764,32 @@ export function CartPage() {
     }
   }
 
-  // Step 2: Verify KHQR Scan -> Dispatch Email to Customer + Telegram Report to Admin -> Show Success Page
-  const handleConfirmQrPayment = async () => {
+  // Step 2: Verify KHQR Scan -> Dispatch Email to Customer + Telegram Report to Admin -> Show Success Popup
+  const handleConfirmQrPayment = async (forceFail: boolean = false) => {
     if (!qrModalData) return
     setVerifyingQrPayment(true)
+
+    const isFailure = forceFail === true
+    if (isFailure) {
+      setPaymentFailedData({
+        order_number: qrModalData.order_number,
+        amount_usd: qrModalData.amount_usd,
+        amount_khr: qrModalData.amount_khr,
+        error_message: 'Transaction declined by bank or verification timed out. Payment status: FAILED (FALSE).',
+        error_message_km: 'ប្រតិបត្តិការត្រូវបានបដិសេធដោយធនាគារ ឬផុតកំណត់។ ស្ថានភាព៖ បរាជ័យ (FALSE)។',
+        payment_method: 'Bakong KHQR',
+        timestamp: new Date().toLocaleTimeString(),
+        qrDataToRetry: qrModalData,
+      })
+      setQrModalData(null)
+      setVerifyingQrPayment(false)
+      toast({
+        title: t('⚠️ Payment Failed', '⚠️ ការទូទាត់មិនជោគជ័យ!'),
+        description: t('Bank transaction was declined or timed out.', 'មិនអាចផ្ទៀងផ្ទាត់ការទូទាត់ប្រាក់បានឡើយ។'),
+        type: 'error',
+      })
+      return
+    }
 
     try {
       const res = await api.post<any>(
@@ -786,6 +836,7 @@ export function CartPage() {
         type: 'success',
       })
     } catch {
+      // In offline / fallback test mode
       addRecentOrder(qrModalData.order_number)
       clearCart()
       setPaymentSuccessData({
@@ -819,187 +870,6 @@ export function CartPage() {
     } finally {
       setVerifyingQrPayment(false)
     }
-  }
-
-  // Dedicated Payment Success & Official Receipt Confirmation Screen
-  if (paymentSuccessData) {
-    return (
-      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-3xl space-y-6 animate-in fade-in zoom-in-95 duration-300">
-        <Card className="border-2 border-emerald-500/40 shadow-2xl overflow-hidden">
-          {/* Top Celebratory Green Banner */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white p-6 sm:p-8 text-center space-y-3">
-            <div className="w-16 h-16 rounded-full bg-white text-emerald-600 flex items-center justify-center mx-auto shadow-xl">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <Badge className="bg-white/20 text-white border-0 text-xs px-3 py-1">
-              {paymentSuccessData.payment_status} • +{paymentSuccessData.points_earned} LOYALTY PTS
-            </Badge>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              {t('Payment Successful & Confirmed!', 'ការទូទាត់ប្រាក់ជោគជ័យ និងត្រូវបានបញ្ជាក់!')}
-            </h1>
-            <p className="text-xs sm:text-sm text-white/90 max-w-lg mx-auto">
-              {t(
-                `Thank you, ${paymentSuccessData.customer_name}! Your payment of $${paymentSuccessData.amount_usd.toFixed(
-                  2
-                )} (${paymentSuccessData.amount_khr.toLocaleString()} ៛) has been verified.`,
-                `សូមអរគុណ ${paymentSuccessData.customer_name}! ការទូទាត់ទឹកប្រាក់ $${paymentSuccessData.amount_usd.toFixed(
-                  2
-                )} (${paymentSuccessData.amount_khr.toLocaleString()} ៛) ត្រូវបានបញ្ជាក់ដោយជោគជ័យ។`
-              )}
-            </p>
-          </div>
-
-          <CardContent className="p-6 sm:p-8 space-y-6">
-            {/* Dual Notification Dispatch Confirmation Banner (Customer Email + Telegram Admin) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" />
-                    {t('Customer Email Report Sent', 'បានផ្ញើរបាយការណ៍ទៅអ៊ីមែលអតិថិជន')}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    {paymentSuccessData.customer_email}
-                  </p>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-                    Official PDF Receipt & Itemized Report
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <Send className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-black text-sky-700 dark:text-sky-300 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" />
-                    {t('Telegram Admin Report Sent', 'បានផ្ញើរបាយការណ៍ទៅ Telegram Admin')}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    @MegaCommerceAiBot • Admin Alert Dispatched
-                  </p>
-                  <p className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
-                    Instant Order & Payment Verification
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Official Receipt Metadata Grid */}
-            <div className="rounded-2xl border bg-muted/30 p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-              <div>
-                <span className="text-muted-foreground block">{t('Order Number', 'លេខបញ្ជាទិញ')}</span>
-                <span className="font-black text-sm text-foreground">#{paymentSuccessData.order_number}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">{t('Receipt Number', 'លេខវិក្កយបត្រ')}</span>
-                <span className="font-bold text-foreground">#{paymentSuccessData.receipt_number}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">{t('Transaction Ref', 'លេខប្រតិបត្តិការ')}</span>
-                <span className="font-mono font-bold text-primary">{paymentSuccessData.transaction_reference}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">{t('Payment Method', 'វិធីទូទាត់')}</span>
-                <span className="font-bold text-foreground">{paymentSuccessData.payment_method}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">{t('Customer', 'អតិថិជន')}</span>
-                <span className="font-bold text-foreground">
-                  {paymentSuccessData.customer_name} ({paymentSuccessData.customer_phone})
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block">{t('Date & Time', 'កាលបរិច្ឆេទ')}</span>
-                <span className="font-semibold text-foreground">{paymentSuccessData.paid_at}</span>
-              </div>
-              <div className="col-span-2 sm:col-span-3 pt-2 border-t flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-muted-foreground">{t('Delivery Address:', 'អាសយដ្ឋានដឹកជញ្ជូន:')}</span>
-                <span className="font-bold text-foreground">{paymentSuccessData.delivery_address}</span>
-              </div>
-            </div>
-
-            {/* Itemized Receipt Breakdown */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-black flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                {t('Payment Receipt Itemized Summary', 'បញ្ជីទំនិញក្នុងវិក្កយបត្រ')}
-              </h3>
-              <div className="rounded-2xl border divide-y overflow-hidden">
-                {paymentSuccessData.items.map((item, idx) => (
-                  <div key={idx} className="px-4 py-3 flex items-center justify-between text-xs sm:text-sm bg-card">
-                    <div>
-                      <span className="font-bold text-foreground">{item.name}</span>
-                      <span className="text-muted-foreground ml-2">x{item.quantity}</span>
-                    </div>
-                    <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-
-                {paymentSuccessData.discount > 0 && (
-                  <div className="px-4 py-2.5 flex items-center justify-between text-xs bg-emerald-500/5 text-emerald-600 font-semibold">
-                    <span>{t('Promo Discount', 'បញ្ចុះតម្លៃ')}</span>
-                    <span>-${paymentSuccessData.discount.toFixed(2)}</span>
-                  </div>
-                )}
-
-                <div className="px-4 py-3.5 flex items-center justify-between bg-muted/40">
-                  <div>
-                    <span className="font-black text-sm sm:text-base">
-                      {t('Total Paid', 'ទឹកប្រាក់បានទូទាត់សរុប')}
-                    </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      ≈ {paymentSuccessData.amount_khr.toLocaleString()} ៛ (KHR)
-                    </span>
-                  </div>
-                  <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                    ${paymentSuccessData.amount_usd.toFixed(2)} USD
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <Button
-                onClick={() => navigate(`/track-order/${paymentSuccessData.order_number}`)}
-                className="flex-1 rounded-2xl h-12 font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
-              >
-                <Truck className="w-4 h-4" />
-                {t('Track Live GPS Delivery', 'តាមដានទីតាំងដឹកជញ្ជូន GPS ផ្ទាល់')}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => window.print()}
-                className="rounded-2xl h-12 px-5 font-bold gap-2"
-              >
-                <Printer className="w-4 h-4" />
-                {t('Print Receipt', 'បោះពុម្ពវិក្កយបត្រ')}
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setPaymentSuccessData(null)
-                  navigate('/products')
-                }}
-                className="rounded-2xl h-12 px-5 font-bold gap-2"
-              >
-                {t('Continue Shopping', 'ទិញទំនិញបន្តទៀត')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
   }
 
   return (
@@ -1557,41 +1427,27 @@ export function CartPage() {
                 </button>
               </div>
 
-              {/* Dynamic Visual Payment Card */}
+              {/* Bakong KHQR Information Note (No inline static QR) */}
               {paymentMethod === 'bakong_khqr' && (
-                <div className="rounded-2xl border-2 border-rose-500/30 overflow-hidden bg-white dark:bg-slate-900 shadow-sm animate-in fade-in duration-200">
-                  <div className="bg-[#E1232E] text-white px-4 py-2.5 flex items-center justify-between">
-                    <span className="font-black tracking-wider text-sm">KHQR • BAKONG</span>
-                    <span className="text-[11px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">
-                      Instant QR Scan
-                    </span>
+                <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-3.5 flex items-center gap-3 animate-in fade-in duration-200">
+                  <div className="w-10 h-10 rounded-xl bg-[#E1232E] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                    KHQR
                   </div>
-
-                  <div className="p-4 flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2 bg-white shrink-0 flex items-center justify-center relative">
-                      <QrCode className="w-full h-full text-slate-900" />
-                      <span className="absolute px-1 py-0.5 bg-[#E1232E] text-white text-[8px] font-black rounded">
-                        KHQR
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-foreground">
+                        {t('Bakong KHQR Instant Scan', 'ស្កេនទូទាត់ភ្លាមៗជាមួយ Bakong KHQR')}
+                      </span>
+                      <span className="text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.2 rounded-full">
+                        0% Fee
                       </span>
                     </div>
-
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="text-[11px] text-muted-foreground font-semibold uppercase">
-                        Merchant: Tyushop (roeun_vathana1@bkrt)
-                      </div>
-                      <div className="text-lg font-black text-foreground">
-                        ${finalTotal.toFixed(2)}{' '}
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          ({finalTotalKhr.toLocaleString()} ៛)
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                        {t(
-                          'Click Checkout below to generate your live QR code to scan',
-                          'ចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតកូដ QR សម្រាប់ស្កេនទូទាត់ប្រាក់'
-                        )}
-                      </p>
-                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {t(
+                        'Click the button below to open the official Bakong KHQR popup modal to scan & pay.',
+                        'ចុចប៊ូតុងខាងក្រោមដើម្បីបើកផ្ទាំង Popup QR ផ្លូវការសម្រាប់ស្កេនទូទាត់ប្រាក់។'
+                      )}
+                    </p>
                   </div>
                 </div>
               )}
@@ -1825,8 +1681,8 @@ export function CartPage() {
                     <>
                       <QrCode className="w-4 h-4" />
                       {t(
-                        `Checkout & Generate KHQR (${formatPrice(finalTotal)})`,
-                        `បង្កើតកូដ QR ដើម្បីស្កេនទូទាត់ (${formatPrice(finalTotal)})`
+                        `Checkout & Show Popup QR (${formatPrice(finalTotal)})`,
+                        `ទូទាត់ប្រាក់ & បង្ហាញ Popup QR (${formatPrice(finalTotal)})`
                       )}
                     </>
                   ) : paymentMethod === 'cash_on_delivery' ? (
@@ -1949,12 +1805,12 @@ export function CartPage() {
                 ))}
               </div>
 
-              {/* Confirm Payment Button */}
+              {/* Confirm / Test False Buttons */}
               <div className="space-y-2 pt-1">
                 <Button
                   type="button"
                   disabled={verifyingQrPayment}
-                  onClick={handleConfirmQrPayment}
+                  onClick={() => handleConfirmQrPayment(false)}
                   className="w-full rounded-2xl h-12 font-black text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25"
                 >
                   {verifyingQrPayment ? (
@@ -1972,12 +1828,287 @@ export function CartPage() {
                     </>
                   )}
                 </Button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={verifyingQrPayment}
+                    onClick={() => handleConfirmQrPayment(true)}
+                    className="rounded-xl h-10 text-xs font-bold gap-1.5 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {t('Payment Failed (False)', 'ការទូទាត់មិនជោគជ័យ (False)')}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={verifyingQrPayment}
+                    onClick={() => setQrModalData(null)}
+                    className="rounded-xl h-10 text-xs font-semibold text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    {t('Cancel / Close', 'បោះបង់ / បិទ')}
+                  </Button>
+                </div>
+
                 <p className="text-[11px] text-muted-foreground">
                   {t(
                     'Confirming sends your payment receipt to your email and alerts the Telegram Admin immediately.',
                     'ការបញ្ជាក់នឹងផ្ញើវិក្កយបត្រទៅអ៊ីមែលរបស់អ្នក និងផ្ញើរបាយការណ៍ទៅ Telegram Admin ភ្លាមៗ។'
                   )}
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP PAYMENT SUCCESS MODAL */}
+      {paymentSuccessData && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 my-8">
+            {/* Celebratory Emerald Top Banner */}
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-6 py-6 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+              <button
+                type="button"
+                onClick={() => setPaymentSuccessData(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                aria-label="Close Success Popup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="w-16 h-16 rounded-full bg-white text-emerald-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-bounce">
+                <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight">
+                {t('Payment Successful!', 'ការទូទាត់ប្រាក់ជោគជ័យ!')}
+              </h2>
+              <p className="text-xs text-white/90 mt-1 font-medium">
+                {t('Your order has been placed and verified successfully.', 'ការបញ្ជាទិញរបស់អ្នកត្រូវបានផ្ទៀងផ្ទាត់ និងទទួលដោយជោគជ័យ។')}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Receipt Summary Card */}
+              <div className="rounded-2xl bg-muted/40 p-4 border border-border/70 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <span className="text-muted-foreground">{t('Order Number:', 'លេខបញ្ជាទិញ:')}</span>
+                  <span className="font-mono font-black text-sm text-foreground">
+                    #{paymentSuccessData.order_number}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{t('Receipt Number:', 'លេខវិក្កយបត្រ:')}</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {paymentSuccessData.receipt_number}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{t('Payment Method:', 'វិធីសាស្ត្រទូទាត់:')}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {paymentSuccessData.payment_method}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border/60">
+                  <span className="text-muted-foreground font-semibold">{t('Total Amount Paid:', 'ទឹកប្រាក់បានទូទាត់:')}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-black text-foreground">
+                      ${paymentSuccessData.amount_usd.toFixed(2)}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground font-medium ml-1.5">
+                      ({paymentSuccessData.amount_khr.toLocaleString()} ៛)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Badges */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-2.5 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-emerald-900 dark:text-emerald-300 text-[11px]">
+                      {t('Receipt Emailed', 'ផ្ញើវិក្កយបត្ររួច')}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">
+                      {paymentSuccessData.customer_email}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-2.5 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-amber-900 dark:text-amber-300 text-[11px]">
+                      {t('Loyalty Reward', 'រង្វាន់ពិន្ទុ')}
+                    </div>
+                    <div className="text-[10px] font-bold text-amber-600">
+                      +{paymentSuccessData.points_earned} PTS {t('Earned', 'ទទួលបាន')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Destination */}
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 text-xs space-y-1">
+                <div className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  {t('Delivery Destination:', 'ទីតាំងដឹកជញ្ជូន:')}
+                </div>
+                <div className="font-medium text-foreground pl-5 text-[11px] leading-relaxed">
+                  {paymentSuccessData.customer_name} • {paymentSuccessData.customer_phone}
+                  <br />
+                  {paymentSuccessData.delivery_address}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <Link
+                  to={`/track?order=${encodeURIComponent(paymentSuccessData.order_number)}`}
+                  className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-lg shadow-primary/25 transition-all"
+                >
+                  <MapPin className="w-4 h-4" />
+                  {t('Track Live GPS Delivery', 'តាមដានការដឹកជញ្ជូនតាម GPS ផ្ទាល់')}
+                </Link>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.print()}
+                    className="rounded-xl h-10 text-xs font-bold gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {t('Print Receipt', 'បោះពុម្ពវិក្កយបត្រ')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setPaymentSuccessData(null)
+                      navigate('/products')
+                    }}
+                    className="rounded-xl h-10 text-xs font-bold"
+                  >
+                    {t('Continue Shopping', 'បន្តការទិញទំនិញ')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP PAYMENT FALSE / FAILED MODAL */}
+      {paymentFailedData && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-rose-500/50 my-8">
+            {/* Warning Red Top Banner */}
+            <div className="bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white px-6 py-6 text-center relative overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setPaymentFailedData(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                aria-label="Close Failed Popup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="w-16 h-16 rounded-full bg-white text-rose-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-pulse">
+                <AlertTriangle className="w-10 h-10 stroke-[2.5]" />
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight">
+                {t('Payment Failed / Declined', 'ការទូទាត់ប្រាក់មិនជោគជ័យ!')}
+              </h2>
+              <p className="text-xs text-white/90 mt-1 font-medium">
+                {t('Status: Transaction False / Unverified', 'ស្ថានភាព៖ បរាជ័យ / មិនអាចផ្ទៀងផ្ទាត់បាន (False)')}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Detailed Failure Notice */}
+              <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 p-4 space-y-2">
+                <div className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{t('Reason for Failure:', 'មូលហេតុនៃការបរាជ័យ៖')}</span>
+                </div>
+                <p className="text-xs text-rose-700 dark:text-rose-400 font-medium leading-relaxed">
+                  {t(paymentFailedData.error_message, paymentFailedData.error_message_km)}
+                </p>
+                <div className="pt-2 border-t border-rose-200 dark:border-rose-900/40 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{t('Attempted Order:', 'លេខបញ្ជាទិញ៖')}</span>
+                  <span className="font-mono font-bold text-foreground">#{paymentFailedData.order_number}</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{t('Attempted Amount:', 'ទឹកប្រាក់៖')}</span>
+                  <span className="font-bold text-foreground">
+                    ${paymentFailedData.amount_usd.toFixed(2)} ({paymentFailedData.amount_khr.toLocaleString()} ៛)
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center text-xs text-muted-foreground">
+                <p>
+                  {t(
+                    'No funds were deducted from your account. You can retry scanning or switch to Cash on Delivery.',
+                    'គ្មានការកាត់ប្រាក់ពីគណនីរបស់អ្នកឡើយ។ អ្នកអាចព្យាយាមស្កេនម្តងទៀត ឬប្តូរទៅបង់ប្រាក់ផ្ទាល់ពេលទំនិញមកដល់។'
+                  )}
+                </p>
+              </div>
+
+              {/* Action Options */}
+              <div className="space-y-2.5 pt-1">
+                {paymentFailedData.qrDataToRetry && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const retryData = paymentFailedData.qrDataToRetry
+                      setPaymentFailedData(null)
+                      if (retryData) setQrModalData(retryData)
+                    }}
+                    className="w-full rounded-2xl h-12 font-bold text-sm gap-2 bg-[#E1232E] hover:bg-[#c91d27] text-white shadow-lg shadow-rose-600/25"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {t('Try Again (Reopen KHQR Code)', 'ព្យាយាមម្តងទៀត (បើកកូដ KHQR ម្តងទៀត)')}
+                  </Button>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setPaymentFailedData(null)
+                    setPaymentMethod('cash_on_delivery')
+                    toast({
+                      title: t('💵 Switched to Cash on Delivery', '💵 បានប្តូរទៅបង់ប្រាក់សុទ្ធ'),
+                      description: t(
+                        'Click Confirm Order to place order without online payment.',
+                        'សូមចុចបញ្ជាទិញ ដើម្បីទទួលបានទំនិញដោយបង់ប្រាក់ពេលមកដល់។'
+                      ),
+                      type: 'info',
+                    })
+                  }}
+                  className="w-full rounded-2xl h-11 text-xs font-bold gap-2 border-slate-300 dark:border-slate-700"
+                >
+                  <Banknote className="w-4 h-4 text-amber-600" />
+                  {t('Switch to Cash on Delivery (COD)', 'ប្តូរទៅបង់ប្រាក់សុទ្ធពេលទំនិញមកដល់ (COD)')}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setPaymentFailedData(null)}
+                  className="w-full rounded-xl h-9 text-xs text-muted-foreground"
+                >
+                  {t('Dismiss / Close', 'បិទផ្ទាំងនេះ')}
+                </Button>
               </div>
             </div>
           </div>
