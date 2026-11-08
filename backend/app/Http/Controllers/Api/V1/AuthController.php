@@ -35,42 +35,31 @@ class AuthController extends Controller
         $phoneNumber = !empty($validated['phone_number']) ? trim($validated['phone_number']) : null;
 
         try {
-            $user = DB::transaction(function () use ($validated, $phoneNumber) {
-                // Ensure safe, universal password hashing
-                $passwordHash = null;
-                try {
-                    $passwordHash = Hash::make($validated['password']);
-                } catch (\Throwable $hashEx) {
-                    $passwordHash = password_hash($validated['password'], PASSWORD_BCRYPT, ['cost' => 12]);
-                }
+            // Find default customer role
+            $customerRole = Role::where('slug', 'customer')->orWhere('name', 'CUSTOMER')->first();
+            if (!$customerRole) {
+                $customerRole = Role::create([
+                    'slug' => 'customer',
+                    'name' => 'CUSTOMER',
+                    'description' => 'Standard customer',
+                ]);
+            }
 
-                $user = new User();
-                $user->name = trim($validated['name']);
-                $user->email = strtolower(trim($validated['email']));
-                $user->phone_number = $phoneNumber;
-                $user->setRawAttributes(array_merge($user->getAttributes(), [
-                    'password' => $passwordHash,
-                ]));
-                $user->status = 'active';
-                $user->loyalty_points = 0;
-                $user->email_verified_at = now();
-                $user->save();
+            // Create user (password is automatically hashed via User cast with bcrypt)
+            $user = User::create([
+                'name' => trim($validated['name']),
+                'email' => strtolower(trim($validated['email'])),
+                'phone_number' => $phoneNumber,
+                'password' => $validated['password'],
+                'status' => 'active',
+                'loyalty_points' => 0,
+                'email_verified_at' => now(),
+            ]);
 
-                // Assign default CUSTOMER role
-                $customerRole = Role::where('slug', 'customer')->orWhere('name', 'CUSTOMER')->first();
-                if (!$customerRole) {
-                    $customerRole = Role::create([
-                        'slug' => 'customer',
-                        'name' => 'CUSTOMER',
-                        'description' => 'Standard customer',
-                    ]);
-                }
-                if ($customerRole) {
-                    $user->roles()->syncWithoutDetaching([$customerRole->id]);
-                }
-
-                return $user;
-            });
+            // Attach customer role
+            if ($customerRole) {
+                $user->roles()->syncWithoutDetaching([$customerRole->id]);
+            }
 
             // Security audit log (never crash registration flow)
             try {
