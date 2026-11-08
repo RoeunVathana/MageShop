@@ -923,4 +923,130 @@ class CommerceEngagementController extends Controller
             ],
         ]);
     }
+
+    /**
+     * List all dispatch orders for Staff & Delivery Fleet location management.
+     */
+    public function deliveryOrders(Request $request): JsonResponse
+    {
+        $orders = Order::with('items')
+            ->orderBy('id', 'desc')
+            ->take(30)
+            ->get();
+
+        return response()->json([
+            'status' => 'ok',
+            'data' => $orders,
+            'summary' => [
+                'total_orders' => $orders->count(),
+                'in_transit' => $orders->whereIn('status', ['shipped', 'out_for_delivery'])->count(),
+                'delivered' => $orders->where('status', 'delivered')->count(),
+                'pending' => $orders->where('status', 'pending')->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Update customer delivery destination coordinates or courier location.
+     */
+    public function updateDeliveryLocation(Request $request, string $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)->first();
+        if (! $order) {
+            $order = Order::latest()->first();
+        }
+
+        if (! $order) {
+            return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'delivery_address' => ['nullable', 'string', 'max:500'],
+            'dest_lat' => ['nullable', 'numeric'],
+            'dest_lng' => ['nullable', 'numeric'],
+            'current_lat' => ['nullable', 'numeric'],
+            'current_lng' => ['nullable', 'numeric'],
+            'estimated_arrival' => ['nullable', 'string', 'max:60'],
+            'driver_name' => ['nullable', 'string', 'max:120'],
+            'driver_phone' => ['nullable', 'string', 'max:60'],
+            'driver_vehicle' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        foreach ($validated as $field => $val) {
+            if ($val !== null) {
+                $order->{$field} = $val;
+            }
+        }
+        $order->save();
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => "Location updated for Order #{$order->order_number}!",
+            'data' => $order->fresh()->load('items'),
+        ]);
+    }
+
+    /**
+     * Update delivery progress status (e.g. out_for_delivery, delivered).
+     */
+    public function updateDeliveryStatus(Request $request, string $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)->first();
+        if (! $order) {
+            $order = Order::latest()->first();
+        }
+
+        if (! $order) {
+            return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
+        }
+
+        $status = $request->input('status', 'out_for_delivery');
+        $order->status = $status;
+        if ($status === 'delivered') {
+            $order->payment_status = 'paid';
+            Payment::where('order_id', $order->id)->update([
+                'status' => 'completed',
+                'verified_at' => now(),
+            ]);
+        }
+        $order->save();
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => "Order #{$order->order_number} marked as {$status}.",
+            'data' => $order->fresh(),
+        ]);
+    }
+
+    /**
+     * Broadcast driver's real-time device GPS coordinates to active orders.
+     */
+    public function broadcastDriverGps(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric'],
+            'longitude' => ['required', 'numeric'],
+            'driver_name' => ['nullable', 'string'],
+        ]);
+
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
+
+        Order::whereIn('status', ['shipped', 'out_for_delivery'])
+            ->update([
+                'current_lat' => $lat,
+                'current_lng' => $lng,
+            ]);
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => "Live GPS coordinates ({$lat}, {$lng}) broadcast to all active delivery routes.",
+            'data' => [
+                'current_lat' => $lat,
+                'current_lng' => $lng,
+                'broadcast_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
 }

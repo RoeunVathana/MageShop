@@ -10,11 +10,13 @@ import {
   Server,
   Key,
   Sliders,
+  MapPin,
 } from 'lucide-react'
 import type { NavItem } from '@/components/dashboard/DashboardLayout'
 
 export const adminNavItems: NavItem[] = [
   { label: 'Platform Overview', href: '/dashboard/admin', icon: Shield },
+  { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
   { label: 'Hero Slide Banners', href: '/admin/banners', icon: Sliders },
   { label: 'Products Catalog', href: '/admin/products', icon: Package },
   { label: 'Categories & Attributes', href: '/admin/categories', icon: FolderTree },

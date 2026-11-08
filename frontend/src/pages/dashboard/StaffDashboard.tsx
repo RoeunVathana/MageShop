@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   Layers,
   CheckSquare,
@@ -5,6 +6,9 @@ import {
   FileText,
   Clock,
   UserCheck,
+  MapPin,
+  Truck,
+  ExternalLink,
 } from 'lucide-react'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,9 +17,10 @@ import { Button } from '@/components/ui/button'
 
 const staffNav: NavItem[] = [
   { label: 'Work Queue', href: '/dashboard/staff', icon: Layers },
-  { label: 'Catalog Reviews', href: '/dashboard/staff/catalog', icon: CheckSquare, badge: '9 pending' },
-  { label: 'Support Tickets', href: '/dashboard/staff/tickets', icon: HelpCircle, badge: '3 open' },
-  { label: 'Content Moderation', href: '/dashboard/staff/moderation', icon: FileText },
+  { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
+  { label: 'Catalog Reviews', href: '/dashboard/staff', icon: CheckSquare, badge: '9 pending' },
+  { label: 'Support Tickets', href: '/dashboard/staff', icon: HelpCircle, badge: '3 open' },
+  { label: 'Content Moderation', href: '/dashboard/staff', icon: FileText },
 ]
 
 export function StaffDashboard() {
@@ -23,15 +28,23 @@ export function StaffDashboard() {
     <DashboardLayout
       roleTitle="Staff Operations Desk"
       roleSlug="staff"
-      roleColor="text-indigo-500"
+      roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={staffNav}
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight">Support & Catalog Operations</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Internal operations desk for moderation, support escalation, and vendor catalog validation.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-5">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight">Support, Catalog & Location Operations</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Internal operations desk for moderation, support escalation, and courier delivery location dispatch.
+            </p>
+          </div>
+
+          <Link to="/dashboard/delivery">
+            <Button className="rounded-xl h-9 text-xs font-bold gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
+              <MapPin className="w-4 h-4" /> Open Delivery Location Manager
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

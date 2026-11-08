@@ -200,6 +200,14 @@ Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 
     ->middleware('throttle:tracking');
 Route::post('/orders/track/{orderNumber}/confirm-payment', [CommerceEngagementController::class, 'confirmArrivalPayment'])
     ->middleware('throttle:checkout');
+
+// Staff & Delivery Fleet Dispatch & Location Management
+Route::prefix('delivery')->group(function () {
+    Route::get('/orders', [CommerceEngagementController::class, 'deliveryOrders']);
+    Route::patch('/orders/{orderNumber}/location', [CommerceEngagementController::class, 'updateDeliveryLocation']);
+    Route::post('/orders/{orderNumber}/status', [CommerceEngagementController::class, 'updateDeliveryStatus']);
+    Route::post('/broadcast-gps', [CommerceEngagementController::class, 'broadcastDriverGps']);
+});
 Route::get('/wishlist', [CommerceEngagementController::class, 'wishlist']);
 Route::post('/wishlist/toggle', [CommerceEngagementController::class, 'toggleWishlist']);
 Route::post('/support/tickets', [CommerceEngagementController::class, 'createSupportTicket'])
