@@ -30,6 +30,7 @@ import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
+import { mediaService } from '@/services/media.service'
 import type { CategoryAttribute } from '@/types/category.types'
 import type { Product, ProductType } from '@/types/product.types'
 import type { Brand } from '@/types/brand.types'
@@ -79,6 +80,7 @@ export function ProductEditPage() {
   const [variantsList, setVariantsList] = useState<VariantDraft[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [uploadingMedia, setUploadingMedia] = useState<boolean>(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -86,6 +88,7 @@ export function ProductEditPage() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ProductEditFormData>({
     resolver: zodResolver(productEditSchema) as any,
@@ -517,7 +520,41 @@ export function ProductEditPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="font-semibold text-foreground">Image URL</label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-foreground">Image / Video / File URL</label>
+                    <label className="cursor-pointer inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:text-purple-700">
+                      <span>{uploadingMedia ? 'Uploading to Cloud S3...' : '☁️ Upload File to Cloud S3'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*,.pdf"
+                        className="hidden"
+                        disabled={uploadingMedia}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setUploadingMedia(true)
+                          try {
+                            const uploaded = await mediaService.uploadMedia(file, 'products')
+                            setValue('image_url', uploaded.url, { shouldValidate: true })
+                            toast({
+                              title: 'Uploaded to Cloud Storage ☁️',
+                              description: 'Media stored permanently in S3 (preserved across server updates).',
+                              type: 'success',
+                            })
+                          } catch (err: any) {
+                            toast({
+                              title: 'Upload Failed',
+                              description: err?.message || 'Could not upload media file.',
+                              type: 'error',
+                            })
+                          } finally {
+                            setUploadingMedia(false)
+                            e.target.value = ''
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   <Input {...register('image_url')} className="h-9 text-xs" />
                   {errors.image_url && (
                     <p className="text-destructive text-[11px]">{errors.image_url.message}</p>

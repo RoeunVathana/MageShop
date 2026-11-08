@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class SyncMediaToCloud extends Command
@@ -19,18 +20,18 @@ class SyncMediaToCloud extends Command
      *
      * @var string
      */
-    protected $description = 'Sync brand images, videos, and default media assets to S3 Cloud Storage';
+    protected $description = 'Sync brand images, videos, local uploads, and receipts to permanent S3 Cloud Storage without overwriting existing cloud files';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $this->info('Starting Media Cloud Storage Synchronization...');
+        $this->info('Starting Media Cloud Storage Synchronization (Zero-Deletion Mode)...');
         $disk = config('filesystems.disks.s3.key') ? 's3' : config('filesystems.default', 'public');
         $this->line("Target Storage Disk: <fg=cyan>{$disk}</>");
 
-        // Files to sync from frontend public or local storage
+        // 1. Default branding assets from frontend/backend public directories
         $candidates = [
             'branding/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg' => [
                 base_path('../frontend/public/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg'),
@@ -54,6 +55,17 @@ class SyncMediaToCloud extends Command
             ],
         ];
 
+        // 2. Also include any local files inside storage/app/public/{uploads,banners,products,brands,receipts,videos}
+        $localPublicRoot = storage_path('app/public');
+        if (is_dir($localPublicRoot)) {
+            foreach (File::allFiles($localPublicRoot) as $fileInfo) {
+                $relPath = str_replace('\\', '/', $fileInfo->getRelativePathname());
+                if (! str_starts_with(basename($relPath), '.')) {
+                    $candidates[$relPath] = [$fileInfo->getRealPath()];
+                }
+            }
+        }
+
         $uploaded = 0;
         $skipped = 0;
         $failed = 0;
@@ -61,7 +73,7 @@ class SyncMediaToCloud extends Command
         foreach ($candidates as $cloudKey => $possiblePaths) {
             $sourceFile = null;
             foreach ($possiblePaths as $p) {
-                if (file_exists($p)) {
+                if ($p && file_exists($p)) {
                     $sourceFile = $p;
                     break;
                 }
@@ -81,8 +93,9 @@ class SyncMediaToCloud extends Command
                 // Ignore existence check exception and attempt upload
             }
 
+            // NEVER overwrite or delete existing files in cloud storage unless --force is explicitly passed
             if ($alreadyExists && ! $this->option('force')) {
-                $this->line("<fg=yellow>[EXISTS]</> {$cloudKey} (use --force to overwrite)");
+                $this->line("<fg=yellow>[PRESERVED]</> {$cloudKey} already exists in cloud storage.");
                 $skipped++;
 
                 continue;
@@ -99,7 +112,7 @@ class SyncMediaToCloud extends Command
                 }
 
                 if ($result) {
-                    $this->info("<fg=green>[SUCCESS]</> {$cloudKey} uploaded to {$disk}");
+                    $this->info("<fg=green>[SUCCESS]</> {$cloudKey} backed up to {$disk}");
                     $uploaded++;
                 } else {
                     $this->error("<fg=red>[FAIL]</> Failed to put {$cloudKey}");
@@ -112,7 +125,7 @@ class SyncMediaToCloud extends Command
         }
 
         $this->newLine();
-        $this->info("Cloud Sync Summary: {$uploaded} uploaded, {$skipped} skipped, {$failed} failed.");
+        $this->info("Cloud Sync Summary: {$uploaded} uploaded, {$skipped} preserved/skipped, {$failed} failed.");
 
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }

@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { brandService } from '@/services/brand.service'
+import { mediaService } from '@/services/media.service'
 import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export function BrandListPage() {
@@ -37,6 +38,7 @@ export function BrandListPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [uploadingLogo, setUploadingLogo] = useState<boolean>(false)
 
   // Form Fields
   const [formName, setFormName] = useState<string>('')
@@ -552,9 +554,43 @@ export function BrandListPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Logo Image URL
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Logo Image URL or Permanent Cloud S3 Upload
+                    </label>
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 hover:text-indigo-700">
+                      <span>{uploadingLogo ? 'Uploading to Cloud S3...' : '☁️ Upload Logo to S3'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,.svg"
+                        className="hidden"
+                        disabled={uploadingLogo}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setUploadingLogo(true)
+                          try {
+                            const uploaded = await mediaService.uploadMedia(file, 'brands')
+                            setFormLogoUrl(uploaded.url)
+                            toast({
+                              title: 'Uploaded to Cloud Storage ☁️',
+                              description: 'Brand logo stored permanently in S3 (never deleted on server updates).',
+                              type: 'success',
+                            })
+                          } catch (err: any) {
+                            toast({
+                              title: 'Cloud Upload Failed',
+                              description: err?.message || 'Could not upload logo.',
+                              type: 'error',
+                            })
+                          } finally {
+                            setUploadingLogo(false)
+                            e.target.value = ''
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   <div className="flex gap-3 items-center">
                     <Input
                       type="url"
