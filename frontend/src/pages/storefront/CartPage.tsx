@@ -28,6 +28,9 @@ import {
   X,
   FileText,
   RefreshCw,
+  Navigation,
+  Compass,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,6 +44,72 @@ const PROMO_COUPONS = [
   { code: 'MEGA20', label: '20% OFF (≥$50)', type: 'percentage' as const, value: 20, min: 50 },
   { code: 'KHQR5', label: '$5 OFF', type: 'fixed' as const, value: 5, min: 15 },
   { code: 'VIP30', label: '30% OFF (≥$100)', type: 'percentage' as const, value: 30, min: 100 },
+]
+
+const CAMBODIA_LOCATION_PRESETS = [
+  {
+    label: 'BKK1, Chamkarmon',
+    labelKm: 'បឹងកេងកង១ ចំការមន',
+    address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
+    lat: 11.5564,
+    lng: 104.9282,
+  },
+  {
+    label: 'Toul Kork (TK)',
+    labelKm: 'ទួលគោក',
+    address: 'Street 315, Boeung Kak 1, Toul Kork, Phnom Penh, Cambodia',
+    lat: 11.5732,
+    lng: 104.8978,
+  },
+  {
+    label: 'Daun Penh (Riverside)',
+    labelKm: 'ដូនពេញ មាត់ទន្លេ',
+    address: 'Preah Sisowath Quay, Daun Penh, Phnom Penh, Cambodia',
+    lat: 11.5694,
+    lng: 104.9312,
+  },
+  {
+    label: 'Sen Sok (Aeon 2)',
+    labelKm: 'សែនសុខ អុីអន២',
+    address: 'Street 1003, Phnom Penh Thmey, Sen Sok, Phnom Penh, Cambodia',
+    lat: 11.5956,
+    lng: 104.8779,
+  },
+  {
+    label: 'Chroy Changvar',
+    labelKm: 'ជ្រោយចង្វារ',
+    address: 'National Road 6A, Chroy Changvar, Phnom Penh, Cambodia',
+    lat: 11.5925,
+    lng: 104.9372,
+  },
+  {
+    label: 'Russian Market (TTP)',
+    labelKm: 'ផ្សារទួលទំពូង',
+    address: 'Street 155, Toul Tom Poung 1, Chamkarmon, Phnom Penh, Cambodia',
+    lat: 11.5401,
+    lng: 104.9145,
+  },
+  {
+    label: 'Siem Reap City',
+    labelKm: 'ក្រុងសៀមរាប',
+    address: 'Pub Street & Old Market Area, Siem Reap, Cambodia',
+    lat: 13.3556,
+    lng: 103.8564,
+  },
+  {
+    label: 'Battambang City',
+    labelKm: 'ក្រុងបាត់ដំបង',
+    address: 'Street 1, Sangkat Svay Pao, Battambang, Cambodia',
+    lat: 13.0957,
+    lng: 103.2022,
+  },
+  {
+    label: 'Sihanoukville (Otres)',
+    labelKm: 'ក្រុងព្រះសីហនុ',
+    address: 'Marina Road, Otres Beach, Sihanoukville, Cambodia',
+    lat: 10.6015,
+    lng: 103.5512,
+  },
 ]
 
 interface QrSessionData {
@@ -114,12 +183,116 @@ export function CartPage() {
   const [customerName, setCustomerName] = useState('Dara Sok')
   const [customerEmail, setCustomerEmail] = useState('Vothanarern@gmail.com')
   const [customerPhone, setCustomerPhone] = useState('016 555 637')
-  const [deliveryAddress, setDeliveryAddress] = useState('BKK1, Street 310, Chamkarmon, Phnom Penh')
+  const [deliveryAddress, setDeliveryAddress] = useState('BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia')
+  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number } | null>({
+    lat: 11.5564,
+    lng: 104.9282,
+  })
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'card' | 'cash_on_delivery'>('bakong_khqr')
   const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8891')
   const [cardExpiry, setCardExpiry] = useState('08/29')
   const [cardCvc, setCardCvc] = useState('888')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  // Real-time GPS Geolocation Detector
+  const handleDetectCurrentLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      toast({
+        title: t('Geolocation Not Supported', 'ឧបករណ៍មិនគាំទ្រ GPS ទេ'),
+        description: t(
+          'Your browser does not support geolocation detection. Please pick a preset below.',
+          'កម្មវិធីរុករករបស់អ្នកមិនគាំទ្រការចាប់ទីតាំង GPS ទេ។ សូមជ្រើសរើសទីតាំងរហ័សខាងក្រោម។'
+        ),
+        type: 'error',
+      })
+      return
+    }
+
+    setIsLocating(true)
+    toast({
+      title: t('🛰️ Detecting Live GPS Position...', '🛰️ កំពុងស្វែងរកទីតាំង GPS ផ្ទាល់...'),
+      description: t(
+        'Requesting satellite coordinates from your device...',
+        'កំពុងស្នើសុំកូអរដោនេផ្កាយរណបពីឧបករណ៍របស់អ្នក...'
+      ),
+      type: 'info',
+    })
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords
+        setCustomerCoords({ lat: latitude, lng: longitude })
+        setLocationAccuracy(Math.round(accuracy))
+
+        try {
+          // Reverse-geocode via OpenStreetMap Nominatim
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            {
+              headers: {
+                Accept: 'application/json',
+              },
+            }
+          )
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.address) {
+              const a = data.address
+              const road = a.road || a.pedestrian || a.suburb || a.neighbourhood || ''
+              const district = a.city_district || a.quarter || a.suburb || ''
+              const city = a.city || a.town || a.county || a.state || 'Phnom Penh'
+              const country = a.country || 'Cambodia'
+              const formatted = [road, district, city, country].filter(Boolean).join(', ')
+
+              if (formatted) {
+                setDeliveryAddress(formatted)
+                setIsLocating(false)
+                toast({
+                  title: t('📍 Current Location Detected!', '📍 បានរកឃើញទីតាំងបច្ចុប្បន្ន!'),
+                  description: `${formatted} (±${Math.round(accuracy)}m)`,
+                  type: 'success',
+                })
+                return
+              }
+            }
+          }
+        } catch {
+          // Fallback if nominatim is slow or blocked
+        }
+
+        const fallback = `Current Location (${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E), Phnom Penh, Cambodia`
+        setDeliveryAddress(fallback)
+        setIsLocating(false)
+        toast({
+          title: t('📍 Current Coordinates Locked!', '📍 បានចាប់យកកូអរដោនេបច្ចុប្បន្ន!'),
+          description: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)} (±${Math.round(accuracy)}m)`,
+          type: 'success',
+        })
+      },
+      (err) => {
+        setIsLocating(false)
+        let msg = err.message
+        if (err.code === 1) {
+          msg = t(
+            'GPS location access was denied. Please enable Location in browser permissions or pick a quick preset below.',
+            'ការចូលប្រើទីតាំង GPS ត្រូវបានបដិសេធ។ សូមបើក Location Permission ក្នុង Browser ឬជ្រើសរើសទីតាំងរហ័សខាងក្រោម។'
+          )
+        }
+        toast({
+          title: t('Location Detection Blocked', 'មិនអាចស្វែងរកទីតាំងបានទេ'),
+          description: msg,
+          type: 'error',
+        })
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    )
+  }
 
   // Live KHQR Scan Modal & Payment Confirmation Page State
   const [qrModalData, setQrModalData] = useState<QrSessionData | null>(null)
@@ -300,6 +473,8 @@ export function CartPage() {
         customer_email: customerEmail,
         customer_phone: customerPhone,
         delivery_address: deliveryAddress,
+        dest_lat: customerCoords?.lat ?? 11.568,
+        dest_lng: customerCoords?.lng ?? 104.9185,
         payment_method: apiPaymentMethod,
         initiate_qr: isKhqrFlow,
       }
@@ -1061,19 +1236,119 @@ export function CartPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                  {t('Delivery Street / District / City', 'អាសយដ្ឋានដឹកជញ្ជូន (ទីតាំង GPS)')}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="BKK1, Street 310, Chamkarmon, Phnom Penh"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                    <span>{t('Delivery Address (Live GPS Target)', 'អាសយដ្ឋានដឹកជញ្ជូន (គោលដៅ GPS ផ្ទាល់)')}</span>
+                  </label>
+
+                  {/* One-Click GPS Current Location Selector Button */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDetectCurrentLocation}
+                    disabled={isLocating}
+                    className="h-7 text-[11px] font-bold rounded-xl gap-1.5 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60 shadow-sm cursor-pointer transition-all"
+                  >
+                    {isLocating ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 animate-spin text-indigo-600 dark:text-indigo-400" />
+                        <span>{t('Detecting Location...', 'កំពុងស្វែងរកទីតាំង...')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Navigation className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>{t('📍 Choose Current Location', '📍 ជ្រើសរើសទីតាំងបច្ចុប្បន្នឥឡូវ')}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary pl-9 pr-24 font-medium"
+                  />
+                  <MapPin className="w-4 h-4 text-primary absolute left-3 top-1/2 -translate-y-1/2" />
+                  <button
+                    type="button"
+                    onClick={handleDetectCurrentLocation}
+                    disabled={isLocating}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg text-[10px] font-bold bg-muted hover:bg-indigo-600 hover:text-white text-muted-foreground transition-all cursor-pointer flex items-center gap-1"
+                    title={t('Detect Current Location', 'ចាប់យកទីតាំងបច្ចុប្បន្ន')}
+                  >
+                    <Compass className="w-3 h-3" />
+                    <span className="hidden sm:inline">{t('GPS', 'GPS')}</span>
+                  </button>
+                </div>
+
+                {/* GPS Coordinates Locked Live Status */}
+                {customerCoords && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-[11px] animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span>
+                        {t('GPS Target Locked:', 'កូអរដោនេ GPS គោលដៅ:')}{' '}
+                        <strong>
+                          {customerCoords.lat.toFixed(4)}° N, {customerCoords.lng.toFixed(4)}° E
+                        </strong>
+                        {locationAccuracy ? ` (±${locationAccuracy}m accuracy)` : ''}
+                      </span>
+                    </div>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${customerCoords.lat},${customerCoords.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                    >
+                      <span>{t('View Map', 'មើលលើផែនទី')}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Quick Presets for Cambodia Districts & Landmarks */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                    <span>{t('Quick Location Presets (Cambodia):', 'ជ្រើសរើសទីតាំងរហ័ស (កម្ពុជា):')}</span>
+                    <span className="text-[9px] text-indigo-600 font-semibold">{t('1-Click Select', 'ចុចជ្រើសរើស')}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CAMBODIA_LOCATION_PRESETS.map((preset) => {
+                      const isSelected = deliveryAddress === preset.address
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setDeliveryAddress(preset.address)
+                            setCustomerCoords({ lat: preset.lat, lng: preset.lng })
+                            setLocationAccuracy(10)
+                            toast({
+                              title: t('📍 Delivery Target Updated', '📍 បានផ្លាស់ប្តូរទីតាំងដឹកជញ្ជូន'),
+                              description: preset.address,
+                              type: 'info',
+                            })
+                          }}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/30'
+                              : 'bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-slate-200 dark:border-slate-800'
+                          }`}
+                        >
+                          <span>📍</span>
+                          <span>{preset.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

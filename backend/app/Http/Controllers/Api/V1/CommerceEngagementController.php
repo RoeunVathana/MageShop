@@ -185,6 +185,8 @@ class CommerceEngagementController extends Controller
             'customer_email' => ['nullable', 'email', 'max:150'],
             'customer_phone' => ['required', 'string', 'max:40'],
             'delivery_address' => ['required', 'string', 'max:500'],
+            'dest_lat' => ['nullable', 'numeric'],
+            'dest_lng' => ['nullable', 'numeric'],
             'payment_method' => ['nullable', 'string', 'max:40'],
             'initiate_qr' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -292,8 +294,8 @@ class CommerceEngagementController extends Controller
             'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
             'current_lat' => 11.5564000,
             'current_lng' => 104.9282000,
-            'dest_lat' => 11.5680000,
-            'dest_lng' => 104.9185000,
+            'dest_lat' => ! empty($validated['dest_lat']) ? (float) $validated['dest_lat'] : 11.5680000,
+            'dest_lng' => ! empty($validated['dest_lng']) ? (float) $validated['dest_lng'] : 104.9185000,
             'estimated_arrival' => '18 mins',
         ]);
 

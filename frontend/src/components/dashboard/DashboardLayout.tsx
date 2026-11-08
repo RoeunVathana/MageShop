@@ -4,11 +4,10 @@ import {
   Bell,
   Menu,
   X,
-  User,
   LogOut,
   ChevronRight,
   Home,
-  CheckCircle2,
+  ShieldCheck,
   LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -36,8 +35,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({
   roleTitle,
-  roleSlug,
-  roleColor = 'text-primary',
+  roleColor = 'text-indigo-600 dark:text-indigo-400',
   navItems,
   children,
 }: DashboardLayoutProps) {
@@ -52,7 +50,7 @@ export function DashboardLayout({
   const handleNotificationClick = () => {
     toast({
       title: 'Notifications Hub',
-      description: 'All system notifications are up to date.',
+      description: 'All system notifications, KHQR payments, and Telegram reports are up to date.',
       type: 'info',
     })
     setNotificationsCount(0)
@@ -69,31 +67,34 @@ export function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-muted/20 text-foreground">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 border-r bg-card z-30 shrink-0">
+      <aside className="hidden lg:flex flex-col w-68 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0">
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-6 border-b">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-800">
           <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="sm" subtitle="WORKSPACE" />
           </Link>
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-6 py-4 border-b bg-muted/40">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40">
+          <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Active Workspace
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className={cn('text-sm font-bold', roleColor)}>{roleTitle}</span>
-            <Badge variant="outline" className="text-[10px]">
-              Phase 1 Shell
+            <Badge
+              variant="outline"
+              className="text-[10px] rounded-lg border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1"
+            >
+              <ShieldCheck className="w-3 h-3" /> Verified
             </Badge>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -102,10 +103,10 @@ export function DashboardLayout({
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-colors',
+                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all',
                   isActive
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -115,8 +116,10 @@ export function DashboardLayout({
                 {item.badge && (
                   <span
                     className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded font-bold',
-                      isActive ? 'bg-primary-foreground/20 text-white' : 'bg-muted text-muted-foreground'
+                      'text-[10px] px-2 py-0.5 rounded-lg font-bold',
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     )}
                   >
                     {item.badge}
@@ -128,27 +131,31 @@ export function DashboardLayout({
         </nav>
 
         {/* Storefront return link & footer */}
-        <div className="p-4 border-t space-y-2">
+        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50">
           <Link to="/">
-            <Button variant="outline" size="sm" className="w-full text-xs gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
               <Home className="w-3.5 h-3.5" /> Return to Storefront
             </Button>
           </Link>
-          <div className="text-[10px] text-muted-foreground text-center">
-            TYUSHOP v1.0 • Phase 1
+          <div className="text-[10px] text-slate-400 text-center">
+            TYUSHOP Enterprise • Support 016 555 637
           </div>
         </div>
       </aside>
 
-      {/* Mobile Sidebar Drawer */}
+      {/* Responsive Mobile Drawer Navigation with Backdrop Support */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative w-64 bg-card h-full shadow-2xl flex flex-col p-4 z-10 animate-in slide-in-from-left duration-300">
-            <div className="flex items-center justify-between pb-3 border-b">
+          <div className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col p-5 z-10 animate-in slide-in-from-left duration-300">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <Link to="/" aria-label="TYUSHOP Home">
                 <Logo size="sm" subtitle="WORKSPACE" />
               </Link>
@@ -156,18 +163,18 @@ export function DashboardLayout({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="py-3 border-b">
-              <p className="text-[10px] text-muted-foreground uppercase font-bold">Workspace</p>
+            <div className="py-3.5 border-b border-slate-200 dark:border-slate-800">
+              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Workspace</p>
               <p className={cn('text-xs font-bold mt-0.5', roleColor)}>{roleTitle}</p>
             </div>
 
-            <nav className="flex-1 py-3 space-y-1 overflow-y-auto">
+            <nav className="flex-1 py-4 space-y-1.5 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.href
@@ -177,25 +184,37 @@ export function DashboardLayout({
                     to={item.href}
                     onClick={() => setIsMobileSidebarOpen(false)}
                     className={cn(
-                      'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium',
+                      'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all',
                       isActive
-                        ? 'bg-primary text-primary-foreground font-semibold'
-                        : 'text-muted-foreground hover:bg-muted'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     )}
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-3">
                       <Icon className="w-4 h-4" />
                       <span>{item.label}</span>
                     </div>
+                    {item.badge && (
+                      <span
+                        className={cn(
+                          'text-[10px] px-2 py-0.5 rounded-lg font-bold',
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
             </nav>
 
-            <div className="pt-3 border-t">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
               <Link to="/" onClick={() => setIsMobileSidebarOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full text-xs gap-2">
-                  <Home className="w-3.5 h-3.5" /> Return Storefront
+                <Button variant="outline" size="sm" className="w-full text-xs gap-2 rounded-xl">
+                  <Home className="w-3.5 h-3.5" /> Return to Storefront
                 </Button>
               </Link>
             </div>
@@ -206,40 +225,45 @@ export function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 border-b bg-card/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6">
+        <header className="h-16 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={() => setIsMobileSidebarOpen(true)}
+              aria-label="Open Navigation Drawer"
             >
               <Menu className="w-5 h-5" />
             </Button>
 
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Link to="/" className="hover:text-foreground">Home</Link>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <Link to="/" className="hover:text-indigo-600 transition-colors">
+                Home
+              </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="font-semibold text-foreground">{roleTitle}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="capitalize">{location.pathname.split('/').pop() || 'Overview'}</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{roleTitle}</span>
+              <ChevronRight className="w-3.5 h-3.5 hidden sm:inline" />
+              <span className="capitalize hidden sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
+                {location.pathname.split('/').pop() || 'Overview'}
+              </span>
             </div>
           </div>
 
           {/* Right: Actions, Notifications, Profile, Theme */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {/* Notification Icon */}
             <Button
               variant="ghost"
               size="icon"
               onClick={handleNotificationClick}
-              className="relative rounded-full h-9 w-9"
+              className="relative rounded-xl h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800"
               title="Notifications"
             >
-              <Bell className="w-4 h-4 text-muted-foreground" />
+              <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               {notificationsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center animate-pulse">
+                <span className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-indigo-600 text-[9px] font-bold text-white flex items-center justify-center">
                   {notificationsCount}
                 </span>
               )}
@@ -254,12 +278,14 @@ export function DashboardLayout({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center gap-2 rounded-full pl-2 pr-3 h-9"
+                className="flex items-center gap-2 rounded-xl pl-2 pr-3 h-9 border-slate-200 dark:border-slate-700"
               >
-                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                <div className="w-6 h-6 rounded-lg bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
                   {(currentUser?.name || roleTitle).charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline text-xs font-semibold">{currentUser?.name || roleTitle}</span>
+                <span className="hidden sm:inline text-xs font-semibold">
+                  {currentUser?.name || roleTitle}
+                </span>
               </Button>
 
               {isProfileMenuOpen && (
@@ -268,20 +294,20 @@ export function DashboardLayout({
                     className="fixed inset-0 z-40"
                     onClick={() => setIsProfileMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border bg-card p-2 text-card-foreground shadow-xl z-50">
-                    <div className="px-3 py-2 border-b">
+                  <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-800 dark:text-slate-100 shadow-xl z-50">
+                    <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
                       <p className="text-xs font-bold">{currentUser?.name || roleTitle}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{currentUser?.email}</p>
                     </div>
 
-                    <div className="pt-1">
+                    <div className="pt-1.5">
                       <button
                         type="button"
                         onClick={() => {
                           setIsProfileMenuOpen(false)
                           handleLogout()
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" /> Sign Out
                       </button>
@@ -293,12 +319,11 @@ export function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Page Content Area with Generous Whitespace */}
+        <main className="flex-1 p-5 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>
     </div>
   )
 }
-
