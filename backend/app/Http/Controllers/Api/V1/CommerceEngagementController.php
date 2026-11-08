@@ -264,14 +264,14 @@ class CommerceEngagementController extends Controller
 
         $order = Order::create([
             'order_number' => $orderNumber,
-            'user_id' => $user?->id,
+            'user_id' => $user ? $user->id : null,
             'status' => 'shipped', // Immediately trackable on live GPS map
             'subtotal' => $subtotal,
             'discount' => $discount,
             'coupon_code' => $appliedCouponCode,
             'points_earned' => $pointsEarned,
             'points_redeemed' => $pointsRedeemed,
-            'free_reward_product_id' => $freeProduct?->id,
+            'free_reward_product_id' => $freeProduct ? $freeProduct->id : null,
             'shipping_fee' => 0.00,
             'tax' => $tax,
             'total_amount' => $totalAmount,
@@ -279,7 +279,7 @@ class CommerceEngagementController extends Controller
             'payment_status' => $paymentStatus,
             'payment_method' => $paymentMethod,
             'customer_name' => $validated['customer_name'],
-            'customer_email' => $validated['customer_email'] ?? ($user?->email ?? 'customer@tyushop.blog'),
+            'customer_email' => $validated['customer_email'] ?? (($user && $user->email) ? $user->email : 'customer@tyushop.blog'),
             'customer_phone' => $validated['customer_phone'],
             'delivery_address' => $validated['delivery_address'],
             'notes' => $validated['notes'] ?? null,
@@ -412,7 +412,7 @@ class CommerceEngagementController extends Controller
         $orderNumber = 'RWD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $order = Order::create([
             'order_number' => $orderNumber,
-            'user_id' => $user?->id,
+            'user_id' => $user ? $user->id : null,
             'status' => 'shipped',
             'subtotal' => $effectivePrice,
             'discount' => $effectivePrice,
@@ -426,9 +426,9 @@ class CommerceEngagementController extends Controller
             'currency' => 'USD',
             'payment_status' => 'paid',
             'payment_method' => 'loyalty_points',
-            'customer_name' => $validated['customer_name'] ?? ($user?->name ?? 'Valued Rewards Member'),
-            'customer_email' => $user?->email ?? 'member@tyushop.blog',
-            'customer_phone' => $validated['customer_phone'] ?? ($user?->phone_number ?? '+855 12 000 111'),
+            'customer_name' => $validated['customer_name'] ?? (($user && $user->name) ? $user->name : 'Valued Rewards Member'),
+            'customer_email' => ($user && $user->email) ? $user->email : 'member@tyushop.blog',
+            'customer_phone' => $validated['customer_phone'] ?? (($user && $user->phone_number) ? $user->phone_number : '+855 12 000 111'),
             'delivery_address' => $validated['delivery_address'] ?? 'Phnom Penh, Cambodia',
             'driver_name' => 'Sokha Chan (MegaExpress GPS Courier)',
             'driver_phone' => '+855 12 889 900',
@@ -518,9 +518,9 @@ class CommerceEngagementController extends Controller
                 'customer_phone' => $order ? ($order->customer_phone ?? '+855 12 345 678') : '+855 12 345 678',
                 'delivery_address' => $order ? ($order->delivery_address ?? 'BKK1, Street 310, Phnom Penh, Cambodia') : 'BKK1, Street 310, Phnom Penh, Cambodia',
                 'driver' => [
-                    'name' => $order?->driver_name ?? 'Sokha Chan (MegaExpress GPS Courier)',
-                    'phone' => $order?->driver_phone ?? '+855 12 889 900',
-                    'vehicle' => $order?->driver_vehicle ?? 'Honda PCX Electric • PP 1AB-9988',
+                    'name' => ($order && $order->driver_name) ? $order->driver_name : 'Sokha Chan (MegaExpress GPS Courier)',
+                    'phone' => ($order && $order->driver_phone) ? $order->driver_phone : '+855 12 889 900',
+                    'vehicle' => ($order && $order->driver_vehicle) ? $order->driver_vehicle : 'Honda PCX Electric • PP 1AB-9988',
                     'rating' => 4.95,
                     'verified' => true,
                 ],
@@ -532,7 +532,7 @@ class CommerceEngagementController extends Controller
                     'current_lng' => $lng,
                     'dest_lat' => $destLat,
                     'dest_lng' => $destLng,
-                    'estimated_arrival' => $order?->estimated_arrival ?? '14 mins',
+                    'estimated_arrival' => ($order && $order->estimated_arrival) ? $order->estimated_arrival : '14 mins',
                     'distance_remaining_km' => 2.4,
                     'speed_kmh' => 32,
                     'updated_at' => now()->toIso8601String(),
@@ -563,9 +563,9 @@ class CommerceEngagementController extends Controller
                         'title' => $isCashOnArrival
                             ? 'Arriving at Location • Pay Cash on Hand ($'.number_format($amountDueOnArrival, 2).') to Courier'
                             : 'Arriving at Customer Address (Paid)',
-                        'location' => $order?->delivery_address ?? 'Phnom Penh, Cambodia',
-                        'time' => 'Est. '.($order?->estimated_arrival ?? '14 mins'),
-                        'done' => $order?->status === 'delivered',
+                        'location' => ($order && $order->delivery_address) ? $order->delivery_address : 'Phnom Penh, Cambodia',
+                        'time' => 'Est. '.(($order && $order->estimated_arrival) ? $order->estimated_arrival : '14 mins'),
+                        'done' => $order && $order->status === 'delivered',
                     ],
                 ],
                 'items' => $order ? $order->items : [],
@@ -697,7 +697,7 @@ class CommerceEngagementController extends Controller
 
         DB::table('support_tickets')->insert([
             'ticket_number' => $ticketNumber,
-            'user_id' => $user?->id,
+            'user_id' => $user ? $user->id : null,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'subject' => $validated['subject'],

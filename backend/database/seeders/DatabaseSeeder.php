@@ -40,7 +40,9 @@ class DatabaseSeeder extends Seeder
 
         foreach ($this->runOnce as $seeder) {
             if ($tracked && ! $force && DB::table('seeder_runs')->where('seeder', $seeder)->exists()) {
-                $this->command?->line("Skipping {$seeder} (already seeded; preserving existing data)");
+                if ($this->command) {
+                    $this->command->line("Skipping {$seeder} (already seeded; preserving existing data)");
+                }
 
                 continue;
             }

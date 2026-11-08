@@ -11,7 +11,12 @@ use Illuminate\Validation\ValidationException;
 
 class TelegramAuthController extends Controller
 {
-    public function __construct(protected TelegramAuthService $authService) {}
+    protected TelegramAuthService $authService;
+
+    public function __construct(TelegramAuthService $authService)
+    {
+        $this->authService = $authService;
+    }
 
     /**
      * Authenticate Telegram Mini App session using initData.

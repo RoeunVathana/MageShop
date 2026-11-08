@@ -26,8 +26,10 @@ class MediaController extends Controller
 
     /**
      * Resolve and serve or redirect to media stored in cloud (S3) or local storage.
+     *
+     * @return RedirectResponse|BinaryFileResponse|StreamedResponse|JsonResponse
      */
-    public function show(string $path): RedirectResponse|BinaryFileResponse|StreamedResponse|JsonResponse
+    public function show(string $path)
     {
         // 1. Iteratively sanitize path to prevent nested directory traversal (e.g. ....//) and null bytes
         $path = str_replace(["\0", '\\'], ['', '/'], $path);

@@ -10,7 +10,12 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramWebhookController extends Controller
 {
-    public function __construct(protected TelegramService $telegramService) {}
+    protected TelegramService $telegramService;
+
+    public function __construct(TelegramService $telegramService)
+    {
+        $this->telegramService = $telegramService;
+    }
 
     /**
      * Handle incoming webhook updates from Telegram Bot API.

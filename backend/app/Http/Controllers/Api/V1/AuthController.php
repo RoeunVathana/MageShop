@@ -161,7 +161,8 @@ class AuthController extends Controller
 
         // Also revoke all other Sanctum personal access tokens if any exist
         if (method_exists($user, 'tokens')) {
-            $currentTokenId = $user->currentAccessToken()?->id;
+            $currentToken = $user->currentAccessToken();
+            $currentTokenId = $currentToken ? $currentToken->id : null;
             if ($currentTokenId) {
                 $user->tokens()->where('id', '!=', $currentTokenId)->delete();
             } else {

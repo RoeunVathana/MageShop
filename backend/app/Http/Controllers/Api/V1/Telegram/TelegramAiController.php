@@ -12,7 +12,12 @@ use Illuminate\Support\Facades\Auth;
 
 class TelegramAiController extends Controller
 {
-    public function __construct(protected TelegramAiService $aiService) {}
+    protected TelegramAiService $aiService;
+
+    public function __construct(TelegramAiService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
 
     /**
      * Send message to Telegram AI Shopping Assistant.
@@ -35,9 +40,9 @@ class TelegramAiController extends Controller
             $account = TelegramAccount::firstOrCreate(
                 ['telegram_user_id' => 100000000],
                 [
-                    'user_id' => $user?->id,
+                    'user_id' => $user ? $user->id : null,
                     'telegram_username' => 'guest_shopper',
-                    'first_name' => $user?->name ?? 'Guest',
+                    'first_name' => ($user && $user->name) ? $user->name : 'Guest',
                     'last_name' => 'Shopper',
                     'language_code' => $validated['language'] ?? 'en',
                     'is_bot_admin' => false,
@@ -58,8 +63,10 @@ class TelegramAiController extends Controller
 
     /**
      * Retrieve conversation history for a given session.
+     *
+     * @param  string|int  $sessionId
      */
-    public function history(string|int $sessionId): JsonResponse
+    public function history($sessionId): JsonResponse
     {
         if (! is_numeric($sessionId)) {
             return response()->json(['status' => 'error', 'message' => 'Chat session not found.'], 404);

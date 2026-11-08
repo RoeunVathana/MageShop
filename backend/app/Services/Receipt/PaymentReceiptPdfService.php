@@ -28,9 +28,11 @@ class PaymentReceiptPdfService
 
         $receiptNumber = 'REC-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -5));
 
+        $latestPayment = $payment ?: $order->payments()->latest()->first();
+
         return Receipt::create([
             'order_id' => $order->id,
-            'payment_id' => $payment?->id ?? $order->payments()->latest()->first()?->id,
+            'payment_id' => $latestPayment ? $latestPayment->id : null,
             'receipt_number' => $receiptNumber,
             'email_status' => 'pending',
             'issued_at' => now(),

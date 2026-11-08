@@ -23,7 +23,7 @@ class TelegramAdminController extends Controller
             $user->hasRole('SUPER_ADMIN') ||
             $user->hasRole('ADMIN') ||
             $user->hasRole('STAFF') ||
-            $user->telegramAccount?->is_bot_admin
+            ($user->telegramAccount && $user->telegramAccount->is_bot_admin)
         );
 
         if (! $isStaff) {
@@ -85,10 +85,10 @@ class TelegramAdminController extends Controller
 
         try {
             $product->adjustStock(
-                quantityChange: $delta,
-                type: $type,
-                userId: $userId,
-                reason: $reason
+                $delta,
+                $type,
+                $userId,
+                $reason
             );
 
             TelegramAdminAction::create([
