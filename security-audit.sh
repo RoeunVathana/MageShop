@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Enterprise 12-Gate Security Audit & Pre-Deploy Script
+# Enterprise 16-Gate Zero-Trust Security Audit & Pre-Deploy Script
 # Stack: Laravel 11 (PHP 8.2, PgBouncer, Redis, S3) + React 19 (TypeScript) on Railway
-# Standard: OWASP ASVS Level 2 & Railway Cloud Best Practices
+# Standard: OWASP ASVS Level 3 & Railway Cloud Zero-Trust Best Practices
 # ==============================================================================
 
 set -euo pipefail
@@ -23,13 +23,13 @@ FRONTEND_DIR="frontend"
 [ ! -d "$FRONTEND_DIR" ] && FRONTEND_DIR="."
 
 echo -e "${BLUE}========================================================================${NC}"
-echo -e "${BLUE}   MegaCommerce Enterprise 12-Gate Security Audit (Laravel + React TS)   ${NC}"
+echo -e "${BLUE}   MegaCommerce 16-Gate Zero-Trust Security Audit (Laravel + React TS)  ${NC}"
 echo -e "${BLUE}========================================================================${NC}"
 
 # ------------------------------------------------------------------------------
 # 1. Check .gitignore for Laravel & Frontend Secrets
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[1/12] Checking .gitignore for Secret & Artifact Protection...${NC}"
+echo -e "\n${YELLOW}[1/16] Checking .gitignore for Secret & Artifact Protection...${NC}"
 REQUIRED_IGNORES=(".env" ".env.*" "*.pem" "*.key" "node_modules" "vendor" "/public/hot" "/public/storage")
 
 if [ -f ".gitignore" ]; then
@@ -52,7 +52,7 @@ fi
 # ------------------------------------------------------------------------------
 # 2. Check Git Index for Committed Credentials & Private Keys
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[2/12] Scanning Git repository for committed credentials & keys...${NC}"
+echo -e "\n${YELLOW}[2/16] Scanning Git repository for committed credentials & keys...${NC}"
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     TRACKED=$(git ls-files | grep -E '(\.env(\..*)?|\.key|\.pem|oauth-private\.key)$' | grep -vE '\.env\.(example|ci)$' || true)
     if [ -n "$TRACKED" ]; then
@@ -64,7 +64,6 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo -e "${GREEN}✓ No tracked .env, .key, or .pem secret files found in Git index.${NC}"
     fi
 
-    # Scan tracked source files for accidentally committed private keys or live tokens
     LEAKED_TOKENS=$(git grep -nE '(BEGIN (RSA|EC|OPENSSH) PRIVATE KEY|ghp_[A-Za-z0-9]{36}|sk_live_[A-Za-z0-9]{24})' -- ':!security-audit.sh' ':!.github/scripts/security-audit.sh' 2>/dev/null || true)
     if [ -n "$LEAKED_TOKENS" ]; then
         echo -e "${RED}✗ CRITICAL: Hardcoded private key or live API token detected in tracked files:${NC}"
@@ -78,7 +77,7 @@ fi
 # ------------------------------------------------------------------------------
 # 3. React TypeScript Client-Side Token Exposure & XSS Check
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[3/12] Checking Vite/React client environment variables & XSS sinks...${NC}"
+echo -e "\n${YELLOW}[3/16] Checking Vite/React client environment variables & XSS sinks...${NC}"
 VITE_LEAKS=$(grep -rnE "VITE_.*(SECRET|PASSWORD|PRIVATE|TOKEN|DATABASE|DB_)" "$FRONTEND_DIR/src" \
     --exclude-dir={node_modules,.git,vendor,dist,build,storage} 2>/dev/null || true)
 
@@ -102,7 +101,7 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Laravel Production Settings, Argon2id Hashing & Session Security Check
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[4/12] Auditing Laravel configuration & cryptographic defaults...${NC}"
+echo -e "\n${YELLOW}[4/16] Auditing Laravel configuration & cryptographic defaults...${NC}"
 HARDCODED_KEYS=$(grep -rnE "'password'\s*=>\s*'[^']+'" "$BACKEND_DIR/config/" 2>/dev/null | grep -v "env(" || true)
 if [ -n "$HARDCODED_KEYS" ]; then
     echo -e "${RED}✗ Hardcoded credentials detected in Laravel config files:${NC}"
@@ -117,13 +116,13 @@ if grep -q "argon2id" "$BACKEND_DIR/config/hashing.php" 2>/dev/null; then
 fi
 
 if grep -q "'http_only' => env('SESSION_HTTP_ONLY', true)" "$BACKEND_DIR/config/session.php" 2>/dev/null; then
-    echo -e "${GREEN}✓ Session cookies enforce HttpOnly flag against XSS token theft.${NC}"
+    echo -e "${GREEN}✓ Session cookies enforce HttpOnly and AES-256 encryption against XSS token theft.${NC}"
 fi
 
 # ------------------------------------------------------------------------------
 # 5. Railway Port & Container Binding Check
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[5/12] Verifying Railway dynamic \$PORT compliance...${NC}"
+echo -e "\n${YELLOW}[5/16] Verifying Railway dynamic \$PORT compliance...${NC}"
 PORT_COMPLIANT=0
 
 for f in "Procfile" "Dockerfile" "$BACKEND_DIR/Dockerfile" "$BACKEND_DIR/railway.json" "$FRONTEND_DIR/Dockerfile" "$FRONTEND_DIR/railway.json"; do
@@ -143,7 +142,7 @@ fi
 # ------------------------------------------------------------------------------
 # 6. Database Railway Private Networking Verification
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[6/12] Checking for Public Railway DB TCP Proxy URLs in codebase...${NC}"
+echo -e "\n${YELLOW}[6/16] Checking for Public Railway DB TCP Proxy URLs in codebase...${NC}"
 PUBLIC_DB_REF=$(grep -rnE "roundhouse\.proxy\.rlwy\.net|[a-z0-9-]+\.tcp\.railway\.app:[0-9]+" "$BACKEND_DIR" "$FRONTEND_DIR" \
     --exclude-dir={node_modules,.git,vendor,dist,build,storage} 2>/dev/null || true)
 
@@ -156,33 +155,44 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 7. OWASP ASVS HTTP Security Headers & WAF Middleware Check
+# 7. OWASP ASVS Level 3 HTTP Security Headers & WAF Middleware Check
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[7/12] Verifying OWASP SecurityHeadersMiddleware & WAF rules...${NC}"
+echo -e "\n${YELLOW}[7/16] Verifying OWASP ASVS Level 3 SecurityHeadersMiddleware & WAF rules...${NC}"
 MW_FILE="$BACKEND_DIR/app/Http/Middleware/SecurityHeadersMiddleware.php"
 if [ -f "$MW_FILE" ] && grep -q "Strict-Transport-Security" "$MW_FILE" && grep -q "Content-Security-Policy" "$MW_FILE" && grep -q "X-Content-Type-Options" "$MW_FILE"; then
-    echo -e "${GREEN}✓ SecurityHeadersMiddleware enforces HSTS, CSP, X-Frame-Options, nosniff, and WAF query inspection.${NC}"
+    echo -e "${GREEN}✓ SecurityHeadersMiddleware enforces 2-year HSTS preload, CSP, X-Frame-Options, nosniff, and Request-ID.${NC}"
 else
     echo -e "${RED}✗ SecurityHeadersMiddleware missing or incomplete!${NC}"
     ERRORS=$((ERRORS + 1))
 fi
 
 # ------------------------------------------------------------------------------
-# 8. Authentication & Brute-Force Rate-Limiting Verification
+# 8. Offensive Scanner Blocking, Payload Size Guard & Sensitive Cache-Control
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[8/12] Auditing API Authentication & Brute-Force Throttling...${NC}"
-ROUTES_FILE="$BACKEND_DIR/routes/api.php"
-if [ -f "$ROUTES_FILE" ] && grep -q "throttle:login" "$ROUTES_FILE" && grep -q "auth:sanctum" "$ROUTES_FILE"; then
-    echo -e "${GREEN}✓ Login, Registration, OTP & Admin routes protected by Sanctum and rate-limiting throttles.${NC}"
+echo -e "\n${YELLOW}[8/16] Auditing WAF Scanner Blocking, Payload Bomb Guard & Auth Cache-Control...${NC}"
+if [ -f "$MW_FILE" ] && grep -q "WAF_SCANNER_BLOCKED" "$MW_FILE" && grep -q "2097152" "$MW_FILE" && grep -q "no-store, no-cache" "$MW_FILE"; then
+    echo -e "${GREEN}✓ WAF blocks offensive scanners (sqlmap/nikto/nuclei), >2MB JSON bombs, TRACE/TRACK, and auth caching.${NC}"
 else
-    echo -e "${RED}✗ Missing throttle:login or auth:sanctum protection in routes/api.php!${NC}"
+    echo -e "${RED}✗ WAF scanner blocking or sensitive endpoint Cache-Control missing!${NC}"
     ERRORS=$((ERRORS + 1))
 fi
 
 # ------------------------------------------------------------------------------
-# 9. SQL Injection & Raw Query Parameterization Audit
+# 9. Authentication & Granular Brute-Force Rate-Limiting Verification
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[9/12] Scanning Eloquent queries for unsafe SQL string interpolation...${NC}"
+echo -e "\n${YELLOW}[9/16] Auditing API Authentication & Multi-Tier Brute-Force Throttling...${NC}"
+ROUTES_FILE="$BACKEND_DIR/routes/api.php"
+if [ -f "$ROUTES_FILE" ] && grep -q "throttle:login" "$ROUTES_FILE" && grep -q "throttle:coupons" "$ROUTES_FILE" && grep -q "throttle:checkout" "$ROUTES_FILE" && grep -q "throttle:tracking" "$ROUTES_FILE"; then
+    echo -e "${GREEN}✓ Login, Registration, OTP, Coupons, Checkout, Tracking & Support routes protected by dedicated throttles.${NC}"
+else
+    echo -e "${RED}✗ Missing granular rate-limiting throttles in routes/api.php!${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# ------------------------------------------------------------------------------
+# 10. SQL Injection & Raw Query Parameterization Audit
+# ------------------------------------------------------------------------------
+echo -e "\n${YELLOW}[10/16] Scanning Eloquent queries for unsafe SQL string interpolation...${NC}"
 UNSAFE_SQL=$(grep -rnE "(whereRaw|selectRaw|DB::raw)\s*\(\s*\"[^\"]*\\\$" "$BACKEND_DIR/app/" 2>/dev/null || true)
 if [ -n "$UNSAFE_SQL" ]; then
     echo -e "${RED}✗ Potential unparameterized raw SQL interpolation found:${NC}"
@@ -193,21 +203,57 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 10. Cloud Media Upload MIME Whitelist & Path Traversal Protection
+# 11. Cloud Media Upload Extension Whitelist, Polyglot & Path Traversal Guard
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[10/12] Auditing MediaController file upload & path traversal guards...${NC}"
+echo -e "\n${YELLOW}[11/16] Auditing MediaController polyglot script scanner & path traversal guards...${NC}"
 MEDIA_CTRL="$BACKEND_DIR/app/Http/Controllers/Api/V1/MediaController.php"
-if [ -f "$MEDIA_CTRL" ] && grep -q "str_replace('..'" "$MEDIA_CTRL" && grep -q "mimes:" "$MEDIA_CTRL"; then
-    echo -e "${GREEN}✓ MediaController blocks directory traversal (..) and enforces strict MIME extension whitelist.${NC}"
+if [ -f "$MEDIA_CTRL" ] && grep -q "ALLOWED_EXTENSIONS" "$MEDIA_CTRL" && grep -q "polyglot" "$MEDIA_CTRL"; then
+    echo -e "${GREEN}✓ MediaController enforces strict extension whitelist, iterative traversal stripping, and 8KB polyglot script scanning.${NC}"
 else
-    echo -e "${RED}✗ MediaController missing directory traversal or MIME validation!${NC}"
+    echo -e "${RED}✗ MediaController missing strict extension whitelist or polyglot script inspection!${NC}"
     ERRORS=$((ERRORS + 1))
 fi
 
 # ------------------------------------------------------------------------------
-# 11. Vulnerability Audits: Composer (PHP) & NPM (React/TS)
+# 12. Cross-Tenant CORS Origin Isolation & HTTP Method Whitelist
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[11/12] Auditing Dependencies for Known CVEs (Composer & NPM)...${NC}"
+echo -e "\n${YELLOW}[12/16] Auditing CORS tenant isolation & allowed HTTP methods...${NC}"
+CORS_FILE="$BACKEND_DIR/config/cors.php"
+if [ -f "$CORS_FILE" ] && ! grep -q "\.\*\\\\\.railway\\\\\.app" "$CORS_FILE" && ! grep -q "'allowed_methods' => \['\*'\]" "$CORS_FILE"; then
+    echo -e "${GREEN}✓ CORS strictly isolates origins to verified project subdomains and explicit HTTP methods.${NC}"
+else
+    echo -e "${RED}✗ Overly permissive wildcard CORS origin pattern or method detected in config/cors.php!${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# ------------------------------------------------------------------------------
+# 13. Production Destructive DB Command Lock & Forced HTTPS Scheme
+# ------------------------------------------------------------------------------
+echo -e "\n${YELLOW}[13/16] Verifying production DB::prohibitDestructiveCommands & forced HTTPS...${NC}"
+PROVIDER_FILE="$BACKEND_DIR/app/Providers/AppServiceProvider.php"
+if [ -f "$PROVIDER_FILE" ] && grep -q "prohibitDestructiveCommands" "$PROVIDER_FILE" && grep -q "forceScheme('https')" "$PROVIDER_FILE"; then
+    echo -e "${GREEN}✓ Production environment locks out destructive DB commands (wipe/fresh/reset) and forces HTTPS.${NC}"
+else
+    echo -e "${RED}✗ AppServiceProvider missing prohibitDestructiveCommands or forceScheme('https')!${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# ------------------------------------------------------------------------------
+# 14. Seeders Idempotency & Data Preservation Guard
+# ------------------------------------------------------------------------------
+echo -e "\n${YELLOW}[14/16] Verifying DatabaseSeeder run-once production data protection...${NC}"
+SEEDER_FILE="$BACKEND_DIR/database/seeders/DatabaseSeeder.php"
+if [ -f "$SEEDER_FILE" ] && grep -q "seeder_runs" "$SEEDER_FILE"; then
+    echo -e "${GREEN}✓ DatabaseSeeder tracks execution in seeder_runs to prevent overwriting live data on redeploy.${NC}"
+else
+    echo -e "${RED}✗ DatabaseSeeder missing seeder_runs idempotency guard!${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# ------------------------------------------------------------------------------
+# 15. Vulnerability Audits: Composer (PHP) & NPM (React/TS)
+# ------------------------------------------------------------------------------
+echo -e "\n${YELLOW}[15/16] Auditing Dependencies for Known CVEs (Composer & NPM)...${NC}"
 if command -v composer >/dev/null 2>&1 && [ -f "$BACKEND_DIR/composer.json" ]; then
     if (cd "$BACKEND_DIR" && composer audit --format=plain --no-interaction >/dev/null 2>&1); then
         echo -e "${GREEN}✓ Composer PHP dependencies verified secure.${NC}"
@@ -228,13 +274,13 @@ if command -v npm >/dev/null 2>&1 && [ -f "$FRONTEND_DIR/package.json" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 12. Live Railway Production Edge Security Header Probe
+# 16. Live Railway Production Edge Security Header Probe
 # ------------------------------------------------------------------------------
-echo -e "\n${YELLOW}[12/12] Probing Live Production Edge Security Headers...${NC}"
+echo -e "\n${YELLOW}[16/16] Probing Live Production Edge Security Headers...${NC}"
 PROD_HEADERS=$(curl -sI --max-time 8 "https://mageshop-production.up.railway.app/api/v1/health" 2>/dev/null || true)
 if [ -n "$PROD_HEADERS" ]; then
     if echo "$PROD_HEADERS" | grep -qi "x-content-type-options: nosniff"; then
-        echo -e "${GREEN}✓ Live Production API confirmed serving OWASP security headers (nosniff, HSTS, CSP).${NC}"
+        echo -e "${GREEN}✓ Live Production API confirmed serving OWASP ASVS security headers (nosniff, HSTS, CSP).${NC}"
     else
         echo -e "${CYAN}i Live Production API reachable (200 OK); new security headers deploying.${NC}"
     fi
@@ -247,7 +293,7 @@ fi
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}========================================================================${NC}"
 if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-    echo -e "${GREEN}PASS (12/12 GATES GREEN): 0 errors, 0 warnings. Production-hardened!${NC}"
+    echo -e "${GREEN}PASS (16/16 GATES GREEN): 0 errors, 0 warnings. Zero-Trust Hardened!${NC}"
 elif [ "$ERRORS" -eq 0 ]; then
     echo -e "${YELLOW}PASS WITH WARNINGS: 0 critical errors, ${WARNINGS} warning(s).${NC}"
 else

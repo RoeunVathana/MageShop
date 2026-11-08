@@ -184,15 +184,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Discounts, Loyalty Points (5 pts/buy, 100 pts = free item <= $30), Cart Checkout, GPS Tracking, Wishlist & Supporter
 Route::get('/coupons', [CommerceEngagementController::class, 'coupons']);
-Route::post('/coupons/validate', [CommerceEngagementController::class, 'validateCoupon']);
+Route::post('/coupons/validate', [CommerceEngagementController::class, 'validateCoupon'])
+    ->middleware('throttle:coupons');
 Route::get('/loyalty/summary', [CommerceEngagementController::class, 'loyaltySummary']);
-Route::post('/loyalty/redeem-free-item', [CommerceEngagementController::class, 'redeemFreeItem']);
-Route::post('/orders/checkout', [CommerceEngagementController::class, 'checkout']);
-Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 'trackOrder']);
+Route::post('/loyalty/redeem-free-item', [CommerceEngagementController::class, 'redeemFreeItem'])
+    ->middleware('throttle:checkout');
+Route::post('/orders/checkout', [CommerceEngagementController::class, 'checkout'])
+    ->middleware('throttle:checkout');
+Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 'trackOrder'])
+    ->middleware('throttle:tracking');
 Route::get('/wishlist', [CommerceEngagementController::class, 'wishlist']);
 Route::post('/wishlist/toggle', [CommerceEngagementController::class, 'toggleWishlist']);
-Route::post('/support/tickets', [CommerceEngagementController::class, 'createSupportTicket']);
-Route::post('/support/chat', [CommerceEngagementController::class, 'supporterChat']);
+Route::post('/support/tickets', [CommerceEngagementController::class, 'createSupportTicket'])
+    ->middleware('throttle:support');
+Route::post('/support/chat', [CommerceEngagementController::class, 'supporterChat'])
+    ->middleware('throttle:support');
 
 // Telegram Bot Webhook & Mini App API
 Route::prefix('telegram')->group(function () {
@@ -200,7 +206,8 @@ Route::prefix('telegram')->group(function () {
     Route::post('/webhook', TelegramWebhookController::class);
 
     // Mini App Authentication (HMAC verification)
-    Route::post('/auth', [TelegramAuthController::class, 'authenticate']);
+    Route::post('/auth', [TelegramAuthController::class, 'authenticate'])
+        ->middleware('throttle:10,1');
 
     // Mini App Catalog Browsing
     Route::get('/products', [TelegramProductController::class, 'index']);

@@ -14,16 +14,41 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class MediaController extends Controller
 {
     /**
+     * Strictly allowed media extensions for public streaming and cloud uploads.
+     *
+     * @var array<int, string>
+     */
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico',
+        'mp4', 'webm', 'mov',
+        'pdf', 'doc', 'docx', 'xlsx', 'csv',
+    ];
+
+    /**
      * Resolve and serve or redirect to media stored in cloud (S3) or local storage.
      */
     public function show(string $path): RedirectResponse|BinaryFileResponse|StreamedResponse|JsonResponse
     {
-        // Sanitize path to prevent directory traversal
-        $path = ltrim(str_replace('..', '', $path), '/');
+        // 1. Iteratively sanitize path to prevent nested directory traversal (e.g. ....//) and null bytes
+        $path = str_replace(["\0", '\\'], ['', '/'], $path);
+        while (str_contains($path, '..')) {
+            $path = str_replace('..', '', $path);
+        }
+        $path = ltrim($path, '/');
+
+        // 2. Reject hidden dotfiles or non-media extensions (blocks .php, .env, .config, etc.)
+        $basename = basename($path);
+        $ext = strtolower(pathinfo($basename, PATHINFO_EXTENSION));
+        if ($basename === '' || str_starts_with($basename, '.') || ! in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access to requested file type is forbidden by security policy.',
+            ], 403);
+        }
 
         $disk = config('filesystems.default', 'local');
 
-        // Check if S3 disk is configured and contains the file
+        // 3. Check if S3 disk is configured and contains the file
         if ($disk === 's3' || config('filesystems.disks.s3.key')) {
             try {
                 if (Storage::disk('s3')->exists($path)) {
@@ -32,6 +57,7 @@ class MediaController extends Controller
 
                     return redirect()->away($url, 307, [
                         'Cache-Control' => 'public, max-age=86400, stale-while-revalidate=604800',
+                        'X-Content-Type-Options' => 'nosniff',
                     ]);
                 }
             } catch (\Throwable $e) {
@@ -39,28 +65,31 @@ class MediaController extends Controller
             }
         }
 
-        // Check public storage disk
+        // 4. Check public storage disk
         if (Storage::disk('public')->exists($path)) {
             $fullPath = Storage::disk('public')->path($path);
 
             return response()->file($fullPath, [
                 'Cache-Control' => 'public, max-age=86400',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         }
 
-        // Check Laravel public directory
+        // 5. Check Laravel public directory
         $publicFile = public_path($path);
         if (file_exists($publicFile) && ! is_dir($publicFile)) {
             return response()->file($publicFile, [
                 'Cache-Control' => 'public, max-age=86400',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         }
 
-        // Check frontend public directory for monorepo dev fallback
+        // 6. Check frontend public directory for monorepo dev fallback
         $frontendPublic = base_path('../frontend/public/'.$path);
         if (file_exists($frontendPublic) && ! is_dir($frontendPublic)) {
             return response()->file($frontendPublic, [
                 'Cache-Control' => 'public, max-age=86400',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         }
 
@@ -86,16 +115,37 @@ class MediaController extends Controller
         ]);
 
         $file = $request->file('file');
-        $folder = trim($request->input('folder', 'uploads'), '/');
+        $ext = strtolower($file->getClientOriginalExtension() ?: ($file->guessExtension() ?? 'bin'));
+
+        if (! in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Disallowed file extension.',
+            ], 422);
+        }
+
+        // Inspect first 8KB for embedded PHP tags or SVG XSS payloads (polyglot file defense)
+        $realPath = $file->getRealPath();
+        if ($realPath && is_readable($realPath)) {
+            $headBytes = (string) file_get_contents($realPath, false, null, 0, 8192);
+            if (preg_match('/(<\?php|<\?=|<script\b|javascript\s*:|onload\s*=|onerror\s*=)/i', $headBytes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Security violation: uploaded file contains executable script or polyglot payload.',
+                ], 422);
+            }
+        }
+
+        $folder = trim(str_replace('..', '', (string) $request->input('folder', 'uploads')), '/');
 
         // Determine target disk: prefer s3 if configured, else public
         $disk = config('filesystems.disks.s3.key') ? 's3' : config('filesystems.default', 'public');
 
-        $filename = time().'_'.bin2hex(random_bytes(4)).'.'.$file->getClientOriginalExtension();
+        $filename = time().'_'.bin2hex(random_bytes(8)).'.'.$ext;
         $key = $folder ? "{$folder}/{$filename}" : $filename;
 
         try {
-            $stream = fopen($file->getRealPath(), 'r');
+            $stream = fopen($realPath, 'r');
             Storage::disk($disk)->put($key, $stream);
             if (is_resource($stream)) {
                 fclose($stream);
@@ -116,7 +166,7 @@ class MediaController extends Controller
                     'key' => $key,
                     'url' => $mediaProxyUrl,
                     'cloud_url' => $cloudUrl ?? $mediaProxyUrl,
-                    'original_name' => $file->getClientOriginalName(),
+                    'original_name' => basename($file->getClientOriginalName()),
                     'mime_type' => $file->getClientMimeType(),
                     'size' => $file->getSize(),
                     'disk' => $disk,

@@ -25,11 +25,21 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
         $response->assertStatus(200)
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
-            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+            ->assertHeader('X-DNS-Prefetch-Control', 'off')
+            ->assertHeader('X-Download-Options', 'noopen')
+            ->assertHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
 
         $wafResponse = $this->getJson('/api/v1/products?search=../../etc/passwd');
         $wafResponse->assertStatus(400)
             ->assertJson(['status' => 'error']);
+
+        // Verify offensive scanner User-Agent is blocked with 403
+        $scannerResponse = $this->withHeaders(['User-Agent' => 'sqlmap/1.8.2'])->getJson('/api/v1/products');
+        $scannerResponse->assertStatus(403);
+
+        // Verify non-media executable file access via media endpoint is blocked with 403
+        $mediaExecResponse = $this->getJson('/api/v1/media/index.php');
+        $mediaExecResponse->assertStatus(403);
     }
 
     public function test_coupon_validation_applies_percentage_and_fixed_discounts(): void
