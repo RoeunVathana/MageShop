@@ -154,4 +154,38 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
         ]);
         $chatRes->assertStatus(200);
     }
+
+    public function test_cash_on_hand_when_delivery_arrives_and_confirm_arrival_payment(): void
+    {
+        $product = Product::first();
+
+        $checkoutRes = $this->postJson('/api/v1/orders/checkout', [
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'price' => 40.00,
+                    'quantity' => 1,
+                ],
+            ],
+            'payment_method' => 'cash_on_delivery',
+            'customer_name' => 'Vanna Sok',
+            'customer_phone' => '+855 12 777 666',
+            'delivery_address' => 'Tuol Kork, Phnom Penh',
+        ]);
+
+        $checkoutRes->assertStatus(201)
+            ->assertJsonPath('data.payment_mode', 'cash_on_delivery')
+            ->assertJsonPath('data.amount_due_on_arrival', 40)
+            ->assertJsonPath('data.points_earned', 5);
+
+        $orderNumber = $checkoutRes->json('data.order.order_number');
+        $this->assertNotEmpty($orderNumber);
+
+        // Confirm cash on hand paid when courier arrives at location
+        $confirmRes = $this->postJson("/api/v1/orders/track/{$orderNumber}/confirm-payment");
+        $confirmRes->assertStatus(200)
+            ->assertJsonPath('data.payment_status', 'paid')
+            ->assertJsonPath('data.amount_due_on_arrival', 0);
+    }
 }

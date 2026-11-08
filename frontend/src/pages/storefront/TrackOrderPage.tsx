@@ -14,14 +14,17 @@ import {
   Search,
   Sparkles,
   Compass,
+  CreditCard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/lib/api'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function TrackOrderPage() {
+  const { toast } = useToast()
   const { orderNumber: routeOrderNum } = useParams<{ orderNumber?: string }>()
   const { recentOrders, loyaltyPoints } = useShopEngagement()
 
@@ -29,6 +32,7 @@ export function TrackOrderPage() {
   const [activeOrderNum, setActiveOrderNum] = useState(routeOrderNum || recentOrders[0] || 'ORD-20261108-KHQR1')
   const [tracking, setTracking] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [confirmingPayment, setConfirmingPayment] = useState(false)
 
   // Live GPS animation progress (0% warehouse -> 100% customer doorstep)
   const [routeProgress, setRouteProgress] = useState(64)
@@ -108,6 +112,40 @@ export function TrackOrderPage() {
   useEffect(() => {
     fetchTracking(activeOrderNum)
   }, [activeOrderNum])
+
+  const handleConfirmCashOnArrival = async () => {
+    setConfirmingPayment(true)
+    try {
+      await api.post<any>(`/orders/track/${encodeURIComponent(activeOrderNum)}/confirm-payment`, {})
+    } catch {
+      // Allow local confirmation fallback for demo/offline mode
+    } finally {
+      setIsLiveMoving(false)
+      setRouteProgress(100)
+      setTracking((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              status: 'delivered',
+              payment_status: 'paid',
+              amount_due_on_arrival: 0,
+              checkpoints: (prev.checkpoints || []).map((cp: any, idx: number, arr: any[]) => ({
+                ...cp,
+                done: true,
+                active: idx === arr.length - 1,
+                time: idx === arr.length - 1 ? 'Cash Paid & Delivered Just Now' : cp.time,
+              })),
+            }
+          : prev
+      )
+      toast({
+        title: '💵 Cash on Hand Confirmed at Location!',
+        description: `Order #${activeOrderNum} is marked Paid & Delivered at your GPS destination.`,
+        type: 'success',
+      })
+      setConfirmingPayment(false)
+    }
+  }
 
   // Real-time GPS telemetry tick every 2.5 seconds when live movement is enabled
   useEffect(() => {
@@ -375,6 +413,82 @@ export function TrackOrderPage() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment & Cash on Arrival Handover Status Card */}
+          <Card className="border-primary/25 bg-card">
+            <CardContent className="p-5 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-primary" />
+                  Payment & Arrival Handover
+                </span>
+                {tracking?.payment_status === 'cash_on_delivery' ? (
+                  <Badge className="bg-amber-500 text-white text-[10px]">
+                    💵 Cash on Hand at Location
+                  </Badge>
+                ) : (
+                  <Badge className="bg-emerald-500 text-white text-[10px]">
+                    ✓ Paid Online ($0 Due)
+                  </Badge>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-muted/40 border space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order Total:</span>
+                  <span className="font-bold">${Number(tracking?.total_amount ?? 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount Due When Delivery Arrives:</span>
+                  <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                    $
+                    {Number(
+                      tracking?.amount_due_on_arrival ??
+                        (tracking?.payment_status === 'cash_on_delivery' ? tracking?.total_amount ?? 0 : 0)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {tracking?.payment_status === 'cash_on_delivery' ? (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground leading-relaxed">
+                    You selected <strong>Cash on Hand When Delivery Arrives</strong>. Please hand{' '}
+                    <strong className="text-foreground">${Number(tracking?.total_amount ?? 0).toFixed(2)}</strong> to your courier upon arrival at your location.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={confirmingPayment}
+                    onClick={handleConfirmCashOnArrival}
+                    className="w-full rounded-xl text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                  >
+                    {confirmingPayment
+                      ? 'Confirming Handover...'
+                      : '💵 Confirm Cash Paid on Arrival at Location'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground leading-relaxed">
+                    Payment is <strong>100% Settled</strong> ($0.00 to pay courier on arrival). Want to test Cash-on-Arrival handover? Or confirm delivery arrival below:
+                  </p>
+                  {routeProgress < 100 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={confirmingPayment}
+                      onClick={handleConfirmCashOnArrival}
+                      className="w-full rounded-xl text-xs"
+                    >
+                      ✓ Mark Delivery Arrived at My Location
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

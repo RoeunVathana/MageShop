@@ -193,6 +193,8 @@ Route::post('/orders/checkout', [CommerceEngagementController::class, 'checkout'
     ->middleware('throttle:checkout');
 Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 'trackOrder'])
     ->middleware('throttle:tracking');
+Route::post('/orders/track/{orderNumber}/confirm-payment', [CommerceEngagementController::class, 'confirmArrivalPayment'])
+    ->middleware('throttle:checkout');
 Route::get('/wishlist', [CommerceEngagementController::class, 'wishlist']);
 Route::post('/wishlist/toggle', [CommerceEngagementController::class, 'toggleWishlist']);
 Route::post('/support/tickets', [CommerceEngagementController::class, 'createSupportTicket'])

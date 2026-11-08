@@ -258,6 +258,9 @@ class CommerceEngagementController extends Controller
         $totalAmount = round($afterSubtotal + $tax, 2);
 
         $orderNumber = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
+        $paymentMethod = $validated['payment_method'] ?? 'bakong_khqr';
+        $isCashOnArrival = in_array($paymentMethod, ['cash_on_delivery', 'cash_on_hand'], true) && $totalAmount > 0;
+        $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : 'paid';
 
         $order = Order::create([
             'order_number' => $orderNumber,
@@ -273,8 +276,8 @@ class CommerceEngagementController extends Controller
             'tax' => $tax,
             'total_amount' => $totalAmount,
             'currency' => 'USD',
-            'payment_status' => 'paid',
-            'payment_method' => $validated['payment_method'] ?? 'bakong_khqr',
+            'payment_status' => $paymentStatus,
+            'payment_method' => $paymentMethod,
             'customer_name' => $validated['customer_name'],
             'customer_email' => $validated['customer_email'] ?? ($user?->email ?? 'customer@tyushop.blog'),
             'customer_phone' => $validated['customer_phone'],
@@ -321,8 +324,8 @@ class CommerceEngagementController extends Controller
             'payment_method' => $order->payment_method,
             'amount' => $totalAmount,
             'currency' => 'USD',
-            'status' => 'completed',
-            'verified_at' => now(),
+            'status' => $isCashOnArrival ? 'pending_arrival' : 'completed',
+            'verified_at' => $isCashOnArrival ? null : now(),
         ]);
 
         // Update user's loyalty points balance
@@ -356,9 +359,13 @@ class CommerceEngagementController extends Controller
 
         return response()->json([
             'status' => 'ok',
-            'message' => "Order #{$order->order_number} confirmed! You earned +{$pointsEarned} Loyalty Points.",
+            'message' => $isCashOnArrival
+                ? "Order #{$order->order_number} confirmed for Cash on Hand upon delivery! You earned +{$pointsEarned} Loyalty Points."
+                : "Order #{$order->order_number} paid & confirmed! You earned +{$pointsEarned} Loyalty Points.",
             'data' => [
                 'order' => $order->load('items'),
+                'payment_mode' => $isCashOnArrival ? 'cash_on_delivery' : 'pay_now',
+                'amount_due_on_arrival' => $isCashOnArrival ? $totalAmount : 0.00,
                 'points_earned' => $pointsEarned,
                 'points_redeemed' => $pointsRedeemed,
                 'new_loyalty_points' => $newPointsBalance,
@@ -489,14 +496,21 @@ class CommerceEngagementController extends Controller
         $lng = $order ? (float) ($order->current_lng ?? 104.9252) : 104.9252;
         $destLat = $order ? (float) ($order->dest_lat ?? 11.5680) : 11.5680;
         $destLng = $order ? (float) ($order->dest_lng ?? 104.9185) : 104.9185;
+        $paymentStatus = $order ? ($order->payment_status ?? 'paid') : 'paid';
+        $paymentMethod = $order ? ($order->payment_method ?? 'bakong_khqr') : 'bakong_khqr';
+        $totalAmount = $order ? (float) $order->total_amount : 0.00;
+        $isCashOnArrival = $paymentStatus !== 'paid' && $totalAmount > 0;
+        $amountDueOnArrival = $isCashOnArrival ? $totalAmount : 0.00;
 
         return response()->json([
             'status' => 'ok',
             'data' => [
                 'order_number' => $order ? $order->order_number : $orderNumber,
                 'status' => $order ? $order->status : 'shipped',
-                'payment_status' => $order ? $order->payment_status : 'paid',
-                'total_amount' => $order ? (float) $order->total_amount : 0.00,
+                'payment_status' => $paymentStatus,
+                'payment_method' => $paymentMethod,
+                'amount_due_on_arrival' => $amountDueOnArrival,
+                'total_amount' => $totalAmount,
                 'discount' => $order ? (float) $order->discount : 0.00,
                 'points_earned' => $order ? (int) ($order->points_earned ?? 5) : 5,
                 'points_redeemed' => $order ? (int) ($order->points_redeemed ?? 0) : 0,
@@ -525,8 +539,10 @@ class CommerceEngagementController extends Controller
                 ],
                 'checkpoints' => [
                     [
-                        'title' => 'Order Confirmed & Payment Verified',
-                        'location' => 'MegaCommerce Core Checkout',
+                        'title' => $isCashOnArrival
+                            ? 'Order Confirmed • Cash on Hand Upon Arrival ($'.number_format($amountDueOnArrival, 2).')'
+                            : 'Order Confirmed & Online Payment Verified',
+                        'location' => 'MegaCommerce Core Checkout (+5 Loyalty Pts Awarded)',
                         'time' => 'Completed',
                         'done' => true,
                     ],
@@ -544,13 +560,48 @@ class CommerceEngagementController extends Controller
                         'active' => true,
                     ],
                     [
-                        'title' => 'Arriving at Customer Address',
+                        'title' => $isCashOnArrival
+                            ? 'Arriving at Location • Pay Cash on Hand ($'.number_format($amountDueOnArrival, 2).') to Courier'
+                            : 'Arriving at Customer Address (Paid)',
                         'location' => $order?->delivery_address ?? 'Phnom Penh, Cambodia',
                         'time' => 'Est. '.($order?->estimated_arrival ?? '14 mins'),
-                        'done' => false,
+                        'done' => $order?->status === 'delivered',
                     ],
                 ],
                 'items' => $order ? $order->items : [],
+            ],
+        ]);
+    }
+
+    /**
+     * Confirm payment completed upon delivery arrival (Cash on Hand) or switched to Pay Now.
+     */
+    public function confirmArrivalPayment(Request $request, string $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)->first();
+        if (! $order) {
+            $order = Order::latest()->first();
+        }
+
+        if ($order) {
+            $order->payment_status = 'paid';
+            $order->status = 'delivered';
+            $order->save();
+
+            Payment::where('order_id', $order->id)->update([
+                'status' => 'completed',
+                'verified_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => "Payment confirmed for Order #{$orderNumber}! Handover complete.",
+            'data' => [
+                'order_number' => $order ? $order->order_number : $orderNumber,
+                'payment_status' => 'paid',
+                'amount_due_on_arrival' => 0.00,
+                'status' => 'delivered',
             ],
         ]);
     }

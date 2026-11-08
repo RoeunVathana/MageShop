@@ -672,33 +672,79 @@ export function CartPage() {
                 </div>
 
                 <div>
-                  <label className="block text-muted-foreground mb-1">Payment Method</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-muted-foreground mb-1 font-semibold">
+                    Payment Timing & Method (ជម្រើសការទូទាត់ប្រាក់)
+                  </label>
+                  <div className="grid grid-cols-1 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('bakong_khqr')}
-                      className={`p-2.5 rounded-xl border text-left flex items-center gap-2 cursor-pointer ${
+                      className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
                         paymentMethod === 'bakong_khqr'
-                          ? 'border-primary bg-primary/10 font-bold'
-                          : 'bg-background'
+                          ? 'border-primary bg-primary/10 ring-1 ring-primary shadow-sm'
+                          : 'bg-background hover:bg-muted/40'
                       }`}
                     >
-                      <QrCode className="w-4 h-4 text-rose-500 shrink-0" />
-                      <span>Bakong KHQR</span>
+                      <QrCode className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs">⚡ Pay Now Online (Bakong KHQR / Card)</span>
+                          <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px]">
+                            Instant Paid
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Pay immediately now ($0.00 due when courier arrives at your location).
+                        </p>
+                      </div>
                     </button>
+
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('cash_on_delivery')}
-                      className={`p-2.5 rounded-xl border text-left flex items-center gap-2 cursor-pointer ${
+                      className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
                         paymentMethod === 'cash_on_delivery'
-                          ? 'border-primary bg-primary/10 font-bold'
-                          : 'bg-background'
+                          ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500 shadow-sm'
+                          : 'bg-background hover:bg-muted/40'
                       }`}
                     >
-                      <CreditCard className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span>Cash / Card</span>
+                      <CreditCard className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs">💵 Cash on Hand When Delivery Arrives</span>
+                          <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px]">
+                            Pay at Location
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Pay cash in hand (${finalTotal.toFixed(2)}) directly to the driver when delivery arrives at your GPS location (បង់ប្រាក់សុទ្ធពេលដឹកដល់ទីតាំង).
+                        </p>
+                      </div>
                     </button>
                   </div>
+
+                  {/* Dynamic Payment Mode Summary Box */}
+                  {paymentMethod === 'bakong_khqr' ? (
+                    <div className="mt-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] space-y-1">
+                      <div className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                        <span>✓ Instant Pay Now Selected (KHQR / ABA / Card)</span>
+                        <span>Due Now: ${finalTotal.toFixed(2)}</span>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Amount to pay courier on arrival: <strong>$0.00</strong> • Earns <strong>+5 Loyalty Points</strong> immediately!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] space-y-1">
+                      <div className="font-bold text-amber-700 dark:text-amber-300 flex items-center justify-between">
+                        <span>💵 Cash on Hand at Delivery Location</span>
+                        <span>Pay on Arrival: ${finalTotal.toFixed(2)}</span>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Pay Now: <strong>$0.00</strong> • Hand <strong>${finalTotal.toFixed(2)}</strong> cash to the courier when they arrive at <em>{deliveryAddress}</em>. Still earns <strong>+5 Points</strong>!
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -708,7 +754,9 @@ export function CartPage() {
                 >
                   {checkoutLoading
                     ? 'Processing Order...'
-                    : `Complete Order ($${finalTotal.toFixed(2)}) & Earn +5 Pts`}
+                    : paymentMethod === 'cash_on_delivery'
+                    ? `Order Now • Pay $${finalTotal.toFixed(2)} Cash on Arrival (+5 Pts)`
+                    : `Pay Now ($${finalTotal.toFixed(2)}) & Earn +5 Pts`}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </form>
