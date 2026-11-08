@@ -47,7 +47,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors rounded-t-md"
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap hover:bg-primary/90 transition-colors rounded-t-md"
           >
             <LayoutGrid className="w-4 h-4" />
             <span>{t('All Categories', 'ប្រភេទទំនិញទាំងអស់')}</span>
@@ -89,7 +89,7 @@ export function Navbar() {
         </div>
 
         {/* Center: Primary Navigation Links */}
-        <div className="flex items-center gap-2.5 lg:gap-4 xl:gap-6 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+        <div className="flex flex-1 items-center gap-3 lg:gap-4 xl:gap-5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path
             return (
@@ -97,7 +97,7 @@ export function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  'text-xs font-medium py-3 border-b-2 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0',
+                  'nav-link text-[13px] font-medium py-3 border-b-2 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0',
                   isActive
                     ? 'border-primary text-primary font-bold'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30',
@@ -112,7 +112,7 @@ export function Navbar() {
         </div>
 
         {/* Right: Vendor Callout */}
-        <div className="text-xs text-muted-foreground shrink-0 hidden xl:block">
+        <div className="text-xs text-muted-foreground shrink-0 hidden 2xl:block whitespace-nowrap">
           <span>{t('Sell on TyuShop? ', 'ចង់លក់ទំនិញលើ TyuShop? ')}</span>
           <Link to="/register" className="text-primary font-bold hover:underline">
             {t('Join as Seller', 'ចុះឈ្មោះជាអ្នកលក់')}

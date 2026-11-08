@@ -25,7 +25,7 @@ export function SupportWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const { loyaltyPoints, recentOrders } = useShopEngagement()
+  const { loyaltyPoints, recentOrders, t } = useShopEngagement()
 
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
@@ -197,7 +197,7 @@ export function SupportWidget() {
           <MessageSquare className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-indigo-600" />
         </div>
-        <span className="text-xs font-bold tracking-wide">24/7 Supporter</span>
+        <span className="text-xs font-bold tracking-wide">{t('24/7 Supporter', 'ជំនួយ 24/7')}</span>
         <Sparkles className="w-3.5 h-3.5 text-amber-300" />
       </button>
     </div>

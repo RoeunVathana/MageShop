@@ -184,6 +184,32 @@ html[lang="km"] .text-base, html.khmer-mode .text-base {
   line-height: 1.75rem !important;
 }
 
+/* Khmer has no spaces between words: never split labels marked nowrap (nav, buttons, badges) */
+html[lang="km"] .whitespace-nowrap, html.khmer-mode .whitespace-nowrap {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+/* Compact, single-line navigation links in Khmer */
+html[lang="km"] .nav-link, html.khmer-mode .nav-link {
+  font-size: 0.9rem !important;
+  line-height: 1.5rem !important;
+}
+
+/* Large Khmer headings: comfortable line height so stacked vowels are not clipped */
+html[lang="km"] .text-2xl, html.khmer-mode .text-2xl,
+html[lang="km"] .text-3xl, html.khmer-mode .text-3xl,
+html[lang="km"] .text-4xl, html.khmer-mode .text-4xl,
+html[lang="km"] .text-5xl, html.khmer-mode .text-5xl {
+  line-height: 1.55 !important;
+  font-weight: 700 !important;
+}
+html[lang="km"] .bg-clip-text, html.khmer-mode .bg-clip-text {
+  padding-top: 0.15em;
+  padding-bottom: 0.15em;
+}
+
 /* Upscale micro and small text classes for comfortable readability across EN and KM */
 .text-\[9px\] {
   font-size: 0.8rem !important;

@@ -62,12 +62,40 @@ const defaultFallbackBanners: Banner[] = [
   },
 ]
 
+// Khmer translations for known banner copy (admin-entered text not listed here is shown as-is)
+const BANNER_KM: Record<string, string> = {
+  'The Next-Gen Universal Marketplace': 'ផ្សារអនឡាញទំនើបជំនាន់ថ្មី សម្រាប់គ្រប់មុខទំនិញ',
+  'Engineered with modern multi-vendor commerce architecture. Browse 26 universal departments, dynamic specifications, and multi-SKU variants powered by real-time inventory control and instant Bakong KHQR checkout.':
+    'រចនាឡើងជាមួយប្រព័ន្ធពាណិជ្ជកម្មពហុអ្នកលក់ទំនើប។ ស្វែងរកទំនិញក្នុង ២៦ ផ្នែក ជាមួយលក្ខណៈបច្ចេកទេសលម្អិត ការគ្រប់គ្រងស្តុកភ្លាមៗ និងការទូទាត់រហ័សតាម Bakong KHQR។',
+  'Engineered with modern multi-vendor commerce architecture. Browse 26 universal departments, dynamic specifications, and multi-SKU variants powered by real-time inventory control.':
+    'រចនាឡើងជាមួយប្រព័ន្ធពាណិជ្ជកម្មពហុអ្នកលក់ទំនើប។ ស្វែងរកទំនិញក្នុង ២៦ ផ្នែក ជាមួយលក្ខណៈបច្ចេកទេសលម្អិត និងការគ្រប់គ្រងស្តុកភ្លាមៗ។',
+  'Universal Multi-Category Marketplace': 'ផ្សារអនឡាញគ្រប់ប្រភេទទំនិញ',
+  'Explore Catalog': 'មើលទំនិញទាំងអស់',
+  'Cambodia Flagship Tech & Mobile Deals': 'ការផ្តល់ជូនពិសេស បច្ចេកវិទ្យា និងទូរស័ព្ទ នៅកម្ពុជា',
+  'Official Apple, Sony, Samsung, DJI & tech accessories with nationwide express delivery and 0% fee Bakong KHQR checkout.':
+    'ផលិតផលផ្លូវការ Apple, Sony, Samsung, DJI និងគ្រឿងបន្លាស់ ជាមួយការដឹកជញ្ជូនរហ័សទូទាំងប្រទេស និងទូទាត់តាម Bakong KHQR ឥតគិតថ្លៃសេវា។',
+  'Official Tech Flagship': 'ហាងបច្ចេកវិទ្យាផ្លូវការ',
+  'Shop Electronics': 'ទិញគ្រឿងអេឡិចត្រូនិក',
+  "Men's & Women's Fashion Master Showcase": 'ម៉ូដសម្លៀកបំពាក់បុរស និងនារី',
+  'Curated premium apparel, streetwear, athletic sportswear, and handcrafted traditional Khmer silk collections.':
+    'សម្លៀកបំពាក់គុណភាពខ្ពស់ ម៉ូដទំនើប សម្លៀកបំពាក់កីឡា និងសូត្រខ្មែរប្រពៃណីធ្វើដោយដៃ។',
+  'Trending Collections': 'ម៉ូដពេញនិយម',
+  'Browse Fashion': 'មើលម៉ូដសម្លៀកបំពាក់',
+  'Nationwide Express Courier & Live GPS Tracking': 'ដឹកជញ្ជូនរហ័សទូទាំងប្រទេស និងតាមដាន GPS ផ្ទាល់',
+  'Order before 2 PM for same-day delivery across Phnom Penh. Real-time driver parcel tracking with verified delivery security.':
+    'បញ្ជាទិញមុនម៉ោង ២ រសៀល ដើម្បីទទួលបានទំនិញក្នុងថ្ងៃតែមួយ នៅភ្នំពេញ។ តាមដានអ្នកដឹកជញ្ជូនផ្ទាល់ ប្រកបដោយសុវត្ថិភាព។',
+  'Fast Dispatch': 'ដឹកជញ្ជូនរហ័ស',
+  'Learn About Delivery': 'ស្វែងយល់ពីការដឹកជញ្ជូន',
+}
+
 export function HeroBannerSlider() {
   const [banners, setBanners] = useState<Banner[]>(defaultFallbackBanners)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const { t } = useShopEngagement()
+  const { t, language } = useShopEngagement()
+  const tb = (text?: string | null) =>
+    text ? (language === 'KM' ? BANNER_KM[text.trim()] || text : text) : ''
 
   useEffect(() => {
     bannerService
@@ -139,19 +167,19 @@ export function HeroBannerSlider() {
                   className="w-4 h-4 rounded-full object-cover"
                 />
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>{currentBanner.badge_text}</span>
+                <span>{tb(currentBanner.badge_text)}</span>
               </div>
             )}
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-foreground">
               <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                {currentBanner.title}
+                {tb(currentBanner.title)}
               </span>
             </h1>
 
             {currentBanner.subtitle && (
               <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
-                {currentBanner.subtitle}
+                {tb(currentBanner.subtitle)}
               </p>
             )}
 
@@ -162,7 +190,7 @@ export function HeroBannerSlider() {
                 onClick={() => bannerService.trackClick(currentBanner.id)}
               >
                 <Button size="lg" className="rounded-full shadow-lg shadow-primary/20 gap-2 font-semibold">
-                  <ShoppingBag className="w-4 h-4" /> {currentBanner.button_text || t('Explore Catalog', 'មើលទំនិញទាំងអស់')}
+                  <ShoppingBag className="w-4 h-4" /> {currentBanner.button_text ? tb(currentBanner.button_text) : t('Explore Catalog', 'មើលទំនិញទាំងអស់')}
                 </Button>
               </Link>
               <Link to="/categories">
@@ -222,7 +250,7 @@ export function HeroBannerSlider() {
                   <img
                     key={currentBanner.image_url}
                     src={mediaService.resolveMediaUrl(currentBanner.image_url)}
-                    alt={currentBanner.title}
+                    alt={tb(currentBanner.title)}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (
@@ -243,14 +271,14 @@ export function HeroBannerSlider() {
                     />
                     <div>
                       <div className="text-xs font-bold tracking-tight text-foreground flex items-center gap-1.5">
-                        TYUSHOP Official
+                        {t('TYUSHOP Official', 'TYUSHOP ផ្លូវការ')}
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       </div>
-                      <div className="text-[10px] text-muted-foreground">Premier Universal Marketplace</div>
+                      <div className="text-[10px] text-muted-foreground">{t('Premier Universal Marketplace', 'ផ្សារអនឡាញឈានមុខគេ')}</div>
                     </div>
                   </div>
                   <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
-                    SLIDE {currentIndex + 1}/{banners.length}
+                    {t('SLIDE', 'ស្លាយ')} {currentIndex + 1}/{banners.length}
                   </Badge>
                 </div>
               </div>
