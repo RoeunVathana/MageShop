@@ -14,7 +14,12 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
-    public function __construct(protected ProductService $productService) {}
+    protected ProductService $productService;
+
+    public function __construct(ProductService $productService)
+    {
+        $this->productService = $productService;
+    }
 
     /**
      * List products with pagination and search.
@@ -33,7 +38,8 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request): JsonResponse
     {
         try {
-            $product = $this->productService->createProduct($request->validated(), $request->user()?->id);
+            $user = $request->user();
+            $product = $this->productService->createProduct($request->validated(), $user ? $user->id : null);
 
             return (new ProductResource($product))
                 ->response()

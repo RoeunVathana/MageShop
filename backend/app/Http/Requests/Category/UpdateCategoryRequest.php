@@ -10,7 +10,9 @@ class UpdateCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER']) ?? false;
+        $user = $this->user();
+
+        return $user ? $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER']) : false;
     }
 
     public function rules(): array

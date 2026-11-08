@@ -91,8 +91,10 @@ class User extends Authenticatable
 
     /**
      * Check if user has a specific role or any role from a list by name or slug.
+     *
+     * @param  string|array  $role
      */
-    public function hasRole(string|array $role): bool
+    public function hasRole($role): bool
     {
         if (is_array($role)) {
             foreach ($role as $r) {
@@ -136,8 +138,10 @@ class User extends Authenticatable
 
     /**
      * Assign a role to the user.
+     *
+     * @param  Role|string  $role
      */
-    public function assignRole(Role|string $role): void
+    public function assignRole($role): void
     {
         if (is_string($role)) {
             $role = Role::where('name', $role)->orWhere('slug', $role)->firstOrFail();

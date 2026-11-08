@@ -17,7 +17,12 @@ use InvalidArgumentException;
 
 class InventoryController extends Controller
 {
-    public function __construct(protected InventoryService $inventoryService) {}
+    protected InventoryService $inventoryService;
+
+    public function __construct(InventoryService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
 
     /**
      * View stock levels across all products.
@@ -55,13 +60,14 @@ class InventoryController extends Controller
         $validated = $request->validated();
 
         try {
+            $user = $request->user();
             $result = $this->inventoryService->adjustStock(
                 $product,
                 (int) $validated['quantity_change'],
                 $validated['movement_type'],
                 $validated['reason'],
                 $validated['reference'] ?? null,
-                $request->user()?->id,
+                $user ? $user->id : null,
                 $validated['idempotency_key'] ?? null
             );
 

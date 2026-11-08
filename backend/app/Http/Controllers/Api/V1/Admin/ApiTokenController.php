@@ -52,10 +52,10 @@ class ApiTokenController extends Controller
                 'id' => $token->id,
                 'name' => $token->name,
                 'abilities' => $token->abilities ?? ['*'],
-                'last_used_at' => $token->last_used_at?->toIso8601String(),
-                'expires_at' => $token->expires_at?->toIso8601String(),
+                'last_used_at' => $token->last_used_at ? $token->last_used_at->toIso8601String() : null,
+                'expires_at' => $token->expires_at ? $token->expires_at->toIso8601String() : null,
                 'is_expired' => $token->expires_at ? $token->expires_at->isPast() : false,
-                'created_at' => $token->created_at?->toIso8601String(),
+                'created_at' => $token->created_at ? $token->created_at->toIso8601String() : null,
                 'user' => $user ? [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -112,7 +112,7 @@ class ApiTokenController extends Controller
             'token_name' => $validated['name'],
             'target_user_id' => $targetUser->id,
             'target_email' => $targetUser->email,
-            'expires_at' => $expiresAt?->toIso8601String(),
+            'expires_at' => $expiresAt ? $expiresAt->toIso8601String() : null,
         ]);
 
         return response()->json([
@@ -123,8 +123,8 @@ class ApiTokenController extends Controller
                 'name' => $newAccessToken->accessToken->name,
                 'plain_text_token' => $newAccessToken->plainTextToken,
                 'abilities' => $newAccessToken->accessToken->abilities,
-                'expires_at' => $newAccessToken->accessToken->expires_at?->toIso8601String(),
-                'created_at' => $newAccessToken->accessToken->created_at?->toIso8601String(),
+                'expires_at' => $newAccessToken->accessToken->expires_at ? $newAccessToken->accessToken->expires_at->toIso8601String() : null,
+                'created_at' => $newAccessToken->accessToken->created_at ? $newAccessToken->accessToken->created_at->toIso8601String() : null,
                 'user' => [
                     'id' => $targetUser->id,
                     'name' => $targetUser->name,
@@ -200,8 +200,8 @@ class ApiTokenController extends Controller
                 'name' => $newToken->accessToken->name,
                 'plain_text_token' => $newToken->plainTextToken,
                 'abilities' => $newToken->accessToken->abilities,
-                'expires_at' => $newToken->accessToken->expires_at?->toIso8601String(),
-                'created_at' => $newToken->accessToken->created_at?->toIso8601String(),
+                'expires_at' => $newToken->accessToken->expires_at ? $newToken->accessToken->expires_at->toIso8601String() : null,
+                'created_at' => $newToken->accessToken->created_at ? $newToken->accessToken->created_at->toIso8601String() : null,
                 'user' => [
                     'id' => $targetUser->id,
                     'name' => $targetUser->name,

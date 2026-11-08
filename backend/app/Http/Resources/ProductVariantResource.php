@@ -27,15 +27,15 @@ class ProductVariantResource extends JsonResource
             'attribute_values' => $this->relationLoaded('attributeValues')
                 ? $this->attributeValues->map(fn ($val) => [
                     'attribute_id' => $val->category_attribute_id,
-                    'attribute_name' => $val->attribute?->name,
-                    'attribute_code' => $val->attribute?->code,
+                    'attribute_name' => $val->attribute ? $val->attribute->name : null,
+                    'attribute_code' => $val->attribute ? $val->attribute->code : null,
                     'option_id' => $val->attribute_option_id,
                     'value' => $val->custom_value,
                     'display_value' => $val->display_value,
                 ])
                 : [],
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
     }
 }

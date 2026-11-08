@@ -13,21 +13,21 @@ class InventoryResource extends JsonResource
         $onHand = (int) $this->quantity_on_hand;
         $reserved = (int) $this->quantity_reserved;
         $available = max(0, $onHand - $reserved);
-        $threshold = (int) ($product?->low_stock_threshold ?? 5);
+        $threshold = (int) (($product && $product->low_stock_threshold !== null) ? $product->low_stock_threshold : 5);
 
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
-            'product_name' => $product?->name,
-            'sku' => $product?->sku,
-            'status' => $product?->status ?? 'active',
+            'product_name' => $product ? $product->name : null,
+            'sku' => $product ? $product->sku : null,
+            'status' => ($product && $product->status) ? $product->status : 'active',
             'quantity_on_hand' => $onHand,
             'quantity_reserved' => $reserved,
             'available_stock' => $available,
             'low_stock_threshold' => $threshold,
             'is_low_stock' => $onHand <= $threshold,
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
     }
 }

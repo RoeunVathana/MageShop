@@ -11,10 +11,13 @@ class UpdateProductRequest extends FormRequest
     public function authorize(): bool
     {
         $product = $this->route('product');
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
 
-        return $this->user()?->can('update', $product)
-            ?? $this->user()?->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'])
-            ?? false;
+        return $user->can('update', $product)
+            || $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER']);
     }
 
     public function rules(): array

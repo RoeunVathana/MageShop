@@ -63,8 +63,8 @@ class EmailPasswordOtpController extends Controller
                 'phone_number' => $u->phone_number,
                 'status' => $u->status,
                 'is_email_verified' => $u->email_verified_at !== null,
-                'email_verified_at' => $u->email_verified_at?->toIso8601String(),
-                'created_at' => $u->created_at?->toIso8601String(),
+                'email_verified_at' => $u->email_verified_at ? $u->email_verified_at->toIso8601String() : null,
+                'created_at' => $u->created_at ? $u->created_at->toIso8601String() : null,
                 'roles' => $u->roles->map(fn ($r) => [
                     'id' => $r->id,
                     'name' => $r->name,
@@ -125,7 +125,7 @@ class EmailPasswordOtpController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+                'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
             ],
         ]);
     }
@@ -222,7 +222,7 @@ class EmailPasswordOtpController extends Controller
                 'is_expired' => $isExpired,
                 'status' => $statusLabel,
                 'expires_at' => $otp->expires_at->toIso8601String(),
-                'cooldown_until' => $otp->cooldown_until?->toIso8601String(),
+                'cooldown_until' => $otp->cooldown_until ? $otp->cooldown_until->toIso8601String() : null,
                 'is_cooling_down' => $otp->isCoolingDown(),
                 'created_at' => $otp->created_at->toIso8601String(),
             ];

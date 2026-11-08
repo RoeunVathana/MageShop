@@ -279,7 +279,7 @@ class ProductService
                     $brandRecord = Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
                         ->orWhere('slug', Str::slug($data['brand']))
                         ->first();
-                    $updateData['brand_id'] = $brandRecord?->id;
+                    $updateData['brand_id'] = $brandRecord ? $brandRecord->id : null;
                 }
             }
             if (array_key_exists('sku', $data) && $data['sku'] !== null) {

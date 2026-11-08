@@ -15,7 +15,12 @@ use InvalidArgumentException;
 
 class CategoryController extends Controller
 {
-    public function __construct(protected CategoryService $categoryService) {}
+    protected CategoryService $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
 
     /**
      * List categories with optional hierarchy nesting and search filtering.

@@ -11,12 +11,19 @@ use Illuminate\Http\Response;
 
 class ReceiptController extends Controller
 {
-    public function __construct(protected PaymentReceiptPdfService $pdfService) {}
+    protected PaymentReceiptPdfService $pdfService;
+
+    public function __construct(PaymentReceiptPdfService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
 
     /**
      * Download or view receipt PDF for an order.
+     *
+     * @return Response|JsonResponse
      */
-    public function show(Request $request, string $orderIdentifier): Response|JsonResponse
+    public function show(Request $request, string $orderIdentifier)
     {
         $order = is_numeric($orderIdentifier)
             ? Order::with('items', 'customer', 'payments')->find($orderIdentifier)

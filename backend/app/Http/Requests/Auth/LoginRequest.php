@@ -55,7 +55,7 @@ class LoginRequest extends FormRequest
         $passwordValid = Hash::check($password, $hashToCheck);
 
         if (! $user || ! $passwordValid) {
-            SecurityLogService::log('AUTH_LOGIN_FAILED', $user?->id, [
+            SecurityLogService::log('AUTH_LOGIN_FAILED', $user ? $user->id : null, [
                 'attempted_email' => substr($email, 0, 3).'***@'.(explode('@', $email)[1] ?? 'unknown'),
                 'reason' => ! $user ? 'user_not_found' : 'invalid_password',
             ], 'warning');

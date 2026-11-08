@@ -14,7 +14,7 @@ class CategoryResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'parent_id' => $this->parent_id,
-            'parent_name' => $this->relationLoaded('parent') ? $this->parent?->name : null,
+            'parent_name' => ($this->relationLoaded('parent') && $this->parent) ? $this->parent->name : null,
             'icon' => $this->icon,
             'image_url' => $this->image_url,
             'description' => $this->description,
@@ -26,8 +26,8 @@ class CategoryResource extends JsonResource
             'products_count' => $this->whenCounted('products', fn () => $this->products_count),
             'children' => CategoryResource::collection($this->whenLoaded('children')),
             'attributes' => CategoryAttributeResource::collection($this->whenLoaded('attributes')),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
     }
 }

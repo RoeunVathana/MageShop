@@ -9,9 +9,13 @@ class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Product::class)
-            ?? $this->user()?->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'])
-            ?? false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->can('create', Product::class)
+            || $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER']);
     }
 
     public function rules(): array

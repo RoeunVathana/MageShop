@@ -715,10 +715,10 @@ class TelegramService
             $delta = (int) ($action->payload['delta'] ?? 0);
             try {
                 $product->adjustStock(
-                    quantityChange: $delta,
-                    type: 'adjustment',
-                    userId: $account->user_id,
-                    reason: "Telegram Bot Adjustment by Staff #{$account->user_id}"
+                    $delta,
+                    'adjustment',
+                    $account->user_id,
+                    "Telegram Bot Adjustment by Staff #{$account->user_id}"
                 );
 
                 $action->update(['confirmation_status' => 'confirmed']);
@@ -811,8 +811,10 @@ class TelegramService
 
     /**
      * Send message via Telegram Bot API (or log in dev/test when token is mock).
+     *
+     * @param  int|string  $chatId
      */
-    public function sendMessage(int|string $chatId, string $text, array $extra = []): ?array
+    public function sendMessage($chatId, string $text, array $extra = []): ?array
     {
         if (empty($this->botToken) || str_starts_with($this->botToken, 'test_') || str_starts_with($this->botToken, '8102938475')) {
             Log::info("Mock Telegram Dispatch to [{$chatId}]: {$text}", $extra);
@@ -871,8 +873,10 @@ class TelegramService
 
     /**
      * Send notification to customer or admin.
+     *
+     * @param  int|string  $chatId
      */
-    public function sendNotification(int|string $chatId, string $type, string $message, ?int $userId = null, array $extra = []): void
+    public function sendNotification($chatId, string $type, string $message, ?int $userId = null, array $extra = []): void
     {
         $this->sendMessage($chatId, $message, $extra);
 

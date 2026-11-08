@@ -14,7 +14,12 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BrandController extends Controller
 {
-    public function __construct(protected BrandService $brandService) {}
+    protected BrandService $brandService;
+
+    public function __construct(BrandService $brandService)
+    {
+        $this->brandService = $brandService;
+    }
 
     /**
      * List brands with pagination and search.

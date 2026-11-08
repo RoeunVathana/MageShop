@@ -19,9 +19,9 @@ class InventoryMovementResource extends JsonResource
             'reason' => $this->reason,
             'reference' => $this->reference ?? $this->reference_id,
             'created_by' => $this->created_by ?? $this->user_id,
-            'creator_name' => $this->creator?->name ?? $this->user?->name ?? 'System',
+            'creator_name' => ($this->creator ? $this->creator->name : null) ?? ($this->user ? $this->user->name : null) ?? 'System',
             'idempotency_key' => $this->idempotency_key,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
         ];
     }
 }

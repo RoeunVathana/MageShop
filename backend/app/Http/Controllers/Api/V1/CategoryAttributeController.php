@@ -15,7 +15,12 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CategoryAttributeController extends Controller
 {
-    public function __construct(protected CategoryService $categoryService) {}
+    protected CategoryService $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
 
     /**
      * List all configurable attributes for a specific category.

@@ -17,32 +17,53 @@ class PaymentReceiptMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public Order $order;
+
+    public Receipt $receipt;
+
+    public ?Payment $payment;
+
+    public ?string $pdfRawBytes;
+
     public function __construct(
-        public Order $order,
-        public Receipt $receipt,
-        public ?Payment $payment,
-        public ?string $pdfRawBytes = null
-    ) {}
+        Order $order,
+        Receipt $receipt,
+        ?Payment $payment,
+        ?string $pdfRawBytes = null
+    ) {
+        $this->order = $order;
+        $this->receipt = $receipt;
+        $this->payment = $payment;
+        $this->pdfRawBytes = $pdfRawBytes;
+    }
 
     public function envelope(): Envelope
     {
         $storeName = StoreSetting::get('store_name', 'MegaCommerce');
 
         return new Envelope(
-            subject: "{$storeName} — Payment Receipt #{$this->receipt->receipt_number}",
+            null,
+            [],
+            [],
+            [],
+            [],
+            "{$storeName} — Payment Receipt #{$this->receipt->receipt_number}"
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.receipt',
-            with: [
+            'emails.receipt',
+            null,
+            null,
+            null,
+            [
                 'order' => $this->order,
-                'receipt' => $this->receipt,
+                'receipt' => $receipt = $this->receipt,
                 'payment' => $this->payment,
                 'store' => StoreSetting::getAll(),
-            ],
+            ]
         );
     }
 

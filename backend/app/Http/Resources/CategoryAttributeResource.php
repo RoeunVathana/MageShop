@@ -28,8 +28,8 @@ class CategoryAttributeResource extends JsonResource
                     'sort_order' => (int) $opt->sort_order,
                 ])
                 : [],
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
     }
 }

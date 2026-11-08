@@ -136,7 +136,7 @@ class TelegramAiService
                             'discount_price' => $p->discount_price ? (float) $p->discount_price : null,
                             'stock_quantity' => $p->stock_quantity,
                             'in_stock' => $p->stock_quantity > 0,
-                            'category' => $p->category?->name,
+                            'category' => $p->category ? $p->category->name : null,
                             'image_url' => $p->image_url,
                         ];
                     })->toArray(),
@@ -161,8 +161,8 @@ class TelegramAiService
                     'stock_quantity' => $product->stock_quantity,
                     'in_stock' => $product->stock_quantity > 0,
                     'description' => $product->description,
-                    'category' => $product->category?->name,
-                    'brand' => $product->brand ?? $product->brandRecord?->name,
+                    'category' => $product->category ? $product->category->name : null,
+                    'brand' => $product->brand ?? ($product->brandRecord ? $product->brandRecord->name : null),
                     'is_featured' => $product->is_featured,
                     'specifications' => $product->specifications,
                 ];

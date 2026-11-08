@@ -268,8 +268,10 @@ class AuthController extends Controller
 
     /**
      * Redirect to Google OAuth provider.
+     *
+     * @return JsonResponse|RedirectResponse
      */
-    public function googleRedirect(GoogleAuthService $googleService): JsonResponse|RedirectResponse
+    public function googleRedirect(GoogleAuthService $googleService)
     {
         $url = $googleService->getRedirectUrl();
 
@@ -282,8 +284,10 @@ class AuthController extends Controller
 
     /**
      * Handle Google OAuth callback.
+     *
+     * @return JsonResponse|RedirectResponse
      */
-    public function googleCallback(Request $request, GoogleAuthService $googleService): JsonResponse|RedirectResponse
+    public function googleCallback(Request $request, GoogleAuthService $googleService)
     {
         $result = $googleService->handleCallback($request->query('code'));
 

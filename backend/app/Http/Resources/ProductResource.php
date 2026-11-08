@@ -55,7 +55,7 @@ class ProductResource extends JsonResource
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
                 'parent_id' => $this->category->parent_id,
-                'parent_name' => $this->category->relationLoaded('parent') ? $this->category->parent?->name : null,
+                'parent_name' => ($this->category->relationLoaded('parent') && $this->category->parent) ? $this->category->parent->name : null,
             ] : ($this->category ? [
                 'id' => $this->category->id,
                 'name' => $this->category->name,
@@ -75,9 +75,9 @@ class ProductResource extends JsonResource
                 ? $this->attributeValues->map(fn ($val) => [
                     'id' => $val->id,
                     'attribute_id' => $val->category_attribute_id,
-                    'name' => $val->attribute?->name,
-                    'code' => $val->attribute?->code,
-                    'type' => $val->attribute?->type,
+                    'name' => $val->attribute ? $val->attribute->name : null,
+                    'code' => $val->attribute ? $val->attribute->code : null,
+                    'type' => $val->attribute ? $val->attribute->type : null,
                     'value' => $val->value,
                     'selected_option_id' => $val->selected_option_id,
                     'display_value' => $val->display_value,
@@ -88,8 +88,8 @@ class ProductResource extends JsonResource
                 : [],
             'image_url' => $this->image_url,
             'gallery_urls' => $this->gallery_urls ?? [],
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
     }
 }

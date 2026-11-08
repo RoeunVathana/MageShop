@@ -15,8 +15,10 @@ class CategoryService
 {
     /**
      * List categories with optional hierarchy nesting and search filtering.
+     *
+     * @return Collection|LengthAwarePaginator
      */
-    public function listCategories(array $filters = [], bool $tree = false): Collection|LengthAwarePaginator
+    public function listCategories(array $filters = [], bool $tree = false)
     {
         $query = Category::query();
 
@@ -69,8 +71,10 @@ class CategoryService
 
     /**
      * Retrieve category by ID or unique slug.
+     *
+     * @param  int|string  $idOrSlug
      */
-    public function getCategory(int|string $idOrSlug, bool $withAttributes = true): Category
+    public function getCategory($idOrSlug, bool $withAttributes = true): Category
     {
         $query = Category::query();
 
