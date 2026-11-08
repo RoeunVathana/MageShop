@@ -41,12 +41,12 @@ class AppServiceProvider extends ServiceProvider
     {
         // General API rate limiter (60 requests per minute)
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(60)->by($request->user() ? $request->user()->id : $request->ip());
         });
 
         // Coupon validation rate limiter (prevent brute-force coupon guessing: 20/min per IP)
         RateLimiter::for('coupons', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(20)->by($request->user() ? $request->user()->id : $request->ip());
         });
 
         // Order tracking rate limiter (prevent order number enumeration: 30/min per IP)
@@ -56,12 +56,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Checkout & Loyalty redemption rate limiter (15/min per user/IP)
         RateLimiter::for('checkout', function (Request $request) {
-            return Limit::perMinute(15)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(15)->by($request->user() ? $request->user()->id : $request->ip());
         });
 
         // Support chat & ticket submission rate limiter (20/min per IP)
         RateLimiter::for('support', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(20)->by($request->user() ? $request->user()->id : $request->ip());
         });
 
         // Strict Login Rate Limiter: max 5 attempts/min per user+IP, max 20/min per IP
