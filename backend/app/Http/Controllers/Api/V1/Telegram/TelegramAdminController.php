@@ -84,7 +84,12 @@ class TelegramAdminController extends Controller
         $userId = Auth::id();
 
         try {
-            $product->adjustStock($delta, $type, $reason, $userId);
+            $product->adjustStock(
+                quantityChange: $delta,
+                type: $type,
+                userId: $userId,
+                reason: $reason
+            );
 
             TelegramAdminAction::create([
                 'staff_id' => $userId,

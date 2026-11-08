@@ -71,7 +71,7 @@ export function RegisterPage() {
     } catch (err: any) {
       toast({
         title: 'Registration Failed',
-        description: err.response?.data?.message || 'Unable to register account. Please check your details.',
+        description: err.message || err.response?.data?.message || 'Unable to register account. Please check your details.',
         type: 'error',
       })
     } finally {

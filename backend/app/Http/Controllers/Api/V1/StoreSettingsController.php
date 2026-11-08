@@ -84,6 +84,7 @@ class StoreSettingsController extends Controller
             }
         }
 
+        Cache::forget('store_settings:all');
         Cache::forget('megacommerce_all_store_settings');
 
         return response()->json([

@@ -43,7 +43,7 @@ export function ForgotPasswordPage() {
     } catch (err: any) {
       toast({
         title: 'Request Failed',
-        description: err.response?.data?.message || 'Unable to process recovery request. Please try again.',
+        description: err.message || err.response?.data?.message || 'Unable to process recovery request. Please try again.',
         type: 'error',
       })
     } finally {

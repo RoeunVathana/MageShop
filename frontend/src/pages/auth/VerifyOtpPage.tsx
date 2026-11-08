@@ -69,7 +69,7 @@ export function VerifyOtpPage() {
     } catch (err: any) {
       toast({
         title: 'Verification Failed',
-        description: err.response?.data?.message || 'Invalid or expired verification code.',
+        description: err.message || err.response?.data?.message || 'Invalid or expired verification code.',
         type: 'error',
       })
     } finally {
@@ -90,7 +90,7 @@ export function VerifyOtpPage() {
     } catch (err: any) {
       toast({
         title: 'Resend Failed',
-        description: err.response?.data?.message || 'Please wait before requesting another code.',
+        description: err.message || err.response?.data?.message || 'Please wait before requesting another code.',
         type: 'error',
       })
     }

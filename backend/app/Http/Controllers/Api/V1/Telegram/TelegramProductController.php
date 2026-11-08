@@ -88,9 +88,17 @@ class TelegramProductController extends Controller
             'attributeValues.selectedOption',
         ];
 
-        $product = is_numeric($idOrSku)
-            ? Product::with($relations)->find($idOrSku)
-            : Product::with($relations)->where('sku', strtoupper($idOrSku))->first();
+        $query = Product::with($relations);
+
+        if (is_numeric($idOrSku)) {
+            $product = $query->where('id', (int) $idOrSku)
+                ->orWhere('sku', strtoupper($idOrSku))
+                ->first();
+        } else {
+            $product = $query->where('slug', $idOrSku)
+                ->orWhere('sku', strtoupper($idOrSku))
+                ->first();
+        }
 
         if (!$product) {
             return response()->json([

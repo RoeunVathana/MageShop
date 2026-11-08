@@ -70,7 +70,7 @@ export function ResetPasswordPage() {
     } catch (err: any) {
       toast({
         title: 'Reset Failed',
-        description: err.response?.data?.message || 'Invalid or expired reset token.',
+        description: err.message || err.response?.data?.message || 'Invalid or expired reset token.',
         type: 'error',
       })
     } finally {
