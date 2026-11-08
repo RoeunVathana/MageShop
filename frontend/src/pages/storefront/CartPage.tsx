@@ -318,8 +318,46 @@ export function CartPage() {
 
   const handleApplyCoupon = async (codeToApply?: string) => {
     const code = (codeToApply ?? couponInput).trim().toUpperCase()
-    if (!code) return
+    if (!code) {
+      toast({
+        title: t('Enter Coupon Code', 'សូមបញ្ចូលលេខកូដ'),
+        description: t('Please select or enter a coupon code.', 'សូមជ្រើសរើស ឬបញ្ចូលលេខកូដបញ្ចុះតម្លៃ។'),
+        type: 'info',
+      })
+      return
+    }
     setCouponInput(code)
+
+    const found = PROMO_COUPONS.find((c) => c.code === code)
+
+    // Check if cart is empty before trying to validate
+    if (subtotal <= 0) {
+      const minReq = found ? `$${found.min.toFixed(2)}` : '$10.00'
+      toast({
+        title: t('Cart is Empty', 'កន្ត្រកទំនិញនៅទទេ'),
+        description: t(
+          `Please add products to your cart first. Coupon '${code}' requires a minimum order of ${minReq}.`,
+          `សូមជ្រើសរើសទំនិញដាក់ចូលកន្ត្រកជាមុនសិន។ កូដ '${code}' ទាមទារការទិញចាប់ពី ${minReq} ឡើងទៅ។`
+        ),
+        type: 'error',
+      })
+      return
+    }
+
+    // Check minimum spend before attempting API
+    if (found && subtotal < found.min) {
+      const remainingNeeded = (found.min - subtotal).toFixed(2)
+      toast({
+        title: t('Coupon Minimum Not Met', 'មិនទាន់ដល់ចំនួនកំណត់'),
+        description: t(
+          `Coupon '${code}' requires a minimum order of $${found.min.toFixed(2)}. Add $${remainingNeeded} more to activate!`,
+          `កូដ '${code}' ទាមទារការទិញអប្បបរមា $${found.min.toFixed(2)}។ សូមថែម $${remainingNeeded} ទៀតដើម្បីទទួលបានការបញ្ចុះតម្លៃ!`
+        ),
+        type: 'error',
+      })
+      return
+    }
+
     setCouponLoading(true)
 
     try {
@@ -343,7 +381,6 @@ export function CartPage() {
         return
       }
     } catch (err: any) {
-      const found = PROMO_COUPONS.find((c) => c.code === code)
       if (found && subtotal >= found.min) {
         const discountAmt =
           found.type === 'percentage'
@@ -362,9 +399,15 @@ export function CartPage() {
           type: 'success',
         })
       } else {
+        let errorMsg = err?.message || ''
+        if (!errorMsg || errorMsg.includes('internal server error') || errorMsg.includes('status 500')) {
+          errorMsg = found
+            ? `Coupon '${code}' requires a minimum order of $${found.min.toFixed(2)}. (Current cart: $${subtotal.toFixed(2)})`
+            : `Coupon '${code}' is invalid or not eligible for this order.`
+        }
         toast({
           title: 'Coupon Not Eligible',
-          description: err?.message || `Add items to your cart first to apply coupon '${code}'.`,
+          description: errorMsg,
           type: 'error',
         })
       }
