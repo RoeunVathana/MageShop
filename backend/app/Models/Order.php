@@ -129,6 +129,6 @@ class Order extends Model
 
     public function getShippingCarrierAttribute(): string
     {
-        return 'MegaExpress Courier';
+        return 'TYUSHOP Express Courier';
     }
 }

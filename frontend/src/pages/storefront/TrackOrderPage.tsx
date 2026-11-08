@@ -59,7 +59,7 @@ export function TrackOrderPage() {
         customer_phone: '+855 12 888 999',
         delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
         driver: {
-          name: 'Sokha Chan (MegaExpress GPS Courier)',
+          name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
           phone: '+855 12 889 900',
           vehicle: 'Honda PCX Electric • PP 1AB-9988',
           rating: 4.95,
@@ -167,6 +167,12 @@ export function TrackOrderPage() {
   const remainingKm = Math.max(0.2, ((100 - routeProgress) * 0.045)).toFixed(1)
   const etaMins = Math.max(2, Math.round((100 - routeProgress) * 0.28))
 
+  const minLng = (Math.min(dstLng, whLng) - 0.03).toFixed(4)
+  const maxLng = (Math.max(dstLng, whLng) + 0.03).toFixed(4)
+  const minLat = (Math.min(dstLat, whLat) - 0.03).toFixed(4)
+  const maxLat = (Math.max(dstLat, whLat) + 0.03).toFixed(4)
+  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${dstLat}%2C${dstLng}`
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Breadcrumb & Header */}
@@ -272,10 +278,10 @@ export function TrackOrderPage() {
 
             {/* Interactive Map Viewport + Animated Courier Overlay */}
             <div className="relative h-80 sm:h-96 w-full bg-slate-950 overflow-hidden">
-              {/* OpenStreetMap Live Embed centered on Phnom Penh Delivery Corridor */}
+              {/* Dynamic OpenStreetMap Embed Centered on Customer Delivery Destination */}
               <iframe
                 title="TYUSHOP Real-Time Delivery GPS Map"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=104.9050%2C11.5380%2C104.9450%2C11.5780&layer=mapnik"
+                src={osmEmbedUrl}
                 className="w-full h-full border-0 opacity-85 contrast-110"
               />
 
@@ -288,9 +294,14 @@ export function TrackOrderPage() {
                       <MapPin className="w-4 h-4" />
                     </div>
                     <div className="text-xs">
-                      <div className="font-bold text-emerald-400">Customer Destination</div>
-                      <div className="text-[11px] text-slate-300 max-w-xs truncate">
-                        {tracking?.delivery_address || 'BKK1, Street 310, Phnom Penh'}
+                      <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+                        <span>Customer Destination</span>
+                        <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                          {dstLat.toFixed(4)}° N, {dstLng.toFixed(4)}° E
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300 max-w-xs truncate font-medium">
+                        {tracking?.delivery_address || 'BKK1, Street 310, Phnom Penh, Cambodia'}
                       </div>
                     </div>
                   </div>
@@ -347,7 +358,7 @@ export function TrackOrderPage() {
                 </div>
                 <div>
                   <div className="text-sm font-bold flex items-center gap-2">
-                    {tracking?.driver?.name || 'Sokha Chan (MegaExpress GPS Courier)'}
+                    {tracking?.driver?.name || 'Sokha Chan (TYUSHOP Express GPS Courier)'}
                     <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
                       ★ 4.95 Verified Courier
                     </Badge>
