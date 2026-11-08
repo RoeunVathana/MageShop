@@ -737,7 +737,7 @@ class CommerceEngagementController extends Controller
         } elseif (str_contains($q, 'track') || str_contains($q, 'delivery') || str_contains($q, 'location') || str_contains($q, 'where')) {
             $reply = '🚚 **Real-Time GPS Delivery Tracking**: Click **Track Delivery** in the top navigation bar (or visit `/track-order`) to watch your driver’s live GPS location on the interactive map, view courier contact details, and see estimated arrival times!';
         } else {
-            $reply = '👋 Welcome to **TYUSHOP 24/7 Supporter**! I can help you with:\n• **Loyalty Points**: Earn +5 pts per order, redeem 100 pts for a FREE item under $20–$30\n• **Discount Coupons**: Try `WELCOME10`, `MEGA20`, or `KHQR5` at checkout\n• **Live GPS Tracking**: Watch your courier in real time on `/track-order`\n• **Direct Hotline**: +855 23 999 888 or submit a ticket on `/contact`.';
+            $reply = '👋 Welcome to **TYUSHOP 24/7 Supporter**! I can help you with:\n• **Loyalty Points**: Earn +5 pts per order, redeem 100 pts for a FREE item under $20–$30\n• **Discount Coupons**: Try `WELCOME10`, `MEGA20`, or `KHQR5` at checkout\n• **Live GPS Tracking**: Watch your courier in real time on `/track-order`\n• **Direct Hotline**: 016 555 637 or submit a ticket on `/contact`.';
         }
 
         return response()->json([

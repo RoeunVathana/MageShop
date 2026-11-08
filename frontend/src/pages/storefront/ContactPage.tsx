@@ -110,7 +110,7 @@ export function ContactPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-primary shrink-0" />
-                  <span>+855 (23) 999-888 / +855 (12) 889-900</span>
+                  <span>016 555 637</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-primary shrink-0" />

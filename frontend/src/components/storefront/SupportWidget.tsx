@@ -182,7 +182,7 @@ export function SupportWidget() {
             <Link to="/contact" onClick={() => setIsOpen(false)} className="hover:text-primary font-medium flex items-center gap-1">
               <PhoneCall className="w-3 h-3" /> Open Support Ticket
             </Link>
-            <span>Hotline: +855 23 999 888</span>
+            <span>Hotline: 016 555 637</span>
           </div>
         </div>
       )}

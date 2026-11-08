@@ -69,11 +69,11 @@ export function AnnouncementBar() {
         {/* Right utilities: Help, Language, Currency */}
         <div className="flex items-center gap-4 text-slate-300">
           <a
-            href="tel:+85523999888"
+            href="tel:016555637"
             className="hidden md:flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
           >
             <Phone className="w-3 h-3" />
-            <span>{t('Support: +855 23 999 888', 'ជំនួយអតិថិជន: +855 23 999 888')}</span>
+            <span>{t('Support: 016 555 637', 'ជំនួយអតិថិជន: 016 555 637')}</span>
           </a>
 
           <div className="flex items-center gap-2">

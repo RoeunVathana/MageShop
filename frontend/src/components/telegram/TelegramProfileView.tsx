@@ -97,7 +97,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <Phone className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-            <span>{storeSettings?.contact_phone || '+855 (23) 998-888'}</span>
+            <span>{storeSettings?.contact_phone || '016 555 637'}</span>
           </div>
         </div>
       </div>

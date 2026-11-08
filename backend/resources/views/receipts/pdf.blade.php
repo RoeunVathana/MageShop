@@ -111,7 +111,7 @@
             <td>
                 <div class="store-title">{{ $store['store_name'] ?? 'TYUSHOP' }}</div>
                 <div style="color: #6b7280;">{{ $store['store_address'] ?? 'Phnom Penh, Cambodia' }}</div>
-                <div style="color: #6b7280;">Email: {{ $store['support_email'] ?? 'support@megacommerce.local' }} | Tel: {{ $store['contact_phone'] ?? '+855 (23) 998-888' }}</div>
+                <div style="color: #6b7280;">Email: {{ $store['support_email'] ?? 'support@megacommerce.local' }} | Tel: {{ $store['contact_phone'] ?? '016 555 637' }}</div>
                 @if(!empty($store['tax_id']))
                 <div style="color: #9ca3af; font-size: 11px;">VAT / Tax ID: {{ $store['tax_id'] }}</div>
                 @endif
