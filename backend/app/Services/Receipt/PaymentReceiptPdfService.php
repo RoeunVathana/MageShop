@@ -9,6 +9,7 @@ use App\Models\Receipt;
 use App\Models\StoreSetting;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,40 @@ use Illuminate\Support\Facades\View;
 
 class PaymentReceiptPdfService
 {
+    /**
+     * Apply dynamic SMTP settings stored in `store_settings` table by Admin Security Console.
+     */
+    protected function applyDynamicMailSettings(): void
+    {
+        try {
+            $host = StoreSetting::get('mail_host');
+            if (! empty($host)) {
+                Config::set('mail.default', StoreSetting::get('mail_mailer', config('mail.default', 'smtp')));
+                Config::set('mail.mailers.smtp.host', $host);
+                Config::set('mail.mailers.smtp.port', (int) StoreSetting::get('mail_port', 587));
+                Config::set('mail.mailers.smtp.username', StoreSetting::get('mail_username'));
+                $password = StoreSetting::get('mail_password');
+                if (! empty($password)) {
+                    Config::set('mail.mailers.smtp.password', $password);
+                }
+                $encryption = StoreSetting::get('mail_encryption');
+                if ($encryption !== null) {
+                    Config::set('mail.mailers.smtp.encryption', $encryption === '' ? null : $encryption);
+                }
+                $fromAddress = StoreSetting::get('mail_from_address');
+                if (! empty($fromAddress)) {
+                    Config::set('mail.from.address', $fromAddress);
+                }
+                $fromName = StoreSetting::get('mail_from_name');
+                if (! empty($fromName)) {
+                    Config::set('mail.from.name', $fromName);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fallback to default config/mail.php
+        }
+    }
+
     /**
      * Get or create a Receipt model for an order.
      */
@@ -81,24 +116,29 @@ class PaymentReceiptPdfService
      */
     public function generateAndSend(Order $order, ?Payment $payment = null): Receipt
     {
+        $this->applyDynamicMailSettings();
         $receipt = $this->getOrCreateReceipt($order, $payment);
         $payment = $payment ?? $order->payments()->latest()->first();
+        $pdfBytes = null;
 
         try {
             $pdfBytes = $this->generatePdfBytes($order, $receipt, $payment);
 
             // Store PDF to receipts directory
             $fileName = "receipts/receipt-{$receipt->receipt_number}.pdf";
-            // Default disk is S3 in production (FILESYSTEM_DISK=s3), so receipts survive redeploys.
             Storage::disk(config('filesystems.default', 'local'))->put($fileName, $pdfBytes);
 
             $receipt->update([
                 'receipt_file_path' => $fileName,
             ]);
+        } catch (\Throwable $e) {
+            Log::warning("Non-fatal PDF storage warning for order #{$order->order_number}: {$e->getMessage()}");
+        }
 
-            // Dispatch Email if shipping email is present
-            if (! empty($order->shipping_email)) {
-                Mail::to($order->shipping_email)->send(
+        try {
+            $recipientEmail = $order->shipping_email ?: $order->customer_email;
+            if (! empty($recipientEmail)) {
+                Mail::to($recipientEmail)->send(
                     new PaymentReceiptMail($order, $receipt, $payment, $pdfBytes)
                 );
 
@@ -108,7 +148,7 @@ class PaymentReceiptPdfService
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error("Failed to generate or send receipt for order #{$order->order_number}: {$e->getMessage()}");
+            Log::error("Failed to send payment receipt email for order #{$order->order_number}: {$e->getMessage()}");
             $receipt->update([
                 'email_status' => 'failed',
             ]);

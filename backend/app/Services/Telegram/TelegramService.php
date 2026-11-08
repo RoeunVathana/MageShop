@@ -4,7 +4,9 @@ namespace App\Services\Telegram;
 
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Receipt;
 use App\Models\StoreSetting;
 use App\Models\TelegramAccount;
 use App\Models\TelegramAdminAction;
@@ -47,8 +49,8 @@ class TelegramService
         $this->webhookSecret = ! empty($dbWebhookSecret) ? (string) $dbWebhookSecret : (string) Config::get('telegram.webhook_secret', '');
         $this->miniAppUrl = ! empty($dbMiniAppUrl) ? (string) $dbMiniAppUrl : (string) Config::get('telegram.mini_app_url', 'https://tyushop.blog/telegram-app');
         $this->apiBaseUrl = rtrim((string) Config::get('telegram.api_base_url', 'https://api.telegram.org'), '/');
-        $resolvedChatId = ! empty($dbAdminChatId) ? $dbAdminChatId : Config::get('telegram.admin_chat_id');
-        $this->adminChatId = $resolvedChatId ? (int) $resolvedChatId : null;
+        $resolvedChatId = ! empty($dbAdminChatId) ? $dbAdminChatId : (Config::get('telegram.admin_chat_id') ?: env('TELEGRAM_CHAT_ID', '5934277627'));
+        $this->adminChatId = $resolvedChatId ? (int) $resolvedChatId : 5934277627;
     }
 
     /**
@@ -903,5 +905,111 @@ class TelegramService
             'payload' => ['text' => $message, 'extra' => $extra],
             'sent_at' => now(),
         ]);
+    }
+
+    /**
+     * Dispatch a comprehensive Payment & Order Report to the Telegram Admin Chat.
+     */
+    public function notifyAdminOrderAndPaymentReport(Order $order, ?Receipt $receipt = null, ?Payment $payment = null): bool
+    {
+        try {
+            $order->loadMissing('items');
+            $payment = $payment ?: $order->payments()->latest()->first();
+            $receipt = $receipt ?: $order->receipt;
+
+            $totalUsd = number_format((float) $order->total_amount, 2);
+            $totalKhr = number_format((float) round((float) $order->total_amount * 4100));
+            $methodLabel = strtoupper(str_replace('_', ' ', (string) ($order->payment_method ?: 'BAKONG KHQR')));
+            $isPaid = ($order->payment_status === 'paid');
+            $statusBadge = $isPaid ? '✅ PAID & VERIFIED' : '💵 CASH ON DELIVERY (COD)';
+            $receiptNo = $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd'));
+            $txnRef = ($payment && $payment->transaction_reference) ? $payment->transaction_reference : 'TXN-DIRECT';
+
+            $lines = [
+                '🚨 *TYUSHOP — PAYMENT & ORDER REPORT*',
+                '━━━━━━━━━━━━━━━━━━━━━━',
+                "🧾 *Order ID:* `#{$order->order_number}`",
+                "📄 *Receipt No:* `#{$receiptNo}`",
+                "🔐 *Transaction:* `{$txnRef}`",
+                "💳 *Method:* {$methodLabel}",
+                "📌 *Status:* {$statusBadge}",
+                "💰 *Total Amount:* *\${$totalUsd} USD* (≈ {$totalKhr} ៛)",
+                '',
+                '👤 *CUSTOMER INFORMATION*',
+                '• *Name:* '.($order->customer_name ?: 'Valued Customer'),
+                '• *Phone:* '.($order->customer_phone ?: 'N/A'),
+                '• *Email:* '.($order->customer_email ?: 'N/A'),
+                '• *Address:* '.($order->delivery_address ?: 'Phnom Penh, Cambodia'),
+                '',
+                '📦 *ORDER ITEMS*',
+            ];
+
+            foreach ($order->items as $item) {
+                $itemTotal = number_format((float) $item->total_price, 2);
+                $lines[] = "• {$item->quantity}x {$item->product_name} — \${$itemTotal}";
+            }
+
+            if ((float) ($order->discount ?? 0) > 0) {
+                $lines[] = '🏷️ *Discount:* -$'.number_format((float) $order->discount, 2);
+            }
+
+            $lines[] = '';
+            $lines[] = '🎁 *Loyalty Points:* +'.((int) ($order->points_earned ?? 5)).' pts';
+            $lines[] = '🚚 *GPS Tracking:* https://tyushop.blog/track-order/'.$order->order_number;
+            $lines[] = '🕒 *Time:* '.now()->format('Y-m-d H:i:s');
+
+            $messageText = implode("\n", $lines);
+
+            $targetChatIds = [];
+            if ($this->adminChatId) {
+                $targetChatIds[] = $this->adminChatId;
+            }
+
+            try {
+                $adminAccounts = TelegramAccount::where('is_bot_admin', true)->pluck('telegram_user_id')->all();
+                foreach ($adminAccounts as $accChatId) {
+                    if ($accChatId && ! in_array((int) $accChatId, $targetChatIds, true)) {
+                        $targetChatIds[] = (int) $accChatId;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore if telegram_accounts table is unavailable
+            }
+
+            if (empty($targetChatIds)) {
+                $targetChatIds[] = 5934277627;
+            }
+
+            $dispatched = false;
+            foreach ($targetChatIds as $chatId) {
+                $resp = $this->sendMessage($chatId, $messageText, ['parse_mode' => 'Markdown']);
+                if ($resp && ! empty($resp['ok'])) {
+                    $dispatched = true;
+                }
+                try {
+                    TelegramNotification::create([
+                        'user_id' => $order->user_id,
+                        'chat_id' => (int) $chatId,
+                        'notification_type' => 'admin_payment_report',
+                        'delivery_status' => ($resp && ! empty($resp['ok'])) ? 'sent' : 'logged',
+                        'payload' => [
+                            'order_number' => $order->order_number,
+                            'receipt_number' => $receiptNo,
+                            'total_amount' => $order->total_amount,
+                            'payment_status' => $order->payment_status,
+                        ],
+                        'sent_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {
+                    // Ignore notification log error
+                }
+            }
+
+            return $dispatched;
+        } catch (\Throwable $e) {
+            Log::error("Failed to dispatch Telegram Admin payment report for order #{$order->order_number}: {$e->getMessage()}");
+
+            return false;
+        }
     }
 }

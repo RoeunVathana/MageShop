@@ -7,6 +7,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Services\Receipt\PaymentReceiptPdfService;
+use App\Services\Telegram\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -184,6 +186,7 @@ class CommerceEngagementController extends Controller
             'customer_phone' => ['required', 'string', 'max:40'],
             'delivery_address' => ['required', 'string', 'max:500'],
             'payment_method' => ['nullable', 'string', 'max:40'],
+            'initiate_qr' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -259,8 +262,9 @@ class CommerceEngagementController extends Controller
 
         $orderNumber = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $paymentMethod = $validated['payment_method'] ?? 'bakong_khqr';
+        $initiateQr = ! empty($validated['initiate_qr']) && $paymentMethod === 'bakong_khqr' && $totalAmount > 0;
         $isCashOnArrival = in_array($paymentMethod, ['cash_on_delivery', 'cash_on_hand'], true) && $totalAmount > 0;
-        $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : 'paid';
+        $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'pending_qr' : 'paid');
 
         $order = Order::create([
             'order_number' => $orderNumber,
@@ -318,14 +322,15 @@ class CommerceEngagementController extends Controller
             ]);
         }
 
-        Payment::create([
+        $txnRef = 'TXN-'.strtoupper(Str::random(10));
+        $payment = Payment::create([
             'order_id' => $order->id,
-            'transaction_reference' => 'TXN-'.strtoupper(Str::random(10)),
+            'transaction_reference' => $txnRef,
             'payment_method' => $order->payment_method,
             'amount' => $totalAmount,
             'currency' => 'USD',
-            'status' => $isCashOnArrival ? 'pending_arrival' : 'completed',
-            'verified_at' => $isCashOnArrival ? null : now(),
+            'status' => $isCashOnArrival ? 'pending_arrival' : ($initiateQr ? 'pending_qr' : 'completed'),
+            'verified_at' => ($isCashOnArrival || $initiateQr) ? null : now(),
         ]);
 
         // Update user's loyalty points balance
@@ -357,14 +362,36 @@ class CommerceEngagementController extends Controller
             ]);
         }
 
+        $qrPaymentData = $this->buildBakongKhqrPayload($order->order_number, $totalAmount, $txnRef);
+        $receiptService = app(PaymentReceiptPdfService::class);
+        $telegramNotified = false;
+        $receipt = null;
+
+        if ($initiateQr) {
+            // Prepare receipt number while waiting for customer to scan & confirm QR payment
+            $receipt = $receiptService->getOrCreateReceipt($order, $payment);
+        } else {
+            // Immediately dispatch Customer Payment Report Email & Telegram Admin Report
+            $receipt = $receiptService->generateAndSend($order, $payment);
+            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+        }
+
         return response()->json([
             'status' => 'ok',
-            'message' => $isCashOnArrival
-                ? "Order #{$order->order_number} confirmed for Cash on Hand upon delivery! You earned +{$pointsEarned} Loyalty Points."
-                : "Order #{$order->order_number} paid & confirmed! You earned +{$pointsEarned} Loyalty Points.",
+            'message' => $initiateQr
+                ? "Bakong KHQR generated for Order #{$order->order_number}. Please scan QR code to complete payment."
+                : ($isCashOnArrival
+                    ? "Order #{$order->order_number} confirmed for Cash on Hand upon delivery! You earned +{$pointsEarned} Loyalty Points."
+                    : "Order #{$order->order_number} paid & confirmed! You earned +{$pointsEarned} Loyalty Points."),
             'data' => [
                 'order' => $order->load('items'),
-                'payment_mode' => $isCashOnArrival ? 'cash_on_delivery' : 'pay_now',
+                'receipt_number' => $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd')),
+                'transaction_reference' => $txnRef,
+                'email_status' => $receipt ? $receipt->email_status : 'pending',
+                'email_sent_to' => $order->customer_email,
+                'telegram_admin_notified' => $telegramNotified,
+                'qr_payment' => $qrPaymentData,
+                'payment_mode' => $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'awaiting_qr_scan' : 'pay_now'),
                 'amount_due_on_arrival' => $isCashOnArrival ? $totalAmount : 0.00,
                 'points_earned' => $pointsEarned,
                 'points_redeemed' => $pointsRedeemed,
@@ -372,6 +399,43 @@ class CommerceEngagementController extends Controller
                 'tracking_url' => "/track-order/{$order->order_number}",
             ],
         ], 201);
+    }
+
+    /**
+     * Build EMVCo Bakong KHQR payload and metadata for QR scan checkout.
+     */
+    protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
+    {
+        $merchantAccount = (string) env('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt');
+        $merchantName = (string) env('BAKONG_MERCHANT_NAME', 'Tyushop');
+        $merchantCity = (string) env('BAKONG_MERCHANT_CITY', 'Phnom Penh');
+        $amountFormatted = number_format($amountUsd, 2, '.', '');
+        $amountKhr = (int) round($amountUsd * 4100);
+
+        $emvPayload = '000201010212'
+            .'29'.str_pad((string) (strlen($merchantAccount) + 4), 2, '0', STR_PAD_LEFT).'00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount
+            .'520459995303840'
+            .'54'.str_pad((string) strlen($amountFormatted), 2, '0', STR_PAD_LEFT).$amountFormatted
+            .'5802KH'
+            .'59'.str_pad((string) strlen($merchantName), 2, '0', STR_PAD_LEFT).$merchantName
+            .'60'.str_pad((string) strlen($merchantCity), 2, '0', STR_PAD_LEFT).$merchantCity
+            .'62'.str_pad((string) (strlen($orderNumber) + 4), 2, '0', STR_PAD_LEFT).'01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber
+            .'6304';
+        $crcHex = strtoupper(substr(dechex(crc32($emvPayload)), 0, 4));
+        $fullQrString = $emvPayload.str_pad($crcHex, 4, '0', STR_PAD_LEFT);
+
+        return [
+            'qr_string' => $fullQrString,
+            'md5' => md5($fullQrString),
+            'merchant_account' => $merchantAccount,
+            'merchant_name' => $merchantName,
+            'merchant_city' => $merchantCity,
+            'amount_usd' => $amountUsd,
+            'amount_khr' => $amountKhr,
+            'order_number' => $orderNumber,
+            'transaction_reference' => $txnRef,
+            'expires_in_seconds' => 600,
+        ];
     }
 
     /**
@@ -574,34 +638,58 @@ class CommerceEngagementController extends Controller
     }
 
     /**
-     * Confirm payment completed upon delivery arrival (Cash on Hand) or switched to Pay Now.
+     * Confirm payment completed via Bakong KHQR scan or upon delivery arrival (Cash on Hand).
      */
     public function confirmArrivalPayment(Request $request, string $orderNumber): JsonResponse
     {
-        $order = Order::where('order_number', $orderNumber)->first();
+        $order = Order::with('items')->where('order_number', $orderNumber)->first();
         if (! $order) {
-            $order = Order::latest()->first();
+            $order = Order::with('items')->latest()->first();
         }
 
+        $receipt = null;
+        $payment = null;
+        $telegramNotified = false;
+
         if ($order) {
+            $isQrCheckoutConfirm = ($request->input('context') === 'qr_checkout') || ($order->payment_status === 'pending_qr');
+
+            if (! empty($request->input('customer_email'))) {
+                $order->customer_email = (string) $request->input('customer_email');
+            }
+
             $order->payment_status = 'paid';
-            $order->status = 'delivered';
+            if (! $isQrCheckoutConfirm) {
+                $order->status = 'delivered';
+            }
             $order->save();
 
             Payment::where('order_id', $order->id)->update([
                 'status' => 'completed',
                 'verified_at' => now(),
             ]);
+
+            $payment = Payment::where('order_id', $order->id)->latest()->first();
+
+            // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
+            $receipt = app(PaymentReceiptPdfService::class)->generateAndSend($order, $payment);
+            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
         }
 
         return response()->json([
             'status' => 'ok',
-            'message' => "Payment confirmed for Order #{$orderNumber}! Handover complete.",
+            'message' => "Payment verified & confirmed for Order #{$orderNumber}! Receipt emailed to customer and report sent to Telegram Admin.",
             'data' => [
                 'order_number' => $order ? $order->order_number : $orderNumber,
+                'order' => $order,
+                'receipt_number' => $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd')),
+                'transaction_reference' => ($payment && $payment->transaction_reference) ? $payment->transaction_reference : 'TXN-VERIFIED',
+                'email_status' => $receipt ? $receipt->email_status : 'sent',
+                'email_sent_to' => $order ? $order->customer_email : null,
+                'telegram_admin_notified' => $telegramNotified,
                 'payment_status' => 'paid',
                 'amount_due_on_arrival' => 0.00,
-                'status' => 'delivered',
+                'status' => $order ? $order->status : 'delivered',
             ],
         ]);
     }
