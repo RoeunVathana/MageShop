@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { bannerService, type Banner } from '@/services/banner.service'
+import { mediaService } from '@/services/media.service'
 
 const defaultFallbackBanners: Banner[] = [
   {
@@ -208,7 +209,7 @@ export function HeroBannerSlider() {
                 {currentBanner.video_url ? (
                   <video
                     key={currentBanner.video_url}
-                    src={currentBanner.video_url}
+                    src={mediaService.resolveMediaUrl(currentBanner.video_url)}
                     autoPlay
                     loop
                     muted
@@ -218,7 +219,7 @@ export function HeroBannerSlider() {
                 ) : currentBanner.image_url ? (
                   <img
                     key={currentBanner.image_url}
-                    src={currentBanner.image_url}
+                    src={mediaService.resolveMediaUrl(currentBanner.image_url)}
                     alt={currentBanner.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

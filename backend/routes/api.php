@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReceiptController;
 use App\Http\Controllers\Api\V1\StoreSettingsController;
@@ -73,6 +74,9 @@ Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/banners/{banner}', [BannerController::class, 'show']);
 Route::post('/banners/{banner}/click', [BannerController::class, 'click']);
 
+// Public Media & Cloud Storage Streaming / Presigned Proxy
+Route::get('/media/{path}', [MediaController::class, 'show'])->where('path', '.*');
+
 // Public Universal Categories, Brands & Attributes
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
@@ -126,6 +130,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Store Settings
     Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);
     Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+
+    // Admin Cloud Storage Media Upload
+    Route::post('/media/upload', [MediaController::class, 'upload']);
 
     // Admin Slide Banner Management
     Route::prefix('banners')->group(function () {

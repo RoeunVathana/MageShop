@@ -16,6 +16,7 @@ import {
   MousePointerClick,
   X,
   Play,
+  UploadCloud,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -24,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { bannerService, type Banner, type CreateBannerPayload } from '@/services/banner.service'
+import { mediaService } from '@/services/media.service'
 
 export function BannerListPage() {
   const { toast } = useToast()
@@ -53,6 +55,38 @@ export function BannerListPage() {
   const [formPlacement, setFormPlacement] = useState('hero')
   const [formSortOrder, setFormSortOrder] = useState(1)
   const [formIsActive, setFormIsActive] = useState(true)
+
+  // Cloud Upload State
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
+
+  const handleFileUpload = async (file: File, type: 'image' | 'video') => {
+    if (type === 'image') setUploadingImage(true)
+    else setUploadingVideo(true)
+
+    try {
+      const res = await mediaService.uploadMedia(file, type === 'image' ? 'banners' : 'videos')
+      if (type === 'image') {
+        setFormImageUrl(res.url)
+      } else {
+        setFormVideoUrl(res.url)
+      }
+      toast({
+        title: 'Cloud Upload Succeeded',
+        description: `Uploaded ${file.name} to Cloud Storage (${(file.size / (1024 * 1024)).toFixed(2)} MB)`,
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Cloud Upload Failed',
+        description: err.response?.data?.message || err.message,
+        type: 'error',
+      })
+    } finally {
+      if (type === 'image') setUploadingImage(false)
+      else setUploadingVideo(false)
+    }
+  }
 
   const fetchBanners = async () => {
     setLoading(true)
@@ -300,7 +334,7 @@ export function BannerListPage() {
                   <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video shadow-md border border-border/50">
                     {previewBanner.video_url ? (
                       <video
-                        src={previewBanner.video_url}
+                        src={mediaService.resolveMediaUrl(previewBanner.video_url)}
                         autoPlay
                         loop
                         muted
@@ -309,7 +343,7 @@ export function BannerListPage() {
                       />
                     ) : previewBanner.image_url ? (
                       <img
-                        src={previewBanner.image_url}
+                        src={mediaService.resolveMediaUrl(previewBanner.image_url)}
                         alt={previewBanner.title}
                         className="w-full h-full object-cover"
                       />
@@ -451,7 +485,7 @@ export function BannerListPage() {
                                 <Play className="w-4 h-4" />
                               </div>
                             ) : b.image_url ? (
-                              <img src={b.image_url} alt={b.title} className="w-full h-full object-cover" />
+                              <img src={mediaService.resolveMediaUrl(b.image_url)} alt={b.title} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">
                                 No media
@@ -617,20 +651,52 @@ export function BannerListPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-semibold block mb-1">Image URL</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold block">Image URL</label>
+                        <label className="cursor-pointer inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:underline">
+                          <UploadCloud className="w-3.5 h-3.5" />
+                          {uploadingImage ? 'Uploading...' : 'Upload Image to Cloud'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingImage}
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) handleFileUpload(f, 'image')
+                            }}
+                          />
+                        </label>
+                      </div>
                       <input
                         type="text"
-                        placeholder="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg or https://..."
+                        placeholder="/api/v1/media/branding/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg or https://..."
                         value={formImageUrl}
                         onChange={(e) => setFormImageUrl(e.target.value)}
                         className="w-full p-2 border rounded-md bg-background text-foreground"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold block mb-1">Video URL (Optional)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold block">Video URL (Optional)</label>
+                        <label className="cursor-pointer inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:underline">
+                          <UploadCloud className="w-3.5 h-3.5" />
+                          {uploadingVideo ? 'Uploading...' : 'Upload Video to Cloud'}
+                          <input
+                            type="file"
+                            accept="video/*"
+                            disabled={uploadingVideo}
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) handleFileUpload(f, 'video')
+                            }}
+                          />
+                        </label>
+                      </div>
                       <input
                         type="text"
-                        placeholder="/gemini_generated_video_4b7f1e53.mp4"
+                        placeholder="/api/v1/media/branding/gemini_generated_video_4b7f1e53.mp4"
                         value={formVideoUrl}
                         onChange={(e) => setFormVideoUrl(e.target.value)}
                         className="w-full p-2 border rounded-md bg-background text-foreground"
