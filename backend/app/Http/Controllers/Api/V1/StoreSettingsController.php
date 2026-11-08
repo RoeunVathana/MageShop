@@ -84,6 +84,12 @@ class StoreSettingsController extends Controller
             $all['currency_auto_switch_lang'] = 'false';
         }
 
+        // Google OAuth Settings & Callback Helper
+        $appUrl = env('APP_URL', 'https://api.tyushop.blog');
+        $all['google_callback_url'] = env('GOOGLE_REDIRECT_URI') ?: (rtrim($appUrl, '/') . '/api/v1/auth/google/callback');
+        $all['google_client_id'] = $all['google_client_id'] ?? (env('GOOGLE_CLIENT_ID') !== 'your-google-client-id' ? env('GOOGLE_CLIENT_ID') : '');
+        $all['google_is_configured'] = ! empty($all['google_client_id']) && ! empty($all['google_client_secret'] ?? env('GOOGLE_CLIENT_SECRET'));
+
         return response()->json([
             'status' => 'success',
             'data' => $all,
@@ -113,6 +119,9 @@ class StoreSettingsController extends Controller
             'shipping_policy' => 'nullable|string|max:1000',
             'tax_id' => 'nullable|string|max:50',
             'receipt_footer_message' => 'nullable|string|max:500',
+            'google_client_id' => 'nullable|string|max:255',
+            'google_client_secret' => 'nullable|string|max:255',
+            'google_auth_enabled' => 'nullable|string|max:10',
         ]);
 
         foreach ($validated as $key => $value) {

@@ -15,6 +15,9 @@ import {
   Sparkles,
   Store,
   ShieldCheck,
+  Copy,
+  ExternalLink,
+  Key,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -55,8 +58,15 @@ export function AdminCurrencyPage() {
     contextAllowedCurrencies || 'BOTH'
   )
   const [autoSwitchLang, setAutoSwitchLang] = useState<boolean>(contextAutoSwitch || false)
+  const [googleClientId, setGoogleClientId] = useState('')
+  const [googleClientSecret, setGoogleClientSecret] = useState('')
+  const [googleConfigured, setGoogleConfigured] = useState(false)
+  const [savingGoogle, setSavingGoogle] = useState(false)
+  const [copiedCallback, setCopiedCallback] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const googleCallbackUrl = 'https://api.tyushop.blog/api/v1/auth/google/callback'
 
   // Sync initial state from context or backend
   useEffect(() => {
@@ -64,13 +74,19 @@ export function AdminCurrencyPage() {
     setLoading(true)
     storeSettingsService
       .getAdminSettings()
-      .then((data) => {
+      .then((data: any) => {
         if (!mounted) return
         if (data.default_currency) setDefaultCurrency(data.default_currency)
         if (data.usd_to_khr_rate) setRateInput(String(data.usd_to_khr_rate))
         if (data.allowed_currencies) setAllowedMode(data.allowed_currencies)
         if (typeof data.currency_auto_switch_lang === 'boolean') {
           setAutoSwitchLang(data.currency_auto_switch_lang)
+        }
+        if (data.google_client_id) {
+          setGoogleClientId(data.google_client_id)
+        }
+        if (data.google_is_configured || (data.google_client_id && data.google_client_id !== 'your-google-client-id')) {
+          setGoogleConfigured(true)
         }
       })
       .finally(() => {
@@ -82,6 +98,51 @@ export function AdminCurrencyPage() {
   }, [])
 
   const currentRateNumber = Math.max(1, Number(rateInput) || 4100)
+
+  const handleCopyCallback = () => {
+    navigator.clipboard.writeText(googleCallbackUrl)
+    setCopiedCallback(true)
+    setTimeout(() => setCopiedCallback(false), 2500)
+    toast({
+      title: t('Callback URI Copied', 'បានចម្លង Callback URL'),
+      description: googleCallbackUrl,
+      type: 'success',
+    })
+  }
+
+  const handleSaveGoogle = async () => {
+    if (!googleClientId || !googleClientSecret) {
+      toast({
+        title: t('Missing Credentials', 'សូមបំពេញព័ត៌មានឱ្យគ្រប់'),
+        description: t('Please provide both Google Client ID and Client Secret.', 'សូមបញ្ចូលទាំង Google Client ID និង Secret'),
+        type: 'error',
+      })
+      return
+    }
+
+    setSavingGoogle(true)
+    try {
+      await storeSettingsService.updateGoogleSettings({
+        google_client_id: googleClientId.trim(),
+        google_client_secret: googleClientSecret.trim(),
+        google_auth_enabled: true,
+      })
+      setGoogleConfigured(true)
+      toast({
+        title: t('Google OAuth Configured', 'បានរក្សាទុក Google OAuth'),
+        description: t('Google Client ID and Secret have been activated successfully!', 'ព័ត៌មាន Google OAuth ត្រូវបានដំណើរការដោយជោគជ័យ!'),
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: t('Failed to save Google credentials', 'មិនអាចរក្សាទុក Google OAuth បានទេ'),
+        description: err.message,
+        type: 'error',
+      })
+    } finally {
+      setSavingGoogle(false)
+    }
+  }
 
   const handleSave = async () => {
     const rateVal = Math.max(1, Math.round(Number(rateInput) || 4100))
@@ -471,6 +532,148 @@ export function AdminCurrencyPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Setting 4: Google OAuth 2.0 Sign-In Integration */}
+            <Card className="rounded-3xl border shadow-sm overflow-hidden">
+              <CardHeader className="bg-slate-50/70 dark:bg-slate-900/40 border-b pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.57H1.24C.45 8.14 0 9.99 0 12s.45 3.86 1.24 5.43l4.04-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    {t('4. Google Account Sign-In Integration', '៤. ការភ្ជាប់ប្រព័ន្ធចូលប្រើតាម Google Account')}
+                  </CardTitle>
+                  <Badge
+                    variant="outline"
+                    className={
+                      googleConfigured
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                        : 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                    }
+                  >
+                    {googleConfigured
+                      ? t('● Active & Ready', '● ដំណើរការរួចរាល់')
+                      : t('○ Credentials Required', '○ ត្រូវការ Client ID & Secret')}
+                  </Badge>
+                </div>
+                <CardDescription className="text-xs">
+                  {t(
+                    'Configure your Google OAuth 2.0 Web Application credentials to enable instant 1-click Google Sign-In for customers.',
+                    'កំណត់ព័ត៌មាន Google OAuth 2.0 ដើម្បីអនុញ្ញាតឱ្យអតិថិជនចូលប្រើប្រាស់ដោយចុចតែម្ដងតាមរយៈគណនី Google។'
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {/* Authorized Callback URL Helper */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                    <span>{t('Authorized Redirect URI (Callback URL):', 'អាសយដ្ឋាន Redirect URI សម្រាប់ Google Cloud:')}</span>
+                    <a
+                      href="https://console.cloud.google.com/apis/credentials"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <span>Google Cloud Console</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-foreground border break-all select-all">
+                      {googleCallbackUrl}
+                    </code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyCallback}
+                      className="h-9 rounded-xl gap-1.5 text-xs font-bold shrink-0 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      {copiedCallback ? t('Copied!', 'បានចម្លង!') : t('Copy', 'ចម្លង')}
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t(
+                      'Paste this exact URI under "Authorized redirect URIs" in your Google Cloud OAuth Client credentials.',
+                      'សូមចម្លងអាសយដ្ឋានខាងលើទៅដាក់ក្នុងប្រអប់ "Authorized redirect URIs" ក្នុង Google Cloud Credentials។'
+                    )}
+                  </p>
+                </div>
+
+                {/* Google Client ID */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-primary" />
+                    <span>{t('Google Client ID', 'Google Client ID')}</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={googleClientId}
+                    onChange={(e) => setGoogleClientId(e.target.value)}
+                    placeholder="xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com"
+                    className="h-11 rounded-xl text-xs font-mono"
+                  />
+                </div>
+
+                {/* Google Client Secret */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-primary" />
+                    <span>{t('Google Client Secret', 'Google Client Secret')}</span>
+                  </label>
+                  <Input
+                    type="password"
+                    value={googleClientSecret}
+                    onChange={(e) => setGoogleClientSecret(e.target.value)}
+                    placeholder="GOCSPX-xxxxxxxxxxxxxxxxxxxx"
+                    className="h-11 rounded-xl text-xs font-mono"
+                  />
+                </div>
+
+                {/* Action buttons */}
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleSaveGoogle}
+                    disabled={savingGoogle}
+                    className="rounded-xl h-10 text-xs font-bold gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md cursor-pointer"
+                  >
+                    {savingGoogle ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {t('Save Google Credentials', 'រក្សាទុកព័ត៌មាន Google')}
+                  </Button>
+
+                  <a
+                    href="https://api.tyushop.blog/api/v1/auth/google/redirect"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground py-2 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <span>{t('Test Google OAuth Flow', 'សាកល្បងតេស្ត Google OAuth')}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* RIGHT: Live Storefront Impact & Price Calculator (5 cols) */}
@@ -569,3 +772,4 @@ export function AdminCurrencyPage() {
     </DashboardLayout>
   )
 }
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -69,6 +69,82 @@ export function LoginPage() {
   const { toast } = useToast()
   const { t, language, setLanguage } = useShopEngagement()
 
+  // Process incoming Google OAuth Callback tokens or errors
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const errorParam = searchParams.get('error')
+    const googleUserParam = searchParams.get('google_user')
+
+    if (errorParam) {
+      toast({
+        title: t('Google Sign-In Notice', 'ដំណឹងការចូលតាម Google'),
+        description: decodeURIComponent(errorParam),
+        type: 'error',
+      })
+      navigate('/login', { replace: true })
+      return
+    }
+
+    if (token) {
+      setLoading(true)
+      let parsedUser: any = null
+      if (googleUserParam) {
+        try {
+          parsedUser = JSON.parse(decodeURIComponent(googleUserParam))
+        } catch {
+          // ignore parsing error
+        }
+      }
+
+      if (parsedUser) {
+        authService.saveSession(parsedUser, token)
+      }
+
+      // Fetch fresh authenticated profile from backend
+      authService
+        .getCurrentUser()
+        .then((res) => {
+          const freshUser = res?.data?.user || parsedUser
+          if (freshUser) {
+            authService.saveSession(freshUser, token)
+          }
+
+          toast({
+            title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
+            description: t('Signed in successfully with your Google account!', 'បានចូលប្រើប្រាស់ដោយជោគជ័យតាមរយៈគណនី Google!'),
+            type: 'success',
+          })
+
+          if (redirectParam) {
+            navigate(redirectParam)
+          } else if (authService.isAdmin(freshUser)) {
+            navigate('/dashboard/admin')
+          } else {
+            navigate('/')
+          }
+        })
+        .catch(() => {
+          if (parsedUser) {
+            toast({
+              title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
+              description: t('Signed in with Google!', 'បានចូលតាម Google!'),
+              type: 'success',
+            })
+            if (redirectParam) {
+              navigate(redirectParam)
+            } else if (authService.isAdmin(parsedUser)) {
+              navigate('/dashboard/admin')
+            } else {
+              navigate('/')
+            }
+          }
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    }
+  }, [searchParams])
+
   const {
     register,
     handleSubmit,
@@ -111,7 +187,11 @@ export function LoginPage() {
   }
 
   const handleGoogleAuth = () => {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+    setLoading(true)
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    const apiBase = isLocal
+      ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1')
+      : 'https://api.tyushop.blog/api/v1'
     window.location.href = `${apiBase}/auth/google/redirect`
   }
 

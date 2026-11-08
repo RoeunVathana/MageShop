@@ -104,6 +104,15 @@ export function RegisterPage() {
     },
   })
 
+  const handleGoogleAuth = () => {
+    setLoading(true)
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    const apiBase = isLocal
+      ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1')
+      : 'https://api.tyushop.blog/api/v1'
+    window.location.href = `${apiBase}/auth/google/redirect`
+  }
+
   const onSubmit = async (data: RegisterFormData) => {
     setLoading(true)
     try {
@@ -464,6 +473,46 @@ export function RegisterPage() {
                 )}
               </Button>
             </form>
+
+            {/* Divider */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200 dark:border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase">
+                <span className="bg-card px-2 text-muted-foreground font-semibold">
+                  {t('Or continue with', 'ឬចូលតាមរយៈ')}
+                </span>
+              </div>
+            </div>
+
+            {/* Google OAuth Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleAuth}
+              className="w-full h-11 rounded-xl gap-2.5 text-xs font-bold border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer mb-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.57H1.24C.45 8.14 0 9.99 0 12s.45 3.86 1.24 5.43l4.04-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>{t('Sign Up with Google', 'ចុះឈ្មោះតាម Google')}</span>
+            </Button>
 
             {/* Quick Switch to Sign In */}
             <div className="pt-2 text-center text-xs text-muted-foreground border-t border-slate-100 dark:border-slate-800">

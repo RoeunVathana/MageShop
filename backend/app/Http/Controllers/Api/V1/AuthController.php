@@ -300,13 +300,27 @@ class AuthController extends Controller
      */
     public function googleRedirect(GoogleAuthService $googleService)
     {
-        $url = $googleService->getRedirectUrl();
+        $frontendUrl = rtrim(config('app.frontend_url') ?: env('FRONTEND_URL', 'https://tyushop.blog'), '/');
 
-        if (request()->wantsJson()) {
-            return response()->json(['url' => $url]);
+        try {
+            $url = $googleService->getRedirectUrl();
+
+            if (request()->wantsJson()) {
+                return response()->json(['url' => $url]);
+            }
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ], 400);
+            }
+
+            $msg = urlencode($e->getMessage());
+            return redirect()->to("{$frontendUrl}/login?error={$msg}");
         }
-
-        return redirect()->away($url);
     }
 
     /**
@@ -316,17 +330,30 @@ class AuthController extends Controller
      */
     public function googleCallback(Request $request, GoogleAuthService $googleService)
     {
-        $result = $googleService->handleCallback($request->query('code'));
+        $frontendUrl = rtrim(config('app.frontend_url') ?: env('FRONTEND_URL', 'https://tyushop.blog'), '/');
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'status' => 'success',
-                'data' => $result,
-            ]);
+        try {
+            $result = $googleService->handleCallback($request->query('code'));
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $result,
+                ]);
+            }
+
+            $userJson = urlencode(json_encode($result['user']));
+            return redirect()->to("{$frontendUrl}/login?token={$result['token']}&google_user={$userJson}");
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ], 400);
+            }
+
+            $msg = urlencode($e->getMessage());
+            return redirect()->to("{$frontendUrl}/login?error={$msg}");
         }
-
-        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-
-        return redirect()->to("{$frontendUrl}/login?token={$result['token']}");
     }
 }

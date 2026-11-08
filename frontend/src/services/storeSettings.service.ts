@@ -8,6 +8,10 @@ export interface StoreCurrencySettings {
   store_name?: string
   contact_phone?: string
   support_email?: string
+  google_client_id?: string
+  google_client_secret?: string
+  google_callback_url?: string
+  google_is_configured?: boolean
 }
 
 interface ApiResponse<T> {
@@ -108,6 +112,31 @@ export const storeSettingsService = {
         } catch {
           return await api.post<any>('/admin/store-settings/currency', payload)
         }
+      }
+    }
+  },
+
+  /**
+   * Update Google OAuth Client ID & Secret
+   */
+  async updateGoogleSettings(googleSettings: {
+    google_client_id: string
+    google_client_secret: string
+    google_auth_enabled?: boolean
+  }): Promise<{ status: string; message: string; data?: any }> {
+    const payload = {
+      google_client_id: googleSettings.google_client_id,
+      google_client_secret: googleSettings.google_client_secret,
+      google_auth_enabled: googleSettings.google_auth_enabled ? 'true' : 'false',
+    }
+
+    try {
+      return await api.patch<any>('/store-settings', payload)
+    } catch {
+      try {
+        return await api.patch<any>('/admin/store-settings', payload)
+      } catch {
+        return await api.post<any>('/store-settings', payload)
       }
     }
   },
