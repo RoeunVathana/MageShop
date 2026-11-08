@@ -12,18 +12,21 @@ export function StorefrontLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground pb-16 md:pb-0 overflow-x-hidden">
-      {/* Top Announcement Bar */}
-      <AnnouncementBar />
+    <div className="min-h-screen flex flex-col bg-background text-foreground pb-16 md:pb-0 overflow-x-clip">
+      {/* Pinned Top Navigation Bar — Does Not Move When Scrolling Page */}
+      <div className="sticky top-0 z-40 w-full shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        {/* Top Announcement Bar */}
+        <AnnouncementBar />
 
-      {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
-      <Header
-        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        isMobileMenuOpen={isMobileMenuOpen}
-      />
+        {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
+        <Header
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
 
-      {/* Desktop Navigation & Category bar */}
-      <Navbar />
+        {/* Desktop Navigation & Category bar */}
+        <Navbar />
+      </div>
 
       {/* Mobile Menu Drawer */}
       <MobileMenu

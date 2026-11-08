@@ -62,7 +62,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Left: Mobile Toggle & Brand Logo */}
         <div className="flex items-center gap-3">
