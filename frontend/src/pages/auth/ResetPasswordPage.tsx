@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -96,10 +96,10 @@ export function ResetPasswordPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-900 dark:text-blue-200">
-            <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
-              <strong>Phase 1 UI Notice:</strong> Validates input via Zod schema. Real database token hash update activates in Phase 2.
+              <strong>Argon2id Zero-Trust Security:</strong> Your new password is encrypted with Argon2id and automatically revokes all previous active sessions.
             </span>
           </div>
 

@@ -45,6 +45,19 @@ export function VerifyOtpPage() {
     }
   }
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (!pasted) return
+    const nextOtp = ['', '', '', '', '', '']
+    for (let i = 0; i < 6; i++) {
+      nextOtp[i] = pasted[i] || ''
+    }
+    setOtp(nextOtp)
+    const focusIdx = Math.min(5, pasted.length)
+    inputRefs.current[focusIdx]?.focus()
+  }
+
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     const fullOtp = otp.join('')
@@ -114,10 +127,10 @@ export function VerifyOtpPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-900 dark:text-blue-200">
-            <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
+            <AlertCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
-              <strong>Phase 1 UI Notice:</strong> Enter any 6-digit combination (e.g. 123456) to test client validation and transition to password reset.
+              <strong>Security Verification:</strong> Enter or paste the 6-digit OTP sent to your email (expires in 5 minutes, max 5 attempts).
             </span>
           </div>
 
@@ -136,6 +149,7 @@ export function VerifyOtpPage() {
                   value={digit}
                   onChange={(e) => handleInputChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
+                  onPaste={handlePaste}
                   className="w-11 h-12 text-center text-lg font-bold rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
                 />
               ))}

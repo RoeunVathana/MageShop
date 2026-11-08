@@ -69,10 +69,10 @@ export function ForgotPasswordPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-900 dark:text-blue-200">
-            <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
+            <AlertCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
-              <strong>Phase 1 Notice:</strong> Real SMTP and SMS OTP dispatch activates in Phase 2. Submitting this form redirects to the 6-digit OTP verification UI.
+              <strong>Live 6-Digit OTP Recovery:</strong> Enter your registered email below to receive a 6-digit verification code via Email (and linked Telegram account) valid for 5 minutes.
             </span>
           </div>
 

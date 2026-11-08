@@ -3,7 +3,10 @@
 namespace App\Services\Auth;
 
 use App\Models\PasswordResetOtp;
+use App\Models\StoreSetting;
 use App\Models\User;
+use App\Services\Telegram\TelegramService;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -56,16 +59,67 @@ class PasswordResetOtpService
             'is_used' => false,
         ]);
 
-        // Queue/dispatch recovery email (logged in development)
+        // Apply dynamic SMTP settings from StoreSetting (configured in /admin/security) if present
+        $this->applyDynamicMailSettings();
+
+        // Queue/dispatch recovery email
         try {
-            Mail::raw("Your MegaCommerce password recovery verification code is: {$rawOtp}\n\nThis code expires in 5 minutes. If you did not request this, please secure your account immediately.", function ($m) use ($email) {
-                $m->to($email)->subject('MegaCommerce — Password Recovery Verification Code');
+            Mail::raw("Your MegaCommerce password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
+                $m->to($email)->subject('MegaCommerce — 6-Digit Password Recovery OTP Code');
             });
         } catch (\Throwable $e) {
             Log::warning("Failed to dispatch OTP email to [{$email}]: {$e->getMessage()}");
         }
 
+        // Also dispatch via Telegram Bot if user has a linked Telegram account
+        try {
+            $telegramAccount = $user->telegramAccount;
+            if ($telegramAccount && ! empty($telegramAccount->telegram_chat_id)) {
+                app(TelegramService::class)->sendMessage(
+                    $telegramAccount->telegram_chat_id,
+                    "🔐 *MegaCommerce Password Recovery OTP*\n\nYour 6-digit verification code is: *{$rawOtp}*\nExpires in 5 minutes.",
+                    ['parse_mode' => 'Markdown']
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Failed to dispatch Telegram OTP for [{$email}]: {$e->getMessage()}");
+        }
+
         return true;
+    }
+
+    /**
+     * Apply dynamic SMTP settings stored in `store_settings` table by Admin Security Console.
+     */
+    protected function applyDynamicMailSettings(): void
+    {
+        try {
+            $host = StoreSetting::get('mail_host');
+            if (! empty($host)) {
+                Config::set('mail.default', StoreSetting::get('mail_mailer', config('mail.default', 'smtp')));
+                Config::set('mail.mailers.smtp.host', $host);
+                Config::set('mail.mailers.smtp.port', (int) StoreSetting::get('mail_port', 587));
+                Config::set('mail.mailers.smtp.username', StoreSetting::get('mail_username'));
+                $password = StoreSetting::get('mail_password');
+                if (! empty($password)) {
+                    Config::set('mail.mailers.smtp.password', $password);
+                }
+                $encryption = StoreSetting::get('mail_encryption');
+                if ($encryption !== null) {
+                    Config::set('mail.mailers.smtp.encryption', $encryption === '' ? null : $encryption);
+                }
+                $fromAddress = StoreSetting::get('mail_from_address');
+                if (! empty($fromAddress)) {
+                    Config::set('mail.from.address', $fromAddress);
+                }
+                $fromName = StoreSetting::get('mail_from_name');
+                if (! empty($fromName)) {
+                    Config::set('mail.from.name', $fromName);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if store_settings table is not yet migrated
+        }
     }
 
     /**
