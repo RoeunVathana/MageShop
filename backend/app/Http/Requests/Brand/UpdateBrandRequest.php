@@ -38,3 +38,4 @@ class UpdateBrandRequest extends FormRequest
         ];
     }
 }
+

@@ -160,3 +160,4 @@ class BrandManagementTest extends TestCase
         ]);
     }
 }
+

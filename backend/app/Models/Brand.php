@@ -103,3 +103,4 @@ class Brand extends Model
         return $slug;
     }
 }
+

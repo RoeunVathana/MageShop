@@ -39,3 +39,4 @@ class BrandResource extends JsonResource
         ];
     }
 }
+

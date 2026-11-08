@@ -44,3 +44,4 @@ export const brandService = {
     return response.data.data
   },
 }
+

@@ -165,3 +165,4 @@ Following the master roadmap priority sequence:
    - Eloquent Model: `Brand` with relationships to `Product`, translations, and media.
    - REST API: `BrandController` (CRUD, active listing, slug resolution, validation).
    - Frontend UI: React Brand Management page in Admin Dashboard with brand cards, logo upload/preview, status toggle, and brand filtering in product catalog.
+
