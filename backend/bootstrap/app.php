@@ -103,12 +103,19 @@ return Application::configure(dirname(__DIR__))
 
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
+                error_log(sprintf('[API_ERROR] %s: %s at %s:%d', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine()));
+                try {
+                    \Illuminate\Support\Facades\Log::error($e->getMessage(), ['exception' => $e]);
+                } catch (\Throwable $logEx) {
+                    // Ignore storage logger issues
+                }
+
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 $status = ($status >= 100 && $status < 600) ? $status : 500;
 
                 return response()->json(array_merge([
                     'status' => 'error',
-                    'message' => config('app.debug') ? $e->getMessage() : 'An internal server error occurred.',
+                    'message' => config('app.debug') ? $e->getMessage() : ($e instanceof \Illuminate\Validation\ValidationException ? $e->getMessage() : ($status === 500 ? 'An internal error occurred: ' . $e->getMessage() : $e->getMessage())),
                 ], config('app.debug') ? ['trace' => $e->getFile().':'.$e->getLine()] : []), $status);
             }
         });

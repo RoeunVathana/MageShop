@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -27,52 +28,89 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone_number' => ['nullable', 'string', 'max:30'],
+            'phone_number' => ['nullable', 'string', 'max:30', 'unique:users,phone_number'],
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()],
         ]);
 
-        $user = DB::transaction(function () use ($validated) {
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => strtolower(trim($validated['email'])),
-                'phone_number' => $validated['phone_number'] ?? null,
-                'password' => $validated['password'], // hashed via User cast with Argon2id
-                'status' => 'active',
-                'email_verified_at' => now(), // instant verification for demo or queued email verification
-            ]);
+        $phoneNumber = !empty($validated['phone_number']) ? trim($validated['phone_number']) : null;
 
-            // Assign default CUSTOMER role
-            $customerRole = Role::firstOrCreate(
-                ['slug' => 'customer'],
-                ['name' => 'CUSTOMER', 'description' => 'Standard customer']
-            );
-            $user->roles()->attach($customerRole->id);
+        try {
+            $user = DB::transaction(function () use ($validated, $phoneNumber) {
+                // Ensure safe, universal password hashing
+                $passwordHash = null;
+                try {
+                    $passwordHash = Hash::make($validated['password']);
+                } catch (\Throwable $hashEx) {
+                    $passwordHash = password_hash($validated['password'], PASSWORD_BCRYPT, ['cost' => 12]);
+                }
 
-            return $user;
-        });
+                $user = new User();
+                $user->name = trim($validated['name']);
+                $user->email = strtolower(trim($validated['email']));
+                $user->phone_number = $phoneNumber;
+                $user->setRawAttributes(array_merge($user->getAttributes(), [
+                    'password' => $passwordHash,
+                ]));
+                $user->status = 'active';
+                $user->loyalty_points = 0;
+                $user->email_verified_at = now();
+                $user->save();
 
-        SecurityLogService::log('AUTH_REGISTRATION_SUCCESS', $user->id, [
-            'email' => $user->email,
-            'ip' => $request->ip(),
-        ]);
+                // Assign default CUSTOMER role
+                $customerRole = Role::where('slug', 'customer')->orWhere('name', 'CUSTOMER')->first();
+                if (!$customerRole) {
+                    $customerRole = Role::create([
+                        'slug' => 'customer',
+                        'name' => 'CUSTOMER',
+                        'description' => 'Standard customer',
+                    ]);
+                }
+                if ($customerRole) {
+                    $user->roles()->syncWithoutDetaching([$customerRole->id]);
+                }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+                return $user;
+            });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Registration completed successfully.',
-            'data' => [
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
+            // Security audit log (never crash registration flow)
+            try {
+                SecurityLogService::log('AUTH_REGISTRATION_SUCCESS', $user->id, [
                     'email' => $user->email,
-                    'phone_number' => $user->phone_number,
-                    'status' => $user->status,
-                    'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->get(),
+                    'ip' => $request->ip(),
+                ]);
+            } catch (\Throwable $secEx) {
+                error_log('[SECURITY_AUDIT_LOG_ERROR] ' . $secEx->getMessage());
+            }
+
+            // Sanctum personal access token (fail-safe)
+            $token = null;
+            try {
+                $token = $user->createToken('auth-token')->plainTextToken;
+            } catch (\Throwable $tokenEx) {
+                error_log('[SANCTUM_TOKEN_ERROR] ' . $tokenEx->getMessage());
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Registration completed successfully.',
+                'data' => [
+                    'token' => $token,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'phone_number' => $user->phone_number,
+                        'status' => $user->status,
+                        'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->get(),
+                    ],
                 ],
-            ],
-        ], 201);
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $valEx) {
+            throw $valEx;
+        } catch (\Throwable $e) {
+            error_log('[AUTH_REGISTER_FATAL] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            throw $e;
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ RUN apk add --no-cache \
     unzip \
     postgresql-dev \
     libzip-dev \
+    argon2-dev \
     $PHPIZE_DEPS
 
 RUN docker-php-ext-install pdo pdo_pgsql bcmath pcntl gd zip opcache && \
@@ -22,7 +23,7 @@ COPY . /app/
 
 RUN if [ -d "/app/backend" ]; then cp -r /app/backend/* /app/ && rm -rf /app/backend /app/frontend; fi
 
-RUN mkdir -p /app/storage/framework/cache /app/storage/framework/sessions /app/storage/framework/views /app/bootstrap/cache && \
+RUN mkdir -p /app/storage/logs /app/storage/framework/cache /app/storage/framework/sessions /app/storage/framework/views /app/bootstrap/cache && \
     chmod -R 777 /app/storage /app/bootstrap/cache
 
 ARG COMPOSER_AUTH=""

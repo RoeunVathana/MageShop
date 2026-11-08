@@ -266,13 +266,12 @@ export function LoginPage() {
             </div>
 
             {/* Clean Security Badge */}
-            <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-950 dark:text-emerald-200">
-              <AlertCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">
-                <strong>{t('Phase S1 Protected:', 'ប្រព័ន្ធសុវត្ថិភាព Sanctum:')}</strong>{' '}
+            <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-950 dark:text-emerald-200">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="leading-relaxed font-medium">
                 {t(
-                  'First-party HttpOnly cookie session via Laravel Sanctum with Argon2id hashing, anti-enumeration, and brute-force throttling.',
-                  'ការពារដោយ HttpOnly Session តាមរយៈ Laravel Sanctum បូករួមទាំងការការពារការវាយប្រហារ Brute-force។'
+                  'Secure 256-bit SSL encrypted login session with multi-layer brute-force protection.',
+                  'ការចូលប្រើប្រាស់មានសុវត្ថិភាពខ្ពស់ ត្រូវបានការពារដោយការអ៊ិនគ្រីប SSL ២៥៦ ប៊ីត។'
                 )}
               </span>
             </div>

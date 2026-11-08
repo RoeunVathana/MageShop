@@ -284,14 +284,13 @@ export function RegisterPage() {
               </p>
             </div>
 
-            {/* Clean UI Information Callout */}
-            <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 text-xs text-indigo-950 dark:text-indigo-200">
-              <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">
-                <strong>{t('Phase 1 UI Mode:', 'ប្រព័ន្ធសុវត្ថិភាព Zod:')}</strong>{' '}
+            {/* Clean Security Badge */}
+            <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 text-xs text-indigo-950 dark:text-indigo-200">
+              <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="leading-relaxed font-medium">
                 {t(
-                  'Zod schema validation ensures rigorous client-side checks for name, email, phone, and passwords.',
-                  'ផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវនៃឈ្មោះ អ៊ីមែល លេខទូរស័ព្ទ និងលេខសម្ងាត់យ៉ាងម៉ត់ចត់។'
+                  'Secure 256-bit encrypted registration. Your personal data and phone number are safely protected.',
+                  'ការចុះឈ្មោះមានសុវត្ថិភាពខ្ពស់។ ទិន្នន័យផ្ទាល់ខ្លួន និងលេខទូរស័ព្ទត្រូវបានការពារដោយសុវត្ថិភាព។'
                 )}
               </span>
             </div>

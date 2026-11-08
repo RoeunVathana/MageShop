@@ -16,7 +16,7 @@ class LoginRequest extends FormRequest
     /**
      * Constant fake hash to prevent timing attacks when an account does not exist.
      */
-    private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=2$dHVtbXlfc2FsdF9tZWdh$7G5cQ84f5g2jK67l9V1r8X9/8e7g6f5d4c3b2a1';
+    private const DUMMY_HASH = '$2y$12$e8x/kG2Fk4rR3n2M1l5P7u/KjO9Q8W7E6R5T4Y3U2I1O0P9A8S7D6';
 
     /**
      * Determine if the user is authorized to make this request.

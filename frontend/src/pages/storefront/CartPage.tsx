@@ -615,7 +615,7 @@ export function CartPage() {
 
   const finalTotal = Math.max(0, Number((subtotal - discountAmount + effectiveShippingFee).toFixed(2)))
   const finalTotalKhr = Math.round((finalTotal * 4100) / 100) * 100
-  const pointsEarnedThisOrder = 5
+  const pointsEarnedThisOrder = cartItems.length > 0 ? 5 : 0
   const pointsRedeemedThisOrder = freeRewardItem ? 100 : 0
   const projectedPointsAfterOrder = Math.max(
     0,
@@ -1786,7 +1786,7 @@ export function CartPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center text-xs leading-relaxed py-0.5">
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     <Truck className="w-3.5 h-3.5 text-primary" />
                     {isFreeDelivery
@@ -1811,12 +1811,12 @@ export function CartPage() {
                   )}
                 </div>
 
-                <div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
+                <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 font-semibold text-xs leading-relaxed py-0.5">
                   <span>{t('Loyalty Reward Earned', 'ពិន្ទុបន្ថែមសម្រាប់ការទិញនេះ')}</span>
-                  <span>+{pointsEarnedThisOrder} PTS</span>
+                  <span>+{pointsEarnedThisOrder} {t('PTS', 'ពិន្ទុ')}</span>
                 </div>
 
-                <div className="border-t pt-3 flex items-baseline justify-between">
+                <div className="border-t pt-3 flex items-baseline justify-between leading-relaxed">
                   <div>
                     <span className="text-sm font-black">{t('Total Payable', 'ទឹកប្រាក់ត្រូវទូទាត់សរុប')}</span>
                     <div className="text-[11px] text-muted-foreground">
@@ -1831,10 +1831,12 @@ export function CartPage() {
               <form onSubmit={handlePlaceOrder}>
                 <Button
                   type="submit"
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || cartItems.length === 0}
                   className={cn(
                     'w-full rounded-2xl gap-2 shadow-lg h-12 font-bold text-sm',
-                    !currentUser
+                    cartItems.length === 0
+                      ? 'opacity-60 cursor-not-allowed bg-slate-300 dark:bg-slate-800 text-muted-foreground'
+                      : !currentUser
                       ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/25'
                       : 'shadow-primary/25'
                   )}
@@ -1844,6 +1846,8 @@ export function CartPage() {
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       {t('Generating Payment...', 'កំពុងបង្កើតការទូទាត់...')}
                     </>
+                  ) : cartItems.length === 0 ? (
+                    <span>{t('Cart is Empty — Add Items to Checkout', 'កន្ត្រកទំនិញទទេ — សូមជ្រើសរើសទំនិញ')}</span>
                   ) : !currentUser ? (
                     <>
                       <Lock className="w-4 h-4" />
