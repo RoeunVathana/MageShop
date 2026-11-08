@@ -11,6 +11,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Khmer OS Battambang"', '"Battambang"', 'sans-serif'],
+        serif: ['"Khmer OS Battambang"', '"Battambang"', 'serif'],
+        mono: ['"Khmer OS Battambang"', '"Battambang"', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

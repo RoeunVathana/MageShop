@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Payment Receipt for Order #{{ $order->order_number }}</title>
 </head>
-<body style="font-family: Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; color: #1f2937;">
+<body style="font-family: 'Khmer OS Battambang', 'Battambang', Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; color: #1f2937;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; padding: 24px;">
         <h2 style="color: #4f46e5; margin-top: 0;">Payment Confirmed! 🎉</h2>
         <p>Dear {{ $order->shipping_full_name }},</p>

@@ -5,7 +5,7 @@
     <title>Receipt #{{ $receipt->receipt_number }}</title>
     <style>
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Khmer OS Battambang', 'Battambang', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #1f2937;
             margin: 0;
             padding: 30px;

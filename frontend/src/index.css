@@ -1,6 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'Khmer OS Battambang';
+  src: local('Khmer OS Battambang'), local('KhmerOSBattambang'), local('Battambang'),
+       url('https://fonts.gstatic.com/s/battambang/v24/uk-mEGe7raEw-HjkzZabPnKp4g.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Khmer OS Battambang';
+  src: local('Khmer OS Battambang Bold'), local('Khmer OS Battambang'), local('Battambang Bold'), local('Battambang'),
+       url('https://fonts.gstatic.com/s/battambang/v24/uk-lEGe7raEw-HjkzZabNsmM5y58.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @layer base {
   :root {
@@ -50,11 +70,13 @@
 }
 
 @layer base {
-  * {
+  *, *::before, *::after, html, body, button, input, select, textarea, code, pre {
     @apply border-border;
+    font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
   }
   body {
     @apply bg-background text-foreground antialiased min-h-screen;
+    font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
