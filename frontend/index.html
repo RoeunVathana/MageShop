@@ -4,9 +4,89 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>MegaCommerce — Flagship Store & Telegram Mini App</title>
+    
+    <!-- Primary SEO & Search Generative Optimization (SGO/EGO) -->
+    <title>MegaCommerce — Cambodia Universal Marketplace & Flagship Store</title>
+    <meta name="title" content="MegaCommerce — Cambodia Universal Marketplace & Flagship Store" />
+    <meta name="description" content="MegaCommerce (tyushop.blog) is Cambodia's premier multi-category marketplace. Shop authentic electronics, fashion, beauty, home goods, and groceries with instant Bakong KHQR checkout, real-time parcel delivery tracking, and AI-powered Telegram shopping assistant." />
+    <meta name="keywords" content="MegaCommerce, tyushop, tyushop.blog, Cambodia online shopping, Bakong KHQR, buy electronics Phnom Penh, fashion online Cambodia, telegram shopping bot, e-commerce marketplace" />
+    <meta name="author" content="MegaCommerce Enterprise" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://tyushop.blog/" />
+
+    <!-- Open Graph / Facebook / Telegram Previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tyushop.blog/" />
+    <meta property="og:title" content="MegaCommerce — Cambodia Universal Marketplace & Flagship Store" />
+    <meta property="og:description" content="Shop authentic goods with instant Bakong KHQR QR-pay, express nationwide courier, and 24/7 AI shopping assistant." />
+    <meta property="og:image" content="https://tyushop.blog/og-banner.png" />
+    <meta property="og:site_name" content="MegaCommerce" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="km_KH" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tyushop.blog/" />
+    <meta name="twitter:title" content="MegaCommerce — Cambodia Universal Marketplace & Flagship Store" />
+    <meta name="twitter:description" content="Shop authentic goods with instant Bakong KHQR QR-pay, express nationwide courier, and 24/7 AI shopping assistant." />
+    <meta name="twitter:image" content="https://tyushop.blog/og-banner.png" />
+
     <!-- Official Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Schema.org SGO/EGO Knowledge Graph (Entity & Search Generative Optimization) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://tyushop.blog/#website",
+          "url": "https://tyushop.blog/",
+          "name": "MegaCommerce",
+          "description": "Universal Multi-Category Marketplace in Cambodia",
+          "publisher": {
+            "@id": "https://tyushop.blog/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://tyushop.blog/products?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          },
+          "inLanguage": ["en", "km"]
+        },
+        {
+          "@type": "OnlineStore",
+          "@id": "https://tyushop.blog/#organization",
+          "name": "MegaCommerce Cambodia",
+          "url": "https://tyushop.blog/",
+          "logo": "https://tyushop.blog/favicon.svg",
+          "image": "https://tyushop.blog/og-banner.png",
+          "description": "Enterprise e-commerce platform offering electronics, mobile phones, fashion, lifestyle, and consumer goods with instant Bakong KHQR payments.",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Preah Monivong Blvd, Sangkat Phsar Thmey II",
+            "addressLocality": "Phnom Penh",
+            "addressCountry": "KH"
+          },
+          "currenciesAccepted": "USD, KHR",
+          "paymentAccepted": "Bakong KHQR, Cash on Delivery, Credit Card",
+          "priceRange": "$$",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+855-23-998-888",
+            "contactType": "Customer Support",
+            "email": "support@megacommerce.local",
+            "areaServed": "KH",
+            "availableLanguage": ["English", "Khmer"]
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-background text-foreground antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>

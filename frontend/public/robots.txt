@@ -1,0 +1,34 @@
+# Robots.txt for MegaCommerce (tyushop.blog)
+# Search Engine & Generative AI Optimization (SGO/EGO)
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
+
+# Explicitly allow AI Search Assistants for Generative Engine Discovery
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# XML Sitemap
+Sitemap: https://tyushop.blog/sitemap.xml
