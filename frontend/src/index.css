@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Battambang:wght@300;400;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -71,40 +71,138 @@
 
 @layer base {
   html {
-    font-size: 17px;
+    font-size: 16.5px;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   *, *::before, *::after, html, body, button, input, select, textarea, code, pre {
     @apply border-border;
-    font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
   }
   body {
     @apply bg-background text-foreground antialiased min-h-screen;
-    font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
-    font-size: 1.05rem;
-    line-height: 1.7;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1rem;
+    line-height: 1.65;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Upscale micro and small text classes so Khmer OS Battambang & English text are clearly legible and never too small */
+/* ==========================================================================
+   KHMER LANGUAGE PERFECTION (Fixes "False Style", Ligature Breaks & Clipping)
+   ========================================================================== */
+html[lang="km"],
+html.khmer-mode,
+.khmer-mode,
+[lang="km"] {
+  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 
+ * CRITICAL FIX: Disable letter-spacing / tracking in Khmer mode!
+ * Tailwind's tracking-tight / tracking-wider detaches Khmer sub-consonants (ជើងអក្សរ) 
+ * and superscript vowels (ិ, ី, ំ), causing glyph collision and broken fonts ("false style").
+ */
+html[lang="km"] *,
+html[lang="km"] *::before,
+html[lang="km"] *::after,
+html.khmer-mode *,
+html.khmer-mode *::before,
+html.khmer-mode *::after,
+.khmer-mode *,
+.khmer-mode *::before,
+.khmer-mode *::after {
+  letter-spacing: normal !important;
+}
+
+/* Relaxed vertical metrics for Khmer script so superscripts and subscripts are NEVER clipped */
+html[lang="km"] body,
+html.khmer-mode body {
+  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 1.04rem;
+  line-height: 1.85 !important;
+}
+
+html[lang="km"] h1, html.khmer-mode h1,
+html[lang="km"] h2, html.khmer-mode h2,
+html[lang="km"] h3, html.khmer-mode h3,
+html[lang="km"] h4, html.khmer-mode h4 {
+  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
+  line-height: 1.6 !important;
+  letter-spacing: normal !important;
+}
+
+html[lang="km"] button, html.khmer-mode button,
+html[lang="km"] .badge, html.khmer-mode .badge,
+html[lang="km"] [class*="badge"], html.khmer-mode [class*="badge"] {
+  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
+  line-height: 1.6 !important;
+  letter-spacing: normal !important;
+}
+
+html[lang="km"] input, html.khmer-mode input,
+html[lang="km"] select, html.khmer-mode select,
+html[lang="km"] textarea, html.khmer-mode textarea {
+  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
+  line-height: 1.65 !important;
+}
+
+/* Override tight Tailwind leading classes in Khmer mode */
+html[lang="km"] .leading-none, html.khmer-mode .leading-none,
+html[lang="km"] .leading-tight, html.khmer-mode .leading-tight,
+html[lang="km"] .leading-snug, html.khmer-mode .leading-snug,
+html[lang="km"] .leading-3, html.khmer-mode .leading-3,
+html[lang="km"] .leading-4, html.khmer-mode .leading-4 {
+  line-height: 1.65 !important;
+}
+
+/* Upscale text in Khmer mode to ensure clarity and effortless readability ("add text size more") */
+html[lang="km"] .text-\[9px\], html.khmer-mode .text-\[9px\] {
+  font-size: 0.85rem !important;
+  line-height: 1.55rem !important;
+}
+html[lang="km"] .text-\[10px\], html.khmer-mode .text-\[10px\] {
+  font-size: 0.88rem !important;
+  line-height: 1.55rem !important;
+}
+html[lang="km"] .text-\[11px\], html.khmer-mode .text-\[11px\] {
+  font-size: 0.92rem !important;
+  line-height: 1.6rem !important;
+}
+html[lang="km"] .text-xs, html.khmer-mode .text-xs {
+  font-size: 0.94rem !important;
+  line-height: 1.65rem !important;
+}
+html[lang="km"] .text-sm, html.khmer-mode .text-sm {
+  font-size: 1.02rem !important;
+  line-height: 1.7rem !important;
+}
+html[lang="km"] .text-base, html.khmer-mode .text-base {
+  font-size: 1.08rem !important;
+  line-height: 1.75rem !important;
+}
+
+/* Upscale micro and small text classes for comfortable readability across EN and KM */
 .text-\[9px\] {
-  font-size: 0.82rem !important;
+  font-size: 0.8rem !important;
   line-height: 1.4rem !important;
 }
 .text-\[10px\] {
-  font-size: 0.86rem !important;
+  font-size: 0.85rem !important;
   line-height: 1.45rem !important;
 }
 .text-\[11px\] {
-  font-size: 0.9rem !important;
+  font-size: 0.89rem !important;
   line-height: 1.5rem !important;
 }
 .text-xs {
-  font-size: 0.88rem !important;
+  font-size: 0.875rem !important;
   line-height: 1.45rem !important;
 }
 .text-sm {
-  font-size: 0.96rem !important;
+  font-size: 0.95rem !important;
   line-height: 1.55rem !important;
 }
 
@@ -119,7 +217,7 @@ body {
 
 @media (max-width: 640px) {
   html {
-    font-size: 16px;
+    font-size: 15.5px;
   }
   .container {
     padding-left: 1rem !important;
@@ -129,7 +227,7 @@ body {
 
 @media (min-width: 1280px) {
   html {
-    font-size: 17.5px;
+    font-size: 17px;
   }
 }
 

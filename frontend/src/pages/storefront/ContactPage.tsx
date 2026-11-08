@@ -18,9 +18,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { api } from '@/lib/api'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function ContactPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [category, setCategory] = useState('delivery')
@@ -45,16 +47,16 @@ export function ContactPage() {
       const createdTicket = res?.data?.ticket_number || `SUP-${Date.now().toString().slice(-6)}`
       setTicketNum(createdTicket)
       toast({
-        title: `Support Ticket #${createdTicket} Created!`,
-        description: res?.message || 'Our 24/7 Cambodia Supporter team has received your ticket.',
+        title: t(`Support Ticket #${createdTicket} Created!`, `សំបុត្រជំនួយលេខ #${createdTicket} ត្រូវបានបង្កើត!`),
+        description: res?.message || t('Our 24/7 Cambodia Supporter team has received your ticket.', 'ក្រុមការងារជំនួយអតិថិជន ២៤/៧ បានទទួលសំណើរបស់អ្នករួចរាល់។'),
         type: 'success',
       })
     } catch {
       const fallbackTicket = `SUP-${Date.now().toString().slice(-6)}`
       setTicketNum(fallbackTicket)
       toast({
-        title: `Support Ticket #${fallbackTicket} Created!`,
-        description: 'Your inquiry has been logged with our 24/7 Customer Care team.',
+        title: t(`Support Ticket #${fallbackTicket} Created!`, `សំបុត្រជំនួយលេខ #${fallbackTicket} ត្រូវបានបង្កើត!`),
+        description: t('Your inquiry has been logged with our 24/7 Customer Care team.', 'សំណើរបស់អ្នកត្រូវបានកត់ត្រាក្នុងប្រព័ន្ធជំនួយអតិថិជន ២៤/៧។'),
         type: 'success',
       })
     } finally {
@@ -63,27 +65,30 @@ export function ContactPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">
-            <Link to="/" className="hover:underline">Home</Link> /{' '}
-            <span className="text-foreground font-medium">Contact Us & 24/7 Supporter</span>
+            <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
+            <span className="text-foreground font-medium">{t('Contact Us & 24/7 Supporter', 'ទំនាក់ទំនង និងមជ្ឈមណ្ឌលជំនួយ')}</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-3xl font-extrabold tracking-tight">Contact Us & Supporter Center</h1>
-            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs">
-              24/7 Live Care
+            <h1 className="text-3xl font-black tracking-tight">{t('Contact Us & Supporter Center', 'ទំនាក់ទំនង និងមជ្ឈមណ្ឌលជំនួយ')}</h1>
+            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+              {t('24/7 Live Care', 'ជំនួយ ២៤/៧')}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Need help with Real-Time GPS Delivery, 100-Point Free Item Redemption, or Discount Coupons? Our team is here 24/7.
+            {t(
+              'Need help with Real-Time GPS Delivery, 100-Point Free Item Redemption, or Discount Coupons? Our team is here 24/7.',
+              'ត្រូវការជំនួយពីការដឹកជញ្ជូន GPS ផ្ទាល់, ការប្តូរទំនិញឥតគិតថ្លៃ ១០០ ពិន្ទុ ឬគូប៉ុងបញ្ចុះតម្លៃ? ក្រុមការងារយើងខ្ញុំរង់ចាំជួយ ២៤/៧។'
+            )}
           </p>
         </div>
 
         <Link to="/track-order">
-          <Button variant="outline" className="rounded-xl gap-2 text-xs">
-            <Truck className="w-4 h-4 text-primary" /> Track Live Delivery on GPS
+          <Button variant="outline" className="rounded-xl gap-2 text-xs font-bold">
+            <Truck className="w-4 h-4 text-primary" /> {t('Track Live Delivery on GPS', 'តាមដានការដឹកជញ្ជូន GPS')}
           </Button>
         </Link>
       </div>
@@ -94,35 +99,35 @@ export function ContactPage() {
           <Card>
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
                   <Headphones className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">Cambodia Flagship HQ</h3>
-                  <p className="text-[11px] text-muted-foreground">Instant Multi-Channel Support</p>
+                  <h3 className="font-bold text-sm">{t('Cambodia Flagship HQ', 'ការិយាល័យកណ្តាលប្រចាំកម្ពុជា')}</h3>
+                  <p className="text-[11px] text-muted-foreground">{t('Instant Multi-Channel Support', 'ជំនួយអតិថិជនរហ័សគ្រប់បណ្តាញ')}</p>
                 </div>
               </div>
 
               <div className="space-y-3 text-xs text-muted-foreground border-t pt-4">
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span>TYUSHOP Flagship HQ, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia</span>
+                  <span>{t('TYUSHOP Flagship HQ, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia', 'អគារ TYUSHOP Flagship, មហាវិថីព្រះមុនីវង្ស, បឹងកេងកង១, រាជធានីភ្នំពេញ')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-primary shrink-0" />
-                  <a href="tel:016555637" className="hover:text-primary transition-colors font-semibold text-foreground">
+                  <a href="tel:016555637" className="hover:text-primary transition-colors font-bold text-foreground">
                     016 555 637
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-primary shrink-0" />
-                  <a href="mailto:Vothanarern@gmail.com" className="hover:text-primary transition-colors font-semibold text-foreground">
+                  <a href="mailto:Vothanarern@gmail.com" className="hover:text-primary transition-colors font-bold text-foreground">
                     Vothanarern@gmail.com
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>Open 24 Hours / 7 Days (Avg. reply &lt; 5 mins)</span>
+                  <span>{t('Open 24 Hours / 7 Days (Avg. reply < 5 mins)', 'បើក ២៤ ម៉ោង / ៧ ថ្ងៃ (ឆ្លើយតបជាមធ្យម < ៥ នាទី)')}</span>
                 </div>
               </div>
             </CardContent>
@@ -131,12 +136,12 @@ export function ContactPage() {
           <Card className="bg-amber-500/10 border-amber-500/30">
             <CardContent className="p-5 space-y-2 text-xs">
               <div className="font-bold text-sm flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
-                <Gift className="w-4 h-4" /> Loyalty & Discount Help
+                <Gift className="w-4 h-4" /> {t('Loyalty & Discount Help', 'ជំនួយពិន្ទុសន្សំ និងគូប៉ុង')}
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                • <strong>Earn +5 Points</strong> on every order (`ទិញម្ដងបាន 5 ពិន្ទុ`)<br />
-                • <strong>100 Points</strong> = Redeem any product under <strong>$20–$30 FREE</strong>!<br />
-                • Active Coupons: <code>WELCOME10</code>, <code>MEGA20</code>, <code>KHQR5</code>
+                • <strong>{t('Earn +5 Points', 'ទទួលបាន +5 ពិន្ទុ')}</strong> {t('on every order', 'រាល់ការទិញទំនិញ')}<br />
+                • <strong>{t('100 Points', '១០០ ពិន្ទុ')}</strong> = {t('Redeem any product under $20–$30 FREE!', 'ប្តូរយកទំនិញតម្លៃ ≤$30 ដោយឥតគិតថ្លៃ!')}<br />
+                • {t('Active Coupons:', 'គូប៉ុងកំពុងដំណើរការ៖')} <code>WELCOME10</code>, <code>MEGA20</code>, <code>KHQR5</code>
               </p>
             </CardContent>
           </Card>
@@ -149,28 +154,32 @@ export function ContactPage() {
               {ticketNum ? (
                 <div className="py-10 text-center space-y-4">
                   <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-                  <Badge className="bg-emerald-500/15 text-emerald-600 text-xs">
-                    Ticket #{ticketNum} Logged
+                  <Badge className="bg-emerald-500/15 text-emerald-600 text-xs font-bold">
+                    {t(`Ticket #${ticketNum} Logged`, `សំបុត្រលេខ #${ticketNum} ត្រូវបានកត់ត្រា`)}
                   </Badge>
-                  <h3 className="font-extrabold text-lg">Thank You! Our Supporter Specialist Is Assigned</h3>
+                  <h3 className="font-black text-lg">{t('Thank You! Our Supporter Specialist Is Assigned', 'សូមអរគុណ! អ្នកជំនាញរបស់យើងត្រូវបានចាត់តាំង')}</h3>
                   <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    Your support ticket <strong>#{ticketNum}</strong> has been saved to our database. You can also chat live anytime using the <strong>24/7 Supporter</strong> button in the bottom-right corner!
+                    {t(
+                      `Your support ticket #${ticketNum} has been saved to our database. You can also chat live anytime using the 24/7 Supporter button in the bottom-right corner!`,
+                      `សំបុត្រជំនួយលេខ #${ticketNum} របស់អ្នកត្រូវបានរក្សាទុក។ អ្នកក៏អាចជជែកផ្ទាល់គ្រប់ពេលតាមរយៈប៊ូតុងជំនួយ ២៤/៧ នៅជ្រុងខាងក្រោមស្តាំ!`
+                    )}
                   </p>
                   <div className="flex justify-center gap-3 pt-2">
                     <Button
                       size="sm"
                       variant="outline"
+                      className="text-xs font-semibold"
                       onClick={() => {
                         setTicketNum(null)
                         setSubject('')
                         setMessage('')
                       }}
                     >
-                      Submit Another Ticket
+                      {t('Submit Another Ticket', 'ផ្ញើសំបុត្រថ្មីមួយទៀត')}
                     </Button>
                     <Link to="/track-order">
-                      <Button size="sm" className="gap-1.5">
-                        <Truck className="w-3.5 h-3.5" /> Track Order on GPS
+                      <Button size="sm" className="gap-1.5 text-xs font-bold">
+                        <Truck className="w-3.5 h-3.5" /> {t('Track Order on GPS', 'តាមដានការដឹកជញ្ជូន GPS')}
                       </Button>
                     </Link>
                   </div>
@@ -178,88 +187,88 @@ export function ContactPage() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-3">
-                    <h3 className="font-bold text-base">Open a Support Ticket</h3>
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Priority Response
+                    <h3 className="font-bold text-base">{t('Open a Support Ticket', 'ផ្ញើសំបុត្រស្នើសុំជំនួយ')}</h3>
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> {t('Priority Response', 'ឆ្លើយតបរហ័សជាអាទិភាព')}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold">Your Name *</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold">{t('Your Name *', 'ឈ្មោះរបស់អ្នក *')}</label>
                       <Input
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Dara Sok"
-                        className="text-xs h-9"
+                        className="text-xs h-10 rounded-xl"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold">Email Address *</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold">{t('Email Address *', 'អ៊ីមែលរបស់អ្នក *')}</label>
                       <Input
                         required
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="dara@example.com"
-                        className="text-xs h-9"
+                        className="text-xs h-10 rounded-xl"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold">Support Topic</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold">{t('Support Topic', 'ប្រធានបទជំនួយ')}</label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs"
+                        className="w-full h-10 rounded-xl border border-input bg-background px-3 text-xs font-medium"
                       >
-                        <option value="delivery">Order & Real-Time GPS Delivery</option>
-                        <option value="points">100-Point Free Item & Loyalty Rewards</option>
-                        <option value="discount">Discount Coupons & Promotions</option>
-                        <option value="seller">Merchant / Vendor Registration</option>
-                        <option value="technical">Account & Technical Support</option>
+                        <option value="delivery">{t('Order & Real-Time GPS Delivery', 'ការបញ្ជាទិញ និងដឹកជញ្ជូន GPS ផ្ទាល់')}</option>
+                        <option value="points">{t('100-Point Free Item & Loyalty Rewards', '១០០ ពិន្ទុប្តូរទំនិញ Free & រង្វាន់')}</option>
+                        <option value="discount">{t('Discount Coupons & Promotions', 'គូប៉ុងបញ្ចុះតម្លៃ និងប្រូម៉ូសិន')}</option>
+                        <option value="seller">{t('Merchant / Vendor Registration', 'ការចុះឈ្មោះបើកហាងលក់ទំនិញ')}</option>
+                        <option value="technical">{t('Account & Technical Support', 'គណនី និងជំនួយបច្ចេកទេស')}</option>
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold">Order Number (Optional)</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold">{t('Order Number (Optional)', 'លេខបញ្ជាទិញ (បើមាន)')}</label>
                       <Input
                         value={orderNumber}
                         onChange={(e) => setOrderNumber(e.target.value)}
                         placeholder="ORD-20261108-..."
-                        className="text-xs h-9"
+                        className="text-xs h-10 rounded-xl"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold">Subject *</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold">{t('Subject *', 'ចំណងជើង *')}</label>
                     <Input
                       required
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Question about my order delivery or 100-point free exchange"
-                      className="text-xs h-9"
+                      placeholder={t('Question about my order delivery or 100-point free exchange', 'សំណួរទាក់ទងនឹងការដឹកជញ្ជូន ឬការប្តូរពិន្ទុទំនិញ Free')}
+                      className="text-xs h-10 rounded-xl"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold">How can our Supporter team help you? *</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold">{t('How can our Supporter team help you? *', 'តើក្រុមការងារយើងអាចជួយអ្វីខ្លះដល់អ្នក? *')}</label>
                     <textarea
                       required
                       rows={4}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Write your details here..."
-                      className="w-full rounded-md border border-input bg-background p-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder={t('Write your details here...', 'សូមសរសេរព័ត៌មានលម្អិតនៅទីនេះ...')}
+                      className="w-full rounded-xl border border-input bg-background p-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                   </div>
 
-                  <Button type="submit" disabled={loading} className="rounded-xl gap-2 text-xs">
+                  <Button type="submit" disabled={loading} className="rounded-xl gap-2 text-xs font-bold h-11 px-6 shadow-md">
                     <Send className="w-3.5 h-3.5" />
-                    {loading ? 'Submitting Ticket...' : 'Submit Support Ticket'}
+                    {loading ? t('Submitting Ticket...', 'កំពុងផ្ញើសំបុត្រ...') : t('Submit Support Ticket', 'ផ្ញើសំបុត្រស្នើសុំជំនួយ')}
                   </Button>
                 </form>
               )}

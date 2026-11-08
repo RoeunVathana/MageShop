@@ -26,7 +26,7 @@ import { useShopEngagement } from '@/context/ShopEngagementContext'
 export function TrackOrderPage() {
   const { toast } = useToast()
   const { orderNumber: routeOrderNum } = useParams<{ orderNumber?: string }>()
-  const { recentOrders, loyaltyPoints } = useShopEngagement()
+  const { recentOrders, loyaltyPoints, t, formatPrice } = useShopEngagement()
 
   const [orderInput, setOrderInput] = useState(routeOrderNum || recentOrders[0] || 'ORD-20261108-KHQR1')
   const [activeOrderNum, setActiveOrderNum] = useState(routeOrderNum || recentOrders[0] || 'ORD-20261108-KHQR1')
@@ -230,20 +230,23 @@ export function TrackOrderPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div>
           <div className="text-xs text-muted-foreground mb-2">
-            <Link to="/" className="hover:underline">Home</Link> /{' '}
-            <span className="text-foreground font-medium">Real-Time Delivery GPS Tracker</span>
+            <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
+            <span className="text-foreground font-medium">{t('Real-Time Delivery GPS Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Live GPS Delivery Tracking
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight">
+              {t('Live GPS Delivery Tracking', 'តាមដានទីតាំងដឹកជញ្ជូន GPS ផ្ទាល់')}
             </h1>
-            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1.5 text-xs">
+            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1.5 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              Real-Time Satellite Telemetry
+              {t('Real-Time Satellite Telemetry', 'ប្រព័ន្ធផ្កាយរណបពេលវេលាជាក់ស្តែង')}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Watch your courier’s live location, route progress, speed, and estimated arrival time in real time.
+            {t(
+              'Watch your courier’s live location, route progress, speed, and estimated arrival time in real time.',
+              'មើលទីតាំងផ្ទាល់របស់អ្នកដឹកជញ្ជូន វឌ្ឍនភាពផ្លូវ ល្បឿន និងពេលវេលាមកដល់ជាក់ស្តែង។'
+            )}
           </p>
         </div>
 
@@ -261,13 +264,13 @@ export function TrackOrderPage() {
               type="text"
               value={orderInput}
               onChange={(e) => setOrderInput(e.target.value)}
-              placeholder="Enter Order # (e.g. ORD-...)"
+              placeholder={t('Enter Order # (e.g. ORD-...)', 'បញ្ចូលលេខបញ្ជាទិញ (ឧ. ORD-...)')}
               className="pl-9 pr-3 py-2 text-xs rounded-xl border bg-background text-foreground w-56 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <Button type="submit" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={loading}>
+          <Button type="submit" size="sm" className="rounded-xl gap-1.5 text-xs font-bold" disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Track Order
+            {t('Track Order', 'ស្វែងរក')}
           </Button>
         </form>
       </div>
@@ -275,7 +278,7 @@ export function TrackOrderPage() {
       {/* Recent Order Pills */}
       {recentOrders.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-muted-foreground font-medium">Your Recent Orders:</span>
+          <span className="text-muted-foreground font-medium">{t('Your Recent Orders:', 'បញ្ជាទិញថ្មីៗរបស់អ្នក៖')}</span>
           {recentOrders.map((ord) => (
             <button
               key={ord}
@@ -308,21 +311,21 @@ export function TrackOrderPage() {
                   GPS: {liveLat}° N, {liveLng}° E
                 </span>
                 <span className="text-slate-400">|</span>
-                <span className="text-slate-200">Order #{tracking?.order_number || activeOrderNum}</span>
+                <span className="text-slate-200">{t('Order #', 'លេខកូដ #')}{tracking?.order_number || activeOrderNum}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
-                  Speed: 34 km/h
+                  {t('Speed', 'ល្បឿន')}: 34 km/h
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold">
-                  {remainingKm} km remaining • ETA ~{etaMins} mins
+                  {remainingKm} {t('km remaining • ETA ~', 'គ.ម នៅសល់ • មកដល់ក្នុងរង្វង់ ~')}{etaMins} {t('mins', 'នាទី')}
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsLiveMoving(!isLiveMoving)}
                   className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium cursor-pointer"
                 >
-                  {isLiveMoving ? '⏸ Pause GPS Sim' : '▶ Resume GPS Sim'}
+                  {isLiveMoving ? `⏸ ${t('Pause GPS Sim', 'ផ្អាក GPS')}` : `▶ ${t('Resume GPS Sim', 'បន្ត GPS')}`}
                 </button>
               </div>
             </div>
@@ -346,7 +349,7 @@ export function TrackOrderPage() {
                     </div>
                     <div className="text-xs">
                       <div className="font-bold text-emerald-400 flex items-center gap-1.5">
-                        <span>Customer Destination</span>
+                        <span>{t('Customer Destination', 'ទីតាំងទទួលរបស់អតិថិជន')}</span>
                         <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                           {dstLat.toFixed(4)}° N, {dstLng.toFixed(4)}° E
                         </span>
@@ -358,10 +361,10 @@ export function TrackOrderPage() {
                   </div>
 
                   <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl border border-amber-500/40 shadow-lg text-xs">
-                    <div className="text-[10px] uppercase text-amber-300 font-bold">Loyalty Reward</div>
+                    <div className="text-[10px] uppercase text-amber-300 font-bold">{t('Loyalty Reward', 'រង្វាន់ពិន្ទុ')}</div>
                     <div className="font-bold flex items-center gap-1">
                       <Award className="w-3.5 h-3.5 text-amber-400" />
-                      +{tracking?.points_earned ?? 5} Points Earned!
+                      +{tracking?.points_earned ?? 5} {t('Points Earned!', 'ពិន្ទុទទួលបាន!')}
                     </div>
                   </div>
                 </div>
@@ -382,7 +385,7 @@ export function TrackOrderPage() {
                   >
                     <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full shadow-2xl border-2 border-white flex items-center gap-1.5 whitespace-nowrap text-xs font-bold">
                       <Truck className="w-4 h-4 animate-bounce" />
-                      <span>Courier ({routeProgress}%)</span>
+                      <span>{t('Courier', 'អ្នកដឹកជញ្ជូន')} ({routeProgress}%)</span>
                     </div>
                   </div>
                 </div>
@@ -391,11 +394,11 @@ export function TrackOrderPage() {
                 <div className="flex items-center justify-between">
                   <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/15 text-[11px] flex items-center gap-2">
                     <Package className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Origin: TYUSHOP Phnom Penh Fulfillment Hub</span>
+                    <span>{t('Origin: TYUSHOP Phnom Penh Fulfillment Hub', 'ចេញពី៖ មជ្ឈមណ្ឌលចែកចាយ TYUSHOP រាជធានីភ្នំពេញ')}</span>
                   </div>
                   <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
-                    Arriving in ~{etaMins} mins
+                    {t('Arriving in ~', 'មកដល់ក្នុងរង្វង់ ~')}{etaMins} {t('mins', 'នាទី')}
                   </div>
                 </div>
               </div>
@@ -411,11 +414,11 @@ export function TrackOrderPage() {
                   <div className="text-sm font-bold flex items-center gap-2">
                     {tracking?.driver?.name || 'Sokha Chan (TYUSHOP Express GPS Courier)'}
                     <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
-                      ★ 4.95 Verified Courier
+                      {t('★ 4.95 Verified Courier', '★ 4.95 អ្នកដឹកជញ្ជូនផ្លូវការ')}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Vehicle: {tracking?.driver?.vehicle || 'Honda PCX Electric • PP 1AB-9988'} • Phone:{' '}
+                    {t('Vehicle:', 'យានយន្ត៖')} {tracking?.driver?.vehicle || 'Honda PCX Electric • PP 1AB-9988'} • {t('Phone:', 'ទូរស័ព្ទ៖')}{' '}
                     <span className="font-semibold text-foreground">{tracking?.driver?.phone || '+855 12 889 900'}</span>
                   </p>
                 </div>
@@ -428,11 +431,11 @@ export function TrackOrderPage() {
                   onClick={handleStepCourierForward}
                   className="rounded-xl text-xs gap-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Step Courier Forward
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> {t('Step Courier Forward', 'រំកិលអ្នកដឹកទៅមុខ')}
                 </Button>
                 <a href={`tel:${tracking?.driver?.phone || '+85512889900'}`}>
-                  <Button size="sm" className="rounded-xl text-xs gap-1.5">
-                    <Phone className="w-3.5 h-3.5" /> Call Driver
+                  <Button size="sm" className="rounded-xl text-xs gap-1.5 font-bold">
+                    <Phone className="w-3.5 h-3.5" /> {t('Call Driver', 'ហៅទូរស័ព្ទ')}
                   </Button>
                 </a>
               </div>
@@ -445,35 +448,45 @@ export function TrackOrderPage() {
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="font-bold text-base">Delivery Milestones</h3>
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-xs uppercase">
-                  {routeProgress >= 95 ? 'Arriving Now' : 'In Transit'}
+                <h3 className="font-bold text-base">{t('Delivery Milestones', 'ដំណាក់កាលនៃការដឹកជញ្ជូន')}</h3>
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-xs uppercase font-bold">
+                  {routeProgress >= 95 ? t('Arriving Now', 'មកដល់ឥឡូវនេះ') : t('In Transit', 'កំពុងធ្វើដំណើរ')}
                 </Badge>
               </div>
 
               <div className="space-y-4">
-                {(tracking?.checkpoints || []).map((cp: any, idx: number) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="mt-0.5">
-                      {cp.done ? (
-                        <CheckCircle2
-                          className={`w-5 h-5 ${
-                            cp.active ? 'text-primary animate-pulse' : 'text-emerald-500'
-                          }`}
-                        />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/40" />
-                      )}
+                {(tracking?.checkpoints || []).map((cp: any, idx: number) => {
+                  const getCheckpointTitle = (title: string) => {
+                    if (title.includes('Confirmed')) return t(title, 'បានបញ្ជាក់ការបញ្ជាទិញ & បានផ្ទៀងផ្ទាត់ការទូទាត់')
+                    if (title.includes('Quality Inspected')) return t(title, 'ពិនិត្យគុណភាព & ចេញដំណើរពីឃ្លាំង')
+                    if (title.includes('Out for Delivery')) return t(title, 'កំពុងដឹកជញ្ជូន • ប្រព័ន្ធផ្កាយរណប GPS ដំណើរការ')
+                    if (title.includes('Arriving')) return t(title, 'មកដល់ទីតាំងទទួលរបស់អតិថិជន')
+                    return title
+                  }
+
+                  return (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div className="mt-0.5">
+                        {cp.done ? (
+                          <CheckCircle2
+                            className={`w-5 h-5 ${
+                              cp.active ? 'text-primary animate-pulse' : 'text-emerald-500'
+                            }`}
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-xs space-y-0.5">
+                        <div className="font-bold text-foreground">{getCheckpointTitle(cp.title)}</div>
+                        <p className="text-muted-foreground">{cp.location}</p>
+                        <span className="inline-block text-[10px] font-semibold text-primary">
+                          {cp.time}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1 text-xs space-y-0.5">
-                      <div className="font-bold text-foreground">{cp.title}</div>
-                      <p className="text-muted-foreground">{cp.location}</p>
-                      <span className="inline-block text-[10px] font-semibold text-primary">
-                        {cp.time}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -484,32 +497,33 @@ export function TrackOrderPage() {
               <div className="flex items-center justify-between">
                 <span className="font-bold text-sm flex items-center gap-1.5">
                   <CreditCard className="w-4 h-4 text-primary" />
-                  Payment & Arrival Handover
+                  {t('Payment & Arrival Handover', 'ការទូទាត់ប្រាក់ & ទទួលទំនិញ')}
                 </span>
                 {tracking?.payment_status === 'cash_on_delivery' ? (
                   <Badge className="bg-amber-500 text-white text-[10px]">
-                    💵 Cash on Hand at Location
+                    {t('💵 Cash on Hand at Location', '💵 បង់ប្រាក់សុទ្ធពេលទំនិញមកដល់')}
                   </Badge>
                 ) : (
                   <Badge className="bg-emerald-500 text-white text-[10px]">
-                    ✓ Paid Online ($0 Due)
+                    {t('✓ Paid Online ($0 Due)', '✓ បានទូទាត់រួចរាល់ ($0 ត្រូវបង់)')}
                   </Badge>
                 )}
               </div>
 
               <div className="p-3 rounded-xl bg-muted/40 border space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Order Total:</span>
-                  <span className="font-bold">${Number(tracking?.total_amount ?? 0).toFixed(2)}</span>
+                  <span className="text-muted-foreground">{t('Order Total:', 'តម្លៃសរុប៖')}</span>
+                  <span className="font-bold">{formatPrice(Number(tracking?.total_amount ?? 0))}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount Due When Delivery Arrives:</span>
+                  <span className="text-muted-foreground">{t('Amount Due When Delivery Arrives:', 'ទឹកប្រាក់ត្រូវបង់ពេលមកដល់៖')}</span>
                   <span className="font-extrabold text-amber-600 dark:text-amber-400">
-                    $
-                    {Number(
-                      tracking?.amount_due_on_arrival ??
-                        (tracking?.payment_status === 'cash_on_delivery' ? tracking?.total_amount ?? 0 : 0)
-                    ).toFixed(2)}
+                    {formatPrice(
+                      Number(
+                        tracking?.amount_due_on_arrival ??
+                          (tracking?.payment_status === 'cash_on_delivery' ? tracking?.total_amount ?? 0 : 0)
+                      )
+                    )}
                   </span>
                 </div>
               </div>
@@ -517,8 +531,11 @@ export function TrackOrderPage() {
               {tracking?.payment_status === 'cash_on_delivery' ? (
                 <div className="space-y-2">
                   <p className="text-muted-foreground leading-relaxed">
-                    You selected <strong>Cash on Hand When Delivery Arrives</strong>. Please hand{' '}
-                    <strong className="text-foreground">${Number(tracking?.total_amount ?? 0).toFixed(2)}</strong> to your courier upon arrival at your location.
+                    {t('You selected', 'អ្នកបានជ្រើសរើស')}{' '}
+                    <strong>{t('Cash on Hand When Delivery Arrives', 'ការទូទាត់ប្រាក់សុទ្ធពេលទំនិញមកដល់')}</strong>.{' '}
+                    {t('Please hand', 'សូមប្រគល់')}{' '}
+                    <strong className="text-foreground">{formatPrice(Number(tracking?.total_amount ?? 0))}</strong>{' '}
+                    {t('to your courier upon arrival at your location.', 'ជូនអ្នកដឹកជញ្ជូនពេលមកដល់ទីតាំងរបស់អ្នក។')}
                   </p>
                   <Button
                     type="button"
@@ -528,14 +545,17 @@ export function TrackOrderPage() {
                     className="w-full rounded-xl text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
                   >
                     {confirmingPayment
-                      ? 'Confirming Handover...'
-                      : '💵 Confirm Cash Paid on Arrival at Location'}
+                      ? t('Confirming Handover...', 'កំពុងបញ្ជាក់ការប្រគល់...')
+                      : t('💵 Confirm Cash Paid on Arrival at Location', '💵 បញ្ជាក់ថាបានបង់ប្រាក់សុទ្ធជូនអ្នកដឹក')}
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-muted-foreground leading-relaxed">
-                    Payment is <strong>100% Settled</strong> ($0.00 to pay courier on arrival). Want to test Cash-on-Arrival handover? Or confirm delivery arrival below:
+                    {t(
+                      'Payment is 100% Settled ($0.00 to pay courier on arrival). Want to test Cash-on-Arrival handover? Or confirm delivery arrival below:',
+                      'ការទូទាត់បានរួចរាល់ ១០០% (មិនបាច់បង់ប្រាក់បន្ថែមទេ)។ ចុចខាងក្រោមដើម្បីបញ្ជាក់ការទទួលទំនិញ៖'
+                    )}
                   </p>
                   {routeProgress < 100 && (
                     <Button
@@ -544,9 +564,9 @@ export function TrackOrderPage() {
                       size="sm"
                       disabled={confirmingPayment}
                       onClick={handleConfirmCashOnArrival}
-                      className="w-full rounded-xl text-xs"
+                      className="w-full rounded-xl text-xs font-bold"
                     >
-                      ✓ Mark Delivery Arrived at My Location
+                      {t('✓ Mark Delivery Arrived at My Location', '✓ បញ្ជាក់ថាទំនិញបានមកដល់ទីតាំងខ្ញុំហើយ')}
                     </Button>
                   )}
                 </div>
@@ -560,20 +580,26 @@ export function TrackOrderPage() {
               <div className="flex items-center justify-between">
                 <span className="font-bold text-sm flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-amber-500" />
-                  Loyalty Points Reward
+                  {t('Loyalty Points Reward', 'រង្វាន់ពិន្ទុអតិថិជនស្មោះត្រង់')}
                 </span>
-                <Badge className="bg-amber-500 text-white text-[10px]">
-                  +5 Pts / Order
+                <Badge className="bg-amber-500 text-white text-[10px] font-bold">
+                  {t('+5 Pts / Order', '+5 ពិន្ទុ / រាល់ការទិញ')}
                 </Badge>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                This order earned <strong>+{tracking?.points_earned ?? 5} Loyalty Points</strong>! Your total balance is{' '}
-                <strong className="text-foreground">{loyaltyPoints} Points</strong>. At <strong>100 Points</strong>, exchange for any product under <strong>$20–$30 FREE</strong>!
+                {t('This order earned', 'ការបញ្ជាទិញនេះទទួលបាន')}{' '}
+                <strong>+{tracking?.points_earned ?? 5} {t('Loyalty Points', 'ពិន្ទុ')}</strong>!{' '}
+                {t('Your total balance is', 'ពិន្ទុសរុបរបស់អ្នកគឺ')}{' '}
+                <strong className="text-foreground">{loyaltyPoints} {t('Points', 'ពិន្ទុ')}</strong>.{' '}
+                {t(
+                  'At 100 Points, exchange for any product under $20–$30 FREE!',
+                  'នៅពេលដល់ ១០០ ពិន្ទុ អ្នកអាចប្តូរយកទំនិញតម្លៃ $20–$30 ដោយឥតគិតថ្លៃ!'
+                )}
               </p>
               <div className="pt-1 flex items-center gap-2">
                 <Link to="/cart" className="w-full">
-                  <Button variant="outline" size="sm" className="w-full rounded-xl text-xs">
-                    Go to Cart & 100-Pt Free Rewards
+                  <Button variant="outline" size="sm" className="w-full rounded-xl text-xs font-bold">
+                    {t('Go to Cart & 100-Pt Free Rewards', 'ទៅកាន់កន្ត្រក & ប្តូរយកទំនិញ ១០០ ពិន្ទុឥតគិតថ្លៃ')}
                   </Button>
                 </Link>
               </div>
@@ -583,7 +609,10 @@ export function TrackOrderPage() {
           <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border text-xs text-muted-foreground">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>
-              Protected by TYUSHOP Delivery Guarantee & PIN handover verification.
+              {t(
+                'Protected by TYUSHOP Delivery Guarantee & PIN handover verification.',
+                'ការពារដោយការធានាដឹកជញ្ជូន TYUSHOP និងផ្ទៀងផ្ទាត់ដោយលេខកូដសម្ងាត់។'
+              )}
             </span>
           </div>
         </div>

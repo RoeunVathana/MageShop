@@ -251,7 +251,15 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     setLanguageState(lang)
     try {
       localStorage.setItem('megacommerce_language', lang)
-      document.documentElement.lang = lang === 'KM' ? 'km' : 'en'
+      const isKm = lang === 'KM'
+      document.documentElement.lang = isKm ? 'km' : 'en'
+      if (isKm) {
+        document.documentElement.classList.add('khmer-mode')
+        document.body.classList.add('khmer-mode')
+      } else {
+        document.documentElement.classList.remove('khmer-mode')
+        document.body.classList.remove('khmer-mode')
+      }
     } catch {
       // ignore storage errors
     }
@@ -267,7 +275,15 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
   }
 
   useEffect(() => {
-    document.documentElement.lang = language === 'KM' ? 'km' : 'en'
+    const isKm = language === 'KM'
+    document.documentElement.lang = isKm ? 'km' : 'en'
+    if (isKm) {
+      document.documentElement.classList.add('khmer-mode')
+      document.body.classList.add('khmer-mode')
+    } else {
+      document.documentElement.classList.remove('khmer-mode')
+      document.body.classList.remove('khmer-mode')
+    }
   }, [language])
 
   const t = (en: string, km: string): string => (language === 'KM' ? km : en)

@@ -35,7 +35,7 @@ import type { Brand } from '@/types/brand.types'
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
-  const { addToCart, toggleFavorite, isFavorite } = useShopEngagement()
+  const { addToCart, toggleFavorite, isFavorite, t, formatPrice } = useShopEngagement()
 
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -169,19 +169,22 @@ export function ProductsPage() {
       {/* Page Title & Breadcrumb */}
       <div className="border-b pb-6">
         <div className="text-xs text-muted-foreground mb-2">
-          <Link to="/" className="hover:underline">Home</Link> /{' '}
-          <span className="text-foreground font-medium">Products Catalog</span>
+          <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
+          <span className="text-foreground font-medium">{t('Products Catalog', 'កាតាឡុកផលិតផល')}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">Marketplace Catalog</h1>
+            <h1 className="text-3xl font-black tracking-tight">{t('Marketplace Catalog', 'កាតាឡុកទំនិញ')}</h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Browse authentic products across our universal multi-category departments.
+              {t(
+                'Browse authentic products across our universal multi-category departments.',
+                'ស្វែងរកផលិតផលសុទ្ធ ១០០% គ្រប់ផ្នែកទំនិញក្នុងតម្លៃសមរម្យ និងដឹកជញ្ជូនរហ័ស។'
+              )}
             </p>
           </div>
           <div className="inline-flex items-center gap-2">
             <Badge variant="outline" className="text-xs py-1 px-3">
-              {totalProducts} Products Available
+              {totalProducts} {t('Products Available', 'មុខទំនិញមានក្នុងស្តុក')}
             </Badge>
           </div>
         </div>
@@ -193,7 +196,7 @@ export function ProductsPage() {
           <div className="p-5 border rounded-2xl bg-card space-y-6 shadow-sm">
             <div className="flex items-center justify-between border-b pb-3">
               <span className="text-sm font-bold flex items-center gap-2">
-                <Filter className="w-4 h-4 text-primary" /> Filter Results
+                <Filter className="w-4 h-4 text-primary" /> {t('Filter Results', 'តម្រងស្វែងរក')}
               </span>
               {hasActiveFilters && (
                 <button
@@ -201,7 +204,7 @@ export function ProductsPage() {
                   onClick={handleResetFilters}
                   className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
                 >
-                  <RotateCcw className="w-3 h-3" /> Reset
+                  <RotateCcw className="w-3 h-3" /> {t('Reset', 'កំណត់ឡើងវិញ')}
                 </button>
               )}
             </div>
@@ -209,13 +212,13 @@ export function ProductsPage() {
             {/* Keyword Search */}
             <form onSubmit={handleSearchSubmit} className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Search Catalog
+                {t('Search Catalog', 'ស្វែងរកទំនិញ')}
               </label>
               <div className="relative">
                 <Input
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Keyword, brand, title..."
+                  placeholder={t('Keyword, brand, title...', 'ពាក្យគន្លឹះ ម៉ាក ឬឈ្មោះទំនិញ...')}
                   className="h-9 text-xs pr-8"
                 />
                 <button
@@ -231,14 +234,14 @@ export function ProductsPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Departments
+                  {t('Departments', 'ប្រភេទទំនិញ')}
                 </label>
                 {currentCategory && (
                   <button
                     onClick={() => updateParam('category_id', null)}
                     className="text-[11px] text-muted-foreground hover:text-foreground"
                   >
-                    Clear
+                    {t('Clear', 'សម្អាត')}
                   </button>
                 )}
               </div>
@@ -253,7 +256,7 @@ export function ProductsPage() {
                       : 'hover:bg-muted text-muted-foreground'
                   }`}
                 >
-                  <span>All Departments</span>
+                  <span>{t('All Departments', 'ប្រភេទទំនិញទាំងអស់')}</span>
                   {!currentCategory && <Check className="w-3.5 h-3.5" />}
                 </button>
 
@@ -319,26 +322,26 @@ export function ProductsPage() {
             {/* Product Type Filter */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Product Type
+                {t('Product Type', 'ប្រភេទផលិតផល')}
               </label>
               <div className="grid grid-cols-2 gap-1.5 text-xs">
                 {[
-                  { label: 'All Types', value: 'all' },
-                  { label: 'Simple', value: 'simple' },
-                  { label: 'Variable', value: 'variable' },
-                  { label: 'Digital', value: 'digital' },
-                ].map((t) => (
+                  { label: t('All Types', 'ទាំងអស់'), value: 'all' },
+                  { label: t('Simple', 'ទូទៅ'), value: 'simple' },
+                  { label: t('Variable', 'មានជម្រើស'), value: 'variable' },
+                  { label: t('Digital', 'ឌីជីថល'), value: 'digital' },
+                ].map((pt) => (
                   <button
-                    key={t.value}
+                    key={pt.value}
                     type="button"
-                    onClick={() => updateParam('product_type', t.value)}
+                    onClick={() => updateParam('product_type', pt.value)}
                     className={`px-2 py-1.5 rounded-lg border text-xs font-medium text-center transition-colors ${
-                      currentType === t.value
+                      currentType === pt.value
                         ? 'bg-primary text-primary-foreground border-primary font-bold'
                         : 'hover:bg-muted border-input'
                     }`}
                   >
-                    {t.label}
+                    {pt.label}
                   </button>
                 ))}
               </div>
@@ -347,13 +350,13 @@ export function ProductsPage() {
             {/* Price Range Filter */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Price Range (USD)
+                {t('Price Range (USD)', 'ចន្លោះតម្លៃ (ដុល្លារ)')}
               </label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   min="0"
-                  placeholder="Min $"
+                  placeholder={t('Min $', 'ទាបបំផុត $')}
                   value={minPriceInput}
                   onChange={(e) => setMinPriceInput(e.target.value)}
                   className="h-8 text-xs"
@@ -362,7 +365,7 @@ export function ProductsPage() {
                 <Input
                   type="number"
                   min="0"
-                  placeholder="Max $"
+                  placeholder={t('Max $', 'ខ្ពស់បំផុត $')}
                   value={maxPriceInput}
                   onChange={(e) => setMaxPriceInput(e.target.value)}
                   className="h-8 text-xs"
@@ -375,7 +378,7 @@ export function ProductsPage() {
                 onClick={handlePriceApply}
                 className="w-full h-8 text-xs mt-1"
               >
-                Apply Price
+                {t('Apply Price', 'អនុវត្តតម្លៃ')}
               </Button>
             </div>
 
@@ -384,7 +387,7 @@ export function ProductsPage() {
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Featured Brands
+                    {t('Featured Brands', 'ម៉ាកយីហោល្បីៗ')}
                   </label>
                   {currentBrand && (
                     <button
@@ -392,7 +395,7 @@ export function ProductsPage() {
                       onClick={() => updateParam('brand', '')}
                       className="text-[11px] text-primary hover:underline"
                     >
-                      Clear
+                      {t('Clear', 'សម្អាត')}
                     </button>
                   )}
                 </div>
@@ -425,12 +428,12 @@ export function ProductsPage() {
           {/* Controls bar: Results Count & Sort Dropdown */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-2xl bg-card shadow-sm text-xs">
             <div className="text-muted-foreground">
-              Showing <span className="font-bold text-foreground">{products.length}</span> of{' '}
-              <span className="font-bold text-foreground">{totalProducts}</span> items
+              {t('Showing', 'កំពុងបង្ហាញ')} <span className="font-bold text-foreground">{products.length}</span> {t('of', 'នៃ')}{' '}
+              <span className="font-bold text-foreground">{totalProducts}</span> {t('items', 'មុខទំនិញ')}
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-medium shrink-0">Sort By:</span>
+              <span className="text-muted-foreground font-medium shrink-0">{t('Sort By:', 'តម្រៀបតាម៖')}</span>
               <select
                 value={`${currentSort}:${currentSortDir}`}
                 onChange={(e) => {
@@ -442,11 +445,11 @@ export function ProductsPage() {
                 }}
                 className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-ring"
               >
-                <option value="created_at:desc">Newest Arrivals</option>
-                <option value="selling_price:asc">Price: Low to High</option>
-                <option value="selling_price:desc">Price: High to Low</option>
-                <option value="name:asc">Name: A to Z</option>
-                <option value="stock_quantity:desc">Highest Stock</option>
+                <option value="created_at:desc">{t('Newest Arrivals', 'ទំនិញថ្មីៗ')}</option>
+                <option value="selling_price:asc">{t('Price: Low to High', 'តម្លៃ៖ ទាបទៅខ្ពស់')}</option>
+                <option value="selling_price:desc">{t('Price: High to Low', 'តម្លៃ៖ ខ្ពស់ទៅទាប')}</option>
+                <option value="name:asc">{t('Name: A to Z', 'ឈ្មោះ៖ A ទៅ Z')}</option>
+                <option value="stock_quantity:desc">{t('Highest Stock', 'ស្តុកច្រើនជាងគេ')}</option>
               </select>
             </div>
           </div>
@@ -455,23 +458,26 @@ export function ProductsPage() {
           {loading ? (
             <div className="p-20 text-center text-muted-foreground">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-              <p className="text-sm font-semibold">Loading marketplace products...</p>
+              <p className="text-sm font-semibold">{t('Loading marketplace products...', 'កំពុងទាញយកទិន្នន័យផលិតផល...')}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="p-16 text-center border-2 border-dashed rounded-2xl bg-muted/20">
               <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-bold text-base">No products found</h3>
+              <h3 className="font-bold text-base">{t('No products found', 'រកមិនឃើញផលិតផលទេ')}</h3>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                No catalog items matched your selected filters. Try widening your search or clearing active filters.
+                {t(
+                  'No catalog items matched your selected filters. Try widening your search or clearing active filters.',
+                  'គ្មានទំនិញណាមួយត្រូវនឹងតម្រងដែលអ្នកបានជ្រើសរើសទេ។ សូមសាកល្បងសម្អាតតម្រង ឬស្វែងរកពាក្យផ្សេង។'
+                )}
               </p>
               {hasActiveFilters && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleResetFilters}
-                  className="mt-4 text-xs"
+                  className="mt-4 text-xs font-semibold"
                 >
-                  Clear All Filters
+                  {t('Clear All Filters', 'សម្អាតតម្រងទាំងអស់')}
                 </Button>
               )}
             </div>
@@ -512,17 +518,17 @@ export function ProductsPage() {
                           )}
                           {(p.discount_price ? p.discount_price <= 30 : p.selling_price <= 30) && (
                             <Badge className="bg-emerald-600/95 text-white text-[10px] backdrop-blur font-semibold gap-1">
-                              <Gift className="w-3 h-3" /> 100-Pt Free Eligible
+                              <Gift className="w-3 h-3" /> {t('100-Pt Free Eligible', '១០០ ពិន្ទុប្តូរ Free')}
                             </Badge>
                           )}
                           {isVariable && (
                             <Badge className="bg-purple-600/90 text-white text-[10px] backdrop-blur font-medium">
-                              Options Available
+                              {t('Options Available', 'មានជម្រើស')}
                             </Badge>
                           )}
                           {isDigital && (
                             <Badge className="bg-blue-600/90 text-white text-[10px] backdrop-blur font-medium">
-                              Digital Product
+                              {t('Digital Product', 'ទំនិញឌីជីថល')}
                             </Badge>
                           )}
                         </div>
@@ -544,7 +550,9 @@ export function ProductsPage() {
                               vendor: p.brand || 'TYUSHOP Official',
                             })
                             toast({
-                              title: liked ? '❤️ Added to Favorites!' : 'Removed from Favorites',
+                              title: liked
+                                ? t('❤️ Added to Favorites!', '❤️ បានដាក់ក្នុងទំនិញពេញចិត្ត!')
+                                : t('Removed from Favorites', 'បានដកចេញពីទំនិញពេញចិត្ត'),
                               description: p.name,
                               type: liked ? 'success' : 'info',
                             })
@@ -563,15 +571,15 @@ export function ProductsPage() {
                         <div className="absolute bottom-2.5 right-2.5">
                           {isOutOfStock ? (
                             <Badge variant="destructive" className="text-[10px]">
-                              Out of Stock
+                              {t('Out of Stock', 'អស់ពីស្តុក')}
                             </Badge>
                           ) : p.stock_quantity <= p.low_stock_threshold ? (
                             <Badge className="bg-amber-500 text-white text-[10px]">
-                              Only {p.stock_quantity} left
+                              {t(`Only ${p.stock_quantity} left`, `នៅសល់តែ ${p.stock_quantity}`)}
                             </Badge>
                           ) : (
                             <Badge className="bg-emerald-600 text-white text-[10px]">
-                              In Stock
+                              {t('In Stock', 'មានក្នុងស្តុក')}
                             </Badge>
                           )}
                         </div>
@@ -594,11 +602,11 @@ export function ProductsPage() {
 
                         <div className="flex items-baseline gap-2 pt-1">
                           <span className="text-lg font-black text-foreground">
-                            ${p.selling_price.toFixed(2)}
+                            {formatPrice(p.selling_price)}
                           </span>
                           {p.discount_price && (
                             <span className="text-xs text-muted-foreground line-through">
-                              ${p.discount_price.toFixed(2)}
+                              {formatPrice(p.discount_price)}
                             </span>
                           )}
                         </div>
@@ -622,15 +630,15 @@ export function ProductsPage() {
                             vendor: p.brand || 'TYUSHOP Official',
                           })
                           toast({
-                            title: '🛒 Added to Cart!',
-                            description: `${p.name} added to your shopping cart (+5 Loyalty Pts on checkout).`,
+                            title: t('🛒 Added to Cart!', '🛒 បានដាក់ចូលកន្ត្រក!'),
+                            description: `${p.name} (+5 Loyalty Pts).`,
                             type: 'success',
                           })
                         }}
                         className="flex-1 text-xs font-semibold gap-1.5"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" />
-                        Add to Cart
+                        {t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}
                       </Button>
                       <Link to={`/products/${p.slug || p.id}`}>
                         <Button variant="outline" size="sm" className="text-xs font-semibold px-2.5" title="View Details">
@@ -652,21 +660,21 @@ export function ProductsPage() {
                 size="sm"
                 disabled={currentPage <= 1}
                 onClick={() => updateParam('page', (currentPage - 1).toString())}
-                className="text-xs"
+                className="text-xs font-semibold"
               >
-                Previous
+                {t('Previous', 'ទំព័រមុន')}
               </Button>
               <div className="text-xs font-semibold text-muted-foreground px-3">
-                Page {currentPage} of {totalPages}
+                {t('Page', 'ទំព័រ')} {currentPage} {t('of', 'នៃ')} {totalPages}
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={currentPage >= totalPages}
                 onClick={() => updateParam('page', (currentPage + 1).toString())}
-                className="text-xs"
+                className="text-xs font-semibold"
               >
-                Next
+                {t('Next', 'ទំព័របន្ទាប់')}
               </Button>
             </div>
           )}

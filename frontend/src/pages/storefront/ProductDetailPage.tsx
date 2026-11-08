@@ -32,7 +32,7 @@ import type { Product, ProductVariantItem } from '@/types/product.types'
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { toast } = useToast()
-  const { addToCart, toggleFavorite, isFavorite } = useShopEngagement()
+  const { addToCart, toggleFavorite, isFavorite, t, formatPrice } = useShopEngagement()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantItem | null>(null)
@@ -131,7 +131,7 @@ export function ProductDetailPage() {
     return (
       <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">
         <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-        <p className="text-sm font-semibold">Loading product information...</p>
+        <p className="text-sm font-semibold">{t('Loading product information...', 'កំពុងទាញយកព័ត៌មានផលិតផល...')}</p>
       </div>
     )
   }
@@ -140,13 +140,13 @@ export function ProductDetailPage() {
     return (
       <div className="container mx-auto px-4 py-20 text-center max-w-md space-y-4">
         <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-        <h2 className="text-xl font-bold">Product Not Found</h2>
+        <h2 className="text-xl font-bold">{t('Product Not Found', 'រកមិនឃើញផលិតផលទេ')}</h2>
         <p className="text-xs text-muted-foreground">
-          {error || "The product you requested could not be located in our catalog."}
+          {error || t('The product you requested could not be located in our catalog.', 'ផលិតផលដែលអ្នកបានស្នើសុំមិនមានក្នុងកាតាឡុកទេ។')}
         </p>
         <Link to="/products" className="inline-block mt-4">
-          <Button size="sm" variant="outline" className="text-xs">
-            Return to Marketplace Catalog
+          <Button size="sm" variant="outline" className="text-xs font-semibold">
+            {t('Return to Marketplace Catalog', 'ត្រឡប់ទៅកាតាឡុកទំនិញ')}
           </Button>
         </Link>
       </div>
@@ -164,9 +164,9 @@ export function ProductDetailPage() {
     <div className="container mx-auto px-4 py-8 space-y-10 max-w-7xl">
       {/* Breadcrumb Navigation */}
       <div className="text-xs text-muted-foreground flex items-center flex-wrap gap-1.5 border-b pb-4">
-        <Link to="/" className="hover:underline">Home</Link>
+        <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link>
         <ChevronRight className="w-3 h-3 opacity-60" />
-        <Link to="/products" className="hover:underline">Products</Link>
+        <Link to="/products" className="hover:underline">{t('Products', 'ផលិតផល')}</Link>
         {product.category && (
           <>
             <ChevronRight className="w-3 h-3 opacity-60" />
@@ -195,7 +195,7 @@ export function ProductDetailPage() {
             ) : (
               <div className="text-center text-muted-foreground p-8">
                 <Package className="w-16 h-16 opacity-30 mx-auto mb-2" />
-                <p className="text-xs">No media preview available</p>
+                <p className="text-xs">{t('No media preview available', 'គ្មានរូបភាពបង្ហាញ')}</p>
               </div>
             )}
 
@@ -208,12 +208,12 @@ export function ProductDetailPage() {
               )}
               {product.product_type === 'variable' && (
                 <Badge className="bg-purple-600 text-white text-xs font-semibold">
-                  Multi-Variant
+                  {t('Multi-Variant', 'មានច្រើនជម្រើស')}
                 </Badge>
               )}
               {product.product_type === 'digital' && (
                 <Badge className="bg-blue-600 text-white text-xs font-semibold">
-                  Digital Product
+                  {t('Digital Product', 'ទំនិញឌីជីថល')}
                 </Badge>
               )}
             </div>
@@ -241,15 +241,15 @@ export function ProductDetailPage() {
               {/* Stock Status Badge */}
               {isOutOfStock ? (
                 <Badge variant="destructive" className="text-xs font-bold">
-                  Out of Stock
+                  {t('Out of Stock', 'អស់ពីស្តុក')}
                 </Badge>
               ) : isLowStock ? (
                 <Badge className="bg-amber-500 text-white text-xs font-bold">
-                  Low Stock: Only {currentStock} Left
+                  {t(`Low Stock: Only ${currentStock} Left`, `ស្តុកជិតអស់៖ នៅសល់តែ ${currentStock}`)}
                 </Badge>
               ) : (
                 <Badge className="bg-emerald-600 text-white text-xs font-bold">
-                  In Stock ({currentStock} available)
+                  {t(`In Stock (${currentStock} available)`, `មានក្នុងស្តុក (${currentStock} មុខ)`)}
                 </Badge>
               )}
             </div>
@@ -259,16 +259,19 @@ export function ProductDetailPage() {
           <div className="p-5 rounded-2xl bg-muted/40 border space-y-1">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-black text-foreground">
-                ${currentPrice.toFixed(2)}
+                {formatPrice(currentPrice)}
               </span>
               {product.discount_price && (
                 <span className="text-sm text-muted-foreground line-through">
-                  ${product.discount_price.toFixed(2)}
+                  {formatPrice(product.discount_price)}
                 </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Official catalog pricing. All taxes included where applicable.
+              {t(
+                'Official catalog pricing. All taxes included where applicable.',
+                'តម្លៃស្តង់ដារផ្លូវការ។ រួមបញ្ចូលពន្ធអាករតាមច្បាប់កំណត់។'
+              )}
             </p>
           </div>
 
@@ -278,7 +281,7 @@ export function ProductDetailPage() {
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-purple-600" />
-                  Select Variant / Option:
+                  {t('Select Variant / Option:', 'ជ្រើសរើសជម្រើស / ម៉ូដ៖')}
                 </span>
                 {selectedVariant && (
                   <span className="text-purple-600 font-mono text-[11px]">
@@ -313,10 +316,10 @@ export function ProductDetailPage() {
 
                       <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t text-[11px]">
                         <span className="font-black text-foreground">
-                          ${v.selling_price.toFixed(2)}
+                          {formatPrice(v.selling_price)}
                         </span>
                         <span className={isVarOutOfStock ? 'text-destructive font-semibold' : 'text-muted-foreground'}>
-                          {isVarOutOfStock ? 'Sold Out' : `${v.stock_quantity} left`}
+                          {isVarOutOfStock ? t('Sold Out', 'អស់ស្តុក') : `${v.stock_quantity} ${t('left', 'នៅសល់')}`}
                         </span>
                       </div>
                     </button>
@@ -329,7 +332,7 @@ export function ProductDetailPage() {
           {/* Description */}
           {product.description && (
             <div className="space-y-1.5 text-xs text-muted-foreground leading-relaxed">
-              <h3 className="font-bold text-foreground text-sm">Product Description</h3>
+              <h3 className="font-bold text-foreground text-sm">{t('Product Description', 'ព័ត៌មានលម្អិតអំពីផលិតផល')}</h3>
               <p className="whitespace-pre-line">{product.description}</p>
             </div>
           )}
@@ -337,7 +340,7 @@ export function ProductDetailPage() {
           {/* Quantity and Purchase Actions */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold">Quantity:</span>
+              <span className="text-xs font-semibold">{t('Quantity:', 'ចំនួន៖')}</span>
               <div className="flex items-center border rounded-xl overflow-hidden bg-background">
                 <button
                   type="button"
@@ -360,7 +363,7 @@ export function ProductDetailPage() {
                 </button>
               </div>
               <span className="text-[11px] text-muted-foreground">
-                ({currentStock} units available)
+                ({currentStock} {t('units available', 'មុខមានក្នុងស្តុក')})
               </span>
             </div>
 
@@ -372,7 +375,9 @@ export function ProductDetailPage() {
                 className="flex-1 rounded-xl gap-2 font-semibold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <ShoppingCart className="w-4 h-4" />
-                {isOutOfStock ? 'Currently Out of Stock' : 'Add to Shopping Cart (+5 Pts)'}
+                {isOutOfStock
+                  ? t('Currently Out of Stock', 'បច្ចុប្បន្នអស់ពីស្តុក')
+                  : t('Add to Shopping Cart (+5 Pts)', 'ដាក់ចូលកន្ត្រក (+5 ពិន្ទុ)')}
               </Button>
               <Button
                 size="lg"
@@ -383,23 +388,23 @@ export function ProductDetailPage() {
                 }`}
               >
                 <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
-                {isFavorite(product.id) ? 'Liked ❤️' : 'Favorite'}
+                {isFavorite(product.id) ? t('Liked ❤️', 'បានពេញចិត្ត ❤️') : t('Favorite', 'ពេញចិត្ត')}
               </Button>
             </div>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span>
-                🎁 Earn <strong>+5 Points</strong> per order •{' '}
+                🎁 {t('Earn +5 Points per order • ', 'ទទួលបាន +5 ពិន្ទុរាល់ការទិញ • ')}
                 {currentPrice <= 30 ? (
                   <strong className="text-emerald-600 dark:text-emerald-400">
-                    Eligible for 100-Point FREE Redemption!
+                    {t('Eligible for 100-Point FREE Redemption!', 'អាចប្តូរយក Free ពេលមាន ១០០ ពិន្ទុ!')}
                   </strong>
                 ) : (
-                  'Collect 100 points to redeem any item ≤$30 FREE.'
+                  t('Collect 100 points to redeem any item ≤$30 FREE.', 'សន្សំ ១០០ ពិន្ទុដើម្បីប្តូរទំនិញ Free តម្លៃ ≤$30។')
                 )}
               </span>
               <Link to="/track-order" className="font-bold text-primary hover:underline">
-                Live GPS Delivery Track →
+                {t('Live GPS Delivery Track →', 'តាមដានការដឹកជញ្ជូន GPS →')}
               </Link>
             </div>
           </div>
@@ -408,18 +413,18 @@ export function ProductDetailPage() {
           <div className="grid grid-cols-3 gap-3 pt-4 border-t text-center text-xs">
             <div className="p-3 rounded-xl bg-muted/30 border space-y-1">
               <ShieldCheck className="w-5 h-5 text-emerald-600 mx-auto" />
-              <div className="font-bold text-[11px]">100% Authentic</div>
-              <div className="text-[10px] text-muted-foreground">Guaranteed Quality</div>
+              <div className="font-bold text-[11px]">{t('100% Authentic', 'ទំនិញសុទ្ធ ១០០%')}</div>
+              <div className="text-[10px] text-muted-foreground">{t('Guaranteed Quality', 'ធានាគុណភាព')}</div>
             </div>
             <div className="p-3 rounded-xl bg-muted/30 border space-y-1">
               <Truck className="w-5 h-5 text-blue-600 mx-auto" />
-              <div className="font-bold text-[11px]">Express Shipping</div>
-              <div className="text-[10px] text-muted-foreground">Nationwide delivery</div>
+              <div className="font-bold text-[11px]">{t('Express Shipping', 'ដឹកជញ្ជូនរហ័ស')}</div>
+              <div className="text-[10px] text-muted-foreground">{t('Nationwide delivery', 'ទូទាំងប្រទេសកម្ពុជា')}</div>
             </div>
             <div className="p-3 rounded-xl bg-muted/30 border space-y-1">
               <RotateCcw className="w-5 h-5 text-purple-600 mx-auto" />
-              <div className="font-bold text-[11px]">Easy Returns</div>
-              <div className="text-[10px] text-muted-foreground">7 days policy</div>
+              <div className="font-bold text-[11px]">{t('Easy Returns', 'ប្តូរទំនិញងាយស្រួល')}</div>
+              <div className="text-[10px] text-muted-foreground">{t('7 days policy', 'រយៈពេល ៧ ថ្ងៃ')}</div>
             </div>
           </div>
         </div>

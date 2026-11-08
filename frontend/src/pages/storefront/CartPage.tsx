@@ -1024,7 +1024,7 @@ export function CartPage() {
                           <span className="line-through text-muted-foreground text-[11px]">
                             {formatPrice(fp.effective_price)}
                           </span>
-                          <span className="font-black text-emerald-600 dark:text-emerald-400">FREE</span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400">{t('FREE', 'ឥតគិតថ្លៃ')}</span>
                         </div>
                       </div>
                     </div>
@@ -1037,7 +1037,7 @@ export function CartPage() {
                         isSelected ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''
                       }`}
                     >
-                      {isSelected ? '✓ Selected ($0.00)' : 'Claim Free (100 Pts)'}
+                      {isSelected ? t('✓ Selected ($0.00)', '✓ បានជ្រើសរើស ($0.00)') : t('Claim Free (100 Pts)', 'ប្តូរយកឥតគិតថ្លៃ (១០០ ពិន្ទុ)')}
                     </Button>
                   </div>
                 )
@@ -1193,11 +1193,11 @@ export function CartPage() {
                         />
                         <div>
                           <Badge className="bg-emerald-600 text-white text-[10px] border-0">
-                            🎁 100-Pt Free Gift
+                            🎁 {t('100-Pt Free Gift', 'កាដូរង្វាន់ ១០០ ពិន្ទុ')}
                           </Badge>
                           <h4 className="font-bold text-xs sm:text-sm mt-0.5">{freeRewardItem.name}</h4>
                           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                            $0.00 FREE
+                            $0.00 {t('FREE', 'ឥតគិតថ្លៃ')}
                           </p>
                         </div>
                       </div>
@@ -1205,9 +1205,9 @@ export function CartPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setFreeRewardItem(null)}
-                        className="text-xs text-muted-foreground hover:text-destructive"
+                        className="text-xs text-muted-foreground hover:text-destructive cursor-pointer"
                       >
-                        Remove
+                        {t('Remove', 'ដកចេញ')}
                       </Button>
                     </div>
                   )}

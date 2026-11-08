@@ -8,26 +8,29 @@ import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function WishlistPage() {
   const { toast } = useToast()
-  const { favorites, toggleFavorite, addToCart } = useShopEngagement()
+  const { favorites, toggleFavorite, addToCart, t, formatPrice } = useShopEngagement()
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">
-            <Link to="/" className="hover:underline">Home</Link> /{' '}
-            <span className="text-foreground font-medium">Customer Favorites & Wishlist</span>
+            <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
+            <span className="text-foreground font-medium">{t('Customer Favorites & Wishlist', 'ទំនិញពេញចិត្ត')}</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+          <h1 className="text-3xl font-black tracking-tight flex items-center gap-2.5">
             <Heart className="w-7 h-7 text-rose-500 fill-rose-500" />
-            My Liked & Favorite Products
+            {t('My Liked & Favorite Products', 'បញ្ជីទំនិញពេញចិត្តរបស់ខ្ញុំ')}
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Items you liked across the store. Move them to your Cart anytime to earn +5 Loyalty Points per purchase!
+            {t(
+              'Items you liked across the store. Move them to your Cart anytime to earn +5 Loyalty Points per purchase!',
+              'ទំនិញដែលអ្នកបានរក្សាទុក។ អ្នកអាចដាក់ចូលកន្ត្រកទិញទំនិញគ្រប់ពេល និងទទួលបាន +5 ពិន្ទុរាល់ការបញ្ជាទិញ!'
+            )}
           </p>
         </div>
-        <Badge variant="outline" className="text-xs px-3 py-1">
-          {favorites.length} {favorites.length === 1 ? 'Item' : 'Items'} Liked
+        <Badge variant="outline" className="text-xs px-3 py-1 font-semibold">
+          {favorites.length} {t('Items Liked', 'មុខទំនិញ')}
         </Badge>
       </div>
 
@@ -36,14 +39,17 @@ export function WishlistPage() {
           <CardContent className="p-12 text-center space-y-4">
             <Heart className="w-12 h-12 mx-auto text-muted-foreground/30" />
             <div className="space-y-1">
-              <h3 className="font-bold text-base">No favorite products saved yet</h3>
+              <h3 className="font-bold text-base">{t('No favorite products saved yet', 'មិនទាន់មានទំនិញពេញចិត្តនៅឡើយទេ')}</h3>
               <p className="text-xs text-muted-foreground">
-                Click the heart icon on any product in our catalog to save it here!
+                {t(
+                  'Click the heart icon on any product in our catalog to save it here!',
+                  'សូមចុចរូបបេះដូងលើផលិតផលណាមួយក្នុងកាតាឡុក ដើម្បីរក្សាទុកនៅទីនេះ!'
+                )}
               </p>
             </div>
             <Link to="/products">
-              <Button className="rounded-xl gap-2">
-                Browse Products <ArrowRight className="w-4 h-4" />
+              <Button className="rounded-xl gap-2 font-bold text-xs">
+                {t('Browse Products', 'ស្វែងរកផលិតផល')} <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </CardContent>
@@ -62,8 +68,8 @@ export function WishlistPage() {
                     loading="lazy"
                   />
                   {isFreeEligible && (
-                    <Badge className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] gap-1">
-                      <Gift className="w-3 h-3" /> 100-Pt Free Eligible (≤$30)
+                    <Badge className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] gap-1 font-bold">
+                      <Gift className="w-3 h-3" /> {t('100-Pt Free Eligible (≤$30)', '១០០ ពិន្ទុប្តូរ Free (≤$30)')}
                     </Badge>
                   )}
                   <button
@@ -71,12 +77,12 @@ export function WishlistPage() {
                     onClick={() => {
                       toggleFavorite(item)
                       toast({
-                        title: 'Removed from Favorites',
-                        description: `${item.name} was removed from your liked items.`,
+                        title: t('Removed from Favorites', 'បានដកចេញពីទំនិញពេញចិត្ត'),
+                        description: `${item.name} ${t('was removed from your liked items.', 'ត្រូវបានដកចេញពីបញ្ជី។')}`,
                         type: 'info',
                       })
                     }}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center text-rose-500 hover:scale-110 transition-transform cursor-pointer"
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center text-rose-500 hover:scale-110 transition-transform cursor-pointer shadow-sm"
                     title="Remove from Favorites"
                   >
                     <Heart className="w-4 h-4 fill-rose-500" />
@@ -87,15 +93,15 @@ export function WishlistPage() {
                   <div className="space-y-1">
                     <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      Vendor: {item.vendor || 'TYUSHOP Official'}
+                      {t('Vendor:', 'ហាងលក់៖')} {item.vendor || 'TYUSHOP Official'}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-extrabold text-primary">
-                        ${item.price.toFixed(2)}
+                      <span className="text-base font-black text-primary">
+                        {formatPrice(item.price)}
                       </span>
                       {item.originalPrice && item.originalPrice > item.price && (
                         <span className="text-xs line-through text-muted-foreground">
-                          ${item.originalPrice.toFixed(2)}
+                          {formatPrice(item.originalPrice)}
                         </span>
                       )}
                     </div>
@@ -115,25 +121,25 @@ export function WishlistPage() {
                           vendor: item.vendor,
                         })
                         toast({
-                          title: 'Added to Cart!',
-                          description: `${item.name} added to your shopping cart.`,
+                          title: t('🛒 Added to Cart!', '🛒 បានដាក់ចូលកន្ត្រក!'),
+                          description: `${item.name} (+5 Loyalty Pts).`,
                           type: 'success',
                         })
                       }}
-                      className="flex-1 h-8 text-xs gap-1.5 rounded-lg"
+                      className="flex-1 h-9 text-xs gap-1.5 rounded-xl font-bold"
                     >
-                      <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
+                      <ShoppingCart className="w-3.5 h-3.5" /> {t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}
                     </Button>
                     <Link to={`/products/${item.slug}`}>
-                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 rounded-lg">
-                        <Eye className="w-3.5 h-3.5" /> View
+                      <Button size="sm" variant="outline" className="h-9 text-xs gap-1 rounded-xl font-semibold px-3">
+                        <Eye className="w-3.5 h-3.5" /> {t('View', 'មើល')}
                       </Button>
                     </Link>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => toggleFavorite(item)}
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

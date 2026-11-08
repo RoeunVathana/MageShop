@@ -31,19 +31,19 @@ export function Navbar() {
   ]
 
   const featuredCategories = [
-    { name: t('Electronics & Gadgets', 'គ្រឿងអេឡិចត្រូនិក'), icon: Laptop, count: '1,420 items', slug: 'electronics' },
-    { name: t('Fashion & Apparel', 'សម្លៀកបំពាក់ និងម៉ូដ'), icon: Shirt, count: '3,850 items', slug: 'fashion' },
-    { name: t('Home & Kitchen Appliances', 'សម្ភារៈផ្ទះបាយ និងគេហដ្ឋាន'), icon: Home, count: '890 items', slug: 'home-kitchen' },
-    { name: t('Smartphones & Tablets', 'ទូរស័ព្ទ និងថេប្លេត'), icon: Smartphone, count: '640 items', slug: 'phones' },
-    { name: t('Wearables & Smartwatches', 'នាឡិកាឆ្លាតវៃ'), icon: Watch, count: '310 items', slug: 'wearables' },
-    { name: t('Health & Beauty', 'សុខភាព និងសម្រស់'), icon: HeartPulse, count: '1,120 items', slug: 'beauty' },
+    { name: t('Electronics & Gadgets', 'គ្រឿងអេឡិចត្រូនិក'), icon: Laptop, count: t('1,420 items', '១,៤២០ មុខ'), slug: 'electronics' },
+    { name: t('Fashion & Apparel', 'សម្លៀកបំពាក់ និងម៉ូដ'), icon: Shirt, count: t('3,850 items', '៣,៨៥០ មុខ'), slug: 'fashion' },
+    { name: t('Home & Kitchen Appliances', 'សម្ភារៈផ្ទះបាយ និងគេហដ្ឋាន'), icon: Home, count: t('890 items', '៨៩០ មុខ'), slug: 'home-kitchen' },
+    { name: t('Smartphones & Tablets', 'ទូរស័ព្ទ និងថេប្លេត'), icon: Smartphone, count: t('640 items', '៦៤០ មុខ'), slug: 'phones' },
+    { name: t('Wearables & Smartwatches', 'នាឡិកាឆ្លាតវៃ'), icon: Watch, count: t('310 items', '៣១០ មុខ'), slug: 'wearables' },
+    { name: t('Health & Beauty', 'សុខភាព និងសម្រស់'), icon: HeartPulse, count: t('1,120 items', '១,១២០ មុខ'), slug: 'beauty' },
   ]
 
   return (
-    <nav className="hidden md:block border-b bg-card/60">
-      <div className="container mx-auto px-4 flex items-center justify-between">
+    <nav className="hidden md:block border-b bg-card/60 backdrop-blur-sm">
+      <div className="container mx-auto px-4 flex items-center justify-between gap-4">
         {/* Left: Categories Menu */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -62,7 +62,7 @@ export function Navbar() {
               />
               <div className="absolute left-0 top-full w-72 rounded-b-xl border bg-card p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b mb-1">
-                  Department Catalog
+                  {t('Department Catalog', 'បញ្ជីប្រភេទទំនិញ')}
                 </div>
                 {featuredCategories.map((cat) => {
                   const Icon = cat.icon
@@ -89,7 +89,7 @@ export function Navbar() {
         </div>
 
         {/* Center: Primary Navigation Links */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2.5 lg:gap-4 xl:gap-6 overflow-x-auto no-scrollbar py-0.5 min-w-0">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path
             return (
@@ -97,11 +97,11 @@ export function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  'text-xs font-medium py-3 border-b-2 transition-colors inline-flex items-center gap-1.5',
+                  'text-xs font-medium py-3 border-b-2 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0',
                   isActive
-                    ? 'border-primary text-primary font-semibold'
+                    ? 'border-primary text-primary font-bold'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30',
-                  link.isHighlight && 'text-amber-600 dark:text-amber-400 font-semibold'
+                  link.isHighlight && 'text-amber-600 dark:text-amber-400 font-bold'
                 )}
               >
                 {link.isHighlight && <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />}
@@ -112,9 +112,9 @@ export function Navbar() {
         </div>
 
         {/* Right: Vendor Callout */}
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground shrink-0 hidden xl:block">
           <span>{t('Sell on TyuShop? ', 'ចង់លក់ទំនិញលើ TyuShop? ')}</span>
-          <Link to="/register" className="text-primary font-semibold hover:underline">
+          <Link to="/register" className="text-primary font-bold hover:underline">
             {t('Join as Seller', 'ចុះឈ្មោះជាអ្នកលក់')}
           </Link>
         </div>
@@ -122,4 +122,3 @@ export function Navbar() {
     </nav>
   )
 }
-

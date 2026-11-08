@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { categoryService } from '@/services/category.service'
 import type { Category } from '@/types/category.types'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const iconMap: Record<string, React.ElementType> = {
   Laptop,
@@ -107,6 +108,7 @@ export function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const { t } = useShopEngagement()
 
   useEffect(() => {
     categoryService
@@ -141,19 +143,22 @@ export function CategoriesPage() {
       {/* Header & Breadcrumb */}
       <div className="border-b pb-6">
         <div className="text-xs text-muted-foreground mb-2">
-          <Link to="/" className="hover:underline">Home</Link> /{' '}
-          <span className="text-foreground font-medium">Departments</span>
+          <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
+          <span className="text-foreground font-medium">{t('Departments', 'ផ្នែកទំនិញ')}</span>
         </div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">Marketplace Departments</h1>
+            <h1 className="text-3xl font-black">{t('Marketplace Departments', 'ផ្នែកទំនិញទាំងអស់')}</h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Explore our universal catalog across {categories.length} major departments and {totalSubcategories} subcategories.
+              {t(
+                `Explore our universal catalog across ${categories.length} major departments and ${totalSubcategories} subcategories.`,
+                `ស្វែងរកកាតាឡុកទំនិញទូទៅក្នុងចំណោម ${categories.length} ផ្នែកធំៗ និង ${totalSubcategories} ប្រភេទរង។`
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs py-1 px-2.5">
-              Universal Catalog
+            <Badge variant="outline" className="text-xs py-1 px-2.5 font-bold">
+              {t('Universal Catalog', 'កាតាឡុកទូទៅ')}
             </Badge>
           </div>
         </div>
@@ -164,15 +169,15 @@ export function CategoriesPage() {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search departments and subcategories..."
+            placeholder={t('Search departments and subcategories...', 'ស្វែងរកផ្នែកទំនិញ ឬប្រភេទរង...')}
             className="pl-9 h-10 text-xs"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              Clear
+              {t('Clear', 'សម្អាត')}
             </button>
           )}
         </div>
@@ -181,22 +186,22 @@ export function CategoriesPage() {
       {loading ? (
         <div className="p-16 text-center text-muted-foreground">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-          <p className="text-sm font-semibold">Loading marketplace departments...</p>
+          <p className="text-sm font-semibold">{t('Loading marketplace departments...', 'កំពុងទាញយកផ្នែកទំនិញ...')}</p>
         </div>
       ) : filteredCategories.length === 0 ? (
         <div className="p-16 text-center border-2 border-dashed rounded-2xl bg-muted/20">
           <Layers className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <h3 className="font-bold text-base">No departments match "{searchQuery}"</h3>
+          <h3 className="font-bold text-base">{t(`No departments match "${searchQuery}"`, `រកមិនឃើញផ្នែកទំនិញត្រូវនឹង "${searchQuery}"`)}</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Try a different search term or clear the filter to view all departments.
+            {t('Try a different search term or clear the filter to view all departments.', 'សូមសាកល្បងពាក្យស្វែងរកផ្សេង ឬសម្អាតការស្វែងរក។')}
           </p>
           <Button
             size="sm"
             variant="outline"
             onClick={() => setSearchQuery('')}
-            className="mt-4 text-xs"
+            className="mt-4 text-xs font-bold"
           >
-            Clear Search
+            {t('Clear Search', 'សម្អាតការស្វែងរក')}
           </Button>
         </div>
       ) : (
@@ -235,8 +240,8 @@ export function CategoriesPage() {
                   {/* Subcategories list */}
                   {hasSub && (
                     <div className="pt-2 border-t space-y-2">
-                      <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Popular Subcategories
+                      <div className="text-[11px] font-semibold text-muted-foreground uppercase">
+                        {t('Popular Subcategories', 'ប្រភេទរងពេញនិយម')}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {cat.children!.slice(0, 6).map((sub) => (
@@ -254,7 +259,7 @@ export function CategoriesPage() {
                             to={`/products?category_id=${cat.id}`}
                             className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-[11px] font-semibold text-muted-foreground hover:text-foreground"
                           >
-                            +{cat.children!.length - 6} more
+                            +{cat.children!.length - 6} {t('more', 'ទៀត')}
                           </Link>
                         )}
                       </div>
@@ -265,13 +270,13 @@ export function CategoriesPage() {
                 {/* Footer link */}
                 <div className="px-6 py-3 bg-muted/20 border-t flex items-center justify-between text-xs">
                   <span className="text-muted-foreground text-[11px]">
-                    {hasSub ? `${cat.children!.length} subcategories` : 'Department'}
+                    {hasSub ? `${cat.children!.length} ${t('subcategories', 'ប្រភេទរង')}` : t('Department', 'ផ្នែកទំនិញ')}
                   </span>
                   <Link
                     to={`/products?category_id=${cat.id}`}
                     className="font-semibold text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    Browse Products <ArrowRight className="w-3 h-3" />
+                    {t('Browse Products', 'មើលទំនិញ')} <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </Card>

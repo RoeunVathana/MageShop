@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const registerSchema = z
   .object({
@@ -84,6 +85,7 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t, language, setLanguage } = useShopEngagement()
 
   const {
     register,
@@ -110,18 +112,18 @@ export function RegisterPage() {
         password: data.password,
       })
       toast({
-        title: 'Account Created Successfully! 🎉',
-        description: 'Welcome to TYUSHOP! Please sign in with your credentials.',
+        title: t('Account Created Successfully! 🎉', 'បង្កើតគណនីបានជោគជ័យ! 🎉'),
+        description: t('Welcome to TYUSHOP! Please sign in with your credentials.', 'សូមស្វាគមន៍មកកាន់ TYUSHOP! សូមចូលប្រើប្រាស់។'),
         type: 'success',
       })
       navigate('/login')
     } catch (err: any) {
       toast({
-        title: 'Registration Failed',
+        title: t('Registration Failed', 'ការចុះឈ្មោះមិនបានជោគជ័យ'),
         description:
           err.message ||
           err.response?.data?.message ||
-          'Unable to register account. Please check your details.',
+          t('Unable to register account. Please check your details.', 'មិនអាចចុះឈ្មោះបានទេ។ សូមពិនិត្យព័ត៌មានម្តងទៀត។'),
         type: 'error',
       })
     } finally {
@@ -129,9 +131,44 @@ export function RegisterPage() {
     }
   }
 
+  const localizedValuePillars = [
+    {
+      icon: QrCode,
+      title: t('Instant Bakong KHQR', 'ទូទាត់ភ្លាមៗតាម Bakong KHQR'),
+      desc: t('Seamless zero-fee mobile banking payments via NBC Bakong & card', 'ទូទាត់តាមធនាគារដោយឥតគិតថ្លៃសេវា តាម NBC Bakong និងកាត'),
+      color: 'from-rose-500 to-red-600',
+    },
+    {
+      icon: Truck,
+      title: t('Real-time GPS Delivery', 'ដឹកជញ្ជូនតាមដាន GPS ផ្ទាល់'),
+      desc: t('Live courier tracking to BKK1, Daun Penh and nationwide provinces', 'តាមដានអ្នកដឹកជញ្ជូនទៅកាន់ BKK1 ដូនពេញ និងគ្រប់ខេត្តក្រុង'),
+      color: 'from-blue-500 to-indigo-600',
+    },
+    {
+      icon: Gift,
+      title: t('Loyalty Reward Club', 'កម្មវិធីរង្វាន់ពិន្ទុអតិថិជន'),
+      desc: t('Earn 5 points on every purchase; redeem 100% free items at 100 points', 'ទទួលបាន ៥ ពិន្ទុរាល់ការទិញ; ប្តូរទំនិញឥតគិតថ្លៃនៅពេលគ្រប់ ១០០ ពិន្ទុ'),
+      color: 'from-amber-500 to-orange-600',
+    },
+    {
+      icon: ShieldCheck,
+      title: t('100% Buyer Protection', 'ការធានាការពារអ្នកទិញ ១០០%'),
+      desc: t('Authentic products with verified warranty and instant refunds', 'ទំនិញសុទ្ធពិតប្រាកដ មានការធានាត្រឹមត្រូវ និងសងប្រាក់វិញភ្លាមៗ'),
+      color: 'from-emerald-500 to-teal-600',
+    },
+  ]
+
   return (
     <div className="min-h-screen flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 relative bg-slate-50/70 dark:bg-slate-950/90 transition-colors">
-      <div className="absolute top-5 right-5 z-20">
+      <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setLanguage(language === 'EN' ? 'KM' : 'EN')}
+          className="px-2.5 py-1 rounded-xl text-xs font-bold border bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-sm"
+          title={t('Switch Language to Khmer', 'ប្តូរជាភាសាអង់គ្លេស')}
+        >
+          {language === 'KM' ? '🇰🇭 KM' : '🇺🇸 EN'}
+        </button>
         <ThemeToggle />
       </div>
 
@@ -150,27 +187,30 @@ export function RegisterPage() {
                 <Logo size="md" showText={false} />
               </div>
               <div>
-                <span className="text-xl font-black tracking-tight text-white block">TYUSHOP</span>
-                <span className="text-[11px] font-medium text-indigo-300 block">Flagship Cambodia</span>
+                <span className="text-xl font-black text-white block">TYUSHOP</span>
+                <span className="text-[11px] font-medium text-indigo-300 block">{t('Flagship Cambodia', 'ផ្សារទំនើបកម្ពុជា')}</span>
               </div>
             </Link>
 
             <div className="space-y-2 pt-2">
               <Badge className="bg-indigo-500/20 text-indigo-200 border-indigo-500/30 text-xs px-3 py-1 font-medium gap-1.5 rounded-full">
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                Multi-Vendor Commerce 2.0
+                {t('Multi-Vendor Commerce 2.0', 'ប្រព័ន្ធទិញលក់ទំនិញទំនើប ២.០')}
               </Badge>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-snug">
-                Join Cambodia’s Premier Shopping & Vendor Hub
+              <h2 className="text-2xl sm:text-3xl font-black text-white leading-snug">
+                {t('Join Cambodia’s Premier Shopping & Vendor Hub', 'ចូលរួមជាមួយផ្សារទិញទំនិញ និងអ្នកលក់ឈានមុខនៅកម្ពុជា')}
               </h2>
               <p className="text-xs text-slate-300/90 leading-relaxed">
-                Create your verified account in seconds to unlock member-only flash discounts, earn free loyalty gifts, and track orders via live satellite GPS.
+                {t(
+                  'Create your verified account in seconds to unlock member-only flash discounts, earn free loyalty gifts, and track orders via live satellite GPS.',
+                  'បង្កើតគណនីរបស់អ្នកក្នុងរយៈពេលប៉ុន្មានវិនាទី ដើម្បីទទួលបានការបញ្ចុះតម្លៃពិសេស កាដូរង្វាន់ពិន្ទុឥតគិតថ្លៃ និងតាមដានការដឹកជញ្ជូនតាម GPS ផ្ទាល់។'
+                )}
               </p>
             </div>
 
             {/* Value Pillars List */}
             <div className="space-y-3.5 pt-4">
-              {VALUE_PILLARS.map((item, idx) => {
+              {localizedValuePillars.map((item, idx) => {
                 const IconComponent = item.icon
                 return (
                   <div
@@ -183,7 +223,7 @@ export function RegisterPage() {
                       <IconComponent className="w-4 h-4 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-white tracking-wide">{item.title}</h4>
+                      <h4 className="text-xs font-bold text-white">{item.title}</h4>
                       <p className="text-[11px] text-slate-300/80 leading-snug pt-0.5">{item.desc}</p>
                     </div>
                   </div>
@@ -207,11 +247,11 @@ export function RegisterPage() {
                     PP
                   </div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-300">10,000+ Happy Customers</span>
+                <span className="text-[11px] font-medium text-slate-300">{t('10,000+ Happy Customers', 'អតិថិជនពេញចិត្ត ១០,០០០+')}</span>
               </div>
               <div className="flex items-center gap-1 text-amber-400 font-bold text-xs">
                 <span>★ 4.9</span>
-                <span className="text-slate-400 text-[10px]">(Verified)</span>
+                <span className="text-slate-400 text-[10px]">{t('(Verified)', '(ផ្ទៀងផ្ទាត់)')}</span>
               </div>
             </div>
           </div>
@@ -223,18 +263,21 @@ export function RegisterPage() {
             {/* Header */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold tracking-wider uppercase text-primary">
-                  Fast Registration
+                <span className="text-xs font-bold uppercase text-primary">
+                  {t('Fast Registration', 'ចុះឈ្មោះរហ័ស')}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Step 1 of 1
+                  {t('Step 1 of 1', 'ជំហាន ១ នៃ ១')}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-                Create Account
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground">
+                {t('Create Account', 'បង្កើតគណនី')}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Join TYUSHOP to shop, save wishlists, or register your vendor store
+                {t(
+                  'Join TYUSHOP to shop, save wishlists, or register your vendor store',
+                  'ចូលរួម TYUSHOP ដើម្បីទិញទំនិញ រក្សាទុកទំនិញពេញចិត្ត ឬបើកហាងលក់'
+                )}
               </p>
             </div>
 
@@ -242,7 +285,11 @@ export function RegisterPage() {
             <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 text-xs text-indigo-950 dark:text-indigo-200">
               <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
               <span className="leading-relaxed">
-                <strong>Phase 1 UI Mode:</strong> Zod schema validation ensures rigorous client-side checks for name, email, phone, and passwords.
+                <strong>{t('Phase 1 UI Mode:', 'ប្រព័ន្ធសុវត្ថិភាព Zod:')}</strong>{' '}
+                {t(
+                  'Zod schema validation ensures rigorous client-side checks for name, email, phone, and passwords.',
+                  'ផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវនៃឈ្មោះ អ៊ីមែល លេខទូរស័ព្ទ និងលេខសម្ងាត់យ៉ាងម៉ត់ចត់។'
+                )}
               </span>
             </div>
 
@@ -252,13 +299,12 @@ export function RegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>Full Name</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">ឈ្មោះពេញ</span>
+                  <label className="text-xs font-bold text-foreground">
+                    {t('Full Name', 'ឈ្មោះពេញ')}
                   </label>
                   <div className="relative">
                     <Input
-                      placeholder="Jane Doe"
+                      placeholder={t('Dara Sok', 'សុខ តារា')}
                       {...register('name')}
                       className={`h-11 rounded-xl pl-9 text-xs transition-all ${
                         errors.name ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -273,14 +319,13 @@ export function RegisterPage() {
 
                 {/* Phone Number */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>Phone Number</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">លេខទូរស័ព្ទ</span>
+                  <label className="text-xs font-bold text-foreground">
+                    {t('Phone Number', 'លេខទូរស័ព្ទ')}
                   </label>
                   <div className="relative">
                     <Input
                       type="tel"
-                      placeholder="+855 12 345 678"
+                      placeholder="016 555 637"
                       {...register('phone')}
                       className={`h-11 rounded-xl pl-9 text-xs transition-all ${
                         errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -296,14 +341,13 @@ export function RegisterPage() {
 
               {/* FULL-WIDTH ROW 2: Email Address */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                  <span>Email Address</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">អ៊ីមែល</span>
+                <label className="text-xs font-bold text-foreground">
+                  {t('Email Address', 'អាសយដ្ឋានអ៊ីមែល')}
                 </label>
                 <div className="relative">
                   <Input
                     type="email"
-                    placeholder="jane@example.com"
+                    placeholder="Vothanarern@gmail.com"
                     {...register('email')}
                     className={`h-11 rounded-xl pl-9 text-xs transition-all ${
                       errors.email ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -320,14 +364,13 @@ export function RegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Password */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>Password</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">ពាក្យសម្ងាត់</span>
+                  <label className="text-xs font-bold text-foreground">
+                    {t('Password', 'ពាក្យសម្ងាត់')}
                   </label>
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Min. 8 chars, 1 uppercase"
+                      placeholder={t('Min. 8 chars, 1 uppercase', 'យ៉ាងតិច ៨ តួអក្សរ')}
                       {...register('password')}
                       className={`h-11 rounded-xl pl-9 pr-9 text-xs transition-all ${
                         errors.password ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -337,7 +380,7 @@ export function RegisterPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -350,14 +393,13 @@ export function RegisterPage() {
 
                 {/* Confirm Password */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                    <span>Confirm Password</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">បញ្ជាក់ពាក្យសម្ងាត់</span>
+                  <label className="text-xs font-bold text-foreground">
+                    {t('Confirm Password', 'បញ្ជាក់ពាក្យសម្ងាត់')}
                   </label>
                   <div className="relative">
                     <Input
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Repeat your password"
+                      placeholder={t('Repeat your password', 'បញ្ចូលពាក្យសម្ងាត់ម្តងទៀត')}
                       {...register('confirmPassword')}
                       className={`h-11 rounded-xl pl-9 pr-9 text-xs transition-all ${
                         errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''
@@ -367,7 +409,7 @@ export function RegisterPage() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -389,13 +431,13 @@ export function RegisterPage() {
                     className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary mt-0.5 cursor-pointer"
                   />
                   <label htmlFor="terms" className="text-xs text-muted-foreground leading-normal cursor-pointer select-none">
-                    I agree to the{' '}
+                    {t('I agree to the', 'ខ្ញុំយល់ព្រមតាម')}{' '}
                     <a href="#terms" className="text-primary font-semibold hover:underline">
-                      Terms of Service
+                      {t('Terms of Service', 'លក្ខខណ្ឌប្រើប្រាស់')}
                     </a>{' '}
-                    and{' '}
+                    {t('and', 'និង')}{' '}
                     <a href="#privacy" className="text-primary font-semibold hover:underline">
-                      Privacy Policy
+                      {t('Privacy Policy', 'គោលការណ៍ឯកជនភាព')}
                     </a>
                   </label>
                 </div>
@@ -408,13 +450,13 @@ export function RegisterPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-primary/20 gap-2 mt-2 transition-all hover:shadow-xl"
+                className="w-full h-12 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-primary/20 gap-2 mt-2 transition-all hover:shadow-xl cursor-pointer"
               >
                 {loading ? (
-                  'Validating Account...'
+                  t('Validating Account...', 'កំពុងពិនិត្យគណនី...')
                 ) : (
                   <>
-                    <span>Create TYUSHOP Account</span>
+                    <span>{t('Create TYUSHOP Account', 'បង្កើតគណនី TYUSHOP')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -423,9 +465,9 @@ export function RegisterPage() {
 
             {/* Quick Switch to Sign In */}
             <div className="pt-2 text-center text-xs text-muted-foreground border-t border-slate-100 dark:border-slate-800">
-              Already have an account?{' '}
+              {t('Already have an account?', 'មានគណនីរួចហើយមែនទេ?')}{' '}
               <Link to="/login" className="font-bold text-primary hover:underline ml-1">
-                Sign In here
+                {t('Sign In here', 'ចូលប្រើប្រាស់នៅទីនេះ')}
               </Link>
             </div>
           </div>

@@ -5,10 +5,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { brandService } from '@/services/brand.service'
 import type { Brand } from '@/types/brand.types'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const { t } = useShopEngagement()
 
   useEffect(() => {
     brandService
@@ -22,29 +24,32 @@ export function BrandsPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="border-b pb-6">
         <div className="text-xs text-muted-foreground mb-2">
-          <Link to="/" className="hover:underline">Home</Link> / <span className="text-foreground font-medium">Brands</span>
+          <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> / <span className="text-foreground font-medium">{t('Brands', 'ម៉ាកយីហោ')}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Official Partner Brands</h1>
+            <h1 className="text-3xl font-black">{t('Official Partner Brands', 'ម៉ាកយីហោដៃគូផ្លូវការ')}</h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Verified flagship brands, authorized manufacturers, and artisan designers on TYUSHOP.
+              {t(
+                'Verified flagship brands, authorized manufacturers, and artisan designers on TYUSHOP.',
+                'ម៉ាកយីហោផ្លូវការ រោងចក្រមានការអនុញ្ញាត និងអ្នករចនាដែលបានផ្ទៀងផ្ទាត់លើ TYUSHOP។'
+              )}
             </p>
           </div>
-          <Badge variant="outline" className="text-xs">Verified Direct Partners</Badge>
+          <Badge variant="outline" className="text-xs font-bold">{t('Verified Direct Partners', 'ដៃគូផ្ទាល់ផ្លូវការ')}</Badge>
         </div>
       </div>
 
       {loading ? (
         <div className="py-20 text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
-          <p className="text-xs text-muted-foreground">Loading verified brand directory...</p>
+          <p className="text-xs text-muted-foreground">{t('Loading verified brand directory...', 'កំពុងទាញយកបញ្ជីម៉ាកយីហោ...')}</p>
         </div>
       ) : brands.length === 0 ? (
         <div className="text-center py-16 border rounded-xl bg-card">
           <Award className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-          <h3 className="font-semibold text-sm">No Brands Available</h3>
-          <p className="text-xs text-muted-foreground mt-1">Check back soon for new partner brand launches.</p>
+          <h3 className="font-semibold text-sm">{t('No Brands Available', 'មិនទាន់មានម៉ាកយីហោនៅឡើយ')}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t('Check back soon for new partner brand launches.', 'សូមពិនិត្យមើលឡើងវិញក្នុងពេលឆាប់ៗនេះ។')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
@@ -90,7 +95,7 @@ export function BrandsPage() {
                     <div className="pt-2 border-t w-full flex items-center justify-between text-xs text-muted-foreground">
                       <span className="flex items-center gap-1 text-primary font-medium text-[11px]">
                         <Package className="w-3 h-3" />
-                        {b.products_count || 0} items
+                        {b.products_count || 0} {t('items', 'មុខទំនិញ')}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
                     </div>
