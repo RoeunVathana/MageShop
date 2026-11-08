@@ -34,13 +34,17 @@ import {
   AlertTriangle,
   AlertCircle,
   Download,
+  UserCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 import { useShopEngagement, type FreeRewardProduct } from '@/context/ShopEngagementContext'
 import { api } from '@/lib/api'
+import { authService } from '@/services/auth.service'
+import type { User as AuthUser } from '@/types/user.types'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 
 const PROMO_COUPONS = [
@@ -376,6 +380,74 @@ export function CartPage() {
   const [paymentSuccessData, setPaymentSuccessData] = useState<PaymentSuccessReport | null>(null)
   const [paymentFailedData, setPaymentFailedData] = useState<PaymentFailedReport | null>(null)
 
+  // Customer Authentication Required State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => authService.getStoredUser())
+  const [isLoginRequiredModalOpen, setIsLoginRequiredModalOpen] = useState(false)
+  const [quickLoginEmail, setQuickLoginEmail] = useState('')
+  const [quickLoginPassword, setQuickLoginPassword] = useState('')
+  const [quickLoginLoading, setQuickLoginLoading] = useState(false)
+
+  // Sync auth state and prefill customer info
+  useEffect(() => {
+    const syncAuth = () => {
+      const user = authService.getStoredUser()
+      setCurrentUser(user)
+      if (user) {
+        if (user.name) setCustomerName(user.name)
+        if (user.email) setCustomerEmail(user.email)
+        if ((user as any).phone_number) setCustomerPhone((user as any).phone_number)
+      }
+    }
+    syncAuth()
+    window.addEventListener('tyushop-auth-changed', syncAuth)
+    window.addEventListener('storage', syncAuth)
+    return () => {
+      window.removeEventListener('tyushop-auth-changed', syncAuth)
+      window.removeEventListener('storage', syncAuth)
+    }
+  }, [])
+
+  const handleQuickLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!quickLoginEmail.trim() || !quickLoginPassword.trim()) {
+      toast({
+        title: t('Enter Credentials', 'សូមបញ្ចូលអ៊ីមែល និងពាក្យសម្ងាត់'),
+        description: t('Please fill in both email and password.', 'សូមបំពេញព័ត៌មានទាំងពីរឱ្យបានត្រឹមត្រូវ។'),
+        type: 'error',
+      })
+      return
+    }
+
+    setQuickLoginLoading(true)
+    try {
+      const res = await authService.login({
+        email: quickLoginEmail.trim(),
+        password: quickLoginPassword.trim(),
+      })
+      const user = res.data?.user || authService.getStoredUser()
+      setCurrentUser(user)
+      if (user) {
+        if (user.name) setCustomerName(user.name)
+        if (user.email) setCustomerEmail(user.email)
+        if ((user as any).phone_number) setCustomerPhone((user as any).phone_number)
+      }
+      setIsLoginRequiredModalOpen(false)
+      toast({
+        title: t('🎉 Logged In Successfully', '🎉 ចូលគណនីបានជោគជ័យ'),
+        description: t('You can now proceed with your order and live tracking.', 'អ្នកអាចបន្តការទូទាត់ប្រាក់ និងតាមដានការដឹកជញ្ជូនបានហើយ។'),
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: t('Sign In Failed', 'ការចូលគណនីមិនបានជោគជ័យ'),
+        description: err.message || t('Invalid email or password.', 'អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវឡើយ។'),
+        type: 'error',
+      })
+    } finally {
+      setQuickLoginLoading(false)
+    }
+  }
+
   // Countdown timer when KHQR modal is open
   useEffect(() => {
     if (!qrModalData) return
@@ -570,6 +642,21 @@ export function CartPage() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 0. REQUIRE CUSTOMER LOGIN ACCOUNT BEFORE CHECKOUT
+    if (!authService.isAuthenticated()) {
+      setIsLoginRequiredModalOpen(true)
+      toast({
+        title: t('🔐 Customer Login Required', '🔐 តម្រូវឱ្យចូលគណនីអតិថិជន'),
+        description: t(
+          'Please sign in or create an account to proceed with checkout and live GPS delivery.',
+          'សូមចូលគណនី ឬបង្កើតគណនីថ្មី ដើម្បីបន្តការទូទាត់ប្រាក់ និងតាមដានការដឹកជញ្ជូន។'
+        ),
+        type: 'error',
+      })
+      return
+    }
+
     if (cartItems.length === 0 && !freeRewardItem) {
       addToCart({
         id: 2,
@@ -1179,6 +1266,81 @@ export function CartPage() {
             </div>
 
             <CardContent className="p-5 space-y-4">
+              {/* Customer Account Authentication Gate / Status Banner */}
+              {currentUser ? (
+                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/60 dark:bg-emerald-950/30 p-3.5 flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-foreground truncate">
+                          {currentUser.name}
+                        </span>
+                        <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0 rounded font-semibold">
+                          {t('Verified Customer', 'គណនីអតិថិជន')}
+                        </Badge>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground truncate block">
+                        {currentUser.email} • {customerPhone}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 border-emerald-300 text-[10px] font-bold shrink-0 gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {t('Signed In', 'បានចូលគណនី')}
+                  </Badge>
+                </div>
+              ) : (
+                <div className="rounded-2xl border-2 border-amber-500/40 bg-amber-50/70 dark:bg-amber-950/30 p-4 space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-foreground">
+                          {t('Customer Login Required for Checkout', 'តម្រូវឱ្យចូលគណនីអតិថិជន ដើម្បីទូទាត់ប្រាក់')}
+                        </span>
+                        <Badge className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0 rounded">
+                          {t('Required', 'ចាំបាច់')}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {t(
+                          'Please sign in or create an account to proceed with your order, generate Bakong KHQR, and receive email receipts.',
+                          'សូមចូលគណនី ឬចុះឈ្មោះបង្កើតគណនី ដើម្បីទូទាត់ប្រាក់ បង្កើតកូដ KHQR និងទទួលបានវិក្កយបត្រតាមអ៊ីមែល។'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/60 dark:border-amber-900/40">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsLoginRequiredModalOpen(true)}
+                      className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      {t('Sign In Account', 'ចូលគណនីឥឡូវ')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate('/register?redirect=/cart')}
+                      className="rounded-xl h-9 text-xs font-bold gap-1.5 border-slate-300 dark:border-slate-700 hover:bg-muted"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      {t('Create Account', 'បង្កើតគណនី')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -1670,12 +1832,25 @@ export function CartPage() {
                 <Button
                   type="submit"
                   disabled={checkoutLoading}
-                  className="w-full rounded-2xl gap-2 shadow-lg shadow-primary/25 h-12 font-bold text-sm"
+                  className={cn(
+                    'w-full rounded-2xl gap-2 shadow-lg h-12 font-bold text-sm',
+                    !currentUser
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/25'
+                      : 'shadow-primary/25'
+                  )}
                 >
                   {checkoutLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       {t('Generating Payment...', 'កំពុងបង្កើតការទូទាត់...')}
+                    </>
+                  ) : !currentUser ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      {t(
+                        `Sign In to Checkout (${formatPrice(finalTotal)})`,
+                        `ចូលគណនីដើម្បីទូទាត់ប្រាក់ (${formatPrice(finalTotal)})`
+                      )}
                     </>
                   ) : paymentMethod === 'bakong_khqr' ? (
                     <>
@@ -2110,6 +2285,151 @@ export function CartPage() {
                   {t('Dismiss / Close', 'បិទផ្ទាំងនេះ')}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOMER LOGIN REQUIRED MODAL DIALOG */}
+      {isLoginRequiredModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-amber-500/40 my-8">
+            {/* Top Amber / Orange Branded Banner */}
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-6 py-6 text-center relative overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setIsLoginRequiredModalOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                aria-label="Close Login Modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="w-16 h-16 rounded-full bg-white text-amber-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-bounce">
+                <Lock className="w-8 h-8 stroke-[2.5]" />
+              </div>
+
+              <h2 className="text-xl font-black tracking-tight">
+                {t('Customer Sign In Required', 'តម្រូវឱ្យចូលគណនីអតិថិជន')}
+              </h2>
+              <p className="text-xs text-white/90 mt-1 font-medium">
+                {t(
+                  'Please sign in or register to complete your order and track live GPS delivery.',
+                  'សូមចូលគណនី ឬចុះឈ្មោះបង្កើតគណនី ដើម្បីទូទាត់ប្រាក់ និងតាមដានការដឹកជញ្ជូន។'
+                )}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Value Highlights */}
+              <div className="rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 p-3.5 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>{t('Member Checkout Benefits:', 'អត្ថប្រយោជន៍សមាជិក៖')}</span>
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-muted-foreground pl-6 list-disc">
+                  <li>{t('Live real-time courier GPS tracking to your address', 'តាមដានអ្នកដឹកជញ្ជូនតាម GPS ផ្ទាល់')}</li>
+                  <li>{t('Automatic +5 loyalty points credited to your wallet', 'ទទួលបាន +៥ ពិន្ទុរង្វាន់ដោយស្វ័យប្រវត្តិ')}</li>
+                  <li>{t('Official payment receipt emailed to your inbox', 'ទទួលបានវិក្កយបត្រផ្លូវការតាមអ៊ីមែល')}</li>
+                </ul>
+              </div>
+
+              {/* Inline Quick Login Form */}
+              <form onSubmit={handleQuickLogin} className="space-y-3 pt-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{t('Email Address', 'អ៊ីមែល')}</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={quickLoginEmail}
+                    onChange={(e) => setQuickLoginEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{t('Password', 'ពាក្យសម្ងាត់')}</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={quickLoginPassword}
+                    onChange={(e) => setQuickLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={quickLoginLoading}
+                  className="w-full rounded-xl h-11 font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
+                >
+                  {quickLoginLoading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      {t('Signing In...', 'កំពុងចូលគណនី...')}
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      {t('Sign In & Continue Checkout', 'ចូលគណនី & បន្តការទូទាត់')}
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              {/* Alternative Links */}
+              <div className="relative my-3">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase font-bold">
+                  <span className="bg-card px-2 text-muted-foreground">{t('Or', 'ឬ')}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsLoginRequiredModalOpen(false)
+                    navigate('/login?redirect=/cart')
+                  }}
+                  className="rounded-xl h-9 text-xs font-bold gap-1.5"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  {t('Full Login Page', 'ទំព័រចូលគណនី')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsLoginRequiredModalOpen(false)
+                    navigate('/register?redirect=/cart')
+                  }}
+                  className="rounded-xl h-9 text-xs font-bold gap-1.5 text-indigo-600 dark:text-indigo-400"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {t('Register New', 'ចុះឈ្មោះថ្មី')}
+                </Button>
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsLoginRequiredModalOpen(false)}
+                className="w-full rounded-xl h-8 text-xs text-muted-foreground"
+              >
+                {t('Keep Reviewing Cart', 'បន្តពិនិត្យកន្ត្រកទំនិញ')}
+              </Button>
             </div>
           </div>
         </div>

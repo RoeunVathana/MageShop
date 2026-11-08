@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -64,6 +64,8 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
   const { toast } = useToast()
   const { t, language, setLanguage } = useShopEngagement()
 
@@ -90,7 +92,9 @@ export function LoginPage() {
         type: 'success',
       })
 
-      if (authService.isAdmin(res.data?.user)) {
+      if (redirectParam) {
+        navigate(redirectParam)
+      } else if (authService.isAdmin(res.data?.user)) {
         navigate('/dashboard/admin')
       } else {
         navigate('/')

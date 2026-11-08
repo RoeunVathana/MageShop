@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -84,6 +84,8 @@ export function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
   const { toast } = useToast()
   const { t, language, setLanguage } = useShopEngagement()
 
@@ -116,7 +118,8 @@ export function RegisterPage() {
         description: t('Welcome to TYUSHOP! Please sign in with your credentials.', 'សូមស្វាគមន៍មកកាន់ TYUSHOP! សូមចូលប្រើប្រាស់។'),
         type: 'success',
       })
-      navigate('/login')
+      const loginTarget = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login'
+      navigate(loginTarget)
     } catch (err: any) {
       toast({
         title: t('Registration Failed', 'ការចុះឈ្មោះមិនបានជោគជ័យ'),
