@@ -52,7 +52,11 @@ class LoginRequest extends FormRequest
 
         // Timing-safe check: always perform a hash check even if user doesn't exist
         $hashToCheck = $user ? $user->password : self::DUMMY_HASH;
-        $passwordValid = Hash::check($password, $hashToCheck);
+        try {
+            $passwordValid = Hash::check($password, $hashToCheck);
+        } catch (\Throwable $e) {
+            $passwordValid = @password_verify($password, $hashToCheck);
+        }
 
         if (! $user || ! $passwordValid) {
             SecurityLogService::log('AUTH_LOGIN_FAILED', $user ? $user->id : null, [
@@ -64,6 +68,16 @@ class LoginRequest extends FormRequest
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials provided.'],
             ]);
+        }
+
+        // Auto-rehash password to current bcrypt configuration if needed
+        try {
+            if ($user && $passwordValid && Hash::needsRehash($user->password)) {
+                $user->password = $password;
+                $user->save();
+            }
+        } catch (\Throwable $rehashEx) {
+            // Silently continue if rehash fails
         }
 
         // Check account status

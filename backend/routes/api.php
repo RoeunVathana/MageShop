@@ -71,6 +71,13 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'me']);
 // Public Store Settings
 Route::get('/store-settings', [StoreSettingsController::class, 'show']);
 
+// Authenticated Store Settings Update Aliases
+Route::middleware('auth:sanctum')->group(function () {
+    Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+    Route::post('/store-settings', [StoreSettingsController::class, 'update']);
+    Route::post('/store-settings/currency', [StoreSettingsController::class, 'update']);
+});
+
 // Public Slide Banners
 Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/banners/{banner}', [BannerController::class, 'show']);

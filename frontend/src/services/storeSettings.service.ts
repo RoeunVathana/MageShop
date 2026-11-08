@@ -62,7 +62,22 @@ export const storeSettingsService = {
         support_email: data.support_email,
       }
     } catch {
-      return this.getPublicSettings()
+      try {
+        const res = await api.get<ApiResponse<any>>('/admin/store-settings')
+        const data = res?.data || {}
+        return {
+          default_currency: data.default_currency === 'KHR' ? 'KHR' : 'USD',
+          usd_to_khr_rate: Number(data.usd_to_khr_rate || 4100),
+          allowed_currencies: (data.allowed_currencies as any) || 'BOTH',
+          currency_auto_switch_lang:
+            data.currency_auto_switch_lang === 'true' || data.currency_auto_switch_lang === true,
+          store_name: data.store_name,
+          contact_phone: data.contact_phone,
+          support_email: data.support_email,
+        }
+      } catch {
+        return this.getPublicSettings()
+      }
     }
   },
 
@@ -85,8 +100,15 @@ export const storeSettingsService = {
     try {
       return await api.patch<any>('/store-settings', payload)
     } catch {
-      // Fallback endpoint if patch route is proxied
-      return await api.post<any>('/store-settings/currency', payload)
+      try {
+        return await api.patch<any>('/admin/store-settings', payload)
+      } catch {
+        try {
+          return await api.post<any>('/store-settings/currency', payload)
+        } catch {
+          return await api.post<any>('/admin/store-settings/currency', payload)
+        }
+      }
     }
   },
 }
