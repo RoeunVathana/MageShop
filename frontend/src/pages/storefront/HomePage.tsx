@@ -193,49 +193,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Dashboard Role Navigator */}
-      <section className="container mx-auto px-4">
-        <div className="bg-muted/40 border rounded-2xl p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight">Enterprise Role Portals</h2>
-                <Badge variant="outline" className="text-xs">Security Verified</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Access your dedicated portal with granular RBAC permissions.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { role: 'Customer', path: '/dashboard/customer', icon: ShoppingBag, color: 'text-blue-500' },
-              { role: 'Seller', path: '/dashboard/seller', icon: Store, color: 'text-emerald-500' },
-              { role: 'Admin', path: '/dashboard/admin', icon: Shield, color: 'text-purple-500' },
-              { role: 'Staff', path: '/dashboard/staff', icon: Layers, color: 'text-indigo-500' },
-              { role: 'Driver', path: '/dashboard/delivery', icon: Truck, color: 'text-amber-500' },
-              { role: 'Warehouse', path: '/dashboard/warehouse', icon: CheckCircle, color: 'text-teal-500' },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.role}
-                  to={item.path}
-                  className="flex flex-col items-center justify-center p-4 rounded-xl bg-card border hover:border-primary/50 hover:shadow-md transition-all text-center group"
-                >
-                  <div className={`p-2.5 rounded-full bg-muted group-hover:scale-110 transition-transform ${item.color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold mt-2 text-foreground">{item.role}</span>
-                  <span className="text-[10px] text-muted-foreground">Portal</span>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* Live Featured Products from Database */}
       <section className="container mx-auto px-4 space-y-6">
         <div className="flex items-center justify-between">

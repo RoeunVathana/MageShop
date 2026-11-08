@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/ui/toast'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
+import { AdminOnlyRoute, AuthenticatedRoute } from '@/components/auth/AdminOnlyRoute'
 
 // Storefront Pages
 import { HomePage } from '@/pages/storefront/HomePage'
@@ -97,7 +98,7 @@ export default function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/faq" element={<FaqPage />} />
-                  <Route path="/diagnostics" element={<DiagnosticsPage />} />
+                  <Route path="/diagnostics" element={<AdminOnlyRoute><DiagnosticsPage /></AdminOnlyRoute>} />
                 </Route>
 
               {/* Authentication Routes */}
@@ -109,35 +110,37 @@ export default function App() {
               <Route path="/verify-otp" element={<VerifyOtpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-              {/* Multi-Vendor Role Dashboards */}
-              <Route path="/dashboard/customer" element={<CustomerDashboard />} />
-              <Route path="/dashboard/seller" element={<SellerDashboard />} />
-              <Route path="/dashboard/admin" element={<AdminDashboard />} />
-              <Route path="/dashboard/staff" element={<StaffDashboard />} />
-              <Route path="/dashboard/delivery" element={<DeliveryDashboard />} />
-              <Route path="/dashboard/warehouse" element={<WarehouseDashboard />} />
+              {/* Customer Account Portal (Authenticated Users Only) */}
+              <Route path="/dashboard/customer" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
 
-              {/* Product & Inventory Management */}
-              <Route path="/admin/products" element={<ProductListPage />} />
-              <Route path="/admin/products/create" element={<ProductCreatePage />} />
-              <Route path="/admin/products/:id/edit" element={<ProductEditPage />} />
-              <Route path="/admin/inventory" element={<InventoryListPage />} />
-              <Route path="/admin/inventory/:productId/history" element={<InventoryHistoryPage />} />
+              {/* Strict Admin-Only System Dashboards (Staff/Seller/Others Cannot Access — Only Admin) */}
+              <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/seller" element={<AdminOnlyRoute><SellerDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/staff" element={<AdminOnlyRoute><StaffDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/delivery" element={<AdminOnlyRoute><DeliveryDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/warehouse" element={<AdminOnlyRoute><WarehouseDashboard /></AdminOnlyRoute>} />
 
-              {/* Universal Category & Attribute Management */}
-              <Route path="/admin/categories" element={<CategoryListPage />} />
-              <Route path="/admin/categories/create" element={<CategoryCreatePage />} />
-              <Route path="/admin/categories/:id/edit" element={<CategoryEditPage />} />
+              {/* Product & Inventory Management (Admin Only) */}
+              <Route path="/admin/products" element={<AdminOnlyRoute><ProductListPage /></AdminOnlyRoute>} />
+              <Route path="/admin/products/create" element={<AdminOnlyRoute><ProductCreatePage /></AdminOnlyRoute>} />
+              <Route path="/admin/products/:id/edit" element={<AdminOnlyRoute><ProductEditPage /></AdminOnlyRoute>} />
+              <Route path="/admin/inventory" element={<AdminOnlyRoute><InventoryListPage /></AdminOnlyRoute>} />
+              <Route path="/admin/inventory/:productId/history" element={<AdminOnlyRoute><InventoryHistoryPage /></AdminOnlyRoute>} />
 
-              {/* Brand Management */}
-              <Route path="/admin/brands" element={<BrandListPage />} />
+              {/* Universal Category & Attribute Management (Admin Only) */}
+              <Route path="/admin/categories" element={<AdminOnlyRoute><CategoryListPage /></AdminOnlyRoute>} />
+              <Route path="/admin/categories/create" element={<AdminOnlyRoute><CategoryCreatePage /></AdminOnlyRoute>} />
+              <Route path="/admin/categories/:id/edit" element={<AdminOnlyRoute><CategoryEditPage /></AdminOnlyRoute>} />
 
-              {/* API Token Keys & Security Management */}
-              <Route path="/admin/security" element={<AdminSecurityPage />} />
-              <Route path="/admin/api-tokens" element={<AdminSecurityPage />} />
+              {/* Brand Management (Admin Only) */}
+              <Route path="/admin/brands" element={<AdminOnlyRoute><BrandListPage /></AdminOnlyRoute>} />
 
-              {/* Slide Banner Management */}
-              <Route path="/admin/banners" element={<BannerListPage />} />
+              {/* API Token Keys & Security Management (Admin Only) */}
+              <Route path="/admin/security" element={<AdminOnlyRoute><AdminSecurityPage /></AdminOnlyRoute>} />
+              <Route path="/admin/api-tokens" element={<AdminOnlyRoute><AdminSecurityPage /></AdminOnlyRoute>} />
+
+              {/* Slide Banner Management (Admin Only) */}
+              <Route path="/admin/banners" element={<AdminOnlyRoute><BannerListPage /></AdminOnlyRoute>} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

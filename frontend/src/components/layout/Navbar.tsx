@@ -28,7 +28,6 @@ export function Navbar() {
     { label: t('About Us', 'អំពីយើង'), path: '/about' },
     { label: t('Contact & Supporter', 'ទំនាក់ទំនងជំនួយ'), path: '/contact' },
     { label: t('FAQ', 'សំណួរញឹកញាប់'), path: '/faq' },
-    { label: t('API Diagnostics', 'ពិនិត្យប្រព័ន្ធ API'), path: '/diagnostics' },
   ]
 
   const featuredCategories = [

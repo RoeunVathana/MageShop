@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   Menu,
@@ -7,7 +7,6 @@ import {
   User,
   LogOut,
   ChevronRight,
-  ShieldAlert,
   Home,
   CheckCircle2,
   LucideIcon,
@@ -18,6 +17,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useToast } from '@/components/ui/toast'
 import { Logo } from '@/components/ui/logo'
 import { cn } from '@/lib/utils'
+import { authService } from '@/services/auth.service'
 
 export interface NavItem {
   label: string
@@ -45,23 +45,27 @@ export function DashboardLayout({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [notificationsCount, setNotificationsCount] = useState(3)
   const location = useLocation()
+  const navigate = useNavigate()
   const { toast } = useToast()
+  const currentUser = authService.getStoredUser()
 
   const handleNotificationClick = () => {
     toast({
-      title: 'Notifications Hub (Phase 1 Preview)',
-      description: 'Real-time WebSocket notifications with Laravel Reverb connect in Phase 2.',
+      title: 'Notifications Hub',
+      description: 'All system notifications are up to date.',
       type: 'info',
     })
     setNotificationsCount(0)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout()
     toast({
-      title: 'Logout Action',
-      description: 'Session termination and Sanctum token revocation simulate in Phase 1.',
+      title: 'Signed Out',
+      description: 'Your session has been securely terminated.',
       type: 'info',
     })
+    navigate('/login')
   }
 
   return (
@@ -253,9 +257,9 @@ export function DashboardLayout({
                 className="flex items-center gap-2 rounded-full pl-2 pr-3 h-9"
               >
                 <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                  {roleTitle.charAt(0)}
+                  {(currentUser?.name || roleTitle).charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline text-xs font-semibold">{roleTitle} Demo</span>
+                <span className="hidden sm:inline text-xs font-semibold">{currentUser?.name || roleTitle}</span>
               </Button>
 
               {isProfileMenuOpen && (
@@ -266,34 +270,11 @@ export function DashboardLayout({
                   />
                   <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border bg-card p-2 text-card-foreground shadow-xl z-50">
                     <div className="px-3 py-2 border-b">
-                      <p className="text-xs font-bold">{roleTitle} Preview</p>
-                      <p className="text-[11px] text-muted-foreground">demo.{roleSlug}@megacommerce.local</p>
+                      <p className="text-xs font-bold">{currentUser?.name || roleTitle}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
                     </div>
 
-                    <div className="py-1">
-                      <div className="px-3 py-1.5 text-[10px] text-muted-foreground font-semibold uppercase">
-                        Switch Dashboard Shell
-                      </div>
-                      {[
-                        { name: 'Customer', url: '/dashboard/customer' },
-                        { name: 'Seller', url: '/dashboard/seller' },
-                        { name: 'Admin', url: '/dashboard/admin' },
-                        { name: 'Staff', url: '/dashboard/staff' },
-                        { name: 'Driver', url: '/dashboard/delivery' },
-                        { name: 'Warehouse', url: '/dashboard/warehouse' },
-                      ].map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.url}
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="block px-3 py-1 text-xs hover:bg-muted rounded-md"
-                        >
-                          {item.name} Dashboard
-                        </Link>
-                      ))}
-                    </div>
-
-                    <div className="pt-1 border-t">
+                    <div className="pt-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -302,7 +283,7 @@ export function DashboardLayout({
                         }}
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                       >
-                        <LogOut className="w-3.5 h-3.5" /> Sign Out Placeholder
+                        <LogOut className="w-3.5 h-3.5" /> Sign Out
                       </button>
                     </div>
                   </div>
@@ -311,14 +292,6 @@ export function DashboardLayout({
             </div>
           </div>
         </header>
-
-        {/* Phase 1 Demo Banner */}
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2.5 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200">
-          <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-          <span>
-            <strong>Phase 1 Shell Notice:</strong> This dashboard is an unauthenticated preview component. Protected route guards and role authorization activate in Phase 2.
-          </span>
-        </div>
 
         {/* Page Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">

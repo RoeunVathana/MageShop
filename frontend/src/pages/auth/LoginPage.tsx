@@ -49,17 +49,10 @@ export function LoginPage() {
         type: 'success',
       })
 
-      const userRoles = res.data?.user?.roles || []
-      const roleNames = userRoles.map((r: any) => (typeof r === 'string' ? r : r.name))
-
-      if (roleNames.some((name: string) => ['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'].includes(name))) {
+      if (authService.isAdmin(res.data?.user)) {
         navigate('/dashboard/admin')
-      } else if (roleNames.includes('SELLER')) {
-        navigate('/dashboard/seller')
-      } else if (roleNames.includes('DISPATCHER') || roleNames.includes('DELIVERY_DRIVER')) {
-        navigate('/dashboard/delivery')
       } else {
-        navigate('/dashboard/customer')
+        navigate('/')
       }
     } catch (err: any) {
       toast({

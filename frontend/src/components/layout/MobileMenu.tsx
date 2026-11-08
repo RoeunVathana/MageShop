@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { authService } from '@/services/auth.service'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { language, setLanguage, currency, setCurrency, t } = useShopEngagement()
+  const isAdmin = authService.isAdmin()
 
   if (!isOpen) return null
 
@@ -35,16 +37,6 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     { label: t('About Us', 'អំពីយើង'), path: '/about', icon: Info },
     { label: t('Contact', 'ទំនាក់ទំនងជំនួយ'), path: '/contact', icon: Mail },
     { label: t('FAQ', 'សំណួរញឹកញាប់'), path: '/faq', icon: HelpCircle },
-    { label: t('API Diagnostics', 'ពិនិត្យប្រព័ន្ធ API'), path: '/diagnostics', icon: Activity, highlight: true },
-  ]
-
-  const dashboards = [
-    { label: 'Customer Portal', path: '/dashboard/customer' },
-    { label: 'Seller Hub', path: '/dashboard/seller' },
-    { label: 'Admin Center', path: '/dashboard/admin' },
-    { label: 'Staff Desk', path: '/dashboard/staff' },
-    { label: 'Driver App', path: '/dashboard/delivery' },
-    { label: 'Warehouse Hub', path: '/dashboard/warehouse' },
   ]
 
   return (
@@ -137,11 +129,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 key={link.path}
                 to={link.path}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  link.highlight
-                    ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                    : 'text-foreground hover:bg-muted'
-                }`}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-foreground hover:bg-muted"
               >
                 <Icon className="w-4 h-4 text-muted-foreground" />
                 <span>{link.label}</span>
@@ -150,23 +138,21 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           })}
         </div>
 
-        {/* Dashboards Section */}
-        <div className="mt-4 pt-4 border-t space-y-1">
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
-            <LayoutDashboard className="w-3.5 h-3.5" /> Dashboards Preview
-          </p>
-          {dashboards.map((d) => (
+        {/* Admin Section (Strictly Admin Only) */}
+        {isAdmin && (
+          <div className="mt-4 pt-4 border-t space-y-1">
+            <p className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
+              <LayoutDashboard className="w-3.5 h-3.5" /> {t('Admin Control', 'គ្រប់គ្រងប្រព័ន្ធ (Admin)')}
+            </p>
             <Link
-              key={d.path}
-              to={d.path}
+              to="/dashboard/admin"
               onClick={onClose}
-              className="flex items-center justify-between px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
+              className="flex items-center justify-between px-3 py-1.5 text-xs text-foreground font-semibold hover:bg-muted rounded-md"
             >
-              <span>{d.label}</span>
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">Phase 1</span>
+              <span>{t('Admin Control Center', 'មជ្ឈមណ្ឌលគ្រប់គ្រង Admin')}</span>
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
 
         <div className="mt-auto pt-6 text-center text-xs text-muted-foreground border-t">
           <p>© 2026 TYUSHOP Inc.</p>

@@ -76,9 +76,19 @@ export async function initCsrf(): Promise<void> {
   }
 }
 
-// Request Interceptor: Strict cookie-only authentication (No localStorage tokens)
+// Request Interceptor: Attach Sanctum Bearer token if present + cookie credentials
 apiClient.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    try {
+      const token = localStorage.getItem('tyushop_auth_token')
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return config
+  },
   (error) => Promise.reject(normalizeApiError(error))
 )
 

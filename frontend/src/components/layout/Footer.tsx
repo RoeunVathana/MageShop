@@ -110,22 +110,22 @@ export function Footer() {
             <li><Link to="/about" className="hover:text-primary transition-colors">About TYUSHOP</Link></li>
             <li><Link to="/contact" className="hover:text-primary transition-colors">Contact Support</Link></li>
             <li><Link to="/faq" className="hover:text-primary transition-colors">Frequently Asked Questions</Link></li>
-            <li><Link to="/diagnostics" className="hover:text-amber-500 transition-colors font-medium">System Diagnostics</Link></li>
+            <li><Link to="/track-order" className="hover:text-primary transition-colors">Track Live Delivery</Link></li>
             <li><a href="#terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
           </ul>
         </div>
 
-        {/* Merchant & Drivers */}
+        {/* Customer Account & Services */}
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
-            Vendor & Partners
+            Customer Services
           </h4>
           <ul className="space-y-2 text-xs text-muted-foreground">
-            <li><Link to="/register" className="hover:text-primary transition-colors">Register as Seller</Link></li>
-            <li><Link to="/dashboard/seller" className="hover:text-primary transition-colors">Seller Dashboard Preview</Link></li>
-            <li><Link to="/dashboard/delivery" className="hover:text-primary transition-colors">Delivery Fleet Preview</Link></li>
-            <li><Link to="/dashboard/warehouse" className="hover:text-primary transition-colors">Warehouse Desk Preview</Link></li>
-            <li><Link to="/dashboard/admin" className="hover:text-primary transition-colors">Admin Portal Preview</Link></li>
+            <li><Link to="/login" className="hover:text-primary transition-colors">Sign In to Account</Link></li>
+            <li><Link to="/register" className="hover:text-primary transition-colors">Create Free Account</Link></li>
+            <li><Link to="/cart" className="hover:text-primary transition-colors">100-Pt Free Item Rewards</Link></li>
+            <li><Link to="/wishlist" className="hover:text-primary transition-colors">Saved Favorites</Link></li>
+            <li><Link to="/contact" className="hover:text-primary transition-colors">24/7 Supporter Desk</Link></li>
           </ul>
         </div>
       </div>

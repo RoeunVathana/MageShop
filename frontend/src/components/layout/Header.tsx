@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -11,7 +11,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   LogOut,
-  SlidersHorizontal,
+  Shield,
   Award,
   Truck,
 } from 'lucide-react'
@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { authService } from '@/services/auth.service'
+import type { User } from '@/types/user.types'
 
 interface HeaderProps {
   onToggleMobileMenu: () => void
@@ -29,8 +31,28 @@ interface HeaderProps {
 export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAccountOpen, setIsAccountOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getStoredUser())
   const navigate = useNavigate()
   const { cartCount, favoritesCount, loyaltyPoints, t } = useShopEngagement()
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(authService.getStoredUser())
+    window.addEventListener('tyushop-auth-changed', syncAuth)
+    window.addEventListener('storage', syncAuth)
+    return () => {
+      window.removeEventListener('tyushop-auth-changed', syncAuth)
+      window.removeEventListener('storage', syncAuth)
+    }
+  }, [])
+
+  const isAdmin = authService.isAdmin(currentUser)
+
+  const handleLogout = async () => {
+    setIsAccountOpen(false)
+    await authService.logout()
+    setCurrentUser(null)
+    navigate('/login')
+  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -139,7 +161,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <UserIcon className="w-3.5 h-3.5" />
               </div>
-              <span className="hidden lg:inline text-xs font-semibold">{t('Account', 'គណនី')}</span>
+              <span className="hidden lg:inline text-xs font-semibold">
+                {currentUser ? currentUser.name : t('Account', 'គណនី')}
+              </span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </Button>
 
@@ -151,69 +175,92 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 />
                 <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border bg-card p-2 text-card-foreground shadow-xl z-50 animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b">
-                    <p className="text-xs font-medium text-muted-foreground">{t('Welcome to TyuShop', 'សូមស្វាគមន៍មកកាន់ TyuShop')}</p>
-                    <p className="text-sm font-semibold truncate">{t('Multi-Vendor Marketplace', 'ផ្សារទំនើបអនឡាញ')}</p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {currentUser ? currentUser.email : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}
+                    </p>
+                    <p className="text-sm font-semibold truncate">
+                      {currentUser
+                        ? isAdmin
+                          ? t('Administrator Account', 'គណនីអ្នកគ្រប់គ្រង (Admin)')
+                          : currentUser.name
+                        : t('Customer Account', 'គណនីអតិថិជន')}
+                    </p>
                   </div>
 
-                  <div className="py-1">
-                    <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                      {t('Authentication', 'ការចូលប្រើប្រាស់')}
+                  {!currentUser ? (
+                    <div className="py-1">
+                      <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                        {t('Authentication', 'ការចូលប្រើប្រាស់')}
+                      </div>
+                      <Link
+                        to="/login"
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
+                      >
+                        <UserIcon className="w-3.5 h-3.5 text-primary" />
+                        <span>{t('Sign In', 'ចូលគណនី')}</span>
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
+                      >
+                        <UserIcon className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{t('Create Free Account', 'បង្កើតគណនីថ្មី')}</span>
+                      </Link>
                     </div>
-                    <Link
-                      to="/login"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
-                    >
-                      <UserIcon className="w-3.5 h-3.5 text-primary" />
-                      <span>{t('Sign In', 'ចូលគណនី')}</span>
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
-                    >
-                      <UserIcon className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{t('Create Free Account', 'បង្កើតគណនីថ្មី')}</span>
-                    </Link>
-                  </div>
+                  ) : (
+                    <div className="py-1">
+                      {isAdmin && (
+                        <div className="pb-1 mb-1 border-b">
+                          <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-purple-600 dark:text-purple-400 uppercase">
+                            {t('Admin Only System', 'ប្រព័ន្ធគ្រប់គ្រង (Admin Only)')}
+                          </div>
+                          <Link
+                            to="/dashboard/admin"
+                            onClick={() => setIsAccountOpen(false)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors font-semibold"
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5 text-purple-500" />
+                            <span>{t('Admin Control Center', 'មជ្ឈមណ្ឌលគ្រប់គ្រង Admin')}</span>
+                          </Link>
+                          <Link
+                            to="/admin/products"
+                            onClick={() => setIsAccountOpen(false)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                            <span>{t('Manage Products & Stock', 'គ្រប់គ្រងទំនិញ និងស្តុក')}</span>
+                          </Link>
+                          <Link
+                            to="/admin/security"
+                            onClick={() => setIsAccountOpen(false)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
+                          >
+                            <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>{t('Security & OTP Settings', 'សុវត្ថិភាព និង OTP')}</span>
+                          </Link>
+                        </div>
+                      )}
 
-                  <div className="py-1 border-t">
-                    <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                      Phase 1 Dashboard Previews
+                      <Link
+                        to="/dashboard/customer"
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
+                      >
+                        <UserIcon className="w-3.5 h-3.5 text-blue-500" />
+                        <span>{t('My Account & Orders', 'គណនី និងការបញ្ជាទិញ')}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-md text-destructive hover:bg-destructive/10 transition-colors mt-1"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{t('Sign Out', 'ចាកចេញពីគណនី')}</span>
+                      </button>
                     </div>
-                    <Link
-                      to="/dashboard/customer"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
-                    >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Customer Portal</span>
-                    </Link>
-                    <Link
-                      to="/dashboard/seller"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
-                    >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Seller Merchant Hub</span>
-                    </Link>
-                    <Link
-                      to="/dashboard/admin"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
-                    >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-purple-500" />
-                      <span>Admin Control Center</span>
-                    </Link>
-                    <Link
-                      to="/diagnostics"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors text-amber-600 dark:text-amber-400 font-medium"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      <span>API Diagnostics Page</span>
-                    </Link>
-                  </div>
+                  )}
                 </div>
               </>
             )}
