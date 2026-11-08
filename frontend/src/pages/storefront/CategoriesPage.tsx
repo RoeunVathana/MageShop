@@ -139,7 +139,7 @@ export function CategoriesPage() {
   )
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header & Breadcrumb */}
       <div className="border-b pb-6">
         <div className="text-xs text-muted-foreground mb-2">
@@ -205,7 +205,7 @@ export function CategoriesPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCategories.map((cat) => {
             const Icon = getCategoryIcon(cat.name, cat.icon)
             const hasSub = cat.children && cat.children.length > 0

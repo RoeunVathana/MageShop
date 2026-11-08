@@ -86,7 +86,7 @@ export function ContactPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">

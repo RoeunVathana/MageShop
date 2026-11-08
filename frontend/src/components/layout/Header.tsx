@@ -82,7 +82,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </div>
 
         {/* Center: Search Bar (Desktop) */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl mx-4">
+        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-3xl mx-6">
           <div className="relative w-full flex items-center">
             <Input
               type="text"

@@ -11,7 +11,7 @@ export function WishlistPage() {
   const { favorites, toggleFavorite, addToCart, t, formatPrice } = useShopEngagement()
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">
@@ -55,7 +55,7 @@ export function WishlistPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {favorites.map((item) => {
             const isFreeEligible = item.price <= 30
             return (

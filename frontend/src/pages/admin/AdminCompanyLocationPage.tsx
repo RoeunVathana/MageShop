@@ -247,7 +247,7 @@ export function AdminCompanyLocationPage() {
       roleColor="text-indigo-500"
       navItems={adminNavItems}
     >
-      <div className="space-y-6 max-w-6xl pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />

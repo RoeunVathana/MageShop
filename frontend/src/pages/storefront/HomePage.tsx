@@ -221,7 +221,7 @@ export function HomePage() {
             <p className="text-xs text-muted-foreground">No active products available in catalog.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
             {featuredProducts.map((p) => {
               const liked = isFavorite(p.id)
               const isRewardEligible = p.selling_price <= 30

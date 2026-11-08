@@ -161,7 +161,7 @@ export function ProductDetailPage() {
   const isLowStock = !isOutOfStock && currentStock <= product.low_stock_threshold
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-10 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 space-y-10">
       {/* Breadcrumb Navigation */}
       <div className="text-xs text-muted-foreground flex items-center flex-wrap gap-1.5 border-b pb-4">
         <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link>

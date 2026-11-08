@@ -32,7 +32,7 @@ export function DiagnosticsPage() {
   const dbConnected = readiness?.dependencies?.database?.status === 'healthy'
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 max-w-5xl">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

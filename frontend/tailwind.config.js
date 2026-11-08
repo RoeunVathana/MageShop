@@ -5,10 +5,15 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: '1.5rem',
-      screens: {
-        '2xl': '1400px',
+      padding: {
+        DEFAULT: '1rem',
+        sm: '1.5rem',
+        md: '2rem',
+        lg: '2.5rem',
+        xl: '3rem',
+        '2xl': '3.5rem',
       },
+      screens: {},
     },
     extend: {
       fontFamily: {

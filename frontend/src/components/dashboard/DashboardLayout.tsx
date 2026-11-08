@@ -319,8 +319,8 @@ export function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content Area with Generous Whitespace */}
-        <main className="flex-1 p-5 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl w-full mx-auto">
+        {/* Page Content Area with Generous Whitespace (Full Width) */}
+        <main className="flex-1 p-5 sm:p-8 lg:p-10 overflow-y-auto w-full">
           {children}
         </main>
       </div>
