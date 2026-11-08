@@ -53,4 +53,3 @@ class VariantAttributeValue extends Model
         return (string) ($this->custom_value ?? '');
     }
 }
-

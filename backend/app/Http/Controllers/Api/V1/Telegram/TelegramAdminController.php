@@ -26,7 +26,7 @@ class TelegramAdminController extends Controller
             $user->telegramAccount?->is_bot_admin
         );
 
-        if (!$isStaff) {
+        if (! $isStaff) {
             abort(403, 'Unauthorized. Staff privileges required.');
         }
     }
@@ -43,7 +43,7 @@ class TelegramAdminController extends Controller
 
         $query = Product::with('category');
 
-        if (!empty($sku)) {
+        if (! empty($sku)) {
             $query->where('sku', strtoupper($sku));
         }
 
@@ -172,4 +172,3 @@ class TelegramAdminController extends Controller
         ]);
     }
 }
-

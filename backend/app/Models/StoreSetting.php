@@ -23,6 +23,7 @@ class StoreSetting extends Model
     {
         return Cache::remember("store_setting:{$key}", 3600, function () use ($key, $default) {
             $setting = self::where('setting_key', $key)->first();
+
             return $setting ? $setting->setting_value : $default;
         });
     }
@@ -53,4 +54,3 @@ class StoreSetting extends Model
         });
     }
 }
-

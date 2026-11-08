@@ -112,7 +112,7 @@ class Order extends Model
 
     public function getTrackingNumberAttribute(): ?string
     {
-        return 'TRK-' . substr(md5($this->order_number), 0, 8);
+        return 'TRK-'.substr(md5($this->order_number), 0, 8);
     }
 
     public function getShippingCarrierAttribute(): string

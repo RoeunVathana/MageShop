@@ -9,6 +9,7 @@ class StoreBrandRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
+
         return $user && ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('PRODUCT_MANAGER') || $user->hasRole('STAFF'));
     }
 
@@ -34,4 +35,3 @@ class StoreBrandRequest extends FormRequest
         ];
     }
 }
-

@@ -14,44 +14,44 @@ return new class extends Migration
     {
         // 1. Extend categories table for parent/child nesting and SEO
         Schema::table('categories', function (Blueprint $table) {
-            if (!Schema::hasColumn('categories', 'parent_id')) {
+            if (! Schema::hasColumn('categories', 'parent_id')) {
                 $table->foreignId('parent_id')->nullable()->after('id')->constrained('categories')->nullOnDelete();
             }
-            if (!Schema::hasColumn('categories', 'image_url')) {
+            if (! Schema::hasColumn('categories', 'image_url')) {
                 $table->string('image_url')->nullable()->after('icon');
             }
-            if (!Schema::hasColumn('categories', 'seo_title')) {
+            if (! Schema::hasColumn('categories', 'seo_title')) {
                 $table->string('seo_title')->nullable()->after('description');
             }
-            if (!Schema::hasColumn('categories', 'seo_description')) {
+            if (! Schema::hasColumn('categories', 'seo_description')) {
                 $table->text('seo_description')->nullable()->after('seo_title');
             }
-            if (!Schema::hasColumn('categories', 'seo_keywords')) {
+            if (! Schema::hasColumn('categories', 'seo_keywords')) {
                 $table->string('seo_keywords')->nullable()->after('seo_description');
             }
         });
 
         // 2. Extend products table with universal fields
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'product_type')) {
+            if (! Schema::hasColumn('products', 'product_type')) {
                 $table->string('product_type', 30)->default('simple')->index()->after('sku');
             }
-            if (!Schema::hasColumn('products', 'brand')) {
+            if (! Schema::hasColumn('products', 'brand')) {
                 $table->string('brand')->nullable()->index()->after('name');
             }
-            if (!Schema::hasColumn('products', 'currency')) {
+            if (! Schema::hasColumn('products', 'currency')) {
                 $table->string('currency', 10)->default('USD')->after('cost_price');
             }
-            if (!Schema::hasColumn('products', 'weight')) {
+            if (! Schema::hasColumn('products', 'weight')) {
                 $table->decimal('weight', 10, 3)->nullable()->after('currency');
             }
-            if (!Schema::hasColumn('products', 'dimensions')) {
+            if (! Schema::hasColumn('products', 'dimensions')) {
                 $table->json('dimensions')->nullable()->after('weight');
             }
         });
 
         // 3. Category attributes (schema-less dynamic attributes per category)
-        if (!Schema::hasTable('category_attributes')) {
+        if (! Schema::hasTable('category_attributes')) {
             Schema::create('category_attributes', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
@@ -70,7 +70,7 @@ return new class extends Migration
         }
 
         // 4. Category attribute options (predefined values for select / multiselect)
-        if (!Schema::hasTable('category_attribute_options')) {
+        if (! Schema::hasTable('category_attribute_options')) {
             Schema::create('category_attribute_options', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('category_attribute_id')->constrained('category_attributes')->cascadeOnDelete();
@@ -82,7 +82,7 @@ return new class extends Migration
         }
 
         // 5. Product attribute values (structured attributes stored per product)
-        if (!Schema::hasTable('product_attribute_values')) {
+        if (! Schema::hasTable('product_attribute_values')) {
             Schema::create('product_attribute_values', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
@@ -96,7 +96,7 @@ return new class extends Migration
         }
 
         // 6. Product variants for variable products (size, color, capacity variants)
-        if (!Schema::hasTable('product_variants')) {
+        if (! Schema::hasTable('product_variants')) {
             Schema::create('product_variants', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
@@ -113,7 +113,7 @@ return new class extends Migration
         }
 
         // 7. Variant attribute values (which options compose this specific variant)
-        if (!Schema::hasTable('variant_attribute_values')) {
+        if (! Schema::hasTable('variant_attribute_values')) {
             Schema::create('variant_attribute_values', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('product_variant_id')->constrained('product_variants')->cascadeOnDelete();
@@ -127,7 +127,7 @@ return new class extends Migration
         }
 
         // 8. Product multiple categories pivot table
-        if (!Schema::hasTable('product_categories')) {
+        if (! Schema::hasTable('product_categories')) {
             Schema::create('product_categories', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
@@ -147,7 +147,7 @@ return new class extends Migration
                 ->where('category_id', $p->category_id)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 DB::table('product_categories')->insert([
                     'product_id' => $p->id,
                     'category_id' => $p->category_id,
@@ -160,14 +160,14 @@ return new class extends Migration
 
         // 10. Extend inventories with variant_id
         Schema::table('inventories', function (Blueprint $table) {
-            if (!Schema::hasColumn('inventories', 'variant_id')) {
+            if (! Schema::hasColumn('inventories', 'variant_id')) {
                 $table->foreignId('variant_id')->nullable()->after('product_id')->constrained('product_variants')->cascadeOnDelete();
             }
         });
 
         // 11. Extend inventory_movements with variant_id
         Schema::table('inventory_movements', function (Blueprint $table) {
-            if (!Schema::hasColumn('inventory_movements', 'variant_id')) {
+            if (! Schema::hasColumn('inventory_movements', 'variant_id')) {
                 $table->foreignId('variant_id')->nullable()->after('product_id')->constrained('product_variants')->nullOnDelete();
             }
         });
@@ -234,4 +234,3 @@ return new class extends Migration
         });
     }
 };
-

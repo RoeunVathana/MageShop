@@ -3,7 +3,6 @@
 namespace Tests\Feature\Inventory;
 
 use App\Models\Inventory;
-use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
@@ -17,7 +16,9 @@ class InventoryManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $customerUser;
+
     protected Product $testProduct;
 
     protected function setUp(): void
@@ -245,7 +246,7 @@ class InventoryManagementTest extends TestCase
     {
         Sanctum::actingAs($this->adminUser);
 
-        $idempotencyKey = 'test_key_replay_' . uniqid();
+        $idempotencyKey = 'test_key_replay_'.uniqid();
 
         $payload = [
             'quantity_change' => 10,

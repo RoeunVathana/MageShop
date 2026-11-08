@@ -53,7 +53,7 @@ class GoogleAuthService
         $raw = $googleUser->getRaw();
         $isEmailVerified = $raw['email_verified'] ?? true;
 
-        if (!$isEmailVerified) {
+        if (! $isEmailVerified) {
             throw ValidationException::withMessages([
                 'oauth' => ['Your Google email is unverified. Please verify your email with Google first.'],
             ]);
@@ -73,7 +73,7 @@ class GoogleAuthService
                 // 2. Check if user with this email already exists
                 $user = User::where('email', $email)->first();
 
-                if (!$user) {
+                if (! $user) {
                     $user = User::create([
                         'name' => $name,
                         'email' => $email,
@@ -120,4 +120,3 @@ class GoogleAuthService
         });
     }
 }
-

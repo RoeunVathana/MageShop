@@ -13,6 +13,7 @@ class BrandManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $customer;
 
     protected function setUp(): void
@@ -160,4 +161,3 @@ class BrandManagementTest extends TestCase
         ]);
     }
 }
-

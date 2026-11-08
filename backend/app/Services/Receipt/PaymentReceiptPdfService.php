@@ -26,7 +26,7 @@ class PaymentReceiptPdfService
             return $existing;
         }
 
-        $receiptNumber = 'REC-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
+        $receiptNumber = 'REC-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -5));
 
         return Receipt::create([
             'order_id' => $order->id,
@@ -61,7 +61,7 @@ class PaymentReceiptPdfService
     {
         $html = $this->renderHtml($order, $receipt, $payment);
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'Helvetica');
@@ -94,7 +94,7 @@ class PaymentReceiptPdfService
             ]);
 
             // Dispatch Email if shipping email is present
-            if (!empty($order->shipping_email)) {
+            if (! empty($order->shipping_email)) {
                 Mail::to($order->shipping_email)->send(
                     new PaymentReceiptMail($order, $receipt, $payment, $pdfBytes)
                 );
@@ -114,4 +114,3 @@ class PaymentReceiptPdfService
         return $receipt;
     }
 }
-

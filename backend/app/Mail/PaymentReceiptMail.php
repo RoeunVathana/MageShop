@@ -22,8 +22,7 @@ class PaymentReceiptMail extends Mailable
         public Receipt $receipt,
         public ?Payment $payment,
         public ?string $pdfRawBytes = null
-    ) {
-    }
+    ) {}
 
     public function envelope(): Envelope
     {
@@ -59,4 +58,3 @@ class PaymentReceiptMail extends Mailable
         return [];
     }
 }
-

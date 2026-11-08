@@ -237,7 +237,7 @@ class Product extends Model
 
             // Lock inventory record
             $inv = Inventory::where('product_id', $locked->id)->lockForUpdate()->first();
-            if (!$inv) {
+            if (! $inv) {
                 $inv = Inventory::create([
                     'product_id' => $locked->id,
                     'quantity_on_hand' => $locked->stock_quantity,
@@ -281,9 +281,10 @@ class Product extends Model
     public function resolveRouteBinding($value, $field = null)
     {
         if ($field) {
-            if ($field === 'id' && !is_numeric($value)) {
+            if ($field === 'id' && ! is_numeric($value)) {
                 return null;
             }
+
             return $this->where($field, $value)->first();
         }
 

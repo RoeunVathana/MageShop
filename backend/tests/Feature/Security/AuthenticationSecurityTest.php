@@ -86,7 +86,7 @@ class AuthenticationSecurityTest extends TestCase
     public function test_login_with_nonexistent_email_returns_identical_generic_error(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'nonexistent.user.' . uniqid() . '@megacommerce.local',
+            'email' => 'nonexistent.user.'.uniqid().'@megacommerce.local',
             'password' => 'AnyPassword123!',
         ]);
 
@@ -100,7 +100,7 @@ class AuthenticationSecurityTest extends TestCase
      */
     public function test_brute_force_login_is_throttled_after_consecutive_failures(): void
     {
-        $targetEmail = 'brute.target.' . uniqid() . '@megacommerce.local';
+        $targetEmail = 'brute.target.'.uniqid().'@megacommerce.local';
 
         User::create([
             'name' => 'Brute Target',
@@ -113,7 +113,7 @@ class AuthenticationSecurityTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $response = $this->postJson('/api/v1/auth/login', [
                 'email' => $targetEmail,
-                'password' => 'WrongAttempt' . $i,
+                'password' => 'WrongAttempt'.$i,
             ]);
             $response->assertStatus(422);
         }

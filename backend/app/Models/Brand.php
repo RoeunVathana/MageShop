@@ -66,6 +66,7 @@ class Brand extends Model
         }
 
         $translation = $this->translations->firstWhere('locale', $locale);
+
         return $translation ? $translation->name : $this->name;
     }
 
@@ -76,9 +77,10 @@ class Brand extends Model
     public function resolveRouteBinding($value, $field = null): ?self
     {
         if ($field) {
-            if ($field === 'id' && !is_numeric($value)) {
+            if ($field === 'id' && ! is_numeric($value)) {
                 return null;
             }
+
             return $this->where($field, $value)->first();
         }
 
@@ -98,7 +100,7 @@ class Brand extends Model
         $slug = $base;
         $counter = 1;
 
-        while (static::where('slug', $slug)->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+        while (static::where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
             $slug = "{$base}-{$counter}";
             $counter++;
         }
@@ -106,4 +108,3 @@ class Brand extends Model
         return $slug;
     }
 }
-

@@ -20,6 +20,7 @@ class CategoryHierarchyAndAttributesTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $customerUser;
 
     protected function setUp(): void
@@ -442,4 +443,3 @@ class CategoryHierarchyAndAttributesTest extends TestCase
         ]);
     }
 }
-

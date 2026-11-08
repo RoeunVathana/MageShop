@@ -11,4 +11,3 @@ return [
     'merchant_phone' => env('MERCHANT_PHONE', '855976554143'),
     'qr_expires_minutes' => (int) env('PAYMENT_QR_EXPIRES_MINUTES', 10),
 ];
-

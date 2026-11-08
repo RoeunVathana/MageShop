@@ -22,9 +22,10 @@ class TelegramAuthService
     /**
      * Validate raw initData string from Telegram Mini App.
      *
-     * @param string $initData Raw query string
-     * @param int $maxAgeSeconds Maximum age in seconds (default 86400 = 24h)
+     * @param  string  $initData  Raw query string
+     * @param  int  $maxAgeSeconds  Maximum age in seconds (default 86400 = 24h)
      * @return array Parsed validated parameters
+     *
      * @throws ValidationException
      */
     public function validateInitData(string $initData, int $maxAgeSeconds = 86400): array
@@ -37,7 +38,7 @@ class TelegramAuthService
 
         parse_str($initData, $params);
 
-        if (!isset($params['hash'])) {
+        if (! isset($params['hash'])) {
             throw ValidationException::withMessages([
                 'init_data' => ['Missing hash in Telegram initData.'],
             ]);
@@ -47,7 +48,7 @@ class TelegramAuthService
         unset($params['hash']);
 
         // Check auth_date for replay attack prevention
-        if (!isset($params['auth_date']) || !is_numeric($params['auth_date'])) {
+        if (! isset($params['auth_date']) || ! is_numeric($params['auth_date'])) {
             throw ValidationException::withMessages([
                 'init_data' => ['Missing or invalid auth_date in Telegram initData.'],
             ]);
@@ -73,7 +74,7 @@ class TelegramAuthService
         $secretKey = hash_hmac('sha256', $this->botToken, 'WebAppData', true);
         $expectedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
-        if (!hash_equals($expectedHash, $receivedHash)) {
+        if (! hash_equals($expectedHash, $receivedHash)) {
             Log::warning('Telegram initData signature verification failed', [
                 'expected_hash' => $expectedHash,
                 'received_hash' => $receivedHash,
@@ -92,7 +93,7 @@ class TelegramAuthService
      */
     public function authenticateTelegramUser(array $validatedData, ?User $currentUser = null): array
     {
-        if (!isset($validatedData['user'])) {
+        if (! isset($validatedData['user'])) {
             throw ValidationException::withMessages([
                 'init_data' => ['No user payload found in Telegram initData.'],
             ]);
@@ -102,7 +103,7 @@ class TelegramAuthService
             ? $validatedData['user']
             : json_decode($validatedData['user'], true);
 
-        if (!isset($telegramUserData['id'])) {
+        if (! isset($telegramUserData['id'])) {
             throw ValidationException::withMessages([
                 'init_data' => ['Telegram user ID is missing.'],
             ]);
@@ -137,7 +138,7 @@ class TelegramAuthService
                 $user = $telegramAccount->user;
             }
 
-            if (!$user) {
+            if (! $user) {
                 // Synthesize email or find existing by synthetic email
                 $syntheticEmail = "tg_{$telegramId}@megacommerce.internal";
                 $fullName = trim("{$firstName} {$lastName}");
@@ -164,7 +165,7 @@ class TelegramAuthService
 
             $isAdmin = $isConfiguredAdmin || $user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF');
 
-            if (!$telegramAccount) {
+            if (! $telegramAccount) {
                 $telegramAccount = TelegramAccount::create([
                     'user_id' => $user->id,
                     'telegram_user_id' => $telegramId,
@@ -213,4 +214,3 @@ class TelegramAuthService
         });
     }
 }
-

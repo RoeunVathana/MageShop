@@ -25,4 +25,3 @@ class InventoryMovementResource extends JsonResource
         ];
     }
 }
-

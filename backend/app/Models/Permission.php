@@ -26,4 +26,3 @@ class Permission extends Model
             ->withTimestamps();
     }
 }
-

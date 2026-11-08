@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Models\Inventory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AdjustStockRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('adjust', \App\Models\Inventory::class) ?? false;
+        return $this->user()?->can('adjust', Inventory::class) ?? false;
     }
 
     public function rules(): array
@@ -22,4 +23,3 @@ class AdjustStockRequest extends FormRequest
         ];
     }
 }
-

@@ -18,9 +18,13 @@ use Illuminate\Support\Facades\Log;
 class TelegramService
 {
     protected string $botToken;
+
     protected string $webhookSecret;
+
     protected string $miniAppUrl;
+
     protected string $apiBaseUrl;
+
     protected ?int $adminChatId;
 
     public function __construct()
@@ -94,7 +98,7 @@ class TelegramService
         $from = $message['from'] ?? [];
         $userId = $from['id'] ?? null;
 
-        if (!$chatId || !$userId) {
+        if (! $chatId || ! $userId) {
             return ['status' => 'missing_chat_or_user'];
         }
 
@@ -112,7 +116,7 @@ class TelegramService
         // Natural conversation handled by AI or friendly greeting
         $storeName = StoreSetting::get('store_name', 'MegaCommerce');
         $reply = "Hello {$from['first_name']}! 👋 Welcome to {$storeName}.\n\n"
-               . "You can open our shop Mini App below, or ask me any question about our products, stock, or policies!";
+               .'You can open our shop Mini App below, or ask me any question about our products, stock, or policies!';
 
         $this->sendMessage($chatId, $reply, [
             'reply_markup' => [
@@ -143,14 +147,14 @@ class TelegramService
         switch ($command) {
             case '/start':
                 $welcome = "🌟 *Welcome to {$storeName}!* 🌟\n\n"
-                    . "Hi {$account->first_name}, discover Cambodia's top electronics and lifestyle products with instant Bakong KHQR checkout.\n\n"
-                    . "⚡ *Quick Actions:*\n"
-                    . "• Tap the button below to launch the *Shopping Mini App*\n"
-                    . "• Type `/products` to see our catalog\n"
-                    . "• Type `/categories` to browse departments\n"
-                    . "• Type `/orders` to view your purchases\n"
-                    . "• Type `/track <order_id>` to check parcel status\n"
-                    . "• Ask our AI Assistant any product question anytime!";
+                    ."Hi {$account->first_name}, discover Cambodia's top electronics and lifestyle products with instant Bakong KHQR checkout.\n\n"
+                    ."⚡ *Quick Actions:*\n"
+                    ."• Tap the button below to launch the *Shopping Mini App*\n"
+                    ."• Type `/products` to see our catalog\n"
+                    ."• Type `/categories` to browse departments\n"
+                    ."• Type `/orders` to view your purchases\n"
+                    ."• Type `/track <order_id>` to check parcel status\n"
+                    .'• Ask our AI Assistant any product question anytime!';
 
                 $keyboard = [
                     'inline_keyboard' => [
@@ -178,16 +182,18 @@ class TelegramService
                     'parse_mode' => 'Markdown',
                     'reply_markup' => $keyboard,
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/start'];
 
             case '/shop':
-                $this->sendMessage($chatId, "🛍️ Tap below to browse products and check out inside Telegram:", [
+                $this->sendMessage($chatId, '🛍️ Tap below to browse products and check out inside Telegram:', [
                     'reply_markup' => [
                         'inline_keyboard' => [
                             [['text' => '🚀 Launch MegaCommerce Mini App', 'web_app' => ['url' => $this->miniAppUrl]]],
                         ],
                     ],
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/shop'];
 
             case '/products':
@@ -198,16 +204,17 @@ class TelegramService
                     ->get();
 
                 if ($products->isEmpty()) {
-                    $this->sendMessage($chatId, "No active products available right now. Please check back shortly.");
+                    $this->sendMessage($chatId, 'No active products available right now. Please check back shortly.');
+
                     return ['status' => 'command_executed', 'command' => '/products'];
                 }
 
                 $msg = "🔥 *Featured Products at {$storeName}:*\n\n";
                 foreach ($products as $p) {
-                    $stockText = $p->stock_quantity > 0 ? "In Stock ({$p->stock_quantity})" : "⚠️ Out of Stock";
+                    $stockText = $p->stock_quantity > 0 ? "In Stock ({$p->stock_quantity})" : '⚠️ Out of Stock';
                     $msg .= "• *{$p->name}*\n"
-                         . "  Price: `\${$p->price}` | {$stockText}\n"
-                         . "  SKU: `{$p->sku}`\n\n";
+                         ."  Price: `\${$p->price}` | {$stockText}\n"
+                         ."  SKU: `{$p->sku}`\n\n";
                 }
 
                 $this->sendMessage($chatId, $msg, [
@@ -218,6 +225,7 @@ class TelegramService
                         ],
                     ],
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/products'];
 
             case '/categories':
@@ -238,11 +246,13 @@ class TelegramService
                         ],
                     ],
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/categories'];
 
             case '/orders':
-                if (!$account->user_id) {
-                    $this->sendMessage($chatId, "⚠️ No linked customer account found. Please open the Mini App to link your profile automatically.");
+                if (! $account->user_id) {
+                    $this->sendMessage($chatId, '⚠️ No linked customer account found. Please open the Mini App to link your profile automatically.');
+
                     return ['status' => 'command_executed', 'command' => '/orders'];
                 }
 
@@ -259,6 +269,7 @@ class TelegramService
                             ],
                         ],
                     ]);
+
                     return ['status' => 'command_executed', 'command' => '/orders'];
                 }
 
@@ -267,39 +278,42 @@ class TelegramService
                     $status = strtoupper($ord->status);
                     $payment = strtoupper($ord->payment_status);
                     $msg .= "• Order *#{$ord->order_number}*\n"
-                         . "  Total: `\${$ord->total_amount}`\n"
-                         . "  Status: *{$status}* | Payment: *{$payment}*\n"
-                         . "  Tracking: `/track {$ord->order_number}`\n\n";
+                         ."  Total: `\${$ord->total_amount}`\n"
+                         ."  Status: *{$status}* | Payment: *{$payment}*\n"
+                         ."  Tracking: `/track {$ord->order_number}`\n\n";
                 }
 
                 $this->sendMessage($chatId, $msg, [
                     'parse_mode' => 'Markdown',
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/orders'];
 
             case '/track':
                 if (empty($param)) {
-                    $this->sendMessage($chatId, "ℹ️ Please specify an order number. Example: `/track ORD-2026-9041`", [
+                    $this->sendMessage($chatId, 'ℹ️ Please specify an order number. Example: `/track ORD-2026-9041`', [
                         'parse_mode' => 'Markdown',
                     ]);
+
                     return ['status' => 'command_executed', 'command' => '/track'];
                 }
 
                 $order = Order::where('order_number', $param)->first();
-                if (!$order) {
+                if (! $order) {
                     $this->sendMessage($chatId, "❌ Order `{$param}` was not found in our system. Please check the order number.", [
                         'parse_mode' => 'Markdown',
                     ]);
+
                     return ['status' => 'command_executed', 'command' => '/track'];
                 }
 
                 $msg = "📍 *Order Tracking: #{$order->order_number}*\n\n"
-                     . "• Customer: {$order->shipping_full_name}\n"
-                     . "• Total: `\${$order->total_amount}`\n"
-                     . "• Fulfillment Status: *".strtoupper($order->status)."*\n"
-                     . "• Payment Status: *".strtoupper($order->payment_status)."*\n"
-                     . "• Delivery Method: {$order->shipping_method}\n"
-                     . "• Shipping Address: {$order->shipping_address_line1}, {$order->shipping_city}\n";
+                     ."• Customer: {$order->shipping_full_name}\n"
+                     ."• Total: `\${$order->total_amount}`\n"
+                     .'• Fulfillment Status: *'.strtoupper($order->status)."*\n"
+                     .'• Payment Status: *'.strtoupper($order->payment_status)."*\n"
+                     ."• Delivery Method: {$order->shipping_method}\n"
+                     ."• Shipping Address: {$order->shipping_address_line1}, {$order->shipping_city}\n";
 
                 if ($order->tracking_number) {
                     $msg .= "• Tracking Code: `{$order->tracking_number}`\n";
@@ -308,6 +322,7 @@ class TelegramService
                 $this->sendMessage($chatId, $msg, [
                     'parse_mode' => 'Markdown',
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/track'];
 
             case '/help':
@@ -315,25 +330,26 @@ class TelegramService
                 $phone = StoreSetting::get('contact_phone', '+855 (23) 998-888');
 
                 $help = "ℹ️ *MegaCommerce Shopping Assistant Help*\n\n"
-                      . "*Customer Commands:*\n"
-                      . "• `/start` — Restart bot and show navigation menu\n"
-                      . "• `/shop` — Launch Telegram Mini App storefront\n"
-                      . "• `/products` — View top featured products\n"
-                      . "• `/categories` — View all departments\n"
-                      . "• `/orders` — View your purchase history\n"
-                      . "• `/track <order_id>` — Track order shipping status\n"
-                      . "• `/help` — Display this help message\n\n"
-                      . "💬 *Need human support?*\n"
-                      . "Email: `{$supportEmail}`\n"
-                      . "Phone: `{$phone}`\n"
-                      . "Working hours: 8:00 AM – 9:00 PM (GMT+7)";
+                      ."*Customer Commands:*\n"
+                      ."• `/start` — Restart bot and show navigation menu\n"
+                      ."• `/shop` — Launch Telegram Mini App storefront\n"
+                      ."• `/products` — View top featured products\n"
+                      ."• `/categories` — View all departments\n"
+                      ."• `/orders` — View your purchase history\n"
+                      ."• `/track <order_id>` — Track order shipping status\n"
+                      ."• `/help` — Display this help message\n\n"
+                      ."💬 *Need human support?*\n"
+                      ."Email: `{$supportEmail}`\n"
+                      ."Phone: `{$phone}`\n"
+                      .'Working hours: 8:00 AM – 9:00 PM (GMT+7)';
 
                 $this->sendMessage($chatId, $help, [
                     'parse_mode' => 'Markdown',
                 ]);
+
                 return ['status' => 'command_executed', 'command' => '/help'];
 
-            // ================= ADMIN COMMANDS =================
+                // ================= ADMIN COMMANDS =================
             case '/admin':
             case '/adminhelp':
             case '/stock':
@@ -342,8 +358,9 @@ class TelegramService
             case '/pending':
             case '/deliveries':
             case '/report':
-                if (!$isAdmin) {
+                if (! $isAdmin) {
                     $this->sendMessage($chatId, "⛔ Access Denied. You do not have staff administrator privileges for {$storeName}.");
+
                     return ['status' => 'forbidden', 'command' => $command];
                 }
 
@@ -353,6 +370,7 @@ class TelegramService
                 $this->sendMessage($chatId, "❓ Unknown command `{$command}`. Type `/help` for available options.", [
                     'parse_mode' => 'Markdown',
                 ]);
+
                 return ['status' => 'unknown_command', 'command' => $command];
         }
     }
@@ -372,18 +390,18 @@ class TelegramService
                 $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
 
                 $msg = "🔐 *MegaCommerce Admin Console*\n\n"
-                     . "📊 *Today's Operations:*\n"
-                     . "• Orders Today: *{$ordersToday}*\n"
-                     . "• Revenue Today: `\$".number_format($salesToday, 2)."`\n"
-                     . "• Pending Fulfillment: *{$pendingOrders}*\n"
-                     . "• Low Stock Alerts: *{$lowStockCount}*\n\n"
-                     . "🛠️ *Admin Quick Commands:*\n"
-                     . "• `/lowstock` — View low stock items\n"
-                     . "• `/stock <sku>` — Check product inventory\n"
-                     . "• `/sales` — Revenue breakdown\n"
-                     . "• `/pending` — Pending orders queue\n"
-                     . "• `/deliveries` — In-transit packages\n"
-                     . "• `/report` — Complete operational report";
+                     ."📊 *Today's Operations:*\n"
+                     ."• Orders Today: *{$ordersToday}*\n"
+                     .'• Revenue Today: `$'.number_format($salesToday, 2)."`\n"
+                     ."• Pending Fulfillment: *{$pendingOrders}*\n"
+                     ."• Low Stock Alerts: *{$lowStockCount}*\n\n"
+                     ."🛠️ *Admin Quick Commands:*\n"
+                     ."• `/lowstock` — View low stock items\n"
+                     ."• `/stock <sku>` — Check product inventory\n"
+                     ."• `/sales` — Revenue breakdown\n"
+                     ."• `/pending` — Pending orders queue\n"
+                     ."• `/deliveries` — In-transit packages\n"
+                     .'• `/report` — Complete operational report';
 
                 $this->sendMessage($chatId, $msg, [
                     'parse_mode' => 'Markdown',
@@ -400,40 +418,44 @@ class TelegramService
                         ],
                     ],
                 ]);
+
                 return ['status' => 'admin_command_executed', 'command' => '/admin'];
 
             case '/adminhelp':
                 $msg = "🛠️ *Admin Command Reference:*\n\n"
-                     . "• `/admin` — High-level store dashboard\n"
-                     . "• `/stock <sku>` — Lookup stock & trigger adjustment\n"
-                     . "• `/lowstock` — Products at or below reorder threshold\n"
-                     . "• `/sales` — Daily, weekly, and monthly sales\n"
-                     . "• `/pending` — Orders awaiting processing\n"
-                     . "• `/deliveries` — Dispatched/out-for-delivery orders\n"
-                     . "• `/report` — Stock and order summary report";
+                     ."• `/admin` — High-level store dashboard\n"
+                     ."• `/stock <sku>` — Lookup stock & trigger adjustment\n"
+                     ."• `/lowstock` — Products at or below reorder threshold\n"
+                     ."• `/sales` — Daily, weekly, and monthly sales\n"
+                     ."• `/pending` — Orders awaiting processing\n"
+                     ."• `/deliveries` — Dispatched/out-for-delivery orders\n"
+                     .'• `/report` — Stock and order summary report';
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/adminhelp'];
 
             case '/stock':
                 if (empty($param)) {
-                    $this->sendMessage($chatId, "ℹ️ Please provide a SKU. Example: `/stock LAP-MBP-016`", ['parse_mode' => 'Markdown']);
+                    $this->sendMessage($chatId, 'ℹ️ Please provide a SKU. Example: `/stock LAP-MBP-016`', ['parse_mode' => 'Markdown']);
+
                     return ['status' => 'admin_command_executed', 'command' => '/stock'];
                 }
 
                 $product = Product::where('sku', strtoupper($param))->first();
-                if (!$product) {
+                if (! $product) {
                     $this->sendMessage($chatId, "❌ Product with SKU `{$param}` not found.", ['parse_mode' => 'Markdown']);
+
                     return ['status' => 'admin_command_executed', 'command' => '/stock'];
                 }
 
                 $msg = "📦 *Product Inventory Details:*\n\n"
-                     . "• Name: *{$product->name}*\n"
-                     . "• SKU: `{$product->sku}`\n"
-                     . "• Stock Quantity: *{$product->stock_quantity}*\n"
-                     . "• Low Stock Alert At: {$product->low_stock_threshold}\n"
-                     . "• Price: `\${$product->price}`\n"
-                     . "• Status: " . ($product->stock_quantity <= $product->low_stock_threshold ? "⚠️ *LOW STOCK*" : "✅ *Healthy*");
+                     ."• Name: *{$product->name}*\n"
+                     ."• SKU: `{$product->sku}`\n"
+                     ."• Stock Quantity: *{$product->stock_quantity}*\n"
+                     ."• Low Stock Alert At: {$product->low_stock_threshold}\n"
+                     ."• Price: `\${$product->price}`\n"
+                     .'• Status: '.($product->stock_quantity <= $product->low_stock_threshold ? '⚠️ *LOW STOCK*' : '✅ *Healthy*');
 
                 // Offer quick stock adjustment actions
                 $this->sendMessage($chatId, $msg, [
@@ -450,6 +472,7 @@ class TelegramService
                         ],
                     ],
                 ]);
+
                 return ['status' => 'admin_command_executed', 'command' => '/stock'];
 
             case '/lowstock':
@@ -459,18 +482,20 @@ class TelegramService
                     ->get();
 
                 if ($lowStockProducts->isEmpty()) {
-                    $this->sendMessage($chatId, "✅ All products have healthy stock levels above their thresholds.");
+                    $this->sendMessage($chatId, '✅ All products have healthy stock levels above their thresholds.');
+
                     return ['status' => 'admin_command_executed', 'command' => '/lowstock'];
                 }
 
                 $msg = "⚠️ *Low Stock Alert ({$lowStockProducts->count()} items):*\n\n";
                 foreach ($lowStockProducts as $p) {
                     $msg .= "• *{$p->name}*\n"
-                         . "  SKU: `{$p->sku}` | Stock: *{$p->stock_quantity}* (threshold: {$p->low_stock_threshold})\n"
-                         . "  Action: `/stock {$p->sku}`\n\n";
+                         ."  SKU: `{$p->sku}` | Stock: *{$p->stock_quantity}* (threshold: {$p->low_stock_threshold})\n"
+                         ."  Action: `/stock {$p->sku}`\n\n";
                 }
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/lowstock'];
 
             case '/sales':
@@ -480,12 +505,13 @@ class TelegramService
                 $totalPaidOrders = Order::where('payment_status', 'paid')->count();
 
                 $msg = "💰 *MegaCommerce Sales Performance:*\n\n"
-                     . "• Today: `\$".number_format($todaySales, 2)."`\n"
-                     . "• This Week: `\$".number_format($weekSales, 2)."`\n"
-                     . "• This Month: `\$".number_format($monthSales, 2)."`\n"
-                     . "• All-Time Paid Orders: *{$totalPaidOrders}*\n";
+                     .'• Today: `$'.number_format($todaySales, 2)."`\n"
+                     .'• This Week: `$'.number_format($weekSales, 2)."`\n"
+                     .'• This Month: `$'.number_format($monthSales, 2)."`\n"
+                     ."• All-Time Paid Orders: *{$totalPaidOrders}*\n";
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/sales'];
 
             case '/pending':
@@ -495,19 +521,21 @@ class TelegramService
                     ->get();
 
                 if ($pending->isEmpty()) {
-                    $this->sendMessage($chatId, "🎉 No pending orders awaiting fulfillment at this moment!");
+                    $this->sendMessage($chatId, '🎉 No pending orders awaiting fulfillment at this moment!');
+
                     return ['status' => 'admin_command_executed', 'command' => '/pending'];
                 }
 
                 $msg = "⏳ *Pending Orders Queue ({$pending->count()}):*\n\n";
                 foreach ($pending as $ord) {
                     $msg .= "• Order *#{$ord->order_number}* | `\${$ord->total_amount}`\n"
-                         . "  Customer: {$ord->shipping_full_name}\n"
-                         . "  Payment: *".strtoupper($ord->payment_status)."*\n"
-                         . "  Details: `/track {$ord->order_number}`\n\n";
+                         ."  Customer: {$ord->shipping_full_name}\n"
+                         .'  Payment: *'.strtoupper($ord->payment_status)."*\n"
+                         ."  Details: `/track {$ord->order_number}`\n\n";
                 }
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/pending'];
 
             case '/deliveries':
@@ -517,18 +545,20 @@ class TelegramService
                     ->get();
 
                 if ($delivering->isEmpty()) {
-                    $this->sendMessage($chatId, "🚚 No packages currently marked as in-transit.");
+                    $this->sendMessage($chatId, '🚚 No packages currently marked as in-transit.');
+
                     return ['status' => 'admin_command_executed', 'command' => '/deliveries'];
                 }
 
                 $msg = "🚚 *In-Transit Deliveries ({$delivering->count()}):*\n\n";
                 foreach ($delivering as $ord) {
                     $msg .= "• *#{$ord->order_number}* to {$ord->shipping_city}\n"
-                         . "  Status: *".strtoupper($ord->status)."*\n"
-                         . "  Tracking: `".($ord->tracking_number ?? 'Pending Carrier')."`\n\n";
+                         .'  Status: *'.strtoupper($ord->status)."*\n"
+                         .'  Tracking: `'.($ord->tracking_number ?? 'Pending Carrier')."`\n\n";
                 }
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/deliveries'];
 
             case '/report':
@@ -540,17 +570,18 @@ class TelegramService
                 $lifetimeRev = Order::where('payment_status', 'paid')->sum('total_amount');
 
                 $msg = "📊 *MegaCommerce Operational Snapshot*\n\n"
-                     . "🏷️ *Catalog & Inventory:*\n"
-                     . "• Active Catalog Items: *{$totalProducts}*\n"
-                     . "• Total Warehouse Units: *{$totalStock}*\n"
-                     . "• Low Stock Items: *{$lowStock}*\n\n"
-                     . "💼 *Fulfillment & Sales:*\n"
-                     . "• Total Orders Recorded: *{$totalOrders}*\n"
-                     . "• Paid Transactions: *{$paidOrders}*\n"
-                     . "• Lifetime Settled Revenue: `\$".number_format($lifetimeRev, 2)."`\n\n"
-                     . "Generated at: " . now()->format('Y-m-d H:i:s') . " UTC";
+                     ."🏷️ *Catalog & Inventory:*\n"
+                     ."• Active Catalog Items: *{$totalProducts}*\n"
+                     ."• Total Warehouse Units: *{$totalStock}*\n"
+                     ."• Low Stock Items: *{$lowStock}*\n\n"
+                     ."💼 *Fulfillment & Sales:*\n"
+                     ."• Total Orders Recorded: *{$totalOrders}*\n"
+                     ."• Paid Transactions: *{$paidOrders}*\n"
+                     .'• Lifetime Settled Revenue: `$'.number_format($lifetimeRev, 2)."`\n\n"
+                     .'Generated at: '.now()->format('Y-m-d H:i:s').' UTC';
 
                 $this->sendMessage($chatId, $msg, ['parse_mode' => 'Markdown']);
+
                 return ['status' => 'admin_command_executed', 'command' => '/report'];
         }
 
@@ -568,7 +599,7 @@ class TelegramService
         $chatId = $message['chat']['id'] ?? null;
         $from = $callbackQuery['from'] ?? [];
 
-        if (!$chatId || !$id) {
+        if (! $chatId || ! $id) {
             return ['status' => 'missing_callback_details'];
         }
 
@@ -579,23 +610,27 @@ class TelegramService
         $this->answerCallbackQuery($id);
 
         if (str_starts_with($data, 'cmd:')) {
-            $cmd = '/' . substr($data, 4);
+            $cmd = '/'.substr($data, 4);
+
             return $this->executeCommand($cmd, '', $chatId, $account, $from);
         }
 
         if (str_starts_with($data, 'adm:')) {
-            if (!$isAdmin) {
-                $this->sendMessage($chatId, "⛔ Admin authorization required.");
+            if (! $isAdmin) {
+                $this->sendMessage($chatId, '⛔ Admin authorization required.');
+
                 return ['status' => 'forbidden'];
             }
-            $cmd = '/' . substr($data, 4);
+            $cmd = '/'.substr($data, 4);
+
             return $this->executeAdminCommand($cmd, '', $chatId, $account);
         }
 
         // Stock adjustments: adm_adj:{product_id}:{add|sub}:{qty}
         if (str_starts_with($data, 'adm_adj:')) {
-            if (!$isAdmin) {
-                $this->sendMessage($chatId, "⛔ Admin authorization required.");
+            if (! $isAdmin) {
+                $this->sendMessage($chatId, '⛔ Admin authorization required.');
+
                 return ['status' => 'forbidden'];
             }
 
@@ -605,8 +640,9 @@ class TelegramService
             $qty = (int) ($parts[3] ?? 1);
 
             $product = Product::find($productId);
-            if (!$product) {
-                $this->sendMessage($chatId, "❌ Product not found.");
+            if (! $product) {
+                $this->sendMessage($chatId, '❌ Product not found.');
+
                 return ['status' => 'not_found'];
             }
 
@@ -630,11 +666,11 @@ class TelegramService
             $sign = $delta > 0 ? "+{$delta}" : "{$delta}";
 
             $confirmMsg = "⚠️ *Confirm Stock Adjustment:*\n\n"
-                        . "Product: *{$product->name}* (`{$product->sku}`)\n"
-                        . "Current Stock: *{$product->stock_quantity}*\n"
-                        . "Adjustment: *{$sign}*\n"
-                        . "Projected New Stock: *{$newProjected}*\n\n"
-                        . "Do you confirm this inventory change?";
+                        ."Product: *{$product->name}* (`{$product->sku}`)\n"
+                        ."Current Stock: *{$product->stock_quantity}*\n"
+                        ."Adjustment: *{$sign}*\n"
+                        ."Projected New Stock: *{$newProjected}*\n\n"
+                        .'Do you confirm this inventory change?';
 
             $this->sendMessage($chatId, $confirmMsg, [
                 'parse_mode' => 'Markdown',
@@ -653,23 +689,26 @@ class TelegramService
 
         // Apply confirmed stock adjustment
         if (str_starts_with($data, 'adm_confirm:')) {
-            if (!$isAdmin) {
-                $this->sendMessage($chatId, "⛔ Admin authorization required.");
+            if (! $isAdmin) {
+                $this->sendMessage($chatId, '⛔ Admin authorization required.');
+
                 return ['status' => 'forbidden'];
             }
 
             $actionId = (int) substr($data, 12);
             $action = TelegramAdminAction::find($actionId);
 
-            if (!$action || $action->confirmation_status !== 'pending') {
-                $this->sendMessage($chatId, "⚠️ This action is no longer pending or does not exist.");
+            if (! $action || $action->confirmation_status !== 'pending') {
+                $this->sendMessage($chatId, '⚠️ This action is no longer pending or does not exist.');
+
                 return ['status' => 'action_expired'];
             }
 
             $product = Product::find((int) $action->target_id);
-            if (!$product) {
+            if (! $product) {
                 $action->update(['confirmation_status' => 'failed']);
-                $this->sendMessage($chatId, "❌ Product not found.");
+                $this->sendMessage($chatId, '❌ Product not found.');
+
                 return ['status' => 'product_missing'];
             }
 
@@ -685,10 +724,10 @@ class TelegramService
                 $action->update(['confirmation_status' => 'confirmed']);
 
                 $this->sendMessage($chatId, "✅ *Stock Updated Successfully!*\n\n"
-                    . "Product: *{$product->name}* (`{$product->sku}`)\n"
-                    . "New Stock Quantity: *{$product->stock_quantity}*", [
-                    'parse_mode' => 'Markdown',
-                ]);
+                    ."Product: *{$product->name}* (`{$product->sku}`)\n"
+                    ."New Stock Quantity: *{$product->stock_quantity}*", [
+                        'parse_mode' => 'Markdown',
+                    ]);
             } catch (\Exception $e) {
                 $action->update(['confirmation_status' => 'failed']);
                 $this->sendMessage($chatId, "❌ Failed to adjust stock: {$e->getMessage()}");
@@ -703,7 +742,8 @@ class TelegramService
             if ($action && $action->confirmation_status === 'pending') {
                 $action->update(['confirmation_status' => 'cancelled']);
             }
-            $this->sendMessage($chatId, "🚫 Stock adjustment cancelled.");
+            $this->sendMessage($chatId, '🚫 Stock adjustment cancelled.');
+
             return ['status' => 'adjustment_cancelled'];
         }
 
@@ -725,7 +765,7 @@ class TelegramService
 
         $account = TelegramAccount::where('telegram_user_id', $telegramId)->first();
 
-        if (!$account) {
+        if (! $account) {
             $account = TelegramAccount::create([
                 'telegram_user_id' => $telegramId,
                 'telegram_username' => $username,
@@ -776,6 +816,7 @@ class TelegramService
     {
         if (empty($this->botToken) || str_starts_with($this->botToken, 'test_') || str_starts_with($this->botToken, '8102938475')) {
             Log::info("Mock Telegram Dispatch to [{$chatId}]: {$text}", $extra);
+
             return [
                 'ok' => true,
                 'result' => [
@@ -794,9 +835,11 @@ class TelegramService
 
         try {
             $response = Http::timeout(10)->post($url, $payload);
+
             return $response->json();
         } catch (\Throwable $e) {
             Log::error("Telegram API sendMessage error: {$e->getMessage()}", ['chat_id' => $chatId]);
+
             return null;
         }
     }
@@ -817,9 +860,11 @@ class TelegramService
                 'text' => $text,
                 'show_alert' => $showAlert,
             ]);
+
             return $response->json();
         } catch (\Throwable $e) {
             Log::error("Telegram API answerCallbackQuery error: {$e->getMessage()}");
+
             return null;
         }
     }
@@ -841,4 +886,3 @@ class TelegramService
         ]);
     }
 }
-

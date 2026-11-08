@@ -34,6 +34,7 @@ class TelegramWebhookCommand extends Command
         if (empty($botToken) || str_starts_with($botToken, 'test_') || str_starts_with($botToken, '8102938475')) {
             $this->warn('Mock/development token is configured.');
             $this->info("Current configured secret: {$secretToken}");
+
             return Command::SUCCESS;
         }
 
@@ -41,7 +42,7 @@ class TelegramWebhookCommand extends Command
 
         switch ($action) {
             case 'set':
-                $url = $this->argument('url') ?: (Config::get('app.url') . '/api/v1/telegram/webhook');
+                $url = $this->argument('url') ?: (Config::get('app.url').'/api/v1/telegram/webhook');
                 $this->info("Setting webhook to: {$url}");
 
                 $response = Http::post("{$apiBaseUrl}/bot{$botToken}/setWebhook", [
@@ -51,21 +52,23 @@ class TelegramWebhookCommand extends Command
                 ]);
 
                 $this->line($response->body());
+
                 return $response->successful() ? Command::SUCCESS : Command::FAILURE;
 
             case 'delete':
-                $this->info("Deleting webhook...");
+                $this->info('Deleting webhook...');
                 $response = Http::post("{$apiBaseUrl}/bot{$botToken}/deleteWebhook");
                 $this->line($response->body());
+
                 return $response->successful() ? Command::SUCCESS : Command::FAILURE;
 
             case 'info':
             default:
-                $this->info("Checking Telegram webhook info...");
+                $this->info('Checking Telegram webhook info...');
                 $response = Http::get("{$apiBaseUrl}/bot{$botToken}/getWebhookInfo");
                 $this->line($response->body());
+
                 return $response->successful() ? Command::SUCCESS : Command::FAILURE;
         }
     }
 }
-

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Create Brands Table
-        if (!Schema::hasTable('brands')) {
+        if (! Schema::hasTable('brands')) {
             Schema::create('brands', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -32,7 +32,7 @@ return new class extends Migration
         }
 
         // 2. Create Brand Translations Table for Khmer & English support
-        if (!Schema::hasTable('brand_translations')) {
+        if (! Schema::hasTable('brand_translations')) {
             Schema::create('brand_translations', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('brand_id')->constrained('brands')->cascadeOnDelete();
@@ -47,7 +47,7 @@ return new class extends Migration
 
         // 3. Add brand_id to products table
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'brand_id')) {
+            if (! Schema::hasColumn('products', 'brand_id')) {
                 $table->foreignId('brand_id')->nullable()->after('category_id')->constrained('brands')->nullOnDelete();
             }
         });
@@ -68,4 +68,3 @@ return new class extends Migration
         Schema::dropIfExists('brands');
     }
 };
-

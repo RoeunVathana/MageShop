@@ -46,7 +46,7 @@ class RoleModelTest extends TestCase
     {
         $user = User::create([
             'name' => 'Test Customer',
-            'email' => 'test.customer.' . uniqid() . '@megacommerce.local',
+            'email' => 'test.customer.'.uniqid().'@megacommerce.local',
             'password' => 'Secret123!',
         ]);
 

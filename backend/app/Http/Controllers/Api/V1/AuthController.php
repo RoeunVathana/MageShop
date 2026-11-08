@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -116,7 +117,7 @@ class AuthController extends Controller
             SecurityLogService::log('AUTH_LOGOUT', $user->id);
 
             // Revoke Sanctum tokens if a persistent personal access token is used
-            if (method_exists($user, 'currentAccessToken') && $user->currentAccessToken() instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            if (method_exists($user, 'currentAccessToken') && $user->currentAccessToken() instanceof PersonalAccessToken) {
                 $user->currentAccessToken()->delete();
             }
         }
@@ -142,7 +143,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthenticated.',
@@ -183,7 +184,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthenticated.',
@@ -293,6 +294,7 @@ class AuthController extends Controller
         }
 
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+
         return redirect()->to("{$frontendUrl}/login?token={$result['token']}");
     }
 }

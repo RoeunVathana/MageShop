@@ -11,9 +11,7 @@ use Illuminate\Http\Response;
 
 class ReceiptController extends Controller
 {
-    public function __construct(protected PaymentReceiptPdfService $pdfService)
-    {
-    }
+    public function __construct(protected PaymentReceiptPdfService $pdfService) {}
 
     /**
      * Download or view receipt PDF for an order.
@@ -24,7 +22,7 @@ class ReceiptController extends Controller
             ? Order::with('items', 'customer', 'payments')->find($orderIdentifier)
             : Order::with('items', 'customer', 'payments')->where('order_number', $orderIdentifier)->first();
 
-        if (!$order) {
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
         }
 
@@ -33,6 +31,7 @@ class ReceiptController extends Controller
 
         if ($format === 'html') {
             $html = $this->pdfService->renderHtml($order, $receipt);
+
             return response($html, 200, ['Content-Type' => 'text/html']);
         }
 
@@ -64,7 +63,7 @@ class ReceiptController extends Controller
     public function resend(Request $request, string $orderIdentifier): JsonResponse
     {
         $user = $request->user();
-        if (!$user || !($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
+        if (! $user || ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized.'], 403);
         }
 
@@ -72,7 +71,7 @@ class ReceiptController extends Controller
             ? Order::with('items', 'customer', 'payments')->find($orderIdentifier)
             : Order::with('items', 'customer', 'payments')->where('order_number', $orderIdentifier)->first();
 
-        if (!$order) {
+        if (! $order) {
             return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
         }
 
@@ -89,4 +88,3 @@ class ReceiptController extends Controller
         ]);
     }
 }
-

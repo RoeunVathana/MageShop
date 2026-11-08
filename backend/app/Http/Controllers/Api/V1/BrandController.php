@@ -14,9 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BrandController extends Controller
 {
-    public function __construct(protected BrandService $brandService)
-    {
-    }
+    public function __construct(protected BrandService $brandService) {}
 
     /**
      * List brands with pagination and search.
@@ -30,7 +28,7 @@ class BrandController extends Controller
         $user = $request->user('sanctum');
         $isAdmin = $user && ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('PRODUCT_MANAGER') || $user->hasRole('STAFF'));
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $filters['is_active'] = true;
             $filters['status'] = 'active';
         }
@@ -83,7 +81,7 @@ class BrandController extends Controller
     public function destroy(Request $request, Brand $brand): JsonResponse
     {
         $user = $request->user();
-        if (!$user || !($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
+        if (! $user || ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
             abort(403, 'Unauthorized. Administrator privileges required to archive brands.');
         }
 
@@ -96,4 +94,3 @@ class BrandController extends Controller
         ]);
     }
 }
-

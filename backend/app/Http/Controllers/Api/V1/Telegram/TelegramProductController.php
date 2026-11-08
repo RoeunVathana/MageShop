@@ -22,7 +22,7 @@ class TelegramProductController extends Controller
 
         $query = Product::with(['category', 'brandRecord'])->where('is_active', true);
 
-        if (!empty($categorySlug) && $categorySlug !== 'all') {
+        if (! empty($categorySlug) && $categorySlug !== 'all') {
             $catQuery = Category::where('slug', $categorySlug);
             if (is_numeric($categorySlug)) {
                 $catQuery->orWhere('id', (int) $categorySlug);
@@ -35,13 +35,13 @@ class TelegramProductController extends Controller
             }
         }
 
-        if (!empty($search)) {
-            $searchLower = '%' . strtolower($search) . '%';
+        if (! empty($search)) {
+            $searchLower = '%'.strtolower($search).'%';
             $query->where(function ($q) use ($searchLower) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$searchLower])
-                  ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
-                  ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
-                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
+                    ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
+                    ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
+                    ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
             });
         }
 
@@ -103,7 +103,7 @@ class TelegramProductController extends Controller
                 ->first();
         }
 
-        if (!$product) {
+        if (! $product) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Product not found.',

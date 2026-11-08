@@ -79,4 +79,3 @@ class RegistrationTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 }
-

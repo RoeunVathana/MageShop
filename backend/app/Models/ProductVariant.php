@@ -80,4 +80,3 @@ class ProductVariant extends Model
         return max(0, (int) ($this->stock_quantity ?? 0));
     }
 }
-

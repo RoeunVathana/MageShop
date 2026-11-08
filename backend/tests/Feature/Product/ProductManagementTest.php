@@ -4,7 +4,6 @@ namespace Tests\Feature\Product;
 
 use App\Models\Category;
 use App\Models\Inventory;
-use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
@@ -18,7 +17,9 @@ class ProductManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $customerUser;
+
     protected Category $category;
 
     protected function setUp(): void
@@ -336,4 +337,3 @@ class ProductManagementTest extends TestCase
         ]);
     }
 }
-

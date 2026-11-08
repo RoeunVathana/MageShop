@@ -15,9 +15,7 @@ use InvalidArgumentException;
 
 class CategoryController extends Controller
 {
-    public function __construct(protected CategoryService $categoryService)
-    {
-    }
+    public function __construct(protected CategoryService $categoryService) {}
 
     /**
      * List categories with optional hierarchy nesting and search filtering.
@@ -84,7 +82,7 @@ class CategoryController extends Controller
     public function destroy(Request $request, Category $category): JsonResponse
     {
         $user = $request->user();
-        if (!$user || (!$user->hasRole('SUPER_ADMIN') && !$user->hasRole('ADMIN'))) {
+        if (! $user || (! $user->hasRole('SUPER_ADMIN') && ! $user->hasRole('ADMIN'))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to delete platform categories.',
@@ -99,4 +97,3 @@ class CategoryController extends Controller
         ]);
     }
 }
-

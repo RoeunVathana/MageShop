@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramWebhookController extends Controller
 {
-    public function __construct(protected TelegramService $telegramService)
-    {
-    }
+    public function __construct(protected TelegramService $telegramService) {}
 
     /**
      * Handle incoming webhook updates from Telegram Bot API.
@@ -21,7 +19,7 @@ class TelegramWebhookController extends Controller
     {
         $secretHeader = $request->header('X-Telegram-Bot-Api-Secret-Token');
 
-        if (!$this->telegramService->verifyWebhookSecret($secretHeader)) {
+        if (! $this->telegramService->verifyWebhookSecret($secretHeader)) {
             Log::warning('Telegram webhook rejected: invalid secret token header', [
                 'ip' => $request->ip(),
             ]);
@@ -58,4 +56,3 @@ class TelegramWebhookController extends Controller
         }
     }
 }
-

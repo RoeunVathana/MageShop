@@ -1,15 +1,17 @@
 <?php
 
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
-use Illuminate\Http\Exceptions\HttpResponseException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -56,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, Request $request) {
+        $exceptions->render(function (ModelNotFoundException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
                     'status' => 'error',
@@ -65,7 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (\Illuminate\Database\QueryException $e, Request $request) {
+        $exceptions->render(function (QueryException $e, Request $request) {
             if ($request->is('api/*')) {
                 if (str_contains($e->getMessage(), '22P02')) {
                     return response()->json([
@@ -102,7 +104,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'status' => 'error',
                     'message' => config('app.debug') ? $e->getMessage() : 'An internal server error occurred.',
-                    ...(config('app.debug') ? ['trace' => $e->getFile() . ':' . $e->getLine()] : []),
+                    ...(config('app.debug') ? ['trace' => $e->getFile().':'.$e->getLine()] : []),
                 ], $status);
             }
         });

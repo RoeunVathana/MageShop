@@ -2,9 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Product;
-use App\Models\TelegramAccount;
-use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;

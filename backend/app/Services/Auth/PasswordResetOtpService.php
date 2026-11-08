@@ -33,7 +33,7 @@ class PasswordResetOtpService
             ]);
         }
 
-        if (!$user) {
+        if (! $user) {
             // Return true to avoid account enumeration
             return true;
         }
@@ -79,7 +79,7 @@ class PasswordResetOtpService
             ->latest()
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             throw ValidationException::withMessages([
                 'otp' => ['No active password recovery request found for this email.'],
             ]);
@@ -99,7 +99,7 @@ class PasswordResetOtpService
             ]);
         }
 
-        if (!Hash::check($otp, $record->otp_hash)) {
+        if (! Hash::check($otp, $record->otp_hash)) {
             $record->increment('attempts');
             $remaining = 5 - $record->attempts;
             throw ValidationException::withMessages([
@@ -128,14 +128,14 @@ class PasswordResetOtpService
             ->where('is_used', false)
             ->first();
 
-        if (!$record || $record->reset_token_expires_at === null || $record->reset_token_expires_at->isPast()) {
+        if (! $record || $record->reset_token_expires_at === null || $record->reset_token_expires_at->isPast()) {
             throw ValidationException::withMessages([
                 'token' => ['Invalid or expired password reset authorization token.'],
             ]);
         }
 
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'email' => ['User not found.'],
             ]);
@@ -157,4 +157,3 @@ class PasswordResetOtpService
         return true;
     }
 }
-

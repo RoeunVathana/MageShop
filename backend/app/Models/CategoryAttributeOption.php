@@ -29,4 +29,3 @@ class CategoryAttributeOption extends Model
         return $this->belongsTo(CategoryAttribute::class, 'category_attribute_id');
     }
 }
-

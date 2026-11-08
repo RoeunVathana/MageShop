@@ -6,7 +6,6 @@ use App\Services\Telegram\TelegramService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class TelegramPollCommand extends Command
 {
@@ -40,10 +39,11 @@ class TelegramPollCommand extends Command
             }
             $this->info('Simulating active poll listener loop...');
             sleep(1);
+
             return Command::SUCCESS;
         }
 
-        $this->info("Starting Telegram Bot long-polling daemon for bot: " . Config::get('telegram.bot_username'));
+        $this->info('Starting Telegram Bot long-polling daemon for bot: '.Config::get('telegram.bot_username'));
         $this->info("Press Ctrl+C to terminate.\n");
 
         $offset = 0;
@@ -73,19 +73,18 @@ class TelegramPollCommand extends Command
                         }
 
                         $res = $telegramService->handleUpdate($update);
-                        $this->line("Processed update #{$updateId}: " . json_encode($res));
+                        $this->line("Processed update #{$updateId}: ".json_encode($res));
                     }
                 } else {
-                    $this->error("Telegram API error: " . $response->body());
+                    $this->error('Telegram API error: '.$response->body());
                     sleep(3);
                 }
             } catch (\Throwable $e) {
-                $this->error("Poll error: " . $e->getMessage());
+                $this->error('Poll error: '.$e->getMessage());
                 sleep(3);
             }
-        } while (!$runOnce);
+        } while (! $runOnce);
 
         return Command::SUCCESS;
     }
 }
-

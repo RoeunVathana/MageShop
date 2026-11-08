@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Product;
 
+use App\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,7 @@ class UpdateProductRequest extends FormRequest
     public function authorize(): bool
     {
         $product = $this->route('product');
+
         return $this->user()?->can('update', $product)
             ?? $this->user()?->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'])
             ?? false;
@@ -18,7 +20,7 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         $product = $this->route('product');
-        $productId = $product instanceof \App\Models\Product ? $product->id : $product;
+        $productId = $product instanceof Product ? $product->id : $product;
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],

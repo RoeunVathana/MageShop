@@ -21,12 +21,12 @@ class CategoryService
         $query = Category::query();
 
         // Search by name or description
-        if (!empty($filters['search'])) {
-            $search = '%' . strtolower(trim($filters['search'])) . '%';
+        if (! empty($filters['search'])) {
+            $search = '%'.strtolower(trim($filters['search'])).'%';
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(slug) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(description) LIKE ?', [$search]);
+                    ->orWhereRaw('LOWER(slug) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(description) LIKE ?', [$search]);
             });
         }
 
@@ -39,7 +39,7 @@ class CategoryService
         if (isset($filters['parent_id'])) {
             if ($filters['parent_id'] === 'null' || $filters['parent_id'] === 'root' || $filters['parent_id'] === '') {
                 $query->whereNull('parent_id');
-            } else if (is_numeric($filters['parent_id'])) {
+            } elseif (is_numeric($filters['parent_id'])) {
                 $query->where('parent_id', (int) $filters['parent_id']);
             }
         }
@@ -58,8 +58,9 @@ class CategoryService
         $query->with(['parent', 'attributes.options'])->withCount('products');
         $query->orderBy('sort_order')->orderBy('name');
 
-        if (!empty($filters['per_page'])) {
+        if (! empty($filters['per_page'])) {
             $perPage = min((int) $filters['per_page'], 100);
+
             return $query->paginate($perPage);
         }
 
@@ -93,14 +94,14 @@ class CategoryService
     public function createCategory(array $data): Category
     {
         return DB::transaction(function () use ($data) {
-            $slug = !empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
+            $slug = ! empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
             if (Category::where('slug', $slug)->exists()) {
-                $slug .= '-' . Str::lower(Str::random(4));
+                $slug .= '-'.Str::lower(Str::random(4));
             }
 
-            $parentId = !empty($data['parent_id']) ? (int) $data['parent_id'] : null;
+            $parentId = ! empty($data['parent_id']) ? (int) $data['parent_id'] : null;
 
-            if ($parentId !== null && !Category::where('id', $parentId)->exists()) {
+            if ($parentId !== null && ! Category::where('id', $parentId)->exists()) {
                 throw new InvalidArgumentException("Proposed parent category #{$parentId} does not exist.");
             }
 
@@ -130,14 +131,14 @@ class CategoryService
         return DB::transaction(function () use ($category, $data) {
             // Verify parent cycle prevention
             if (array_key_exists('parent_id', $data)) {
-                $proposedParentId = !empty($data['parent_id']) ? (int) $data['parent_id'] : null;
+                $proposedParentId = ! empty($data['parent_id']) ? (int) $data['parent_id'] : null;
                 $category->setParentCategory($proposedParentId);
             }
 
-            if (!empty($data['name'])) {
+            if (! empty($data['name'])) {
                 $category->name = trim($data['name']);
             }
-            if (!empty($data['slug']) && $data['slug'] !== $category->slug) {
+            if (! empty($data['slug']) && $data['slug'] !== $category->slug) {
                 $category->slug = Str::slug($data['slug']);
             }
             if (array_key_exists('icon', $data)) {
@@ -193,7 +194,7 @@ class CategoryService
     public function addAttribute(Category $category, array $data): CategoryAttribute
     {
         return DB::transaction(function () use ($category, $data) {
-            $code = !empty($data['code']) ? Str::slug($data['code'], '_') : Str::slug($data['name'], '_');
+            $code = ! empty($data['code']) ? Str::slug($data['code'], '_') : Str::slug($data['name'], '_');
 
             $attribute = CategoryAttribute::create([
                 'category_id' => $category->id,
@@ -208,7 +209,7 @@ class CategoryService
             ]);
 
             // Add predefined options if provided
-            if (!empty($data['options']) && is_array($data['options'])) {
+            if (! empty($data['options']) && is_array($data['options'])) {
                 foreach ($data['options'] as $idx => $opt) {
                     $val = is_array($opt) ? ($opt['value'] ?? $opt['label']) : $opt;
                     $label = is_array($opt) ? ($opt['label'] ?? $val) : $val;
@@ -232,13 +233,13 @@ class CategoryService
     public function updateAttribute(CategoryAttribute $attribute, array $data): CategoryAttribute
     {
         return DB::transaction(function () use ($attribute, $data) {
-            if (!empty($data['name'])) {
+            if (! empty($data['name'])) {
                 $attribute->name = trim($data['name']);
             }
-            if (!empty($data['code'])) {
+            if (! empty($data['code'])) {
                 $attribute->code = Str::slug($data['code'], '_');
             }
-            if (!empty($data['type'])) {
+            if (! empty($data['type'])) {
                 $attribute->type = $data['type'];
             }
             if (array_key_exists('is_required', $data)) {
@@ -294,4 +295,3 @@ class CategoryService
         });
     }
 }
-

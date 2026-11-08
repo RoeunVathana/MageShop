@@ -27,3 +27,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 CMD sh -c "serve -s /app/dist -l ${PORT:-3000}"
+

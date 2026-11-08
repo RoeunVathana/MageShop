@@ -6,7 +6,6 @@ use App\Models\Brand;
 use App\Models\BrandTranslation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class BrandService
 {
@@ -17,12 +16,12 @@ class BrandService
     {
         $query = Brand::query()->withCount('products');
 
-        if (!empty($filters['search'])) {
-            $search = '%' . strtolower($filters['search']) . '%';
+        if (! empty($filters['search'])) {
+            $search = '%'.strtolower($filters['search']).'%';
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(slug) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(country) LIKE ?', [$search]);
+                    ->orWhereRaw('LOWER(slug) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(country) LIKE ?', [$search]);
             });
         }
 
@@ -30,7 +29,7 @@ class BrandService
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
@@ -61,7 +60,7 @@ class BrandService
 
             $brand = Brand::create($data);
 
-            if (!empty($translations)) {
+            if (! empty($translations)) {
                 $this->syncTranslations($brand, $translations);
             }
 
@@ -124,4 +123,3 @@ class BrandService
         }
     }
 }
-

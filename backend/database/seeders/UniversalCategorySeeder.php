@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\CategoryAttribute;
 use App\Models\CategoryAttributeOption;
 use App\Models\Product;
-use App\Models\ProductAttributeValue;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -257,7 +256,9 @@ class UniversalCategorySeeder extends Seeder
 
     protected function seedFashionAttributes(?Category $category): void
     {
-        if (!$category) return;
+        if (! $category) {
+            return;
+        }
 
         // Size
         $sizeAttr = CategoryAttribute::updateOrCreate(
@@ -313,7 +314,9 @@ class UniversalCategorySeeder extends Seeder
 
     protected function seedElectronicsAttributes(?Category $category): void
     {
-        if (!$category) return;
+        if (! $category) {
+            return;
+        }
 
         // Brand
         CategoryAttribute::updateOrCreate(
@@ -382,7 +385,9 @@ class UniversalCategorySeeder extends Seeder
 
     protected function seedFurnitureAttributes(?Category $category): void
     {
-        if (!$category) return;
+        if (! $category) {
+            return;
+        }
 
         CategoryAttribute::updateOrCreate(
             ['category_id' => $category->id, 'code' => 'material'],
@@ -418,7 +423,9 @@ class UniversalCategorySeeder extends Seeder
 
     protected function seedGroceryAttributes(?Category $category): void
     {
-        if (!$category) return;
+        if (! $category) {
+            return;
+        }
 
         CategoryAttribute::updateOrCreate(
             ['category_id' => $category->id, 'code' => 'net_weight'],
@@ -443,7 +450,9 @@ class UniversalCategorySeeder extends Seeder
 
     protected function seedBookAttributes(?Category $category): void
     {
-        if (!$category) return;
+        if (! $category) {
+            return;
+        }
 
         CategoryAttribute::updateOrCreate(
             ['category_id' => $category->id, 'code' => 'author'],
@@ -516,4 +525,3 @@ class UniversalCategorySeeder extends Seeder
         }
     }
 }
-

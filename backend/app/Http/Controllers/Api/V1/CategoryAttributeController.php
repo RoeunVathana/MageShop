@@ -15,9 +15,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CategoryAttributeController extends Controller
 {
-    public function __construct(protected CategoryService $categoryService)
-    {
-    }
+    public function __construct(protected CategoryService $categoryService) {}
 
     /**
      * List all configurable attributes for a specific category.
@@ -59,7 +57,7 @@ class CategoryAttributeController extends Controller
     public function destroy(Request $request, CategoryAttribute $attribute): JsonResponse
     {
         $user = $request->user();
-        if (!$user || (!$user->hasRole('SUPER_ADMIN') && !$user->hasRole('ADMIN') && !$user->hasRole('PRODUCT_MANAGER'))) {
+        if (! $user || (! $user->hasRole('SUPER_ADMIN') && ! $user->hasRole('ADMIN') && ! $user->hasRole('PRODUCT_MANAGER'))) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to remove category attributes.',
@@ -74,4 +72,3 @@ class CategoryAttributeController extends Controller
         ]);
     }
 }
-

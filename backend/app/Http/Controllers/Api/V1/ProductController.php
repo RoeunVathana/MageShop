@@ -14,9 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
-    public function __construct(protected ProductService $productService)
-    {
-    }
+    public function __construct(protected ProductService $productService) {}
 
     /**
      * List products with pagination and search.
@@ -103,4 +101,3 @@ class ProductController extends Controller
         ]);
     }
 }
-

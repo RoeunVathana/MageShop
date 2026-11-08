@@ -59,4 +59,3 @@ class ProductPolicy
             $user->hasRole('PRODUCT_MANAGER');
     }
 }
-

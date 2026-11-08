@@ -44,4 +44,3 @@ class PasswordResetOtp extends Model
         return $this->cooldown_until !== null && $this->cooldown_until->isFuture();
     }
 }
-

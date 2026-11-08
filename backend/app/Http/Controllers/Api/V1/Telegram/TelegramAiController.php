@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1\Telegram;
 
 use App\Http\Controllers\Controller;
 use App\Models\TelegramAccount;
-use App\Models\TelegramAiMessage;
 use App\Models\TelegramChatSession;
 use App\Services\Telegram\TelegramAiService;
 use Illuminate\Http\JsonResponse;
@@ -13,9 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class TelegramAiController extends Controller
 {
-    public function __construct(protected TelegramAiService $aiService)
-    {
-    }
+    public function __construct(protected TelegramAiService $aiService) {}
 
     /**
      * Send message to Telegram AI Shopping Assistant.
@@ -64,12 +61,12 @@ class TelegramAiController extends Controller
      */
     public function history(string|int $sessionId): JsonResponse
     {
-        if (!is_numeric($sessionId)) {
+        if (! is_numeric($sessionId)) {
             return response()->json(['status' => 'error', 'message' => 'Chat session not found.'], 404);
         }
 
         $session = TelegramChatSession::with('messages')->find((int) $sessionId);
-        if (!$session) {
+        if (! $session) {
             return response()->json(['status' => 'error', 'message' => 'Chat session not found.'], 404);
         }
 
@@ -83,4 +80,3 @@ class TelegramAiController extends Controller
         ]);
     }
 }
-

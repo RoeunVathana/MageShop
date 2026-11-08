@@ -6,7 +6,7 @@ use App\Models\Brand;
 use App\Models\BrandTranslation;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BrandSeeder extends Seeder
 {
@@ -165,12 +165,11 @@ class BrandSeeder extends Seeder
                 }
 
                 // Associate products matching brand name in their title
-                Product::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($brand->name) . '%'])
+                Product::whereRaw('LOWER(name) LIKE ?', ['%'.strtolower($brand->name).'%'])
                     ->update(['brand_id' => $brand->id]);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("BrandSeeder item {$item['slug']} error: " . $e->getMessage());
+                Log::warning("BrandSeeder item {$item['slug']} error: ".$e->getMessage());
             }
         }
     }
 }
-

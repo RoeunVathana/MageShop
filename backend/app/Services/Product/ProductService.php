@@ -2,6 +2,7 @@
 
 namespace App\Services\Product;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\CategoryAttribute;
 use App\Models\Inventory;
@@ -35,24 +36,24 @@ class ProductService
         ]);
 
         // Search by name, SKU, brand, or description
-        if (!empty($filters['search'])) {
-            $search = '%' . strtolower(trim($filters['search'])) . '%';
+        if (! empty($filters['search'])) {
+            $search = '%'.strtolower(trim($filters['search'])).'%';
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(sku) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(brand) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(description) LIKE ?', [$search]);
+                    ->orWhereRaw('LOWER(sku) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(brand) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(description) LIKE ?', [$search]);
             });
         }
 
         // Filter by status (active, archived, draft)
-        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
             $query->where('status', $filters['status']);
         }
 
         // Filter by category (including all nested subcategories!)
         $categoryParam = $filters['category_id'] ?? $filters['category'] ?? null;
-        if (!empty($categoryParam)) {
+        if (! empty($categoryParam)) {
             $category = is_numeric($categoryParam)
                 ? Category::find((int) $categoryParam)
                 : Category::where('slug', (string) $categoryParam)->first();
@@ -61,23 +62,23 @@ class ProductService
                 $categoryIds = array_merge([$category->id], $category->getAllDescendantIds());
                 $query->where(function ($q) use ($categoryIds) {
                     $q->whereIn('category_id', $categoryIds)
-                      ->orWhereHas('categories', function ($cq) use ($categoryIds) {
-                          $cq->whereIn('categories.id', $categoryIds);
-                      });
+                        ->orWhereHas('categories', function ($cq) use ($categoryIds) {
+                            $cq->whereIn('categories.id', $categoryIds);
+                        });
                 });
-            } else if (is_numeric($categoryParam)) {
+            } elseif (is_numeric($categoryParam)) {
                 $query->where('category_id', (int) $categoryParam);
             }
         }
 
         // Filter by brand
-        if (!empty($filters['brand'])) {
+        if (! empty($filters['brand'])) {
             $query->where(function ($bq) use ($filters) {
                 $bq->where('brand', $filters['brand'])
-                   ->orWhereHas('brandRecord', fn($br) => $br->where('slug', $filters['brand'])->orWhere('name', $filters['brand']));
+                    ->orWhereHas('brandRecord', fn ($br) => $br->where('slug', $filters['brand'])->orWhere('name', $filters['brand']));
             });
         }
-        if (!empty($filters['brand_id']) && is_numeric($filters['brand_id'])) {
+        if (! empty($filters['brand_id']) && is_numeric($filters['brand_id'])) {
             $query->where('brand_id', (int) $filters['brand_id']);
         }
 
@@ -96,7 +97,7 @@ class ProductService
         }
 
         // Filter by product_type (simple, variable, digital)
-        if (!empty($filters['product_type']) && $filters['product_type'] !== 'all') {
+        if (! empty($filters['product_type']) && $filters['product_type'] !== 'all') {
             $query->where('product_type', $filters['product_type']);
         }
 
@@ -138,12 +139,12 @@ class ProductService
                 throw new InvalidArgumentException('Cost price cannot be negative.');
             }
 
-            $slug = !empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
+            $slug = ! empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
             if (Product::where('slug', $slug)->exists()) {
-                $slug .= '-' . Str::lower(Str::random(5));
+                $slug .= '-'.Str::lower(Str::random(5));
             }
 
-            $categoryId = !empty($data['category_id']) ? (int) $data['category_id'] : null;
+            $categoryId = ! empty($data['category_id']) ? (int) $data['category_id'] : null;
 
             // Validate category-specific required attributes
             if ($categoryId) {
@@ -153,9 +154,9 @@ class ProductService
             $productType = $data['product_type'] ?? 'simple';
             $initialStock = max(0, (int) ($data['initial_stock'] ?? $data['stock_quantity'] ?? $data['quantity_on_hand'] ?? 0));
 
-            $brandId = !empty($data['brand_id']) ? (int) $data['brand_id'] : null;
-            if (!$brandId && !empty($data['brand'])) {
-                $brandRecord = \App\Models\Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
+            $brandId = ! empty($data['brand_id']) ? (int) $data['brand_id'] : null;
+            if (! $brandId && ! empty($data['brand'])) {
+                $brandRecord = Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
                     ->orWhere('slug', Str::slug($data['brand']))
                     ->first();
                 if ($brandRecord) {
@@ -167,7 +168,7 @@ class ProductService
                 'category_id' => $categoryId,
                 'brand_id' => $brandId,
                 'name' => trim($data['name']),
-                'brand' => !empty($data['brand']) ? trim($data['brand']) : null,
+                'brand' => ! empty($data['brand']) ? trim($data['brand']) : null,
                 'slug' => $slug,
                 'sku' => strtoupper(trim($data['sku'])),
                 'product_type' => $productType,
@@ -183,20 +184,20 @@ class ProductService
                 'weight' => isset($data['weight']) ? (float) $data['weight'] : null,
                 'dimensions' => $data['dimensions'] ?? null,
                 'is_active' => ($data['status'] ?? 'active') === 'active',
-                'is_featured' => !empty($data['is_featured']),
-                'is_new_arrival' => !empty($data['is_new_arrival']),
-                'is_best_seller' => !empty($data['is_best_seller']),
-                'is_flash_sale' => !empty($data['is_flash_sale']),
+                'is_featured' => ! empty($data['is_featured']),
+                'is_new_arrival' => ! empty($data['is_new_arrival']),
+                'is_best_seller' => ! empty($data['is_best_seller']),
+                'is_flash_sale' => ! empty($data['is_flash_sale']),
                 'image_url' => $data['image_url'] ?? null,
-                'gallery_urls' => !empty($data['gallery_urls']) && is_array($data['gallery_urls']) ? $data['gallery_urls'] : [],
-                'specifications' => !empty($data['specifications']) && is_array($data['specifications']) ? $data['specifications'] : null,
+                'gallery_urls' => ! empty($data['gallery_urls']) && is_array($data['gallery_urls']) ? $data['gallery_urls'] : [],
+                'specifications' => ! empty($data['specifications']) && is_array($data['specifications']) ? $data['specifications'] : null,
             ]);
 
             // Sync product_categories pivot
             if ($categoryId) {
                 $product->categories()->attach($categoryId, ['is_primary' => true]);
             }
-            if (!empty($data['category_ids']) && is_array($data['category_ids'])) {
+            if (! empty($data['category_ids']) && is_array($data['category_ids'])) {
                 foreach ($data['category_ids'] as $extraCatId) {
                     if ($extraCatId != $categoryId && Category::where('id', $extraCatId)->exists()) {
                         $product->categories()->syncWithoutDetaching([$extraCatId => ['is_primary' => false]]);
@@ -205,7 +206,7 @@ class ProductService
             }
 
             // Save dynamic category attribute values
-            if (!empty($data['attributes']) && is_array($data['attributes'])) {
+            if (! empty($data['attributes']) && is_array($data['attributes'])) {
                 $this->saveProductAttributeValues($product, $data['attributes']);
             }
 
@@ -233,7 +234,7 @@ class ProductService
             }
 
             // If Variable Product, create variants with dedicated SKU-level inventories
-            if ($productType === 'variable' && !empty($data['variants']) && is_array($data['variants'])) {
+            if ($productType === 'variable' && ! empty($data['variants']) && is_array($data['variants'])) {
                 $this->createProductVariants($product, $data['variants'], $userId);
             }
 
@@ -274,8 +275,8 @@ class ProductService
             }
             if (array_key_exists('brand', $data)) {
                 $updateData['brand'] = $data['brand'] !== null ? trim($data['brand']) : null;
-                if (!array_key_exists('brand_id', $data) && !empty($data['brand'])) {
-                    $brandRecord = \App\Models\Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
+                if (! array_key_exists('brand_id', $data) && ! empty($data['brand'])) {
+                    $brandRecord = Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
                         ->orWhere('slug', Str::slug($data['brand']))
                         ->first();
                     $updateData['brand_id'] = $brandRecord?->id;
@@ -344,7 +345,7 @@ class ProductService
                 $updateData['specifications'] = $data['specifications'];
             }
 
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $product->update($updateData);
             }
 
@@ -399,7 +400,7 @@ class ProductService
         foreach ($attributes as $attr) {
             $attrId = $attr['attribute_id'] ?? $attr['id'] ?? null;
             $code = $attr['code'] ?? null;
-            $hasVal = !empty($attr['value']) || !empty($attr['selected_option_id']);
+            $hasVal = ! empty($attr['value']) || ! empty($attr['selected_option_id']);
 
             if ($attrId && $hasVal) {
                 $supplied[$attrId] = true;
@@ -426,17 +427,19 @@ class ProductService
 
         foreach ($attributes as $attr) {
             $attributeId = $attr['attribute_id'] ?? $attr['id'] ?? null;
-            if (!$attributeId && !empty($attr['code'])) {
+            if (! $attributeId && ! empty($attr['code'])) {
                 $attributeId = CategoryAttribute::where('code', $attr['code'])->value('id');
             }
 
-            if (!$attributeId) continue;
+            if (! $attributeId) {
+                continue;
+            }
 
             ProductAttributeValue::create([
                 'product_id' => $product->id,
                 'category_attribute_id' => $attributeId,
-                'selected_option_id' => !empty($attr['selected_option_id']) ? (int) $attr['selected_option_id'] : null,
-                'value' => !empty($attr['value']) ? (string) $attr['value'] : null,
+                'selected_option_id' => ! empty($attr['selected_option_id']) ? (int) $attr['selected_option_id'] : null,
+                'value' => ! empty($attr['value']) ? (string) $attr['value'] : null,
             ]);
         }
     }
@@ -471,19 +474,21 @@ class ProductService
             ]);
 
             // Save variant attribute options (e.g., Size=M, Color=Red)
-            if (!empty($varData['attribute_values']) && is_array($varData['attribute_values'])) {
+            if (! empty($varData['attribute_values']) && is_array($varData['attribute_values'])) {
                 foreach ($varData['attribute_values'] as $vAttr) {
                     $attrId = $vAttr['attribute_id'] ?? null;
-                    if (!$attrId && !empty($vAttr['code'])) {
+                    if (! $attrId && ! empty($vAttr['code'])) {
                         $attrId = CategoryAttribute::where('code', $vAttr['code'])->value('id');
                     }
-                    if (!$attrId) continue;
+                    if (! $attrId) {
+                        continue;
+                    }
 
                     VariantAttributeValue::create([
                         'product_variant_id' => $variant->id,
                         'category_attribute_id' => $attrId,
-                        'attribute_option_id' => !empty($vAttr['option_id']) ? (int) $vAttr['option_id'] : null,
-                        'custom_value' => !empty($vAttr['custom_value']) ? (string) $vAttr['custom_value'] : null,
+                        'attribute_option_id' => ! empty($vAttr['option_id']) ? (int) $vAttr['option_id'] : null,
+                        'custom_value' => ! empty($vAttr['custom_value']) ? (string) $vAttr['custom_value'] : null,
                     ]);
                 }
             }
@@ -572,7 +577,7 @@ class ProductService
                         'quantity_change' => $diff,
                         'before_quantity' => $inv->quantity_on_hand - $diff,
                         'after_quantity' => $newStock,
-                        'reason' => "Variant stock updated via product edit",
+                        'reason' => 'Variant stock updated via product edit',
                         'created_by' => $userId,
                         'user_id' => $userId,
                     ]);
@@ -617,20 +622,22 @@ class ProductService
             }
 
             // Sync variant attribute values if provided
-            if (!empty($varData['attribute_values']) && is_array($varData['attribute_values'])) {
+            if (! empty($varData['attribute_values']) && is_array($varData['attribute_values'])) {
                 $variant->attributeValues()->delete();
                 foreach ($varData['attribute_values'] as $vAttr) {
                     $attrId = $vAttr['attribute_id'] ?? null;
-                    if (!$attrId && !empty($vAttr['code'])) {
+                    if (! $attrId && ! empty($vAttr['code'])) {
                         $attrId = CategoryAttribute::where('code', $vAttr['code'])->value('id');
                     }
-                    if (!$attrId) continue;
+                    if (! $attrId) {
+                        continue;
+                    }
 
                     VariantAttributeValue::create([
                         'product_variant_id' => $variant->id,
                         'category_attribute_id' => $attrId,
-                        'attribute_option_id' => !empty($vAttr['option_id']) ? (int) $vAttr['option_id'] : null,
-                        'custom_value' => !empty($vAttr['custom_value']) ? (string) $vAttr['custom_value'] : null,
+                        'attribute_option_id' => ! empty($vAttr['option_id']) ? (int) $vAttr['option_id'] : null,
+                        'custom_value' => ! empty($vAttr['custom_value']) ? (string) $vAttr['custom_value'] : null,
                     ]);
                 }
             }
@@ -647,6 +654,7 @@ class ProductService
     public function archiveProduct(Product $product): Product
     {
         $product->archive();
+
         return $product;
     }
 }

@@ -40,9 +40,10 @@ class Category extends Model
     public function resolveRouteBinding($value, $field = null)
     {
         if ($field) {
-            if ($field === 'id' && !is_numeric($value)) {
+            if ($field === 'id' && ! is_numeric($value)) {
                 return null;
             }
+
             return $this->where($field, $value)->first();
         }
 
@@ -136,11 +137,12 @@ class Category extends Model
      */
     public function setParentCategory(?int $parentId): self
     {
-        if (!$this->canSetParent($parentId)) {
+        if (! $this->canSetParent($parentId)) {
             throw new InvalidArgumentException("Cannot assign parent category #{$parentId} as it would create a circular hierarchy loop.");
         }
 
         $this->parent_id = $parentId;
+
         return $this;
     }
 }

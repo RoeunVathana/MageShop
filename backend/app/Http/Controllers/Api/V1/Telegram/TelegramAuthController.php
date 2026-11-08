@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1\Telegram;
 
 use App\Http\Controllers\Controller;
-use App\Models\TelegramAccount;
 use App\Services\Telegram\TelegramAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,9 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class TelegramAuthController extends Controller
 {
-    public function __construct(protected TelegramAuthService $authService)
-    {
-    }
+    public function __construct(protected TelegramAuthService $authService) {}
 
     /**
      * Authenticate Telegram Mini App session using initData.
@@ -30,7 +27,7 @@ class TelegramAuthController extends Controller
         $initData = $validated['init_data'] ?? '';
 
         // Support local sandbox/dev preview if initData is omitted in local dev
-        if (empty($initData) && config('app.debug') && !empty($validated['demo_mode'])) {
+        if (empty($initData) && config('app.debug') && ! empty($validated['demo_mode'])) {
             $demoRole = strtolower($validated['demo_role'] ?? 'customer');
             $adminChatId = config('telegram.admin_chat_id', 987654321);
             $userId = ($demoRole === 'admin' || $demoRole === 'staff') ? (int) $adminChatId : 88001122;
@@ -47,6 +44,7 @@ class TelegramAuthController extends Controller
             ];
 
             $result = $this->authService->authenticateTelegramUser($fakeParams, Auth::user());
+
             return response()->json([
                 'status' => 'success',
                 'data' => $result,
@@ -84,7 +82,7 @@ class TelegramAuthController extends Controller
     public function profile(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated.'], 401);
         }
 
@@ -112,4 +110,3 @@ class TelegramAuthController extends Controller
         ]);
     }
 }
-

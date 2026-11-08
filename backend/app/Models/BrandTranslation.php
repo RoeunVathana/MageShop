@@ -22,4 +22,3 @@ class BrandTranslation extends Model
         return $this->belongsTo(Brand::class);
     }
 }
-

@@ -62,9 +62,10 @@ class CategoryAttribute extends Model
     public function resolveRouteBinding($value, $field = null)
     {
         if ($field) {
-            if ($field === 'id' && !is_numeric($value)) {
+            if ($field === 'id' && ! is_numeric($value)) {
                 return null;
             }
+
             return $this->where($field, $value)->first();
         }
 
@@ -75,4 +76,3 @@ class CategoryAttribute extends Model
         return $this->where('code', (string) $value)->first();
     }
 }
-

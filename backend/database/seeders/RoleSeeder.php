@@ -108,35 +108,35 @@ class RoleSeeder extends Seeder
         // Attach all permissions to SUPER_ADMIN
         $superAdmin = $roleModels['super_admin'] ?? null;
         if ($superAdmin) {
-            $superAdmin->permissions()->sync(array_values(array_map(fn($p) => $p->id, $permModels)));
+            $superAdmin->permissions()->sync(array_values(array_map(fn ($p) => $p->id, $permModels)));
         }
 
         // Attach operational permissions to ADMIN
         $admin = $roleModels['admin'] ?? null;
         if ($admin) {
-            $adminPerms = array_filter($permModels, fn($p) => $p->slug !== 'permissions.grant');
-            $admin->permissions()->sync(array_values(array_map(fn($p) => $p->id, $adminPerms)));
+            $adminPerms = array_filter($permModels, fn ($p) => $p->slug !== 'permissions.grant');
+            $admin->permissions()->sync(array_values(array_map(fn ($p) => $p->id, $adminPerms)));
         }
 
         // Attach finance & accounting permissions
         $accountant = $roleModels['accountant'] ?? null;
         if ($accountant) {
             $acctPermSlugs = ['accounting.view', 'accounting.journals.create', 'accounting.journals.post', 'accounting.reports.view', 'banking.reconcile', 'expenses.create'];
-            $accountant->permissions()->sync(array_values(array_map(fn($s) => $permModels[$s]->id, array_filter($acctPermSlugs, fn($s) => isset($permModels[$s])))));
+            $accountant->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($acctPermSlugs, fn ($s) => isset($permModels[$s])))));
         }
 
         // Attach inventory manager permissions
         $inventoryMgr = $roleModels['inventory_manager'] ?? null;
         if ($inventoryMgr) {
             $invPermSlugs = ['inventory.view', 'inventory.adjust', 'inventory.transfer', 'inventory.approve', 'products.view', 'products.update'];
-            $inventoryMgr->permissions()->sync(array_values(array_map(fn($s) => $permModels[$s]->id, array_filter($invPermSlugs, fn($s) => isset($permModels[$s])))));
+            $inventoryMgr->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($invPermSlugs, fn ($s) => isset($permModels[$s])))));
         }
 
         // Attach customer permissions
         $customer = $roleModels['customer'] ?? null;
         if ($customer) {
             $custPermSlugs = ['products.view', 'orders.view', 'delivery.tracking.view'];
-            $customer->permissions()->sync(array_values(array_map(fn($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn($s) => isset($permModels[$s])))));
+            $customer->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn ($s) => isset($permModels[$s])))));
         }
     }
 }

@@ -17,9 +17,7 @@ use InvalidArgumentException;
 
 class InventoryController extends Controller
 {
-    public function __construct(protected InventoryService $inventoryService)
-    {
-    }
+    public function __construct(protected InventoryService $inventoryService) {}
 
     /**
      * View stock levels across all products.
@@ -96,4 +94,3 @@ class InventoryController extends Controller
         return InventoryMovementResource::collection($movements);
     }
 }
-

@@ -85,4 +85,3 @@ class HealthController extends Controller
         ], $isHealthy ? 200 : 503);
     }
 }
-

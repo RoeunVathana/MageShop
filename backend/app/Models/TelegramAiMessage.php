@@ -26,4 +26,3 @@ class TelegramAiMessage extends Model
         return $this->belongsTo(TelegramChatSession::class, 'session_id');
     }
 }
-

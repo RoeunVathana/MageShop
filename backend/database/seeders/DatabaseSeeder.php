@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Essential\BrandSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,7 +16,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             CommerceAndTelegramSeeder::class,
             UniversalCategorySeeder::class,
-            \Database\Seeders\Essential\BrandSeeder::class,
+            BrandSeeder::class,
         ]);
     }
 }

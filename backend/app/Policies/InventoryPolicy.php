@@ -52,4 +52,3 @@ class InventoryPolicy
             $user->hasRole('WAREHOUSE_MANAGER');
     }
 }
-

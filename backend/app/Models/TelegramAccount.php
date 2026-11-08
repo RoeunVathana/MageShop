@@ -39,4 +39,3 @@ class TelegramAccount extends Model
         return $this->hasMany(TelegramChatSession::class);
     }
 }
-

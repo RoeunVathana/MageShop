@@ -25,4 +25,3 @@ class UpdateCategoryAttributeRequest extends FormRequest
         ];
     }
 }
-

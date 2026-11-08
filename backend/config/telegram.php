@@ -16,4 +16,3 @@ return [
         'temperature' => 0.2,
     ],
 ];
-

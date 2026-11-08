@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
 use Tests\TestCase;
 
 class HealthCheckTest extends TestCase
@@ -48,4 +47,3 @@ class HealthCheckTest extends TestCase
             ]);
     }
 }
-

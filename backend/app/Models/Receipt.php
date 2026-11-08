@@ -35,4 +35,3 @@ class Receipt extends Model
         return $this->belongsTo(Payment::class);
     }
 }
-

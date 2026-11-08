@@ -81,4 +81,3 @@ class Inventory extends Model
         $this->attributes['quantity_reserved'] = $value;
     }
 }
-

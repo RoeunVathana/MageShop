@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Brand;
 
+use App\Models\Brand;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,13 +11,14 @@ class UpdateBrandRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
+
         return $user && ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('PRODUCT_MANAGER') || $user->hasRole('STAFF'));
     }
 
     public function rules(): array
     {
         $brand = $this->route('brand');
-        $brandId = $brand instanceof \App\Models\Brand ? $brand->id : $brand;
+        $brandId = $brand instanceof Brand ? $brand->id : $brand;
 
         return [
             'name' => 'sometimes|required|string|max:100',
@@ -38,4 +40,3 @@ class UpdateBrandRequest extends FormRequest
         ];
     }
 }
-

@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class TelegramAiService
 {
     protected string $provider;
+
     protected string $apiKey;
+
     protected string $model;
 
     public function __construct()
@@ -43,7 +45,7 @@ class TelegramAiService
                 ->first();
         }
 
-        if (!$session) {
+        if (! $session) {
             $session = TelegramChatSession::create([
                 'telegram_account_id' => $account->id,
                 'session_type' => $account->is_bot_admin ? 'admin' : 'customer',
@@ -62,9 +64,10 @@ class TelegramAiService
         ]);
 
         // Attempt LLM with tool calling if API key configured, otherwise use internal deterministic tool engine
-        if (!empty($this->apiKey) && $this->provider === 'gemini') {
+        if (! empty($this->apiKey) && $this->provider === 'gemini') {
             try {
                 $response = $this->callGeminiWithTools($session, $userMessage, $account);
+
                 return $response;
             } catch (\Throwable $e) {
                 Log::warning("Gemini AI API call failed, falling back to local intent resolver: {$e->getMessage()}");
@@ -88,27 +91,27 @@ class TelegramAiService
 
                 $builder = Product::query()->where('is_active', true);
 
-                if (!empty($query)) {
+                if (! empty($query)) {
                     $cleaned = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $query);
-                    $tokens = array_values(array_filter(explode(' ', $cleaned), fn($t) => strlen($t) >= 3));
+                    $tokens = array_values(array_filter(explode(' ', $cleaned), fn ($t) => strlen($t) >= 3));
 
-                    if (!empty($tokens)) {
+                    if (! empty($tokens)) {
                         $builder->where(function ($q) use ($tokens) {
                             foreach ($tokens as $token) {
-                                $searchLower = '%' . strtolower($token) . '%';
+                                $searchLower = '%'.strtolower($token).'%';
                                 $q->orWhereRaw('LOWER(name) LIKE ?', [$searchLower])
-                                  ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
-                                  ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
-                                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
+                                    ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
+                                    ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
+                                    ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
                             }
                         });
                     } else {
-                        $searchLower = '%' . strtolower($query) . '%';
+                        $searchLower = '%'.strtolower($query).'%';
                         $builder->where(function ($q) use ($searchLower) {
                             $q->whereRaw('LOWER(name) LIKE ?', [$searchLower])
-                              ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
-                              ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
+                                ->orWhereRaw('LOWER(sku) LIKE ?', [$searchLower])
+                                ->orWhereRaw('LOWER(brand) LIKE ?', [$searchLower])
+                                ->orWhereRaw('LOWER(description) LIKE ?', [$searchLower]);
                         });
                     }
                 }
@@ -116,7 +119,7 @@ class TelegramAiService
                 if ($categorySlug) {
                     $builder->whereHas('category', function ($q) use ($categorySlug) {
                         $q->where('slug', $categorySlug)
-                          ->orWhereRaw('LOWER(name) LIKE ?', ['%' . strtolower($categorySlug) . '%']);
+                            ->orWhereRaw('LOWER(name) LIKE ?', ['%'.strtolower($categorySlug).'%']);
                     });
                 }
 
@@ -145,7 +148,7 @@ class TelegramAiService
                     ? Product::with(['category', 'brandRecord'])->find((int) $identifier)
                     : Product::with(['category', 'brandRecord'])->where('sku', strtoupper($identifier))->orWhere('slug', $identifier)->first();
 
-                if (!$product) {
+                if (! $product) {
                     return ['error' => "Product '{$identifier}' not found in catalog."];
                 }
 
@@ -170,7 +173,7 @@ class TelegramAiService
                     ? Product::find((int) $identifier)
                     : Product::where('sku', strtoupper($identifier))->orWhere('slug', $identifier)->first();
 
-                if (!$product) {
+                if (! $product) {
                     return ['error' => "Product '{$identifier}' not found."];
                 }
 
@@ -210,6 +213,7 @@ class TelegramAiService
                 return [
                     'promotions' => $discounted->map(function (Product $p) {
                         $savings = round(((float) $p->price - (float) $p->discount_price), 2);
+
                         return [
                             'name' => $p->name,
                             'sku' => $p->sku,
@@ -225,7 +229,7 @@ class TelegramAiService
                 $orderNumber = trim((string) ($parameters['order_number'] ?? ''));
                 $order = Order::with('items')->where('order_number', $orderNumber)->first();
 
-                if (!$order) {
+                if (! $order) {
                     return ['error' => "Order #{$orderNumber} was not found."];
                 }
 
@@ -269,9 +273,10 @@ class TelegramAiService
 
             case 'createSupportTicket':
                 $subject = $parameters['subject'] ?? 'General Inquiry';
+
                 return [
                     'status' => 'received',
-                    'ticket_id' => 'TCK-' . strtoupper(bin2hex(random_bytes(4))),
+                    'ticket_id' => 'TCK-'.strtoupper(bin2hex(random_bytes(4))),
                     'subject' => $subject,
                     'message' => 'Our support team will follow up within 2 hours.',
                 ];
@@ -295,7 +300,7 @@ class TelegramAiService
         $isKhmer = ($language === 'km' || preg_match('/[\x{1780}-\x{17FF}]/u', $text));
 
         $toolCalls = [];
-        $replyText = "";
+        $replyText = '';
 
         // Check for Order Lookup (e.g. ORD-2026-9041 or "order #...")
         if (preg_match('/ORD-[0-9]{4}-[0-9]{4}/i', $text, $matches)) {
@@ -314,17 +319,17 @@ class TelegramAiService
 
                 $replyText = $isKhmer
                     ? "📦 **ព័ត៌មានលម្អិតអំពីការបញ្ជាទិញ #{$orderNo}**\n\n"
-                    . "• ស្ថានភាពដឹកជញ្ជូន: **{$status}**\n"
-                    . "• ការទូទាត់: **{$payment}**\n"
-                    . "• ទឹកប្រាក់សរុប: \${$toolResult['total_amount']}\n"
-                    . "• លេខកូដតាមដាន: `{$tracking}`\n"
-                    . "• ទីក្រុងដឹកជញ្ជូន: {$toolResult['city']}"
+                    ."• ស្ថានភាពដឹកជញ្ជូន: **{$status}**\n"
+                    ."• ការទូទាត់: **{$payment}**\n"
+                    ."• ទឹកប្រាក់សរុប: \${$toolResult['total_amount']}\n"
+                    ."• លេខកូដតាមដាន: `{$tracking}`\n"
+                    ."• ទីក្រុងដឹកជញ្ជូន: {$toolResult['city']}"
                     : "📦 **Order Status for #{$orderNo}**\n\n"
-                    . "• Fulfillment Status: **{$status}**\n"
-                    . "• Payment Status: **{$payment}**\n"
-                    . "• Total Amount: `\${$toolResult['total_amount']}`\n"
-                    . "• Tracking Code: `{$tracking}`\n"
-                    . "• Delivery Destination: {$toolResult['city']}";
+                    ."• Fulfillment Status: **{$status}**\n"
+                    ."• Payment Status: **{$payment}**\n"
+                    ."• Total Amount: `\${$toolResult['total_amount']}`\n"
+                    ."• Tracking Code: `{$tracking}`\n"
+                    ."• Delivery Destination: {$toolResult['city']}";
             }
         }
         // Check for Return / Refund / Shipping Policy
@@ -334,20 +339,20 @@ class TelegramAiService
 
             $replyText = $isKhmer
                 ? "📜 **គោលការណ៍ហាង {$storeName}**\n\n"
-                . "• ការប្តូរទំនិញវិញ: រយៈពេល {$toolResult['return_policy_days']} ថ្ងៃ សម្រាប់ផលិតផលដែលមិនទាន់បើកប្រអប់។\n"
-                . "• ការដឹកជញ្ជូន: {$toolResult['shipping_policy']}\n"
-                . "• ទំនាក់ទំនងផ្នែកជំនួយ: {$toolResult['support_email']} ឬទូរស័ព្ទ {$toolResult['contact_phone']}"
+                ."• ការប្តូរទំនិញវិញ: រយៈពេល {$toolResult['return_policy_days']} ថ្ងៃ សម្រាប់ផលិតផលដែលមិនទាន់បើកប្រអប់។\n"
+                ."• ការដឹកជញ្ជូន: {$toolResult['shipping_policy']}\n"
+                ."• ទំនាក់ទំនងផ្នែកជំនួយ: {$toolResult['support_email']} ឬទូរស័ព្ទ {$toolResult['contact_phone']}"
                 : "📜 **{$storeName} Store Policies**\n\n"
-                . "• **Return Period:** {$toolResult['return_policy_days']} days for unused items in original sealed packaging.\n"
-                . "• **Shipping:** {$toolResult['shipping_policy']}\n"
-                . "• **Support:** {$toolResult['support_email']} or {$toolResult['contact_phone']}";
+                ."• **Return Period:** {$toolResult['return_policy_days']} days for unused items in original sealed packaging.\n"
+                ."• **Shipping:** {$toolResult['shipping_policy']}\n"
+                ."• **Support:** {$toolResult['support_email']} or {$toolResult['contact_phone']}";
         }
         // Check for Categories
         elseif (str_contains($lower, 'category') || str_contains($lower, 'categories') || str_contains($lower, 'ប្រភេទ')) {
             $toolResult = $this->executeTool('getCategories', [], $account);
             $toolCalls[] = ['tool' => 'getCategories', 'params' => [], 'result' => $toolResult];
 
-            $catList = array_map(fn($c) => "• **{$c['name']}** ({$c['product_count']} items)", $toolResult['categories']);
+            $catList = array_map(fn ($c) => "• **{$c['name']}** ({$c['product_count']} items)", $toolResult['categories']);
             $joined = implode("\n", $catList);
 
             $replyText = $isKhmer
@@ -361,10 +366,10 @@ class TelegramAiService
 
             if (empty($toolResult['promotions'])) {
                 $replyText = $isKhmer
-                    ? "បច្ចុប្បន្ននេះ យើងមានតម្លៃពិសេសលើផលិតផលទាំងអស់ក្នុងហាង។ សូមចូលទៅកាន់ Mini App ដើម្បីពិនិត្យមើល!"
-                    : "We have competitive regular prices across all categories. Check out our Mini App for the latest offers!";
+                    ? 'បច្ចុប្បន្ននេះ យើងមានតម្លៃពិសេសលើផលិតផលទាំងអស់ក្នុងហាង។ សូមចូលទៅកាន់ Mini App ដើម្បីពិនិត្យមើល!'
+                    : 'We have competitive regular prices across all categories. Check out our Mini App for the latest offers!';
             } else {
-                $items = array_map(fn($p) => "• **{$p['name']}**: `\${$p['sale_price']}` (Save `\${$p['savings']}`)", $toolResult['promotions']);
+                $items = array_map(fn ($p) => "• **{$p['name']}**: `\${$p['sale_price']}` (Save `\${$p['savings']}`)", $toolResult['promotions']);
                 $joined = implode("\n", $items);
                 $replyText = $isKhmer
                     ? "🔥 **ប្រូម៉ូសិនពិសេសប្រចាំថ្ងៃ:**\n\n{$joined}\n\nអាចកុម្ម៉ង់បានភ្លាមៗតាមរយៈ Mini App!"
@@ -386,7 +391,8 @@ class TelegramAiService
                     : "I couldn't find any products matching your query. You can search across all 26 departments (electronics, fashion, furniture, groceries, health, books, etc.) or type 'categories' to explore.";
             } else {
                 $items = array_map(function ($p) {
-                    $stock = $p['in_stock'] ? "✅ In Stock ({$p['stock_quantity']})" : "❌ Out of Stock";
+                    $stock = $p['in_stock'] ? "✅ In Stock ({$p['stock_quantity']})" : '❌ Out of Stock';
+
                     return "• **{$p['name']}** (`{$p['sku']}`)\n  Price: `\${$p['price']}` | {$stock}";
                 }, $toolResult['products']);
                 $joined = implode("\n\n", $items);
@@ -437,9 +443,9 @@ class TelegramAiService
         $storeInfo = StoreSetting::getAll();
 
         $systemInstruction = "You are the AI Shopping Assistant for {$storeInfo['store_name']}, a universal marketplace featuring 26 product departments (Electronics, Fashion, Groceries, Home & Living, Furniture, Books, Sports, Baby, and more). "
-            . "Address: {$storeInfo['store_address']}. Support: {$storeInfo['support_email']}, {$storeInfo['contact_phone']}. "
-            . "Always be courteous, provide accurate prices and real stock from the store catalog, and support both English and Khmer. "
-            . "Never invent products, prices, or store info. Always use real catalog data.";
+            ."Address: {$storeInfo['store_address']}. Support: {$storeInfo['support_email']}, {$storeInfo['contact_phone']}. "
+            .'Always be courteous, provide accurate prices and real stock from the store catalog, and support both English and Khmer. '
+            .'Never invent products, prices, or store info. Always use real catalog data.';
 
         $tools = [
             [
@@ -500,8 +506,8 @@ class TelegramAiService
 
         $response = Http::timeout(15)->post($url, $payload);
 
-        if (!$response->successful()) {
-            throw new \RuntimeException("Gemini API error: " . $response->body());
+        if (! $response->successful()) {
+            throw new \RuntimeException('Gemini API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -510,7 +516,7 @@ class TelegramAiService
         $parts = $firstCandidate['content']['parts'] ?? [];
 
         $toolCallsExecuted = [];
-        $assistantText = "";
+        $assistantText = '';
 
         foreach ($parts as $part) {
             if (isset($part['functionCall'])) {
@@ -528,9 +534,9 @@ class TelegramAiService
             }
         }
 
-        if (!empty($toolCallsExecuted) && empty($assistantText)) {
+        if (! empty($toolCallsExecuted) && empty($assistantText)) {
             $formattedToolOutput = json_encode($toolCallsExecuted);
-            $assistantText = "Here is the information from our store catalog:\n" . $formattedToolOutput;
+            $assistantText = "Here is the information from our store catalog:\n".$formattedToolOutput;
         }
 
         TelegramAiMessage::create([

@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\TelegramAccount;
-use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -44,6 +42,7 @@ class TelegramAuthTest extends TestCase
         $hash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
         $params['hash'] = $hash;
+
         return http_build_query($params);
     }
 

@@ -114,4 +114,3 @@ class PasswordResetOtpTest extends TestCase
         $replayResp->assertStatus(422)->assertJsonValidationErrors(['token']);
     }
 }
-

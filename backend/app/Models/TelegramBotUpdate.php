@@ -20,4 +20,3 @@ class TelegramBotUpdate extends Model
         'processed_at' => 'datetime',
     ];
 }
-

@@ -19,16 +19,16 @@ class InventoryService
         $query = Product::with(['inventory', 'category', 'brandRecord']);
 
         // Search by product name or SKU
-        if (!empty($filters['search'])) {
-            $search = '%' . strtolower(trim($filters['search'])) . '%';
+        if (! empty($filters['search'])) {
+            $search = '%'.strtolower(trim($filters['search'])).'%';
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$search])
-                  ->orWhereRaw('LOWER(sku) LIKE ?', [$search]);
+                    ->orWhereRaw('LOWER(sku) LIKE ?', [$search]);
             });
         }
 
         // Low stock filter
-        if (!empty($filters['low_stock'])) {
+        if (! empty($filters['low_stock'])) {
             $query->whereHas('inventory', function ($q) {
                 $q->whereRaw('quantity_on_hand <= (SELECT low_stock_threshold FROM products WHERE products.id = inventories.product_id)');
             });
@@ -68,8 +68,8 @@ class InventoryService
         $allowedTypes = ['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT', 'DAMAGE', 'RETURN'];
         $normalizedType = strtoupper(trim($movementType));
 
-        if (!in_array($normalizedType, $allowedTypes)) {
-            throw new InvalidArgumentException("Invalid movement type: '{$movementType}'. Allowed: " . implode(', ', $allowedTypes));
+        if (! in_array($normalizedType, $allowedTypes)) {
+            throw new InvalidArgumentException("Invalid movement type: '{$movementType}'. Allowed: ".implode(', ', $allowedTypes));
         }
 
         if ($quantityChange === 0) {
@@ -87,10 +87,11 @@ class InventoryService
             $idempotencyKey
         ) {
             // Step 8: Idempotency check to prevent duplicate adjustments
-            if (!empty($idempotencyKey)) {
+            if (! empty($idempotencyKey)) {
                 $existingMovement = InventoryMovement::where('idempotency_key', $idempotencyKey)->first();
                 if ($existingMovement) {
                     $inv = Inventory::where('product_id', $product->id)->first();
+
                     return [
                         'status' => 'idempotent_replay',
                         'inventory' => $inv,
@@ -102,7 +103,7 @@ class InventoryService
             // Step 7: Lock Inventory record for update
             $inventory = Inventory::where('product_id', $product->id)->lockForUpdate()->first();
 
-            if (!$inventory) {
+            if (! $inventory) {
                 $inventory = Inventory::create([
                     'product_id' => $product->id,
                     'quantity_on_hand' => (int) ($product->stock_quantity ?? 0),
@@ -173,4 +174,3 @@ class InventoryService
             ->paginate($perPage);
     }
 }
-
