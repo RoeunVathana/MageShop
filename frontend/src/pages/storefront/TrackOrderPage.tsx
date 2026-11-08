@@ -55,7 +55,7 @@ export function TrackOrderPage() {
         discount: 34.9,
         points_earned: 5,
         points_redeemed: 0,
-        customer_name: 'Valued TYUSHOP Customer',
+        customer_name: 'Dara Sok',
         customer_phone: '+855 12 888 999',
         delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
         driver: {
@@ -68,12 +68,12 @@ export function TrackOrderPage() {
           warehouse_lat: 11.5449,
           warehouse_lng: 104.935,
           warehouse_name: 'TYUSHOP Central Hub (Phnom Penh)',
-          current_lat: 11.5585,
-          current_lng: 104.9252,
-          dest_lat: 11.568,
-          dest_lng: 104.9185,
+          current_lat: 11.5510,
+          current_lng: 104.9315,
+          dest_lat: 11.5564,
+          dest_lng: 104.9282,
           estimated_arrival: '12 mins',
-          distance_remaining_km: 2.1,
+          distance_remaining_km: 1.2,
           speed_kmh: 34,
         },
         checkpoints: [
@@ -111,6 +111,11 @@ export function TrackOrderPage() {
 
   useEffect(() => {
     fetchTracking(activeOrderNum)
+    // Live Telemetry Polling: automatically syncs courier location when driver is delivering
+    const interval = setInterval(() => {
+      fetchTracking(activeOrderNum)
+    }, 3500)
+    return () => clearInterval(interval)
   }, [activeOrderNum])
 
   const handleConfirmCashOnArrival = async () => {
@@ -157,21 +162,67 @@ export function TrackOrderPage() {
   }, [isLiveMoving])
 
   // Interpolate live GPS coordinates from progress
-  const whLat = tracking?.gps?.warehouse_lat ?? 11.5449
-  const whLng = tracking?.gps?.warehouse_lng ?? 104.935
-  const dstLat = tracking?.gps?.dest_lat ?? 11.568
-  const dstLng = tracking?.gps?.dest_lng ?? 104.9185
+  const whLat = Number(tracking?.gps?.warehouse_lat ?? 11.5449)
+  const whLng = Number(tracking?.gps?.warehouse_lng ?? 104.935)
+  const dstLat = Number(tracking?.gps?.dest_lat ?? 11.5564)
+  const dstLng = Number(tracking?.gps?.dest_lng ?? 104.9282)
+  const backendDriverLat = tracking?.gps?.current_lat ? Number(tracking.gps.current_lat) : null
+  const backendDriverLng = tracking?.gps?.current_lng ? Number(tracking.gps.current_lng) : null
 
-  const liveLat = (whLat + ((dstLat - whLat) * routeProgress) / 100).toFixed(5)
-  const liveLng = (whLng + ((dstLng - whLng) * routeProgress) / 100).toFixed(5)
-  const remainingKm = Math.max(0.2, ((100 - routeProgress) * 0.045)).toFixed(1)
-  const etaMins = Math.max(2, Math.round((100 - routeProgress) * 0.28))
+  // If driver updated their real GPS position in backend, calculate distance and routeProgress from driver's location
+  useEffect(() => {
+    if (backendDriverLat && backendDriverLng && tracking?.status !== 'delivered') {
+      const totalDist = Math.hypot(dstLat - whLat, dstLng - whLng)
+      const currentDist = Math.hypot(dstLat - backendDriverLat, dstLng - backendDriverLng)
+      if (totalDist > 0) {
+        const computedProgress = Math.min(96, Math.max(15, Math.round((1 - currentDist / totalDist) * 100)))
+        setRouteProgress(computedProgress)
+      }
+    }
+  }, [backendDriverLat, backendDriverLng, dstLat, dstLng, whLat, whLng, tracking?.status])
+
+  const liveLat = (backendDriverLat && !isLiveMoving)
+    ? backendDriverLat.toFixed(5)
+    : (whLat + ((dstLat - whLat) * routeProgress) / 100).toFixed(5)
+  const liveLng = (backendDriverLng && !isLiveMoving)
+    ? backendDriverLng.toFixed(5)
+    : (whLng + ((dstLng - whLng) * routeProgress) / 100).toFixed(5)
+
+  const remainingKm = tracking?.gps?.distance_remaining_km ?? Math.max(0.2, ((100 - routeProgress) * 0.045)).toFixed(1)
+  const etaMins = tracking?.gps?.estimated_arrival && !tracking.gps.estimated_arrival.includes('Delivered')
+    ? tracking.gps.estimated_arrival.replace(' mins', '')
+    : Math.max(2, Math.round((100 - routeProgress) * 0.28))
 
   const minLng = (Math.min(dstLng, whLng) - 0.03).toFixed(4)
   const maxLng = (Math.max(dstLng, whLng) + 0.03).toFixed(4)
   const minLat = (Math.min(dstLat, whLat) - 0.03).toFixed(4)
   const maxLat = (Math.max(dstLat, whLat) + 0.03).toFixed(4)
   const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${dstLat}%2C${dstLng}`
+
+  const handleStepCourierForward = async () => {
+    const nextProgress = Math.min(98, routeProgress + 10)
+    setRouteProgress(nextProgress)
+    const nextLat = Number((whLat + ((dstLat - whLat) * nextProgress) / 100).toFixed(5))
+    const nextLng = Number((whLng + ((dstLng - whLng) * nextProgress) / 100).toFixed(5))
+    const nextRemaining = Math.max(0.1, ((100 - nextProgress) * 0.045)).toFixed(1)
+    const nextEta = Math.max(1, Math.round((100 - nextProgress) * 0.25)) + ' mins'
+
+    try {
+      await api.patch(`/delivery/orders/${encodeURIComponent(activeOrderNum)}/location`, {
+        current_lat: nextLat,
+        current_lng: nextLng,
+        estimated_arrival: nextEta,
+      })
+    } catch {
+      // Local fallback
+    }
+
+    toast({
+      title: '🚚 Courier Stepped Forward Along Route!',
+      description: `New Driver Position: ${nextLat}° N, ${nextLng}° E • Progress: ${nextProgress}% • ETA ~${nextEta}`,
+      type: 'info',
+    })
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -374,7 +425,7 @@ export function TrackOrderPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setRouteProgress((p) => (p >= 95 ? 25 : p + 12))}
+                  onClick={handleStepCourierForward}
                   className="rounded-xl text-xs gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-primary" /> Step Courier Forward

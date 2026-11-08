@@ -302,23 +302,60 @@ class CommerceAndTelegramSeeder extends Seeder
         $customerUser->assignRole('CUSTOMER');
 
         // 5. Seed Real Orders & Payments for Order Tracking and Receipt Testing
-        $order = Order::firstOrCreate(
+        $order = Order::updateOrCreate(
+            ['order_number' => 'ORD-20261108-8948'],
+            [
+                'user_id' => $customerUser->id,
+                'status' => 'shipped',
+                'subtotal' => 349.00,
+                'discount' => 34.90,
+                'shipping_fee' => 0.00,
+                'tax' => 0.00,
+                'total_amount' => 314.10,
+                'currency' => 'USD',
+                'payment_status' => 'paid',
+                'payment_method' => 'bakong_khqr',
+                'customer_name' => 'Dara Sok',
+                'customer_email' => 'dara.sok@tyushop.blog',
+                'customer_phone' => '+855 12 888 999',
+                'delivery_address' => 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
+                'dest_lat' => 11.5564000,
+                'dest_lng' => 104.9282000,
+                'current_lat' => 11.5510000,
+                'current_lng' => 104.9315000,
+                'driver_name' => 'Sokha Chan (TYUSHOP Express GPS Courier)',
+                'driver_phone' => '+855 12 889 900',
+                'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
+                'estimated_arrival' => '12 mins',
+                'notes' => 'Call recipient upon arrival at ground lobby.',
+            ]
+        );
+
+        Order::updateOrCreate(
             ['order_number' => 'ORD-2026-9041'],
             [
                 'user_id' => $customerUser->id,
                 'status' => 'shipped',
-                'subtotal' => 3499.00,
-                'discount' => 200.00,
+                'subtotal' => 349.00,
+                'discount' => 34.90,
                 'shipping_fee' => 0.00,
                 'tax' => 0.00,
-                'total_amount' => 3299.00,
+                'total_amount' => 314.10,
                 'currency' => 'USD',
                 'payment_status' => 'paid',
                 'payment_method' => 'bakong_khqr',
-                'customer_name' => 'Sopheap Seng',
-                'customer_email' => 'customer.tele@megacommerce.local',
-                'customer_phone' => '+85512888002',
-                'delivery_address' => '#42 Street 240, Daun Penh, Phnom Penh, Cambodia',
+                'customer_name' => 'Dara Sok',
+                'customer_email' => 'dara.sok@tyushop.blog',
+                'customer_phone' => '+855 12 888 999',
+                'delivery_address' => 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
+                'dest_lat' => 11.5564000,
+                'dest_lng' => 104.9282000,
+                'current_lat' => 11.5510000,
+                'current_lng' => 104.9315000,
+                'driver_name' => 'Sokha Chan (TYUSHOP Express GPS Courier)',
+                'driver_phone' => '+855 12 889 900',
+                'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
+                'estimated_arrival' => '12 mins',
                 'notes' => 'Call recipient upon arrival at ground lobby.',
             ]
         );

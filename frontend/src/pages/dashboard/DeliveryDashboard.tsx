@@ -24,6 +24,7 @@ import {
   Send,
   SlidersHorizontal,
   LucideIcon,
+  Sparkles,
 } from 'lucide-react'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -69,9 +70,9 @@ const CAMBODIA_LOCATION_PRESETS = [
 const DEMO_ORDERS: DeliveryOrder[] = [
   {
     id: 101,
-    order_number: 'ORD-20261108-9941',
+    order_number: 'ORD-20261108-8948',
     customer_name: 'Dara Sok',
-    customer_phone: '016 555 637',
+    customer_phone: '+855 12 888 999',
     customer_email: 'dara.sok@tyushop.blog',
     delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
     dest_lat: 11.5564,
@@ -81,7 +82,27 @@ const DEMO_ORDERS: DeliveryOrder[] = [
     status: 'shipped',
     payment_status: 'paid',
     payment_method: 'bakong_khqr',
-    total_amount: 349.0,
+    total_amount: 314.1,
+    driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
+    driver_phone: '+855 12 889 900',
+    driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
+    estimated_arrival: '12 mins',
+  },
+  {
+    id: 100,
+    order_number: 'ORD-2026-9041',
+    customer_name: 'Dara Sok',
+    customer_phone: '+855 12 888 999',
+    customer_email: 'dara.sok@tyushop.blog',
+    delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
+    dest_lat: 11.5564,
+    dest_lng: 104.9282,
+    current_lat: 11.5510,
+    current_lng: 104.9315,
+    status: 'shipped',
+    payment_status: 'paid',
+    payment_method: 'bakong_khqr',
+    total_amount: 3299.0,
     driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
     driver_phone: '+855 12 889 900',
     driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
@@ -166,6 +187,7 @@ export function DeliveryDashboard() {
   const [zoneFilter, setZoneFilter] = useState<string>('all')
   const [loading, setLoading] = useState(false)
   const [broadcastingGps, setBroadcastingGps] = useState(false)
+  const [isContinuousDelivering, setIsContinuousDelivering] = useState(false)
 
   // Location Management Modal State
   const [editingOrder, setEditingOrder] = useState<DeliveryOrder | null>(null)
@@ -361,6 +383,133 @@ export function DeliveryDashboard() {
     })
   }
 
+  // Step driver 25% closer along route to customer destination
+  const handleStepDriverCloser = async (order: DeliveryOrder) => {
+    const curLat = Number(order.current_lat ?? 11.5510)
+    const curLng = Number(order.current_lng ?? 104.9315)
+    const dLat = Number(order.dest_lat ?? 11.5564)
+    const dLng = Number(order.dest_lng ?? 104.9282)
+
+    const nextLat = Number((curLat + (dLat - curLat) * 0.25).toFixed(5))
+    const nextLng = Number((curLng + (dLng - curLng) * 0.25).toFixed(5))
+    const distRemaining = Math.max(0.1, Math.hypot(dLat - nextLat, dLng - nextLng) * 111).toFixed(1)
+    const nextEta = Math.max(2, Math.round(Number(distRemaining) * 3)) + ' mins'
+
+    try {
+      await api.patch(`/delivery/orders/${encodeURIComponent(order.order_number)}/location`, {
+        current_lat: nextLat,
+        current_lng: nextLng,
+        estimated_arrival: nextEta,
+      })
+    } catch {
+      // Offline fallback
+    }
+
+    const updated = {
+      ...order,
+      current_lat: nextLat,
+      current_lng: nextLng,
+      estimated_arrival: nextEta,
+    }
+    setOrders((prev) => prev.map((o) => (o.order_number === order.order_number ? updated : o)))
+    if (selectedOrder.order_number === order.order_number) {
+      setSelectedOrder(updated)
+    }
+
+    toast({
+      title: '🚚 Courier Stepped Forward (+250m)!',
+      description: `New Driver Coordinates: ${nextLat}° N, ${nextLng}° E • ETA ~${nextEta} (Synced to Customer Live Track)`,
+      type: 'info',
+    })
+  }
+
+  // Continuous GPS Telemetry Streaming & Driver Progression Loop
+  useEffect(() => {
+    if (!isContinuousDelivering) return
+
+    let watchId: number | null = null
+
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords
+          try {
+            await api.patch(`/delivery/orders/${encodeURIComponent(selectedOrder.order_number)}/location`, {
+              current_lat: latitude,
+              current_lng: longitude,
+            })
+            await api.post('/delivery/broadcast-gps', {
+              latitude,
+              longitude,
+              driver_name: selectedOrder.driver_name || 'TYUSHOP Express Driver',
+            })
+          } catch {
+            // Ignore offline
+          }
+          setOrders((prev) =>
+            prev.map((o) =>
+              o.order_number === selectedOrder.order_number
+                ? { ...o, current_lat: latitude, current_lng: longitude }
+                : o
+            )
+          )
+          setSelectedOrder((prev) => ({
+            ...prev,
+            current_lat: latitude,
+            current_lng: longitude,
+          }))
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 1000 }
+      )
+    }
+
+    // Auto-advance simulation loop for testing active delivering
+    const interval = setInterval(() => {
+      setSelectedOrder((current) => {
+        if (current.status === 'delivered') return current
+        const curLat = Number(current.current_lat ?? 11.5510)
+        const curLng = Number(current.current_lng ?? 104.9315)
+        const dLat = Number(current.dest_lat ?? 11.5564)
+        const dLng = Number(current.dest_lng ?? 104.9282)
+
+        const dist = Math.hypot(dLat - curLat, dLng - curLng) * 111
+        if (dist <= 0.08) {
+          handleMarkDelivered(current)
+          return { ...current, status: 'delivered', estimated_arrival: 'Delivered' }
+        }
+
+        const nextLat = Number((curLat + (dLat - curLat) * 0.12).toFixed(5))
+        const nextLng = Number((curLng + (dLng - curLng) * 0.12).toFixed(5))
+        const nextDist = Math.max(0.1, Math.hypot(dLat - nextLat, dLng - nextLng) * 111).toFixed(1)
+        const nextEta = Math.max(2, Math.round(Number(nextDist) * 3)) + ' mins'
+
+        api.patch(`/delivery/orders/${encodeURIComponent(current.order_number)}/location`, {
+          current_lat: nextLat,
+          current_lng: nextLng,
+          estimated_arrival: nextEta,
+        }).catch(() => {})
+
+        const updated = {
+          ...current,
+          current_lat: nextLat,
+          current_lng: nextLng,
+          estimated_arrival: nextEta,
+        }
+
+        setOrders((prev) => prev.map((o) => (o.order_number === current.order_number ? updated : o)))
+        return updated
+      })
+    }, 3800)
+
+    return () => {
+      if (watchId !== null && typeof window !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId)
+      }
+      clearInterval(interval)
+    }
+  }, [isContinuousDelivering, selectedOrder.order_number])
+
   // Filtered Orders List
   const filteredOrders = orders.filter((o) => {
     const q = searchQuery.toLowerCase().trim()
@@ -424,6 +573,20 @@ export function DeliveryDashboard() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setIsContinuousDelivering((prev) => !prev)}
+              className={`rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all ${
+                isContinuousDelivering
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5" />
+              {isContinuousDelivering ? '⏸ Pause Delivering Mode' : '🚀 Start Delivering Mode'}
+            </Button>
+
             <Button
               type="button"
               variant="outline"
@@ -683,6 +846,14 @@ export function DeliveryDashboard() {
                   </a>
                 </div>
 
+                {/* Active Delivering Telemetry Banner */}
+                {isContinuousDelivering && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white/40 flex items-center gap-2.5 text-xs font-bold animate-pulse pointer-events-none z-10">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span>DELIVERING ACTIVE • LIVE GPS STREAMING TO CUSTOMER</span>
+                  </div>
+                )}
+
                 {/* Warehouse Origin Pin at Bottom */}
                 <div className="absolute bottom-4 left-4 right-4 pointer-events-none flex items-center justify-between text-xs">
                   <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
@@ -709,20 +880,42 @@ export function DeliveryDashboard() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <a href={`tel:${selectedOrder.customer_phone}`}>
                     <Button size="sm" variant="outline" className="rounded-xl h-8 text-xs gap-1.5">
                       <Phone className="w-3.5 h-3.5" /> Call Customer
                     </Button>
                   </a>
                   {selectedOrder.status !== 'delivered' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleMarkDelivered(selectedOrder)}
-                      className="rounded-xl h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Mark Delivered
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStepDriverCloser(selectedOrder)}
+                        className="rounded-xl h-8 text-xs font-bold gap-1.5 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-sm"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Drive Closer (+250m)
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setIsContinuousDelivering((prev) => !prev)}
+                        className={`rounded-xl h-8 text-xs font-bold gap-1.5 shadow-sm transition-all ${
+                          isContinuousDelivering
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                      >
+                        <Truck className="w-3.5 h-3.5" />
+                        {isContinuousDelivering ? '⏸ Pause Driving' : '🛰️ Drive Telemetry'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleMarkDelivered(selectedOrder)}
+                        className="rounded-xl h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
+                      >
+                        <Check className="w-3.5 h-3.5" /> Mark Delivered
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>

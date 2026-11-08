@@ -473,8 +473,8 @@ export function CartPage() {
         customer_email: customerEmail,
         customer_phone: customerPhone,
         delivery_address: deliveryAddress,
-        dest_lat: customerCoords?.lat ?? 11.568,
-        dest_lng: customerCoords?.lng ?? 104.9185,
+        dest_lat: customerCoords?.lat ?? 11.5564,
+        dest_lng: customerCoords?.lng ?? 104.9282,
         payment_method: apiPaymentMethod,
         initiate_qr: isKhqrFlow,
       }
