@@ -29,11 +29,26 @@ class TelegramService
 
     public function __construct()
     {
-        $this->botToken = (string) Config::get('telegram.bot_token', '');
-        $this->webhookSecret = (string) Config::get('telegram.webhook_secret', '');
-        $this->miniAppUrl = (string) Config::get('telegram.mini_app_url', 'http://localhost:3000/telegram-app');
+        $dbBotToken = null;
+        $dbWebhookSecret = null;
+        $dbMiniAppUrl = null;
+        $dbAdminChatId = null;
+
+        try {
+            $dbBotToken = StoreSetting::get('telegram_bot_token');
+            $dbWebhookSecret = StoreSetting::get('telegram_webhook_secret');
+            $dbMiniAppUrl = StoreSetting::get('telegram_mini_app_url');
+            $dbAdminChatId = StoreSetting::get('telegram_admin_chat_id');
+        } catch (\Throwable $e) {
+            // Fallback to config if store_settings table is not yet initialized
+        }
+
+        $this->botToken = ! empty($dbBotToken) ? (string) $dbBotToken : (string) Config::get('telegram.bot_token', '');
+        $this->webhookSecret = ! empty($dbWebhookSecret) ? (string) $dbWebhookSecret : (string) Config::get('telegram.webhook_secret', '');
+        $this->miniAppUrl = ! empty($dbMiniAppUrl) ? (string) $dbMiniAppUrl : (string) Config::get('telegram.mini_app_url', 'https://tyushop.blog/telegram-app');
         $this->apiBaseUrl = rtrim((string) Config::get('telegram.api_base_url', 'https://api.telegram.org'), '/');
-        $this->adminChatId = Config::get('telegram.admin_chat_id') ? (int) Config::get('telegram.admin_chat_id') : null;
+        $resolvedChatId = ! empty($dbAdminChatId) ? $dbAdminChatId : Config::get('telegram.admin_chat_id');
+        $this->adminChatId = $resolvedChatId ? (int) $resolvedChatId : null;
     }
 
     /**

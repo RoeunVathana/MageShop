@@ -32,6 +32,7 @@ import {
   type SecurityUser,
   type SentOtp,
   type EmailSettings,
+  type TelegramSettings,
   type CreatedApiTokenData,
 } from '@/services/security.service'
 
@@ -51,6 +52,23 @@ export function AdminSecurityPage() {
   const [revealedToken, setRevealedToken] = useState<CreatedApiTokenData | null>(null)
   const [copiedToken, setCopiedToken] = useState(false)
   const [showPlainToken, setShowPlainToken] = useState(true)
+
+  // --- TELEGRAM BOT API TOKEN KEY & WEBHOOK STATE ---
+  const [telegramSettings, setTelegramSettings] = useState<TelegramSettings>({
+    telegram_bot_token_set: false,
+    telegram_bot_token_masked: '',
+    telegram_bot_username: 'TyuShopBot',
+    telegram_admin_chat_id: '',
+    telegram_webhook_secret: 'tyushop_sec_token_99182a',
+    telegram_mini_app_url: 'https://tyushop.blog/telegram-app',
+    telegram_webhook_url: 'https://mageshop-production.up.railway.app/api/v1/telegram/webhook',
+  })
+  const [botTokenInput, setBotTokenInput] = useState('')
+  const [showBotTokenMask, setShowBotTokenMask] = useState(false)
+  const [registerWebhookOnSave, setRegisterWebhookOnSave] = useState(true)
+  const [savingTelegram, setSavingTelegram] = useState(false)
+  const [testingTelegram, setTestingTelegram] = useState(false)
+  const [testTelegramChatId, setTestTelegramChatId] = useState('')
 
   // --- TAB 2: USER EMAIL & PASSWORD STATE ---
   const [users, setUsers] = useState<SecurityUser[]>([])
@@ -90,20 +108,84 @@ export function AdminSecurityPage() {
   const [directOtpEmail, setDirectOtpEmail] = useState('')
   const [dispatchingDirectOtp, setDispatchingDirectOtp] = useState(false)
 
-  // Fetch Tokens
+  // Fetch Tokens & Telegram Settings
   const fetchTokens = async () => {
     setTokensLoading(true)
     try {
-      const res = await securityService.getApiTokens(tokenSearch)
-      if (res.data) setTokens(res.data)
+      const [tokensRes, tgRes] = await Promise.all([
+        securityService.getApiTokens(tokenSearch),
+        securityService.getTelegramSettings().catch(() => null),
+      ])
+      if (tokensRes?.data) setTokens(tokensRes.data)
+      if (tgRes?.data) {
+        setTelegramSettings(tgRes.data)
+        if (!testTelegramChatId && tgRes.data.telegram_admin_chat_id) {
+          setTestTelegramChatId(tgRes.data.telegram_admin_chat_id)
+        }
+      }
     } catch (err: any) {
       toast({
-        title: 'Error loading API tokens',
+        title: 'Error loading Telegram & API tokens',
         description: err.response?.data?.message || err.message,
         type: 'error',
       })
     } finally {
       setTokensLoading(false)
+    }
+  }
+
+  const handleSaveTelegramSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingTelegram(true)
+    try {
+      const res = await securityService.updateTelegramSettings({
+        telegram_bot_token: botTokenInput.trim() || undefined,
+        telegram_bot_username: telegramSettings.telegram_bot_username,
+        telegram_admin_chat_id: telegramSettings.telegram_admin_chat_id,
+        telegram_webhook_secret: telegramSettings.telegram_webhook_secret,
+        telegram_mini_app_url: telegramSettings.telegram_mini_app_url,
+        telegram_webhook_url: telegramSettings.telegram_webhook_url,
+        register_webhook: registerWebhookOnSave,
+      })
+      if (res.data) {
+        setTelegramSettings(res.data)
+      }
+      setBotTokenInput('')
+      toast({
+        title: 'Telegram API Token Saved ✅',
+        description: res.message || 'Telegram Bot API Token Key & Webhook configuration updated.',
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Failed to save Telegram settings',
+        description: err.response?.data?.message || err.message,
+        type: 'error',
+      })
+    } finally {
+      setSavingTelegram(false)
+    }
+  }
+
+  const handleTestTelegramConnection = async () => {
+    setTestingTelegram(true)
+    try {
+      const res = await securityService.testTelegramBotConnection(
+        testTelegramChatId.trim() || telegramSettings.telegram_admin_chat_id || undefined
+      )
+      toast({
+        title: 'Telegram Bot Verified 🤖',
+        description: res.message || 'Telegram Bot API Token Key is valid and connected!',
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Telegram Bot Test Failed',
+        description: err.response?.data?.message || err.message,
+        type: 'error',
+      })
+    } finally {
+      setTestingTelegram(false)
     }
   }
 
@@ -399,10 +481,10 @@ export function AdminSecurityPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
               <Shield className="w-6 h-6 text-purple-500" />
-              API Tokens, Email & OTP Security
+              Manage Telegram API Token Key, Email & OTP Security
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Manage personal access tokens, developer API keys, user credentials, SMTP mailers, and 6-digit OTP codes.
+              Configure your Telegram Bot API Token Key (@BotFather), webhook URL, admin chat ID, developer API tokens, and 6-digit OTP mailers.
             </p>
           </div>
 
@@ -425,7 +507,7 @@ export function AdminSecurityPage() {
                 onClick={() => setIsCreateTokenOpen(true)}
                 className="gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white"
               >
-                <Plus className="w-3.5 h-3.5" /> Generate API Token
+                <Plus className="w-3.5 h-3.5" /> Generate Bearer Token
               </Button>
             )}
           </div>
@@ -442,9 +524,9 @@ export function AdminSecurityPage() {
             }`}
           >
             <Key className="w-4 h-4" />
-            <span>API Token Keys</span>
+            <span>Config Manage Telegram API Token Key</span>
             <Badge variant={activeTab === 'tokens' ? 'outline' : 'secondary'} className="text-[10px] ml-1">
-              {tokens.length}
+              {telegramSettings.telegram_bot_token_set ? 'ACTIVE' : 'SETUP'}
             </Badge>
           </button>
 
@@ -473,9 +555,219 @@ export function AdminSecurityPage() {
           </button>
         </div>
 
-        {/* --- TAB 1: API TOKENS --- */}
+        {/* --- TAB 1: TELEGRAM API TOKEN KEY & BEARER TOKENS --- */}
         {activeTab === 'tokens' && (
           <div className="space-y-6">
+            {/* Telegram Bot API Token Key & Webhook Configuration */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2 border-purple-500/30 shadow-md">
+                <CardHeader className="pb-3 border-b bg-purple-500/5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <Key className="w-4 h-4 text-purple-600" />
+                        Configure & Manage Telegram Bot API Token Key
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        Connect your Telegram Bot token from <strong>@BotFather</strong> to power 6-digit OTP password recovery, order notifications, and the TYUSHOP Telegram Mini App.
+                      </CardDescription>
+                    </div>
+                    <Badge
+                      className={
+                        telegramSettings.telegram_bot_token_set
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-0'
+                      }
+                    >
+                      {telegramSettings.telegram_bot_token_set ? 'TOKEN CONFIGURED' : 'NOT SET'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="pt-4">
+                  <form onSubmit={handleSaveTelegramSettings} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-foreground">
+                          Telegram Bot API Token Key (from @BotFather) *
+                        </label>
+                        {telegramSettings.telegram_bot_token_masked && (
+                          <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                            Active: {telegramSettings.telegram_bot_token_masked}
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative flex items-center">
+                        <input
+                          type={showBotTokenMask ? 'text' : 'password'}
+                          value={botTokenInput}
+                          onChange={(e) => setBotTokenInput(e.target.value)}
+                          placeholder={
+                            telegramSettings.telegram_bot_token_set
+                              ? '•••••••••••••••••••••••••••• (Leave blank to keep current Bot Token)'
+                              : 'e.g. 7812345678:AAH1234567890abcdefghijklmnopqrstuv'
+                          }
+                          className="w-full pl-3 pr-10 py-2 text-xs font-mono rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowBotTokenMask(!showBotTokenMask)}
+                          className="absolute right-3 text-muted-foreground hover:text-foreground"
+                        >
+                          {showBotTokenMask ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">Bot Username (@)</label>
+                        <input
+                          type="text"
+                          value={telegramSettings.telegram_bot_username}
+                          onChange={(e) =>
+                            setTelegramSettings({ ...telegramSettings, telegram_bot_username: e.target.value })
+                          }
+                          placeholder="TyuShopBot"
+                          className="w-full px-3 py-2 text-xs rounded-lg border bg-background text-foreground"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">Admin Telegram Chat ID</label>
+                        <input
+                          type="text"
+                          value={telegramSettings.telegram_admin_chat_id}
+                          onChange={(e) =>
+                            setTelegramSettings({ ...telegramSettings, telegram_admin_chat_id: e.target.value })
+                          }
+                          placeholder="e.g. 123456789"
+                          className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">Webhook Endpoint URL</label>
+                        <input
+                          type="url"
+                          value={telegramSettings.telegram_webhook_url}
+                          onChange={(e) =>
+                            setTelegramSettings({ ...telegramSettings, telegram_webhook_url: e.target.value })
+                          }
+                          placeholder="https://mageshop-production.up.railway.app/api/v1/telegram/webhook"
+                          className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-foreground">Telegram Mini App URL</label>
+                        <input
+                          type="url"
+                          value={telegramSettings.telegram_mini_app_url}
+                          onChange={(e) =>
+                            setTelegramSettings({ ...telegramSettings, telegram_mini_app_url: e.target.value })
+                          }
+                          placeholder="https://tyushop.blog/telegram-app"
+                          className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-foreground">Webhook Secret Token</label>
+                      <input
+                        type="text"
+                        value={telegramSettings.telegram_webhook_secret}
+                        onChange={(e) =>
+                          setTelegramSettings({ ...telegramSettings, telegram_webhook_secret: e.target.value })
+                        }
+                        placeholder="tyushop_sec_token_99182a"
+                        className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t">
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={registerWebhookOnSave}
+                          onChange={(e) => setRegisterWebhookOnSave(e.target.checked)}
+                          className="rounded border-input text-purple-600 focus:ring-purple-500"
+                        />
+                        <span>Automatically register Telegram Webhook URL on save</span>
+                      </label>
+
+                      <Button
+                        type="submit"
+                        disabled={savingTelegram}
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs gap-1.5"
+                      >
+                        {savingTelegram ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving Token...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Save Telegram API Token Key
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Live Telegram Bot & OTP Verification Card */}
+              <Card className="border-emerald-500/30 shadow-md flex flex-col justify-between">
+                <CardHeader className="pb-3 border-b bg-emerald-500/5">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Send className="w-4 h-4 text-emerald-500" />
+                    Test Telegram Bot & OTP
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    Verify your Telegram Bot API Token Key with <code>getMe</code> and dispatch a live 6-digit test OTP message to Telegram.
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="pt-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">
+                      Target Telegram Chat ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={testTelegramChatId}
+                      onChange={(e) => setTestTelegramChatId(e.target.value)}
+                      placeholder={telegramSettings.telegram_admin_chat_id || 'Enter your Telegram Chat ID...'}
+                      className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Send <code>/start</code> to your bot first, then enter your Chat ID to receive a live test 6-digit OTP on Telegram.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleTestTelegramConnection}
+                    disabled={testingTelegram}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
+                  >
+                    {testingTelegram ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Testing Telegram API...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" /> Test Bot Token & Send OTP
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* One-Time Token Reveal Banner */}
             {revealedToken && (
               <Card className="border-purple-500 bg-purple-500/10 text-foreground relative overflow-hidden">

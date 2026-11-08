@@ -89,6 +89,27 @@ export interface UpdateEmailSettingsPayload {
   mail_from_name?: string
 }
 
+export interface TelegramSettings {
+  telegram_bot_token_set: boolean
+  telegram_bot_token_masked: string
+  telegram_bot_username: string
+  telegram_admin_chat_id: string
+  telegram_webhook_secret: string
+  telegram_mini_app_url: string
+  telegram_webhook_url: string
+  webhook_status?: string | null
+}
+
+export interface UpdateTelegramSettingsPayload {
+  telegram_bot_token?: string
+  telegram_bot_username?: string
+  telegram_admin_chat_id?: string
+  telegram_webhook_secret?: string
+  telegram_mini_app_url?: string
+  telegram_webhook_url?: string
+  register_webhook?: boolean
+}
+
 export const securityService = {
   // API Token Management
   getApiTokens: async (search?: string): Promise<ApiResponse<ApiToken[]>> => {
@@ -158,6 +179,21 @@ export const securityService = {
   sendTestEmailOtp: async (testEmail: string): Promise<ApiResponse<{ recipient: string; timestamp: string }>> => {
     return api.post<ApiResponse<{ recipient: string; timestamp: string }>>('/admin/security/email-settings/test-otp', {
       test_email: testEmail,
+    })
+  },
+
+  // Telegram Bot API Token Key & Webhook Configuration
+  getTelegramSettings: async (): Promise<ApiResponse<TelegramSettings>> => {
+    return api.get<ApiResponse<TelegramSettings>>('/admin/security/telegram-settings')
+  },
+
+  updateTelegramSettings: async (payload: UpdateTelegramSettingsPayload): Promise<ApiResponse<TelegramSettings>> => {
+    return api.patch<ApiResponse<TelegramSettings>>('/admin/security/telegram-settings', payload)
+  },
+
+  testTelegramBotConnection: async (chatId?: string): Promise<ApiResponse<{ bot_username: string; bot_name: string; message_sent: boolean; chat_id: string }>> => {
+    return api.post<ApiResponse<{ bot_username: string; bot_name: string; message_sent: boolean; chat_id: string }>>('/admin/security/telegram-settings/test', {
+      chat_id: chatId,
     })
   },
 }

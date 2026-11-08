@@ -10,6 +10,8 @@ use App\Services\Auth\PasswordResetOtpService;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -416,6 +418,168 @@ class EmailPasswordOtpController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to send test email: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Telegram Bot API Token Key & Webhook configuration.
+     */
+    public function getTelegramSettings(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $rawToken = (string) StoreSetting::get('telegram_bot_token', config('telegram.bot_token', ''));
+        $maskedToken = '';
+        if (strlen($rawToken) > 12) {
+            $maskedToken = substr($rawToken, 0, 9).'...'.substr($rawToken, -5);
+        } elseif (! empty($rawToken)) {
+            $maskedToken = '********';
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'telegram_bot_token_set' => ! empty($rawToken),
+                'telegram_bot_token_masked' => $maskedToken,
+                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', config('telegram.bot_username', 'TyuShopBot')),
+                'telegram_admin_chat_id' => (string) StoreSetting::get('telegram_admin_chat_id', config('telegram.admin_chat_id', '')),
+                'telegram_webhook_secret' => (string) StoreSetting::get('telegram_webhook_secret', config('telegram.webhook_secret', 'tyushop_sec_token_99182a')),
+                'telegram_mini_app_url' => (string) StoreSetting::get('telegram_mini_app_url', config('telegram.mini_app_url', 'https://tyushop.blog/telegram-app')),
+                'telegram_webhook_url' => (string) StoreSetting::get('telegram_webhook_url', rtrim(config('app.url', 'https://mageshop-production.up.railway.app'), '/').'/api/v1/telegram/webhook'),
+            ],
+        ]);
+    }
+
+    /**
+     * Update Telegram Bot API Token Key & Webhook configuration.
+     */
+    public function updateTelegramSettings(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'telegram_bot_token' => ['nullable', 'string', 'max:255'],
+            'telegram_bot_username' => ['nullable', 'string', 'max:100'],
+            'telegram_admin_chat_id' => ['nullable', 'string', 'max:100'],
+            'telegram_webhook_secret' => ['nullable', 'string', 'max:255'],
+            'telegram_mini_app_url' => ['nullable', 'url', 'max:255'],
+            'telegram_webhook_url' => ['nullable', 'url', 'max:255'],
+            'register_webhook' => ['nullable', 'boolean'],
+        ]);
+
+        foreach (['telegram_bot_token', 'telegram_bot_username', 'telegram_admin_chat_id', 'telegram_webhook_secret', 'telegram_mini_app_url', 'telegram_webhook_url'] as $key) {
+            if (array_key_exists($key, $validated) && $validated[$key] !== null && $validated[$key] !== '') {
+                StoreSetting::set($key, trim((string) $validated[$key]));
+            }
+        }
+
+        $activeToken = (string) StoreSetting::get('telegram_bot_token', config('telegram.bot_token', ''));
+        $webhookUrl = (string) StoreSetting::get('telegram_webhook_url', rtrim(config('app.url', 'https://mageshop-production.up.railway.app'), '/').'/api/v1/telegram/webhook');
+        $webhookSecret = (string) StoreSetting::get('telegram_webhook_secret', config('telegram.webhook_secret', ''));
+
+        Config::set('telegram.bot_token', $activeToken);
+        Config::set('telegram.webhook_secret', $webhookSecret);
+
+        $webhookStatus = null;
+        if (! empty($validated['register_webhook']) && ! empty($activeToken) && ! empty($webhookUrl)) {
+            try {
+                $resp = Http::timeout(8)->post("https://api.telegram.org/bot{$activeToken}/setWebhook", [
+                    'url' => $webhookUrl,
+                    'secret_token' => $webhookSecret,
+                ]);
+                $webhookStatus = $resp->json('description', $resp->successful() ? 'Webhook registered' : 'Webhook registration failed');
+            } catch (\Throwable $e) {
+                $webhookStatus = 'Webhook request error: '.$e->getMessage();
+            }
+        }
+
+        SecurityLogService::log('ADMIN_UPDATED_TELEGRAM_SETTINGS', $request->user()->id, [
+            'bot_username' => StoreSetting::get('telegram_bot_username'),
+            'webhook_status' => $webhookStatus,
+        ]);
+
+        $maskedToken = strlen($activeToken) > 12 ? substr($activeToken, 0, 9).'...'.substr($activeToken, -5) : (! empty($activeToken) ? '********' : '');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $webhookStatus ? "Telegram API Token saved ({$webhookStatus})." : 'Telegram API Token & Bot configuration saved successfully.',
+            'data' => [
+                'telegram_bot_token_set' => ! empty($activeToken),
+                'telegram_bot_token_masked' => $maskedToken,
+                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', 'TyuShopBot'),
+                'telegram_admin_chat_id' => (string) StoreSetting::get('telegram_admin_chat_id', ''),
+                'telegram_webhook_secret' => $webhookSecret,
+                'telegram_mini_app_url' => (string) StoreSetting::get('telegram_mini_app_url', 'https://tyushop.blog/telegram-app'),
+                'telegram_webhook_url' => $webhookUrl,
+                'webhook_status' => $webhookStatus,
+            ],
+        ]);
+    }
+
+    /**
+     * Test Telegram Bot API Token Key & send a live 6-digit OTP / test message to a Telegram Chat ID.
+     */
+    public function testTelegramBotConnection(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'chat_id' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $activeToken = (string) StoreSetting::get('telegram_bot_token', config('telegram.bot_token', ''));
+        if (empty($activeToken)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Telegram Bot API Token Key is not configured yet. Please enter and save your Bot Token from @BotFather first.',
+            ], 422);
+        }
+
+        $targetChatId = ! empty($validated['chat_id'])
+            ? trim($validated['chat_id'])
+            : (string) StoreSetting::get('telegram_admin_chat_id', config('telegram.admin_chat_id', ''));
+
+        try {
+            $meResp = Http::timeout(8)->get("https://api.telegram.org/bot{$activeToken}/getMe");
+            if (! $meResp->successful() || ! $meResp->json('ok')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Telegram API rejected token: '.($meResp->json('description') ?? 'Invalid Bot Token'),
+                ], 422);
+            }
+
+            $botInfo = $meResp->json('result', []);
+            $botUsername = $botInfo['username'] ?? 'UnknownBot';
+            $botName = $botInfo['first_name'] ?? 'TYUSHOP Bot';
+
+            $messageSent = false;
+            if (! empty($targetChatId)) {
+                $testOtp = (string) random_int(100000, 999999);
+                $msgResp = Http::timeout(8)->post("https://api.telegram.org/bot{$activeToken}/sendMessage", [
+                    'chat_id' => $targetChatId,
+                    'parse_mode' => 'Markdown',
+                    'text' => "✅ *TYUSHOP Telegram API Token Verified!*\n\nBot: *@{$botUsername}* ({$botName})\nSample 6-Digit OTP: *{$testOtp}*\nTime: ".now()->toIso8601String(),
+                ]);
+                $messageSent = $msgResp->successful() && $msgResp->json('ok');
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $messageSent
+                    ? "Connected to @{$botUsername} ({$botName}) & sent live test OTP message to Chat ID {$targetChatId}!"
+                    : "Telegram API Token verified! Connected to @{$botUsername} ({$botName}).",
+                'data' => [
+                    'bot_username' => $botUsername,
+                    'bot_name' => $botName,
+                    'message_sent' => $messageSent,
+                    'chat_id' => $targetChatId,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Telegram connection test failed: '.$e->getMessage(),
             ], 500);
         }
     }

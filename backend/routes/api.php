@@ -172,6 +172,11 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
         Route::get('/email-settings', [EmailPasswordOtpController::class, 'getEmailSettings']);
         Route::patch('/email-settings', [EmailPasswordOtpController::class, 'updateEmailSettings']);
         Route::post('/email-settings/test-otp', [EmailPasswordOtpController::class, 'sendTestEmailOtp']);
+
+        // Telegram Bot API Token Key & Webhook Configuration
+        Route::get('/telegram-settings', [EmailPasswordOtpController::class, 'getTelegramSettings']);
+        Route::patch('/telegram-settings', [EmailPasswordOtpController::class, 'updateTelegramSettings']);
+        Route::post('/telegram-settings/test', [EmailPasswordOtpController::class, 'testTelegramBotConnection']);
     });
 });
 
