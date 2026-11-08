@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Banner;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
 class BannerSeeder extends Seeder
 {
@@ -68,11 +69,14 @@ class BannerSeeder extends Seeder
         ];
 
         foreach ($banners as $data) {
-            Banner::firstOrCreate(
-                ['title' => $data['title'], 'placement' => $data['placement']],
-                $data
-            );
+            try {
+                Banner::firstOrCreate(
+                    ['title' => $data['title'], 'placement' => $data['placement']],
+                    $data
+                );
+            } catch (\Throwable $e) {
+                Log::warning("BannerSeeder skipped record [{$data['title']}]: {$e->getMessage()}");
+            }
         }
     }
 }
-

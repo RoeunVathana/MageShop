@@ -65,4 +65,3 @@ class Banner extends Model
         return $query->where('placement', $placement);
     }
 }
-

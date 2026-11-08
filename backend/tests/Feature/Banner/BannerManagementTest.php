@@ -227,4 +227,3 @@ class BannerManagementTest extends TestCase
         $this->assertDatabaseMissing('banners', ['id' => $banner->id]);
     }
 }
-
