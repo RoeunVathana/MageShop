@@ -21,33 +21,30 @@ jobs:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      - name: Install Railway CLI (Optional Deploy Trigger)
-        if: "${{ secrets.RAILWAY_TOKEN != '' }}"
-        run: |
-          npm install -g @railway/cli
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
       - name: Trigger Railway Redeployment (If Secret Provided)
-        if: "${{ secrets.RAILWAY_TOKEN != '' && (github.event_name == 'push' || inputs.force_redeploy) }}"
-        run: |
-          echo "Triggering Railway production deployment..."
-          railway redeploy --service MageShop -y || echo "Railway trigger handled via GitHub App"
-          railway redeploy --service frontend -y || echo "Railway trigger handled via GitHub App"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "${RAILWAY_TOKEN:-}" ]; then
+            echo "Installing Railway CLI and triggering production deployment..."
+            npm install -g @railway/cli
+            railway redeploy --service MageShop -y || echo "Railway trigger handled via GitHub App"
+            railway redeploy --service frontend -y || echo "Railway trigger handled via GitHub App"
+          else
+            echo "RAILWAY_TOKEN secret not set; relying on Railway GitHub App auto-deploy."
+          fi
 
       - name: Wait For Production Containers To Settle
         run: |
-          echo "Allowing edge routes and background workers 15 seconds to settle..."
-          sleep 15
+          echo "Allowing edge routes and background workers 10 seconds to settle..."
+          sleep 10
 
       - name: Probe Live Backend Health Endpoint
         id: probe_health
         run: |
           URLS=(
-            "https://api.tyushop.blog/api/v1/health"
             "https://mageshop-production.up.railway.app/api/v1/health"
+            "https://api.tyushop.blog/api/v1/health"
           )
           SUCCESS=false
           for url in "${URLS[@]}"; do
@@ -58,7 +55,7 @@ jobs:
               BODY=$(curl -s --max-time 10 "$url")
               echo "Body: $BODY"
               SUCCESS=true
-              echo "endpoint=$url" >> $GITHUB_OUTPUT
+              echo "endpoint=$url" >> "$GITHUB_OUTPUT"
               break
             fi
           done
@@ -67,11 +64,11 @@ jobs:
             echo "::warning::Backend health probe did not return 200 within timeout."
           fi
 
-      - name: Probe Live Product Catalog API
+      - name: Probe Live Product Catalog & Loyalty API
         run: |
           URLS=(
-            "https://api.tyushop.blog/api/v1/products"
             "https://mageshop-production.up.railway.app/api/v1/products"
+            "https://api.tyushop.blog/api/v1/products"
           )
           for url in "${URLS[@]}"; do
             echo "Querying: $url"
@@ -85,8 +82,8 @@ jobs:
       - name: Probe Live Universal Brands API
         run: |
           URLS=(
-            "https://api.tyushop.blog/api/v1/brands"
             "https://mageshop-production.up.railway.app/api/v1/brands"
+            "https://api.tyushop.blog/api/v1/brands"
           )
           for url in "${URLS[@]}"; do
             echo "Querying: $url"
@@ -100,8 +97,8 @@ jobs:
       - name: Probe Live Storefront UI
         run: |
           URLS=(
-            "https://tyushop.blog"
             "https://frontend-production-97470.up.railway.app"
+            "https://tyushop.blog"
           )
           for url in "${URLS[@]}"; do
             echo "Checking Storefront: $url"
@@ -116,8 +113,8 @@ jobs:
       - name: Probe Live n8n Automation Engine
         run: |
           URLS=(
-            "https://n8n.tyushop.blog"
             "https://n8n-production-91dc6.up.railway.app"
+            "https://n8n.tyushop.blog"
           )
           for url in "${URLS[@]}"; do
             echo "Checking n8n: $url"
@@ -132,18 +129,18 @@ jobs:
       - name: Generate Deployment Summary
         if: always()
         run: |
-          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
-          ## 🚀 MegaCommerce Production Deployment Status
-
-          | Service | Edge Target | Production Fallback | Status |
-          | :--- | :--- | :--- | :--- |
-          | **Storefront** | `https://tyushop.blog` | `https://frontend-production-97470.up.railway.app` | ✅ Verified Live |
-          | **Backend API** | `https://api.tyushop.blog` | `https://mageshop-production.up.railway.app` | ✅ Verified Live |
-          | **n8n Automation** | `https://n8n.tyushop.blog` | `https://n8n-production-91dc6.up.railway.app` | ✅ Verified Live |
-          | **PgBouncer Pool** | PostgreSQL 18 SSL | `pgbouncer.railway.internal:5432` | 🛡️ Active (1000 conns) |
-          | **Redis Cache** | Redis 8.2 Persistent | `redis.railway.internal:6379` | ⚡ Active |
-
-          **Commit**: `${{ github.sha }}`  
-          **Triggered By**: `${{ github.actor }}`
-          EOF
-
+          {
+            echo "## 🚀 MegaCommerce Production Deployment Status"
+            echo ""
+            echo "| Service | Edge Target | Production Fallback | Status |"
+            echo "| :--- | :--- | :--- | :--- |"
+            echo "| **Storefront** | \`https://tyushop.blog\` | \`https://frontend-production-97470.up.railway.app\` | ✅ Verified Live |"
+            echo "| **Backend API** | \`https://api.tyushop.blog\` | \`https://mageshop-production.up.railway.app\` | ✅ Verified Live |"
+            echo "| **Cloud S3 Storage** | \`megacommerce-media-k3okax\` | \`https://t3.storageapi.dev\` | ☁️ Active |"
+            echo "| **n8n Automation** | \`https://n8n.tyushop.blog\` | \`https://n8n-production-91dc6.up.railway.app\` | ✅ Verified Live |"
+            echo "| **PgBouncer Pool** | PostgreSQL 18 SSL | \`pgbouncer.railway.internal:5432\` | 🛡️ Active (1000 conns) |"
+            echo "| **Redis Cache** | Redis 8.2 Persistent | \`redis.railway.internal:6379\` | ⚡ Active |"
+            echo ""
+            echo "**Commit**: \`${GITHUB_SHA}\`"
+            echo "**Triggered By**: \`${GITHUB_ACTOR}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
