@@ -5,6 +5,7 @@ import { Header } from './Header'
 import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 import { MobileMenu } from './MobileMenu'
+import { SupportWidget } from '@/components/storefront/SupportWidget'
 
 export function StorefrontLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -36,6 +37,9 @@ export function StorefrontLayout() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Floating 24/7 Customer Supporter Widget */}
+      <SupportWidget />
     </div>
   )
 }

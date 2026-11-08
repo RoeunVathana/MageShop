@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\BannerController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\CommerceEngagementController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
@@ -178,7 +179,20 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
 Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/orders/{order}/resend-receipt', [ReceiptController::class, 'resend']);
+    Route::post('/admin/dns/porkbun-configure', [CommerceEngagementController::class, 'configurePorkbunDns']);
 });
+
+// Discounts, Loyalty Points (5 pts/buy, 100 pts = free item <= $30), Cart Checkout, GPS Tracking, Wishlist & Supporter
+Route::get('/coupons', [CommerceEngagementController::class, 'coupons']);
+Route::post('/coupons/validate', [CommerceEngagementController::class, 'validateCoupon']);
+Route::get('/loyalty/summary', [CommerceEngagementController::class, 'loyaltySummary']);
+Route::post('/loyalty/redeem-free-item', [CommerceEngagementController::class, 'redeemFreeItem']);
+Route::post('/orders/checkout', [CommerceEngagementController::class, 'checkout']);
+Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 'trackOrder']);
+Route::get('/wishlist', [CommerceEngagementController::class, 'wishlist']);
+Route::post('/wishlist/toggle', [CommerceEngagementController::class, 'toggleWishlist']);
+Route::post('/support/tickets', [CommerceEngagementController::class, 'createSupportTicket']);
+Route::post('/support/chat', [CommerceEngagementController::class, 'supporterChat']);
 
 // Telegram Bot Webhook & Mini App API
 Route::prefix('telegram')->group(function () {

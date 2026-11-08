@@ -26,6 +26,7 @@ class User extends Authenticatable
         'email',
         'phone_number',
         'status',
+        'loyalty_points',
         'password',
         'email_verified_at',
         'phone_verified_at',

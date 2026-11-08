@@ -146,3 +146,4 @@ done
 echo "incident=$INCIDENT" >> "${GITHUB_OUTPUT:-/dev/null}"
 echo "healthy=$OVERALL_OK" >> "${GITHUB_OUTPUT:-/dev/null}"
 $OVERALL_OK
+

@@ -18,6 +18,10 @@ class Order extends Model
         'status',
         'subtotal',
         'discount',
+        'coupon_code',
+        'points_earned',
+        'points_redeemed',
+        'free_reward_product_id',
         'shipping_fee',
         'tax',
         'total_amount',
@@ -29,6 +33,14 @@ class Order extends Model
         'customer_phone',
         'delivery_address',
         'notes',
+        'driver_name',
+        'driver_phone',
+        'driver_vehicle',
+        'current_lat',
+        'current_lng',
+        'dest_lat',
+        'dest_lng',
+        'estimated_arrival',
     ];
 
     protected $casts = [

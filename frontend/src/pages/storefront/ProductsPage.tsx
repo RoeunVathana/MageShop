@@ -15,11 +15,16 @@ import {
   Check,
   RefreshCw,
   ShoppingBag,
+  Heart,
+  ShoppingCart,
+  Gift,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
@@ -29,6 +34,8 @@ import type { Brand } from '@/types/brand.types'
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { toast } = useToast()
+  const { addToCart, toggleFavorite, isFavorite } = useShopEngagement()
 
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -502,6 +509,11 @@ export function ProductsPage() {
                               {p.category.name}
                             </Badge>
                           )}
+                          {(p.discount_price ? p.discount_price <= 30 : p.selling_price <= 30) && (
+                            <Badge className="bg-emerald-600/95 text-white text-[10px] backdrop-blur font-semibold gap-1">
+                              <Gift className="w-3 h-3" /> 100-Pt Free Eligible
+                            </Badge>
+                          )}
                           {isVariable && (
                             <Badge className="bg-purple-600/90 text-white text-[10px] backdrop-blur font-medium">
                               Options Available
@@ -513,6 +525,38 @@ export function ProductsPage() {
                             </Badge>
                           )}
                         </div>
+
+                        {/* Heart Favorite Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const effPrice = p.discount_price && p.discount_price > 0 ? p.discount_price : p.selling_price
+                            const liked = toggleFavorite({
+                              id: p.id,
+                              slug: p.slug || String(p.id),
+                              name: p.name,
+                              price: effPrice,
+                              originalPrice: p.discount_price ? p.selling_price : undefined,
+                              image: p.image_url || '',
+                              vendor: p.brand || 'MegaCommerce Official',
+                            })
+                            toast({
+                              title: liked ? '❤️ Added to Favorites!' : 'Removed from Favorites',
+                              description: p.name,
+                              type: liked ? 'success' : 'info',
+                            })
+                          }}
+                          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:scale-110 transition-transform shadow-sm cursor-pointer"
+                          title="Like / Save to Favorites"
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${
+                              isFavorite(p.id) ? 'text-rose-500 fill-rose-500' : 'text-muted-foreground'
+                            }`}
+                          />
+                        </button>
 
                         {/* Stock status overlay badge */}
                         <div className="absolute bottom-2.5 right-2.5">
@@ -561,15 +605,35 @@ export function ProductsPage() {
                     </div>
 
                     {/* Card Footer Action */}
-                    <div className="p-4 pt-0">
-                      <Link to={`/products/${p.slug || p.id}`} className="w-full block">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                        >
+                    <div className="p-4 pt-0 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={isOutOfStock}
+                        onClick={() => {
+                          const effPrice = p.discount_price && p.discount_price > 0 ? p.discount_price : p.selling_price
+                          addToCart({
+                            id: p.id,
+                            slug: p.slug || String(p.id),
+                            name: p.name,
+                            price: effPrice,
+                            originalPrice: p.discount_price ? p.selling_price : undefined,
+                            image: p.image_url || '',
+                            vendor: p.brand || 'MegaCommerce Official',
+                          })
+                          toast({
+                            title: '🛒 Added to Cart!',
+                            description: `${p.name} added to your shopping cart (+5 Loyalty Pts on checkout).`,
+                            type: 'success',
+                          })
+                        }}
+                        className="flex-1 text-xs font-semibold gap-1.5"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        Add to Cart
+                      </Button>
+                      <Link to={`/products/${p.slug || p.id}`}>
+                        <Button variant="outline" size="sm" className="text-xs font-semibold px-2.5" title="View Details">
                           <Eye className="w-3.5 h-3.5" />
-                          View Details
                         </Button>
                       </Link>
                     </div>

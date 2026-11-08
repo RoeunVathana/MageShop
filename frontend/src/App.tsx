@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/context/ThemeProvider'
+import { ShopEngagementProvider } from '@/context/ShopEngagementContext'
 import { ToastProvider } from '@/components/ui/toast'
 
 // Layouts
@@ -14,6 +15,7 @@ import { CategoriesPage } from '@/pages/storefront/CategoriesPage'
 import { BrandsPage } from '@/pages/storefront/BrandsPage'
 import { CartPage } from '@/pages/storefront/CartPage'
 import { WishlistPage } from '@/pages/storefront/WishlistPage'
+import { TrackOrderPage } from '@/pages/storefront/TrackOrderPage'
 import { AboutPage } from '@/pages/storefront/AboutPage'
 import { ContactPage } from '@/pages/storefront/ContactPage'
 import { FaqPage } from '@/pages/storefront/FaqPage'
@@ -73,27 +75,30 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="megacommerce-theme">
-        <ToastProvider>
-          <Router>
-            <Routes>
-              {/* Official Telegram Mini App Interface */}
-              <Route path="/telegram-app" element={<TelegramApp />} />
-              <Route path="/telegram" element={<Navigate to="/telegram-app" replace />} />
+        <ShopEngagementProvider>
+          <ToastProvider>
+            <Router>
+              <Routes>
+                {/* Official Telegram Mini App Interface */}
+                <Route path="/telegram-app" element={<TelegramApp />} />
+                <Route path="/telegram" element={<Navigate to="/telegram-app" replace />} />
 
-              {/* Storefront Layout Routes */}
-              <Route element={<StorefrontLayout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/products/:slug" element={<ProductDetailPage />} />
-                <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/brands" element={<BrandsPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FaqPage />} />
-                <Route path="/diagnostics" element={<DiagnosticsPage />} />
-              </Route>
+                {/* Storefront Layout Routes */}
+                <Route element={<StorefrontLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/products/:slug" element={<ProductDetailPage />} />
+                  <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/brands" element={<BrandsPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/track-order" element={<TrackOrderPage />} />
+                  <Route path="/track-order/:orderNumber" element={<TrackOrderPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FaqPage />} />
+                  <Route path="/diagnostics" element={<DiagnosticsPage />} />
+                </Route>
 
               {/* Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
@@ -139,7 +144,8 @@ export default function App() {
             </Routes>
           </Router>
         </ToastProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+      </ShopEngagementProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
   )
 }

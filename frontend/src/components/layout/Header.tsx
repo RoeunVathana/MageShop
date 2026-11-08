@@ -12,11 +12,14 @@ import {
   LayoutDashboard,
   LogOut,
   SlidersHorizontal,
+  Award,
+  Truck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 interface HeaderProps {
   onToggleMobileMenu: () => void
@@ -27,6 +30,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAccountOpen, setIsAccountOpen] = useState(false)
   const navigate = useNavigate()
+  const { cartCount, favoritesCount, loyaltyPoints } = useShopEngagement()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,14 +80,32 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </form>
 
-        {/* Right: Actions (Wishlist, Cart, Account, Theme Toggle) */}
+        {/* Right: Actions (Loyalty Points, Track GPS, Wishlist, Cart, Account, Theme Toggle) */}
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Loyalty Points Pill */}
+          <Link
+            to="/cart"
+            title="Earn +5 pts per buy! 100 pts = Free Item under $20-$30"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold hover:bg-amber-500/25 transition-colors"
+          >
+            <Award className="h-3.5 w-3.5 text-amber-500" />
+            <span>{loyaltyPoints} pts</span>
+          </Link>
+
+          {/* Live GPS Delivery Tracker Link */}
+          <Link to="/track-order">
+            <Button variant="ghost" size="icon" className="relative rounded-full" title="Real-Time GPS Delivery Tracker">
+              <Truck className="h-5 w-5 text-muted-foreground hover:text-emerald-500 transition-colors" />
+              <span className="sr-only">Track Delivery</span>
+            </Button>
+          </Link>
+
           {/* Wishlist Link */}
           <Link to="/wishlist">
-            <Button variant="ghost" size="icon" className="relative rounded-full" title="Wishlist">
+            <Button variant="ghost" size="icon" className="relative rounded-full" title="Customer Favorites">
               <Heart className="h-5 w-5 text-muted-foreground hover:text-rose-500 transition-colors" />
               <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center">
-                2
+                {favoritesCount}
               </span>
               <span className="sr-only">Wishlist</span>
             </Button>
@@ -91,10 +113,10 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
 
           {/* Cart Link */}
           <Link to="/cart">
-            <Button variant="ghost" size="icon" className="relative rounded-full" title="Cart">
+            <Button variant="ghost" size="icon" className="relative rounded-full" title="Shopping Cart">
               <ShoppingCart className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
               <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                3
+                {cartCount}
               </span>
               <span className="sr-only">Shopping Cart</span>
             </Button>

@@ -22,10 +22,11 @@ export function Navbar() {
     { label: 'All Products', path: '/products' },
     { label: 'Categories', path: '/categories' },
     { label: 'Brands', path: '/brands' },
+    { label: 'Track Live Delivery', path: '/track-order', isHighlight: true },
     { label: 'About Us', path: '/about' },
-    { label: 'Contact', path: '/contact' },
+    { label: 'Contact & Supporter', path: '/contact' },
     { label: 'FAQ', path: '/faq' },
-    { label: 'API Diagnostics', path: '/diagnostics', isHighlight: true },
+    { label: 'API Diagnostics', path: '/diagnostics' },
   ]
 
   const featuredCategories = [
