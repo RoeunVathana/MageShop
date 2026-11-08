@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Logo } from '@/components/ui/logo'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address format'),
@@ -83,10 +84,8 @@ export function LoginPage() {
       </div>
       <Card className="max-w-md w-full shadow-xl border">
         <CardHeader className="space-y-2 text-center pb-6">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
+          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto" aria-label="MegaCommerce Home">
+            <Logo size="lg" showText={false} />
           </Link>
           <CardTitle className="text-2xl font-black tracking-tight">Sign In to MegaCommerce</CardTitle>
           <CardDescription className="text-xs">

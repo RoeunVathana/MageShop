@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Logo } from '@/components/ui/logo'
 
 interface HeaderProps {
   onToggleMobileMenu: () => void
@@ -49,18 +50,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-indigo-600 flex items-center justify-center text-white shadow-md shadow-primary/20 group-hover:scale-105 transition-transform">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-xl tracking-tight leading-none bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                MEGA<span className="text-primary">COMMERCE</span>
-              </span>
-              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Multi-Vendor
-              </span>
-            </div>
+          <Link to="/" aria-label="MegaCommerce Home">
+            <Logo size="md" subtitle="Multi-Vendor" />
           </Link>
         </div>
 

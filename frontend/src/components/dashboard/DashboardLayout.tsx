@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useToast } from '@/components/ui/toast'
+import { Logo } from '@/components/ui/logo'
 import { cn } from '@/lib/utils'
 
 export interface NavItem {
@@ -69,13 +70,8 @@ export function DashboardLayout({
       <aside className="hidden lg:flex flex-col w-64 border-r bg-card z-30 shrink-0">
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-6 border-b">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-black text-sm">
-              M
-            </div>
-            <span className="font-extrabold text-base tracking-tight">
-              MEGA<span className="text-primary">COMMERCE</span>
-            </span>
+          <Link to="/" aria-label="MegaCommerce Home">
+            <Logo size="sm" subtitle="WORKSPACE" />
           </Link>
         </div>
 
@@ -149,7 +145,9 @@ export function DashboardLayout({
           />
           <div className="relative w-64 bg-card h-full shadow-2xl flex flex-col p-4 z-10 animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between pb-3 border-b">
-              <span className="font-extrabold text-sm text-primary">MEGACOMMERCE</span>
+              <Link to="/" aria-label="MegaCommerce Home">
+                <Logo size="sm" subtitle="WORKSPACE" />
+              </Link>
               <Button
                 variant="ghost"
                 size="icon"

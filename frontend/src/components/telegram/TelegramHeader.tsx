@@ -29,8 +29,18 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
       <div className="flex items-center justify-between">
         {/* Brand & Store Name */}
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm ring-1 ring-indigo-400/30">
-            <Store className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm ring-1 ring-primary/30 shrink-0 bg-background flex items-center justify-center">
+            <img
+              src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
+              alt="MegaCommerce Logo"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.currentTarget
+                if (target.src.indexOf('logo.jpg') === -1) {
+                  target.src = '/logo.jpg'
+                }
+              }}
+            />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">

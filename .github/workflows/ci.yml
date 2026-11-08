@@ -154,3 +154,4 @@ jobs:
           file: frontend/Dockerfile
           push: false
           tags: megacommerce-frontend:ci-test
+

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Logo } from '@/components/ui/logo'
 
 export function Footer() {
   return (
@@ -63,13 +64,8 @@ export function Footer() {
       <div className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-8">
         {/* Brand & Mission */}
         <div className="md:col-span-2 space-y-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
-            <span className="font-extrabold text-xl tracking-tight">
-              MEGA<span className="text-primary">COMMERCE</span>
-            </span>
+          <Link to="/" aria-label="MegaCommerce Home">
+            <Logo size="md" subtitle="Flagship Enterprise Platform" />
           </Link>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
             MegaCommerce is a modern multi-vendor e-commerce platform connecting buyers with verified sellers, powered by high-performance Laravel and React architecture.
