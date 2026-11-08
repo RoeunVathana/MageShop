@@ -26,11 +26,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import type { Product, ProductVariantItem } from '@/types/product.types'
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { toast } = useToast()
+  const { addToCart, toggleFavorite, isFavorite } = useShopEngagement()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantItem | null>(null)
@@ -81,19 +83,46 @@ export function ProductDetailPage() {
     const itemTitle = selectedVariant
       ? `${product.name} (${selectedVariant.name})`
       : product.name
+    const itemPrice = selectedVariant ? selectedVariant.selling_price : product.selling_price
+
+    addToCart(
+      {
+        id: product.id,
+        slug: product.slug || String(product.id),
+        name: itemTitle,
+        price: itemPrice,
+        originalPrice: product.discount_price || undefined,
+        image: activeImage || product.image_url || '',
+        vendor: product.brand || 'MegaCommerce',
+      },
+      quantity
+    )
 
     toast({
-      title: 'Added to Shopping Cart',
-      description: `Added ${quantity}x "${itemTitle}" to your cart.`,
+      title: 'Added to Shopping Cart 🛒',
+      description: `Added ${quantity}x "${itemTitle}" to your cart (+5 Loyalty Points on checkout).`,
       type: 'success',
     })
   }
 
   const handleWishlist = () => {
     if (!product) return
+    const liked = isFavorite(product.id)
+    toggleFavorite({
+      id: product.id,
+      slug: product.slug || String(product.id),
+      name: product.name,
+      price: product.selling_price,
+      originalPrice: product.discount_price || undefined,
+      image: activeImage || product.image_url || '',
+      vendor: product.brand || 'MegaCommerce',
+      category: product.category?.name || 'Universal',
+    })
     toast({
-      title: 'Saved to Wishlist',
-      description: `"${product.name}" saved to your personal wishlist.`,
+      title: liked ? 'Removed from Favorites' : 'Saved to Favorites ❤️',
+      description: liked
+        ? `"${product.name}" removed from your favorite items.`
+        : `"${product.name}" saved to your customer favorites list.`,
       type: 'info',
     })
   }
@@ -343,16 +372,35 @@ export function ProductDetailPage() {
                 className="flex-1 rounded-xl gap-2 font-semibold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <ShoppingCart className="w-4 h-4" />
-                {isOutOfStock ? 'Currently Out of Stock' : 'Add to Shopping Cart'}
+                {isOutOfStock ? 'Currently Out of Stock' : 'Add to Shopping Cart (+5 Pts)'}
               </Button>
               <Button
                 size="lg"
-                variant="outline"
+                variant={isFavorite(product.id) ? 'default' : 'outline'}
                 onClick={handleWishlist}
-                className="rounded-xl gap-2"
+                className={`rounded-xl gap-2 ${
+                  isFavorite(product.id) ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-500' : ''
+                }`}
               >
-                <Heart className="w-4 h-4" /> Wishlist
+                <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
+                {isFavorite(product.id) ? 'Liked ❤️' : 'Favorite'}
               </Button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span>
+                🎁 Earn <strong>+5 Points</strong> per order •{' '}
+                {currentPrice <= 30 ? (
+                  <strong className="text-emerald-600 dark:text-emerald-400">
+                    Eligible for 100-Point FREE Redemption!
+                  </strong>
+                ) : (
+                  'Collect 100 points to redeem any item ≤$30 FREE.'
+                )}
+              </span>
+              <Link to="/track-order" className="font-bold text-primary hover:underline">
+                Live GPS Delivery Track →
+              </Link>
             </div>
           </div>
 
