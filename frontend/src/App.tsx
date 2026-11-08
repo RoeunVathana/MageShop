@@ -57,6 +57,9 @@ import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
 // Slide Banner Administration
 import { BannerListPage } from '@/pages/admin/BannerListPage'
 
+// Team & User Directory Administration
+import { UserDirectoryPage } from '@/pages/admin/UserDirectoryPage'
+
 // Telegram Mini App
 import { TelegramApp } from '@/pages/telegram/TelegramApp'
 
@@ -141,6 +144,10 @@ export default function App() {
 
               {/* Slide Banner Management (Admin Only) */}
               <Route path="/admin/banners" element={<AdminOnlyRoute><BannerListPage /></AdminOnlyRoute>} />
+
+              {/* Team Members & User Directory (Admin Only) */}
+              <Route path="/dashboard/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
+              <Route path="/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -152,6 +152,8 @@ Route::prefix('admin')->group(function () {
     Route::prefix('security')->group(function () {
         // Users & Credentials
         Route::get('/users', [EmailPasswordOtpController::class, 'indexUsers']);
+        Route::post('/users', [EmailPasswordOtpController::class, 'storeUser']);
+        Route::delete('/users/{user}', [EmailPasswordOtpController::class, 'deleteUser']);
         Route::patch('/users/{user}/email', [EmailPasswordOtpController::class, 'updateEmail']);
         Route::patch('/users/{user}/password', [EmailPasswordOtpController::class, 'updatePassword']);
         Route::post('/users/{user}/send-otp', [EmailPasswordOtpController::class, 'sendUserOtp']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PasswordResetOtp;
+use App\Models\Role;
 use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\Auth\PasswordResetOtpService;
@@ -11,6 +12,7 @@ use App\Services\Security\SecurityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -84,6 +86,90 @@ class EmailPasswordOtpController extends Controller
                 'last_page' => $users->lastPage(),
                 'per_page' => $users->perPage(),
             ],
+        ]);
+    }
+
+    /**
+     * Store new user / member directly by Administrator.
+     */
+    public function storeUser(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone_number' => ['nullable', 'string', 'max:50'],
+            'password' => ['nullable', 'string', 'min:8'],
+            'status' => ['nullable', 'string', 'in:active,inactive,pending,suspended'],
+            'role' => ['nullable', 'string'],
+        ]);
+
+        $user = User::create([
+            'name' => trim($validated['name']),
+            'email' => strtolower(trim($validated['email'])),
+            'phone_number' => $validated['phone_number'] ?? null,
+            'password' => Hash::make($validated['password'] ?? 'Tyushop@2026!'),
+            'status' => $validated['status'] ?? 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        if (!empty($validated['role'])) {
+            $role = Role::where('slug', $validated['role'])->orWhere('name', $validated['role'])->first();
+            if ($role) {
+                $user->roles()->syncWithoutDetaching([$role->id]);
+            }
+        }
+
+        $actorId = $request->user() ? $request->user()->id : $user->id;
+        SecurityLogService::log('ADMIN_USER_CREATED', $actorId, [
+            'created_user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Member {$user->name} created successfully.",
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'status' => $user->status,
+                'created_at' => $user->created_at->toIso8601String(),
+                'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name, 'slug' => $r->slug]),
+            ],
+        ], 201);
+    }
+
+    /**
+     * Delete user by Administrator.
+     */
+    public function deleteUser(Request $request, User $user): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $currentUserId = $request->user() ? $request->user()->id : null;
+        if ($currentUserId && $user->id === $currentUserId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You cannot delete your own account.',
+            ], 422);
+        }
+
+        $userId = $user->id;
+        $userName = $user->name;
+        $user->roles()->detach();
+        $user->delete();
+
+        SecurityLogService::log('ADMIN_USER_DELETED', $currentUserId ?? 1, [
+            'deleted_user_id' => $userId,
+            'name' => $userName,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "User {$userName} has been removed.",
         ]);
     }
 
