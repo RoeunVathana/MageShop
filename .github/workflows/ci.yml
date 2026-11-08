@@ -154,6 +154,8 @@ jobs:
           context: .
           file: backend/Dockerfile
           push: false
+          build-args: |
+            COMPOSER_AUTH={"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}
           tags: megacommerce-backend:ci-test
 
       - name: Validate Frontend Docker Build

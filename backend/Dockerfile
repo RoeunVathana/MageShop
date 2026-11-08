@@ -22,10 +22,13 @@ COPY . /app/
 
 RUN if [ -d "/app/backend" ]; then cp -r /app/backend/* /app/ && rm -rf /app/backend /app/frontend; fi
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
 RUN mkdir -p /app/storage/framework/cache /app/storage/framework/sessions /app/storage/framework/views /app/bootstrap/cache && \
     chmod -R 777 /app/storage /app/bootstrap/cache
+
+ARG COMPOSER_AUTH=""
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
 
 ENV PORT=8000
 EXPOSE 8000
