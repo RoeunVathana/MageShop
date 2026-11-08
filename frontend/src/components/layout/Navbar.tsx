@@ -12,30 +12,32 @@ import {
   HeartPulse,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function Navbar() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const location = useLocation()
+  const { t } = useShopEngagement()
 
   const navLinks = [
-    { label: 'Home', path: '/' },
-    { label: 'All Products', path: '/products' },
-    { label: 'Categories', path: '/categories' },
-    { label: 'Brands', path: '/brands' },
-    { label: 'Track Live Delivery', path: '/track-order', isHighlight: true },
-    { label: 'About Us', path: '/about' },
-    { label: 'Contact & Supporter', path: '/contact' },
-    { label: 'FAQ', path: '/faq' },
-    { label: 'API Diagnostics', path: '/diagnostics' },
+    { label: t('Home', 'ទំព័រដើម'), path: '/' },
+    { label: t('All Products', 'ផលិតផលទាំងអស់'), path: '/products' },
+    { label: t('Categories', 'ប្រភេទទំនិញ'), path: '/categories' },
+    { label: t('Brands', 'ម៉ាកយីហោ'), path: '/brands' },
+    { label: t('Track Live Delivery', 'តាមដានការដឹកជញ្ជូន GPS'), path: '/track-order', isHighlight: true },
+    { label: t('About Us', 'អំពីយើង'), path: '/about' },
+    { label: t('Contact & Supporter', 'ទំនាក់ទំនងជំនួយ'), path: '/contact' },
+    { label: t('FAQ', 'សំណួរញឹកញាប់'), path: '/faq' },
+    { label: t('API Diagnostics', 'ពិនិត្យប្រព័ន្ធ API'), path: '/diagnostics' },
   ]
 
   const featuredCategories = [
-    { name: 'Electronics & Gadgets', icon: Laptop, count: '1,420 items', slug: 'electronics' },
-    { name: 'Fashion & Apparel', icon: Shirt, count: '3,850 items', slug: 'fashion' },
-    { name: 'Home & Kitchen Appliances', icon: Home, count: '890 items', slug: 'home-kitchen' },
-    { name: 'Smartphones & Tablets', icon: Smartphone, count: '640 items', slug: 'phones' },
-    { name: 'Wearables & Smartwatches', icon: Watch, count: '310 items', slug: 'wearables' },
-    { name: 'Health & Beauty', icon: HeartPulse, count: '1,120 items', slug: 'beauty' },
+    { name: t('Electronics & Gadgets', 'គ្រឿងអេឡិចត្រូនិក'), icon: Laptop, count: '1,420 items', slug: 'electronics' },
+    { name: t('Fashion & Apparel', 'សម្លៀកបំពាក់ និងម៉ូដ'), icon: Shirt, count: '3,850 items', slug: 'fashion' },
+    { name: t('Home & Kitchen Appliances', 'សម្ភារៈផ្ទះបាយ និងគេហដ្ឋាន'), icon: Home, count: '890 items', slug: 'home-kitchen' },
+    { name: t('Smartphones & Tablets', 'ទូរស័ព្ទ និងថេប្លេត'), icon: Smartphone, count: '640 items', slug: 'phones' },
+    { name: t('Wearables & Smartwatches', 'នាឡិកាឆ្លាតវៃ'), icon: Watch, count: '310 items', slug: 'wearables' },
+    { name: t('Health & Beauty', 'សុខភាព និងសម្រស់'), icon: HeartPulse, count: '1,120 items', slug: 'beauty' },
   ]
 
   return (
@@ -49,7 +51,7 @@ export function Navbar() {
             className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors rounded-t-md"
           >
             <LayoutGrid className="w-4 h-4" />
-            <span>All Categories</span>
+            <span>{t('All Categories', 'ប្រភេទទំនិញទាំងអស់')}</span>
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isCategoryOpen && 'rotate-180')} />
           </button>
 
@@ -112,9 +114,9 @@ export function Navbar() {
 
         {/* Right: Vendor Callout */}
         <div className="text-xs text-muted-foreground">
-          <span>Sell on MegaCommerce? </span>
+          <span>{t('Sell on TyuShop? ', 'ចង់លក់ទំនិញលើ TyuShop? ')}</span>
           <Link to="/register" className="text-primary font-semibold hover:underline">
-            Join as Seller
+            {t('Join as Seller', 'ចុះឈ្មោះជាអ្នកលក់')}
           </Link>
         </div>
       </div>

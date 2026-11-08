@@ -30,7 +30,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAccountOpen, setIsAccountOpen] = useState(false)
   const navigate = useNavigate()
-  const { cartCount, favoritesCount, loyaltyPoints } = useShopEngagement()
+  const { cartCount, favoritesCount, loyaltyPoints, t } = useShopEngagement()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,7 +55,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </Button>
 
           <Link to="/" aria-label="MegaCommerce Home">
-            <Logo size="md" subtitle="Multi-Vendor" />
+            <Logo size="md" subtitle={t('Multi-Vendor', 'ផ្សារទំនើបអនឡាញ')} />
           </Link>
         </div>
 
@@ -64,7 +64,10 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           <div className="relative w-full flex items-center">
             <Input
               type="text"
-              placeholder="Search across 50,000+ products, categories, or vendors..."
+              placeholder={t(
+                'Search across 50,000+ products, categories, or vendors...',
+                'ស្វែងរកផលិតផល ប្រភេទទំនិញ ឬហាងលក់ទំនិញ...'
+              )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-24 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-primary shadow-inner"
@@ -75,7 +78,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               size="sm"
               className="absolute right-1 rounded-full h-8 px-4 text-xs font-semibold"
             >
-              Search
+              {t('Search', 'ស្វែងរក')}
             </Button>
           </div>
         </form>
@@ -89,7 +92,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold hover:bg-amber-500/25 transition-colors"
           >
             <Award className="h-3.5 w-3.5 text-amber-500" />
-            <span>{loyaltyPoints} pts</span>
+            <span>{loyaltyPoints} {t('pts', 'ពិន្ទុ')}</span>
           </Link>
 
           {/* Live GPS Delivery Tracker Link */}
@@ -136,7 +139,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <UserIcon className="w-3.5 h-3.5" />
               </div>
-              <span className="hidden lg:inline text-xs font-semibold">Account</span>
+              <span className="hidden lg:inline text-xs font-semibold">{t('Account', 'គណនី')}</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </Button>
 
@@ -148,13 +151,13 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 />
                 <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border bg-card p-2 text-card-foreground shadow-xl z-50 animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b">
-                    <p className="text-xs font-medium text-muted-foreground">Welcome to MegaCommerce</p>
-                    <p className="text-sm font-semibold truncate">Phase 1 Foundation</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t('Welcome to TyuShop', 'សូមស្វាគមន៍មកកាន់ TyuShop')}</p>
+                    <p className="text-sm font-semibold truncate">{t('Multi-Vendor Marketplace', 'ផ្សារទំនើបអនឡាញ')}</p>
                   </div>
 
                   <div className="py-1">
                     <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                      Authentication
+                      {t('Authentication', 'ការចូលប្រើប្រាស់')}
                     </div>
                     <Link
                       to="/login"
@@ -162,7 +165,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                       className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                     >
                       <UserIcon className="w-3.5 h-3.5 text-primary" />
-                      <span>Sign In</span>
+                      <span>{t('Sign In', 'ចូលគណនី')}</span>
                     </Link>
                     <Link
                       to="/register"
@@ -170,7 +173,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                       className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                     >
                       <UserIcon className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Create Free Account</span>
+                      <span>{t('Create Free Account', 'បង្កើតគណនីថ្មី')}</span>
                     </Link>
                   </div>
 

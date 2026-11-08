@@ -75,6 +75,14 @@ interface ShopEngagementContextType {
   // Recent Tracked Orders
   recentOrders: string[]
   addRecentOrder: (orderNum: string) => void
+
+  // Language (EN / KM) & Currency (USD / KHR)
+  language: 'EN' | 'KM'
+  setLanguage: (lang: 'EN' | 'KM') => void
+  t: (en: string, km: string) => string
+  currency: 'USD' | 'KHR'
+  setCurrency: (curr: 'USD' | 'KHR') => void
+  formatPrice: (usdAmount: number) => string
 }
 
 const DEFAULT_CART: CartItem[] = [
@@ -221,6 +229,58 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     }
   })
 
+  const [language, setLanguageState] = useState<'EN' | 'KM'>(() => {
+    try {
+      const saved = localStorage.getItem('megacommerce_language')
+      return saved === 'KM' ? 'KM' : 'EN'
+    } catch {
+      return 'EN'
+    }
+  })
+
+  const [currency, setCurrencyState] = useState<'USD' | 'KHR'>(() => {
+    try {
+      const saved = localStorage.getItem('megacommerce_currency')
+      return saved === 'KHR' ? 'KHR' : 'USD'
+    } catch {
+      return 'USD'
+    }
+  })
+
+  const setLanguage = (lang: 'EN' | 'KM') => {
+    setLanguageState(lang)
+    try {
+      localStorage.setItem('megacommerce_language', lang)
+      document.documentElement.lang = lang === 'KM' ? 'km' : 'en'
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  const setCurrency = (curr: 'USD' | 'KHR') => {
+    setCurrencyState(curr)
+    try {
+      localStorage.setItem('megacommerce_currency', curr)
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'KM' ? 'km' : 'en'
+  }, [language])
+
+  const t = (en: string, km: string): string => (language === 'KM' ? km : en)
+
+  const formatPrice = (usdAmount: number): string => {
+    const safeUsd = Number(usdAmount || 0)
+    if (currency === 'KHR') {
+      const khrAmount = Math.round((safeUsd * 4100) / 100) * 100
+      return `${khrAmount.toLocaleString()} ៛`
+    }
+    return `$${safeUsd.toFixed(2)}`
+  }
+
   useEffect(() => {
     localStorage.setItem('megacommerce_cart', JSON.stringify(cartItems))
   }, [cartItems])
@@ -334,6 +394,12 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         setAppliedCoupon,
         recentOrders,
         addRecentOrder,
+        language,
+        setLanguage,
+        t,
+        currency,
+        setCurrency,
+        formatPrice,
       }}
     >
       {children}

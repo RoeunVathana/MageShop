@@ -34,18 +34,18 @@ import { useToast } from '@/components/ui/toast'
 import type { Product } from '@/types/product.types'
 
 const quickDepartments = [
-  { name: 'Electronics & Computers', slug: 'electronics-computers', icon: Laptop, color: 'text-blue-500' },
-  { name: 'Mobile Phones & Accessories', slug: 'mobile-phones-accessories', icon: Smartphone, color: 'text-emerald-500' },
-  { name: 'Fashion & Clothing', slug: 'fashion-clothing', icon: Shirt, color: 'text-purple-500' },
-  { name: 'Beauty & Personal Care', slug: 'beauty-personal-care', icon: BeautyIcon, color: 'text-pink-500' },
-  { name: 'Home & Living', slug: 'home-living', icon: HomeIcon, color: 'text-amber-500' },
-  { name: 'Groceries & Food', slug: 'groceries-food', icon: Apple, color: 'text-red-500' },
+  { name: 'Electronics & Computers', nameKm: 'គ្រឿងអេឡិចត្រូនិក និងកុំព្យូទ័រ', slug: 'electronics-computers', icon: Laptop, color: 'text-blue-500' },
+  { name: 'Mobile Phones & Accessories', nameKm: 'ទូរស័ព្ទ និងគ្រឿងបន្លាស់', slug: 'mobile-phones-accessories', icon: Smartphone, color: 'text-emerald-500' },
+  { name: 'Fashion & Clothing', nameKm: 'សម្លៀកបំពាក់ និងម៉ូដ', slug: 'fashion-clothing', icon: Shirt, color: 'text-purple-500' },
+  { name: 'Beauty & Personal Care', nameKm: 'គ្រឿងសម្អាង និងសម្រស់', slug: 'beauty-personal-care', icon: BeautyIcon, color: 'text-pink-500' },
+  { name: 'Home & Living', nameKm: 'សម្ភារៈគេហដ្ឋាន', slug: 'home-living', icon: HomeIcon, color: 'text-amber-500' },
+  { name: 'Groceries & Food', nameKm: 'គ្រឿងទេស និងអាហារ', slug: 'groceries-food', icon: Apple, color: 'text-red-500' },
 ]
 
 export function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(true)
-  const { addToCart, toggleFavorite, isFavorite, loyaltyPoints, favoritesCount } = useShopEngagement()
+  const { addToCart, toggleFavorite, isFavorite, loyaltyPoints, favoritesCount, t, formatPrice } = useShopEngagement()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -79,13 +79,16 @@ export function HomePage() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">Live GPS Delivery Track</h3>
+                <h3 className="text-xs font-black">{t('Live GPS Delivery Track', 'តាមដានការដឹកជញ្ជូន GPS ផ្ទាល់')}</h3>
                 <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[9px] px-1.5 py-0">
                   REALTIME
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                Watch your driver&apos;s live map coordinates, route progress &amp; ETA in real time.
+                {t(
+                  "Watch your driver's live map coordinates, route progress & ETA in real time.",
+                  'មើលទីតាំងអ្នកដឹកជញ្ជូនផ្ទាល់លើផែនទី និងពេលវេលាមកដល់ជាក់ស្តែង។'
+                )}
               </p>
             </div>
           </Link>
@@ -99,13 +102,16 @@ export function HomePage() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">100 Pts = Free Item &le;$30</h3>
+                <h3 className="text-xs font-black">{t('100 Pts = Free Item ≤$30', '១០០ ពិន្ទុ = ទំនិញឥតគិតថ្លៃ ≤$30')}</h3>
                 <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-0 text-[9px] px-1.5 py-0">
                   {loyaltyPoints} PTS
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                Earn <strong>+5 points</strong> every purchase! Exchange 100 points for any product &le;$30 FREE.
+                {t(
+                  'Earn +5 points every purchase! Exchange 100 points for any product ≤$30 FREE.',
+                  'ទទួលបាន +5 ពិន្ទុរាល់ការទិញ! ប្តូរ ១០០ ពិន្ទុយកទំនិញតម្លៃ ≤$30 ដោយឥតគិតថ្លៃ។'
+                )}
               </p>
             </div>
           </Link>
@@ -119,13 +125,16 @@ export function HomePage() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">Customer Favorites &amp; Likes</h3>
+                <h3 className="text-xs font-black">{t('Customer Favorites & Likes', 'ទំនិញពេញចិត្ត (Favorites)')}</h3>
                 <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-0 text-[9px] px-1.5 py-0">
                   {favoritesCount} SAVED
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                Save items you love with one click and move them straight to your shopping cart.
+                {t(
+                  'Save items you love with one click and move them straight to your shopping cart.',
+                  'រក្សាទុកទំនិញដែលអ្នកពេញចិត្ត ហើយដាក់ចូលកន្ត្រកទិញទំនិញបានភ្លាមៗ។'
+                )}
               </p>
             </div>
           </Link>
@@ -139,13 +148,16 @@ export function HomePage() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">24/7 Supporter &amp; Coupons</h3>
+                <h3 className="text-xs font-black">{t('24/7 Supporter & Coupons', 'ជំនួយ 24/7 និងគូប៉ុងបញ្ចុះតម្លៃ')}</h3>
                 <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border-0 text-[9px] px-1.5 py-0">
                   WELCOME10
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                Instant AI &amp; human support plus promo codes (<code>WELCOME10</code>, <code>SAVE20</code>, <code>KHQR5</code>).
+                {t(
+                  'Instant AI & human support plus promo codes (WELCOME10, SAVE20, KHQR5).',
+                  'ជំនួយអតិថិជនរហ័ស និងកូដបញ្ចុះតម្លៃពិសេស (WELCOME10, SAVE20, KHQR5)។'
+                )}
               </p>
             </div>
           </Link>
@@ -155,9 +167,9 @@ export function HomePage() {
       {/* Quick Departments Carousel / Grid */}
       <section className="container mx-auto px-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight">Popular Departments</h2>
+          <h2 className="text-xl font-bold tracking-tight">{t('Popular Departments', 'ផ្នែកទំនិញពេញនិយម')}</h2>
           <Link to="/categories" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-            All 26 Departments <ArrowRight className="w-3.5 h-3.5" />
+            {t('All 26 Departments', 'មើលប្រភេទទាំងអស់')} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
@@ -173,8 +185,8 @@ export function HomePage() {
                 <div className={`p-3 rounded-full bg-muted group-hover:scale-110 transition-transform ${dept.color}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold mt-2 text-foreground line-clamp-1">{dept.name}</span>
-                <span className="text-[10px] text-muted-foreground">Department</span>
+                <span className="text-xs font-bold mt-2 text-foreground line-clamp-1">{t(dept.name, dept.nameKm)}</span>
+                <span className="text-[10px] text-muted-foreground">{t('Department', 'ផ្នែកទំនិញ')}</span>
               </Link>
             )
           })}
@@ -228,13 +240,16 @@ export function HomePage() {
       <section className="container mx-auto px-4 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Live Marketplace Catalog</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{t('Live Marketplace Catalog', 'បញ្ជីផលិតផលផ្ទាល់ពីស្តុក')}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Real catalog items synchronized with PostgreSQL — click the heart to save favorites or add directly to cart.
+              {t(
+                'Real catalog items synchronized with PostgreSQL — click the heart to save favorites or add directly to cart.',
+                'ផលិតផលក្នុងស្តុកជាក់ស្តែង — ចុចរូបបេះដូងដើម្បីរក្សាទុក ឬដាក់ចូលកន្ត្រកទិញទំនិញផ្ទាល់។'
+              )}
             </p>
           </div>
           <Link to="/products" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-            View All Products <ArrowRight className="w-3.5 h-3.5" />
+            {t('View All Products', 'មើលផលិតផលទាំងអស់')} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
@@ -329,10 +344,12 @@ export function HomePage() {
 
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-lg font-black text-foreground">
-                          ${p.selling_price.toFixed(2)}
+                          {formatPrice(p.selling_price)}
                         </span>
                         <span className="text-[11px] text-muted-foreground font-mono">
-                          {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}
+                          {p.stock_quantity > 0
+                            ? `${p.stock_quantity} ${t('in stock', 'មានក្នុងស្តុក')}`
+                            : t('Out of stock', 'អស់ពីស្តុក')}
                         </span>
                       </div>
                     </CardContent>
@@ -356,14 +373,14 @@ export function HomePage() {
                           1
                         )
                         toast({
-                          title: 'Added to Cart 🛒',
-                          description: `${p.name} added to your cart (+5 Loyalty Points on checkout).`,
+                          title: t('Added to Cart 🛒', 'បានដាក់ចូលកន្ត្រក 🛒'),
+                          description: `${p.name} (+5 Loyalty Points).`,
                           type: 'success',
                         })
                       }}
                       className="flex-1 text-xs gap-1.5 font-semibold"
                     >
-                      <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
+                      <ShoppingCart className="w-3.5 h-3.5" /> {t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}
                     </Button>
                     <Link to={`/products/${p.slug || p.id}`}>
                       <Button size="sm" variant="outline" className="text-xs px-2.5" title="View Product Details">

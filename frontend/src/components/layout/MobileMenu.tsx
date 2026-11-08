@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -22,17 +23,19 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+  const { language, setLanguage, currency, setCurrency, t } = useShopEngagement()
+
   if (!isOpen) return null
 
   const links = [
-    { label: 'Home', path: '/', icon: Home },
-    { label: 'All Products', path: '/products', icon: ShoppingBag },
-    { label: 'Categories', path: '/categories', icon: Grid },
-    { label: 'Brands', path: '/brands', icon: Tag },
-    { label: 'About Us', path: '/about', icon: Info },
-    { label: 'Contact', path: '/contact', icon: Mail },
-    { label: 'FAQ', path: '/faq', icon: HelpCircle },
-    { label: 'API Diagnostics', path: '/diagnostics', icon: Activity, highlight: true },
+    { label: t('Home', 'ទំព័រដើម'), path: '/', icon: Home },
+    { label: t('All Products', 'ផលិតផលទាំងអស់'), path: '/products', icon: ShoppingBag },
+    { label: t('Categories', 'ប្រភេទទំនិញ'), path: '/categories', icon: Grid },
+    { label: t('Brands', 'ម៉ាកយីហោ'), path: '/brands', icon: Tag },
+    { label: t('About Us', 'អំពីយើង'), path: '/about', icon: Info },
+    { label: t('Contact', 'ទំនាក់ទំនងជំនួយ'), path: '/contact', icon: Mail },
+    { label: t('FAQ', 'សំណួរញឹកញាប់'), path: '/faq', icon: HelpCircle },
+    { label: t('API Diagnostics', 'ពិនិត្យប្រព័ន្ធ API'), path: '/diagnostics', icon: Activity, highlight: true },
   ]
 
   const dashboards = [
@@ -68,14 +71,58 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <div className="grid grid-cols-2 gap-2 my-4">
           <Link to="/login" onClick={onClose}>
             <Button variant="outline" size="sm" className="w-full text-xs flex items-center gap-1.5">
-              <LogIn className="w-3.5 h-3.5" /> Sign In
+              <LogIn className="w-3.5 h-3.5" /> {t('Sign In', 'ចូលគណនី')}
             </Button>
           </Link>
           <Link to="/register" onClick={onClose}>
             <Button size="sm" className="w-full text-xs flex items-center gap-1.5">
-              <UserPlus className="w-3.5 h-3.5" /> Register
+              <UserPlus className="w-3.5 h-3.5" /> {t('Register', 'ចុះឈ្មោះ')}
             </Button>
           </Link>
+        </div>
+
+        {/* Language & Currency Quick Switcher */}
+        <div className="grid grid-cols-2 gap-2 mb-3 p-2 rounded-lg bg-muted/50 border text-xs">
+          <div className="flex rounded-md overflow-hidden border">
+            <button
+              type="button"
+              onClick={() => setLanguage('EN')}
+              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
+                language === 'EN' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('KM')}
+              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
+                language === 'KM' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              }`}
+            >
+              ខ្មែរ
+            </button>
+          </div>
+          <div className="flex rounded-md overflow-hidden border">
+            <button
+              type="button"
+              onClick={() => setCurrency('USD')}
+              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
+                currency === 'USD' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              }`}
+            >
+              USD $
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrency('KHR')}
+              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
+                currency === 'KHR' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              }`}
+            >
+              KHR ៛
+            </button>
+          </div>
         </div>
 
         {/* Primary Navigation */}
