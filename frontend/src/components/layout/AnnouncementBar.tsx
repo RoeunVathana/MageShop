@@ -1,10 +1,11 @@
 import { Sparkles, Phone, Globe, ChevronDown, Check } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
 
 export function AnnouncementBar() {
-  const { language, setLanguage, currency, setCurrency, t } = useShopEngagement()
+  const { language, setLanguage, currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
   const { toast } = useToast()
   const [langOpen, setLangOpen] = useState(false)
   const [currOpen, setCurrOpen] = useState(false)
@@ -41,11 +42,17 @@ export function AnnouncementBar() {
     setCurrency(nextCurr)
     setCurrOpen(false)
     toast({
-      title: nextCurr === 'KHR' ? 'រូបិយប័ណ្ណ៖ ប្រាក់រៀល KHR (៛)' : 'Currency: US Dollar ($)',
+      title:
+        nextCurr === 'KHR'
+          ? t('Currency: Khmer Riel KHR (៛)', 'រូបិយប័ណ្ណ៖ ប្រាក់រៀល KHR (៛)')
+          : t('Currency: US Dollar ($)', 'រូបិយប័ណ្ណ៖ ដុល្លារអាមេរិក ($)'),
       description:
         nextCurr === 'KHR'
-          ? 'តម្លៃទំនិញត្រូវបានបង្ហាញជាប្រាក់រៀល (១ ដុល្លារ ≈ ៤,១០០ ៛)។'
-          : 'Product prices are now displayed in USD ($).',
+          ? t(
+              `Product prices are now displayed in Khmer Riel (1 USD = ${usdToKhrRate.toLocaleString()} ៛).`,
+              `តម្លៃទំនិញត្រូវបានបង្ហាញជាប្រាក់រៀល (១ ដុល្លារ = ${usdToKhrRate.toLocaleString()} ៛)។`
+            )
+          : t('Product prices are now displayed in USD ($).', 'តម្លៃទំនិញត្រូវបានបង្ហាញជាប្រាក់ដុល្លារ ($)។'),
       type: 'info',
     })
   }
@@ -151,28 +158,45 @@ export function AnnouncementBar() {
               </button>
 
               {currOpen && (
-                <div className="absolute right-0 top-full pt-1 z-50 min-w-28">
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 text-slate-200 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectCurrency('USD')}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
-                        currency === 'USD' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
-                      }`}
+                <div className="absolute right-0 top-full pt-1 z-50 min-w-36">
+                  <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 text-slate-200 overflow-hidden text-xs">
+                    {(allowedCurrencies === 'BOTH' || allowedCurrencies === 'USD_ONLY') && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCurrency('USD')}
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
+                          currency === 'USD' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
+                        }`}
+                      >
+                        <span>USD ($)</span>
+                        {currency === 'USD' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </button>
+                    )}
+
+                    {(allowedCurrencies === 'BOTH' || allowedCurrencies === 'KHR_ONLY') && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCurrency('KHR')}
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
+                          currency === 'KHR' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
+                        }`}
+                      >
+                        <span>KHR (៛)</span>
+                        {currency === 'KHR' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </button>
+                    )}
+
+                    <div className="px-3 py-1 border-t border-slate-700/80 bg-slate-850 text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>Rate:</span>
+                      <span className="font-mono text-indigo-300 font-semibold">1$ = {usdToKhrRate.toLocaleString()}៛</span>
+                    </div>
+
+                    <Link
+                      to="/admin/currency"
+                      className="block text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline px-3 py-1 bg-slate-900 border-t border-slate-700/80"
                     >
-                      <span>USD ($)</span>
-                      {currency === 'USD' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectCurrency('KHR')}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
-                        currency === 'KHR' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <span>KHR (៛)</span>
-                      {currency === 'KHR' && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </button>
+                      ⚙ {t('Custom Rate (Admin)', 'កំណត់អត្រា (Admin)')}
+                    </Link>
                   </div>
                 </div>
               )}

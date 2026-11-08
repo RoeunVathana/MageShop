@@ -54,6 +54,9 @@ import { BrandListPage } from '@/pages/admin/BrandListPage'
 // API Token Keys & Security Administration
 import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
 
+// Currency & Store Settings Administration
+import { AdminCurrencyPage } from '@/pages/admin/AdminCurrencyPage'
+
 // Slide Banner Administration
 import { BannerListPage } from '@/pages/admin/BannerListPage'
 
@@ -137,6 +140,10 @@ export default function App() {
 
               {/* Brand Management (Admin Only) */}
               <Route path="/admin/brands" element={<AdminOnlyRoute><BrandListPage /></AdminOnlyRoute>} />
+
+              {/* Currency & Exchange Rate Management (Admin Only) */}
+              <Route path="/admin/currency" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
+              <Route path="/admin/settings" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
 
               {/* API Token Keys & Security Management (Admin Only) */}
               <Route path="/admin/security" element={<AdminOnlyRoute><AdminSecurityPage /></AdminOnlyRoute>} />

@@ -193,6 +193,7 @@ export function CartPage() {
     language,
     t,
     formatPrice,
+    usdToKhrRate,
   } = useShopEngagement()
 
   const [couponInput, setCouponInput] = useState(appliedCoupon?.code || '')
@@ -614,7 +615,7 @@ export function CartPage() {
     : 0
 
   const finalTotal = Math.max(0, Number((subtotal - discountAmount + effectiveShippingFee).toFixed(2)))
-  const finalTotalKhr = Math.round((finalTotal * 4100) / 100) * 100
+  const finalTotalKhr = Math.round((finalTotal * (usdToKhrRate || 4100)) / 100) * 100
   const pointsEarnedThisOrder = cartItems.length > 0 ? 5 : 0
   const pointsRedeemedThisOrder = freeRewardItem ? 100 : 0
   const projectedPointsAfterOrder = Math.max(

@@ -125,6 +125,7 @@ Route::prefix('admin')->group(function () {
     // Store Settings
     Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);
     Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+    Route::post('/store-settings/currency', [StoreSettingsController::class, 'update']);
 
     // Admin Cloud Storage Media Upload
     Route::post('/media/upload', [MediaController::class, 'upload']);

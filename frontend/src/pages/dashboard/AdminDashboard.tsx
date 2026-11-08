@@ -10,6 +10,8 @@ import {
   Lock,
   Package,
   Boxes,
+  Coins,
+  ArrowRight,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -83,6 +85,32 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Currency & Exchange Rate Quick Access Card */}
+        <Card className="rounded-3xl border shadow-sm bg-gradient-to-r from-indigo-50/70 via-slate-50 to-purple-50/70 dark:from-indigo-950/30 dark:via-slate-900/40 dark:to-purple-950/30">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20 font-black">
+                <Coins className="w-6 h-6" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-sm text-foreground">Currency & Exchange Rate Customization</h3>
+                  <Badge className="bg-indigo-600 text-white text-[10px]">USD / KHR</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Admin can customize default currency, edit the Cambodian market exchange rate (1$ = ? ៛), and control shopper currency visibility.
+                </p>
+              </div>
+            </div>
+            <Link to="/admin/currency" className="shrink-0">
+              <Button size="sm" className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                <span>Configure Currency</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
         {/* Pending Vendor Approvals */}
         <Card>

@@ -11,11 +11,13 @@ import {
   Key,
   Sliders,
   MapPin,
+  Coins,
 } from 'lucide-react'
 import type { NavItem } from '@/components/dashboard/DashboardLayout'
 
 export const adminNavItems: NavItem[] = [
   { label: 'Platform Overview', href: '/dashboard/admin', icon: Shield },
+  { label: 'Currency & Exchange Rate', href: '/admin/currency', icon: Coins, badge: 'USD/KHR' },
   { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
   { label: 'Hero Slide Banners', href: '/admin/banners', icon: Sliders },
   { label: 'Products Catalog', href: '/admin/products', icon: Package },

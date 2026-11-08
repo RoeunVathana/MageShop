@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { storeSettingsService } from '@/services/storeSettings.service'
 import { api } from '@/lib/api'
 
 export interface CartItem {
@@ -82,7 +83,17 @@ interface ShopEngagementContextType {
   t: (en: string, km: string) => string
   currency: 'USD' | 'KHR'
   setCurrency: (curr: 'USD' | 'KHR') => void
-  formatPrice: (usdAmount: number) => string
+  defaultCurrency: 'USD' | 'KHR'
+  usdToKhrRate: number
+  setUsdToKhrRate: (rate: number) => void
+  allowedCurrencies: 'BOTH' | 'USD_ONLY' | 'KHR_ONLY'
+  setAllowedCurrencies: (mode: 'BOTH' | 'USD_ONLY' | 'KHR_ONLY') => void
+  currencyAutoSwitchLang: boolean
+  setCurrencyAutoSwitchLang: (val: boolean) => void
+  formatPrice: (usdAmount: number, targetCurrency?: 'USD' | 'KHR') => string
+  usdToKhr: (usdAmount: number) => number
+  khrToUsd: (khrAmount: number) => number
+  refreshCurrencySettings: () => Promise<void>
 }
 
 const DEFAULT_CART: CartItem[] = [
@@ -238,14 +249,127 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     }
   })
 
-  const [currency, setCurrencyState] = useState<'USD' | 'KHR'>(() => {
+  // Store Settings & Exchange Rates
+  const [defaultCurrency, setDefaultCurrency] = useState<'USD' | 'KHR'>(() => {
     try {
-      const saved = localStorage.getItem('megacommerce_currency')
+      const saved = localStorage.getItem('megacommerce_default_currency')
       return saved === 'KHR' ? 'KHR' : 'USD'
     } catch {
       return 'USD'
     }
   })
+
+  const [usdToKhrRate, setUsdToKhrRateState] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('megacommerce_usd_to_khr_rate')
+      return saved ? Number(saved) : 4100
+    } catch {
+      return 4100
+    }
+  })
+
+  const [allowedCurrencies, setAllowedCurrenciesState] = useState<'BOTH' | 'USD_ONLY' | 'KHR_ONLY'>(() => {
+    try {
+      const saved = localStorage.getItem('megacommerce_allowed_currencies')
+      return (saved as any) || 'BOTH'
+    } catch {
+      return 'BOTH'
+    }
+  })
+
+  const [currencyAutoSwitchLang, setCurrencyAutoSwitchLangState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('megacommerce_currency_auto_switch') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  const [currency, setCurrencyState] = useState<'USD' | 'KHR'>(() => {
+    try {
+      const saved = localStorage.getItem('megacommerce_currency')
+      if (saved === 'KHR' || saved === 'USD') return saved
+      const savedDefault = localStorage.getItem('megacommerce_default_currency')
+      return savedDefault === 'KHR' ? 'KHR' : 'USD'
+    } catch {
+      return 'USD'
+    }
+  })
+
+  const setUsdToKhrRate = (rate: number) => {
+    const validRate = Math.max(1, Math.round(Number(rate) || 4100))
+    setUsdToKhrRateState(validRate)
+    try {
+      localStorage.setItem('megacommerce_usd_to_khr_rate', String(validRate))
+    } catch {}
+  }
+
+  const setAllowedCurrencies = (mode: 'BOTH' | 'USD_ONLY' | 'KHR_ONLY') => {
+    setAllowedCurrenciesState(mode)
+    try {
+      localStorage.setItem('megacommerce_allowed_currencies', mode)
+    } catch {}
+    if (mode === 'USD_ONLY' && currency !== 'USD') {
+      setCurrencyState('USD')
+      localStorage.setItem('megacommerce_currency', 'USD')
+    } else if (mode === 'KHR_ONLY' && currency !== 'KHR') {
+      setCurrencyState('KHR')
+      localStorage.setItem('megacommerce_currency', 'KHR')
+    }
+  }
+
+  const setCurrencyAutoSwitchLang = (val: boolean) => {
+    setCurrencyAutoSwitchLangState(val)
+    try {
+      localStorage.setItem('megacommerce_currency_auto_switch', val ? 'true' : 'false')
+    } catch {}
+  }
+
+  const refreshCurrencySettings = async () => {
+    try {
+      const settings = await storeSettingsService.getPublicSettings()
+      if (settings.usd_to_khr_rate && settings.usd_to_khr_rate > 0) {
+        setUsdToKhrRateState(settings.usd_to_khr_rate)
+        localStorage.setItem('megacommerce_usd_to_khr_rate', String(settings.usd_to_khr_rate))
+      }
+      if (settings.default_currency) {
+        setDefaultCurrency(settings.default_currency)
+        localStorage.setItem('megacommerce_default_currency', settings.default_currency)
+        const userHasManualChoice = localStorage.getItem('megacommerce_currency')
+        if (!userHasManualChoice) {
+          setCurrencyState(settings.default_currency)
+        }
+      }
+      if (settings.allowed_currencies) {
+        const mode = settings.allowed_currencies as any
+        setAllowedCurrenciesState(mode)
+        localStorage.setItem('megacommerce_allowed_currencies', mode)
+        if (mode === 'USD_ONLY') setCurrencyState('USD')
+        if (mode === 'KHR_ONLY') setCurrencyState('KHR')
+      }
+      if (typeof settings.currency_auto_switch_lang === 'boolean') {
+        setCurrencyAutoSwitchLangState(settings.currency_auto_switch_lang)
+        localStorage.setItem(
+          'megacommerce_currency_auto_switch',
+          settings.currency_auto_switch_lang ? 'true' : 'false'
+        )
+      }
+    } catch {
+      // Keep offline/default storage values
+    }
+  }
+
+  useEffect(() => {
+    refreshCurrencySettings()
+  }, [])
+
+  const usdToKhr = (usdAmount: number): number => {
+    return Math.round((Number(usdAmount || 0) * usdToKhrRate) / 100) * 100
+  }
+
+  const khrToUsd = (khrAmount: number): number => {
+    return Number((Number(khrAmount || 0) / (usdToKhrRate || 4100)).toFixed(2))
+  }
 
   const setLanguage = (lang: 'EN' | 'KM') => {
     setLanguageState(lang)
@@ -260,12 +384,26 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         document.documentElement.classList.remove('khmer-mode')
         document.body.classList.remove('khmer-mode')
       }
+
+      // Auto-switch currency with language if enabled by admin
+      if (currencyAutoSwitchLang && allowedCurrencies === 'BOTH') {
+        if (lang === 'KM') {
+          setCurrencyState('KHR')
+          localStorage.setItem('megacommerce_currency', 'KHR')
+        } else {
+          setCurrencyState('USD')
+          localStorage.setItem('megacommerce_currency', 'USD')
+        }
+      }
     } catch {
       // ignore storage errors
     }
   }
 
   const setCurrency = (curr: 'USD' | 'KHR') => {
+    if (allowedCurrencies === 'USD_ONLY' && curr !== 'USD') return
+    if (allowedCurrencies === 'KHR_ONLY' && curr !== 'KHR') return
+
     setCurrencyState(curr)
     try {
       localStorage.setItem('megacommerce_currency', curr)
@@ -288,10 +426,11 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
 
   const t = (en: string, km: string): string => (language === 'KM' ? km : en)
 
-  const formatPrice = (usdAmount: number): string => {
+  const formatPrice = (usdAmount: number, targetCurrency?: 'USD' | 'KHR'): string => {
     const safeUsd = Number(usdAmount || 0)
-    if (currency === 'KHR') {
-      const khrAmount = Math.round((safeUsd * 4100) / 100) * 100
+    const effectiveCurr = targetCurrency || currency
+    if (effectiveCurr === 'KHR') {
+      const khrAmount = Math.round((safeUsd * usdToKhrRate) / 100) * 100
       return `${khrAmount.toLocaleString()} ៛`
     }
     return `$${safeUsd.toFixed(2)}`
@@ -415,7 +554,17 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         t,
         currency,
         setCurrency,
+        defaultCurrency,
+        usdToKhrRate,
+        setUsdToKhrRate,
+        allowedCurrencies,
+        setAllowedCurrencies,
+        currencyAutoSwitchLang,
+        setCurrencyAutoSwitchLang,
         formatPrice,
+        usdToKhr,
+        khrToUsd,
+        refreshCurrencySettings,
       }}
     >
       {children}

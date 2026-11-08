@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StoreSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 class StoreSettingsController extends Controller
@@ -26,6 +27,9 @@ class StoreSettingsController extends Controller
             'business_email',
             'website_url',
             'default_currency',
+            'usd_to_khr_rate',
+            'allowed_currencies',
+            'currency_auto_switch_lang',
             'country',
             'supported_languages',
             'brand_color',
@@ -36,6 +40,20 @@ class StoreSettingsController extends Controller
         ];
 
         $publicSettings = array_intersect_key($all, array_flip($publicKeys));
+
+        // Intelligent currency defaults
+        if (! isset($publicSettings['default_currency']) || empty($publicSettings['default_currency'])) {
+            $publicSettings['default_currency'] = 'USD';
+        }
+        if (! isset($publicSettings['usd_to_khr_rate']) || empty($publicSettings['usd_to_khr_rate'])) {
+            $publicSettings['usd_to_khr_rate'] = '4100';
+        }
+        if (! isset($publicSettings['allowed_currencies']) || empty($publicSettings['allowed_currencies'])) {
+            $publicSettings['allowed_currencies'] = 'BOTH';
+        }
+        if (! isset($publicSettings['currency_auto_switch_lang'])) {
+            $publicSettings['currency_auto_switch_lang'] = 'false';
+        }
 
         return response()->json([
             'status' => 'success',
@@ -50,9 +68,25 @@ class StoreSettingsController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $all = StoreSetting::getAll();
+
+        // Ensure currency settings are present
+        if (! isset($all['default_currency'])) {
+            $all['default_currency'] = 'USD';
+        }
+        if (! isset($all['usd_to_khr_rate'])) {
+            $all['usd_to_khr_rate'] = '4100';
+        }
+        if (! isset($all['allowed_currencies'])) {
+            $all['allowed_currencies'] = 'BOTH';
+        }
+        if (! isset($all['currency_auto_switch_lang'])) {
+            $all['currency_auto_switch_lang'] = 'false';
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => StoreSetting::getAll(),
+            'data' => $all,
         ]);
     }
 
@@ -70,7 +104,10 @@ class StoreSettingsController extends Controller
             'contact_phone' => 'nullable|string|max:50',
             'support_email' => 'nullable|email|max:100',
             'business_email' => 'nullable|email|max:100',
-            'default_currency' => 'nullable|string|size:3',
+            'default_currency' => 'nullable|string|in:USD,KHR',
+            'usd_to_khr_rate' => 'nullable|numeric|min:1|max:100000',
+            'allowed_currencies' => 'nullable|string|in:BOTH,USD_ONLY,KHR_ONLY,USD,KHR',
+            'currency_auto_switch_lang' => 'nullable|string|max:10',
             'brand_color' => 'nullable|string|max:20',
             'return_policy_days' => 'nullable|numeric|min:0|max:90',
             'shipping_policy' => 'nullable|string|max:1000',
@@ -89,14 +126,14 @@ class StoreSettingsController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Store settings updated successfully.',
+            'message' => 'Store currency and settings updated successfully.',
             'data' => StoreSetting::getAll(),
         ]);
     }
 
     protected function authorizeAdmin(Request $request): void
     {
-        $user = $request->user('sanctum') ?? $request->user();
+        $user = Auth::guard('web')->user() ?? $request->user('sanctum') ?? $request->user();
         if ($user && ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             abort(403, 'Unauthorized. Administrative permissions required.');
         }

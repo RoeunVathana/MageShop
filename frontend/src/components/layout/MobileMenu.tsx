@@ -24,7 +24,7 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const { language, setLanguage, currency, setCurrency, t } = useShopEngagement()
+  const { language, setLanguage, currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
   const isAdmin = authService.isAdmin()
 
   if (!isOpen) return null
@@ -150,6 +150,14 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               className="flex items-center justify-between px-3 py-1.5 text-xs text-foreground font-semibold hover:bg-muted rounded-md"
             >
               <span>{t('Admin Control Center', 'មជ្ឈមណ្ឌលគ្រប់គ្រង Admin')}</span>
+            </Link>
+            <Link
+              to="/admin/currency"
+              onClick={onClose}
+              className="flex items-center justify-between px-3 py-1.5 text-xs text-foreground font-semibold hover:bg-muted rounded-md"
+            >
+              <span>{t('Currency & Exchange Rate', 'រូបិយប័ណ្ណ & អត្រាប្តូរប្រាក់')}</span>
+              <span className="text-[10px] text-indigo-500 font-mono">1$ = {usdToKhrRate.toLocaleString()}៛</span>
             </Link>
           </div>
         )}
