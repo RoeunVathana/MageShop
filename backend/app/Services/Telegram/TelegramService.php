@@ -926,22 +926,22 @@ class TelegramService
             $txnRef = ($payment && $payment->transaction_reference) ? $payment->transaction_reference : 'TXN-DIRECT';
 
             $lines = [
-                '🚨 *TYUSHOP — PAYMENT & ORDER REPORT*',
+                '🚨 TYUSHOP — PAYMENT & ORDER REPORT',
                 '━━━━━━━━━━━━━━━━━━━━━━',
-                "🧾 *Order ID:* `#{$order->order_number}`",
-                "📄 *Receipt No:* `#{$receiptNo}`",
-                "🔐 *Transaction:* `{$txnRef}`",
-                "💳 *Method:* {$methodLabel}",
-                "📌 *Status:* {$statusBadge}",
-                "💰 *Total Amount:* *\${$totalUsd} USD* (≈ {$totalKhr} ៛)",
+                "🧾 Order ID: #{$order->order_number}",
+                "📄 Receipt No: #{$receiptNo}",
+                "🔐 Transaction: {$txnRef}",
+                "💳 Method: {$methodLabel}",
+                "📌 Status: {$statusBadge}",
+                "💰 Total Amount: \${$totalUsd} USD (≈ {$totalKhr} ៛)",
                 '',
-                '👤 *CUSTOMER INFORMATION*',
-                '• *Name:* '.($order->customer_name ?: 'Valued Customer'),
-                '• *Phone:* '.($order->customer_phone ?: 'N/A'),
-                '• *Email:* '.($order->customer_email ?: 'N/A'),
-                '• *Address:* '.($order->delivery_address ?: 'Phnom Penh, Cambodia'),
+                '👤 CUSTOMER INFORMATION',
+                '• Name: '.($order->customer_name ?: 'Valued Customer'),
+                '• Phone: '.($order->customer_phone ?: 'N/A'),
+                '• Email: '.($order->customer_email ?: 'N/A'),
+                '• Address: '.($order->delivery_address ?: 'Phnom Penh, Cambodia'),
                 '',
-                '📦 *ORDER ITEMS*',
+                '📦 ORDER ITEMS',
             ];
 
             foreach ($order->items as $item) {
@@ -950,13 +950,13 @@ class TelegramService
             }
 
             if ((float) ($order->discount ?? 0) > 0) {
-                $lines[] = '🏷️ *Discount:* -$'.number_format((float) $order->discount, 2);
+                $lines[] = '🏷️ Discount: -$'.number_format((float) $order->discount, 2);
             }
 
             $lines[] = '';
-            $lines[] = '🎁 *Loyalty Points:* +'.((int) ($order->points_earned ?? 5)).' pts';
-            $lines[] = '🚚 *GPS Tracking:* https://tyushop.blog/track-order/'.$order->order_number;
-            $lines[] = '🕒 *Time:* '.now()->format('Y-m-d H:i:s');
+            $lines[] = '🎁 Loyalty Points: +'.((int) ($order->points_earned ?? 5)).' pts';
+            $lines[] = '🚚 GPS Tracking: https://tyushop.blog/track-order/'.$order->order_number;
+            $lines[] = '🕒 Time: '.now()->format('Y-m-d H:i:s');
 
             $messageText = implode("\n", $lines);
 
@@ -982,7 +982,7 @@ class TelegramService
 
             $dispatched = false;
             foreach ($targetChatIds as $chatId) {
-                $resp = $this->sendMessage($chatId, $messageText, ['parse_mode' => 'Markdown']);
+                $resp = $this->sendMessage($chatId, $messageText);
                 if ($resp && ! empty($resp['ok'])) {
                     $dispatched = true;
                 }
