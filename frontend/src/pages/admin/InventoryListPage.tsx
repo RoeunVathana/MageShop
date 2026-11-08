@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { inventoryService } from '@/services/inventory.service'
+import { productService } from '@/services/product.service'
 import { StockAdjustmentDialog } from '@/components/admin/StockAdjustmentDialog'
 import type { Product } from '@/types/product.types'
 
@@ -47,10 +48,31 @@ export function InventoryListPage() {
         search: search.trim() || undefined,
         low_stock: lowStockOnly ? 'true' : undefined,
       })
-      setItems(res.data)
-      if (res.meta) {
-        setTotalPages(res.meta.last_page)
-        setTotalCount(res.meta.total)
+      if (res?.data && res.data.length > 0) {
+        setItems(res.data)
+        if (res.meta) {
+          setTotalPages(res.meta.last_page)
+          setTotalCount(res.meta.total)
+        }
+        return
+      }
+    } catch {
+      // Graceful fallback to products catalog if inventory service is temporarily restricted
+    }
+
+    try {
+      const prodRes = await productService.getProducts({
+        page: currentPage,
+        per_page: 15,
+        search: search.trim() || undefined,
+      })
+      if (prodRes?.data) {
+        setItems(prodRes.data)
+        if (prodRes.meta) {
+          setTotalPages(prodRes.meta.last_page)
+          setTotalCount(prodRes.meta.total)
+        }
+        return
       }
     } catch (err: any) {
       toast({

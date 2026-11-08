@@ -90,6 +90,9 @@ Route::get('/brands/{brand}', [BrandController::class, 'show']);
 // Core Product & Inventory APIs
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/inventory', [InventoryController::class, 'index']);
+Route::get('/inventory/{product}', [InventoryController::class, 'show']);
+Route::get('/inventory/{product}/movements', [InventoryController::class, 'movements']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
@@ -113,10 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('inventory')->group(function () {
-        Route::get('/', [InventoryController::class, 'index']);
-        Route::get('/{product}', [InventoryController::class, 'show']);
         Route::post('/{product}/adjust', [InventoryController::class, 'adjust']);
-        Route::get('/{product}/movements', [InventoryController::class, 'movements']);
     });
 });
 

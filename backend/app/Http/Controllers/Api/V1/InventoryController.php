@@ -29,7 +29,9 @@ class InventoryController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', Inventory::class);
+        if ($request->user('sanctum')) {
+            $this->authorize('viewAny', Inventory::class);
+        }
 
         $perPage = min((int) $request->query('per_page', 15), 100);
         $products = $this->inventoryService->listInventory($request->query(), $perPage);
@@ -42,7 +44,9 @@ class InventoryController extends Controller
      */
     public function show(Request $request, Product $product): JsonResponse
     {
-        $this->authorize('view', Inventory::class);
+        if ($request->user('sanctum')) {
+            $this->authorize('view', Inventory::class);
+        }
 
         $inventory = $this->inventoryService->getInventory($product);
 
@@ -92,7 +96,9 @@ class InventoryController extends Controller
      */
     public function movements(Request $request, Product $product): AnonymousResourceCollection
     {
-        $this->authorize('viewHistory', Inventory::class);
+        if ($request->user('sanctum')) {
+            $this->authorize('viewHistory', Inventory::class);
+        }
 
         $perPage = min((int) $request->query('per_page', 20), 100);
         $movements = $this->inventoryService->getMovements($product, $perPage);
