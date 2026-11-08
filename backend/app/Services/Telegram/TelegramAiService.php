@@ -265,8 +265,8 @@ class TelegramAiService
                 return [
                     'store_name' => $settings['store_name'] ?? 'TYUSHOP Flagship',
                     'address' => $settings['store_address'] ?? 'Phnom Penh, Cambodia',
-                    'support_email' => $settings['support_email'] ?? 'support@megacommerce.local',
-                    'contact_phone' => $settings['contact_phone'] ?? '+855 (23) 998-888',
+                    'support_email' => $settings['support_email'] ?? 'Vothanarern@gmail.com',
+                    'contact_phone' => $settings['contact_phone'] ?? '016 555 637',
                     'return_policy_days' => $settings['return_policy_days'] ?? 7,
                     'shipping_policy' => $settings['shipping_policy'] ?? 'Free express shipping on all orders exceeding $50.',
                 ];

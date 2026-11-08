@@ -343,8 +343,8 @@ class TelegramService
                 return ['status' => 'command_executed', 'command' => '/track'];
 
             case '/help':
-                $supportEmail = StoreSetting::get('support_email', 'support@megacommerce.local');
-                $phone = StoreSetting::get('contact_phone', '+855 (23) 998-888');
+                $supportEmail = StoreSetting::get('support_email', 'Vothanarern@gmail.com');
+                $phone = StoreSetting::get('contact_phone', '016 555 637');
 
                 $help = "ℹ️ *TYUSHOP Shopping Assistant Help*\n\n"
                       ."*Customer Commands:*\n"

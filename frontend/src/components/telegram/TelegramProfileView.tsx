@@ -93,7 +93,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <Mail className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-            <span>{storeSettings?.support_email || 'support@megacommerce.local'}</span>
+            <span>{storeSettings?.support_email || 'Vothanarern@gmail.com'}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Phone className="w-4 h-4 text-indigo-500 flex-shrink-0" />

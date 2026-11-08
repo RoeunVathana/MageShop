@@ -106,15 +106,19 @@ export function ContactPage() {
               <div className="space-y-3 text-xs text-muted-foreground border-t pt-4">
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span>TYUSHOP Tower, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia</span>
+                  <span>TYUSHOP Flagship HQ, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-primary shrink-0" />
-                  <span>016 555 637</span>
+                  <a href="tel:016555637" className="hover:text-primary transition-colors font-semibold text-foreground">
+                    016 555 637
+                  </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-primary shrink-0" />
-                  <span>support@tyushop.blog</span>
+                  <a href="mailto:Vothanarern@gmail.com" className="hover:text-primary transition-colors font-semibold text-foreground">
+                    Vothanarern@gmail.com
+                  </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4 text-emerald-500 shrink-0" />
