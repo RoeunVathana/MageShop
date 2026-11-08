@@ -16,6 +16,16 @@ export default {
         serif: ['"Khmer OS Battambang"', '"Battambang"', 'serif'],
         mono: ['"Khmer OS Battambang"', '"Battambang"', 'monospace'],
       },
+      fontSize: {
+        xs: ['0.875rem', { lineHeight: '1.5rem' }],     // 14px (up from 12px)
+        sm: ['0.96875rem', { lineHeight: '1.6rem' }],   // ~15.5px (up from 14px)
+        base: ['1.0625rem', { lineHeight: '1.75rem' }], // 17px (up from 16px)
+        lg: ['1.2rem', { lineHeight: '1.85rem' }],      // ~19.2px
+        xl: ['1.375rem', { lineHeight: '2rem' }],       // 22px
+        '2xl': ['1.65rem', { lineHeight: '2.25rem' }],  // ~26.4px
+        '3xl': ['2rem', { lineHeight: '2.5rem' }],      // 32px
+        '4xl': ['2.5rem', { lineHeight: '2.85rem' }],   // 40px
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

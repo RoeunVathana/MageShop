@@ -70,6 +70,9 @@
 }
 
 @layer base {
+  html {
+    font-size: 16.5px;
+  }
   *, *::before, *::after, html, body, button, input, select, textarea, code, pre {
     @apply border-border;
     font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
@@ -77,6 +80,22 @@
   body {
     @apply bg-background text-foreground antialiased min-h-screen;
     font-family: 'Khmer OS Battambang', 'Battambang', sans-serif !important;
+    font-size: 1.05rem;
+    line-height: 1.7;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Upscale micro text classes so Khmer OS Battambang & English text are always clearly readable */
+.text-\[9px\] {
+  font-size: 0.78rem !important;
+  line-height: 1.35rem !important;
+}
+.text-\[10px\] {
+  font-size: 0.82rem !important;
+  line-height: 1.4rem !important;
+}
+.text-\[11px\] {
+  font-size: 0.875rem !important;
+  line-height: 1.45rem !important;
 }
