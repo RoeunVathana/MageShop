@@ -1,0 +1,37 @@
+export type UserRole =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'STAFF'
+  | 'SELLER'
+  | 'CUSTOMER'
+  | 'DELIVERY_DRIVER'
+
+export interface Role {
+  id: number
+  name: UserRole
+  slug: string
+  description?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Permission {
+  id: number
+  name: string
+  slug: string
+  group?: string
+  description?: string
+}
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  phone_number?: string | null
+  status: 'active' | 'suspended' | 'pending'
+  email_verified_at?: string | null
+  roles?: Role[]
+  created_at?: string
+  updated_at?: string
+}
+

@@ -1,0 +1,120 @@
+services:
+  # PostgreSQL 16 Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: megacommerce_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-megacommerce}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-megacommerce_secret}
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - megacommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-megacommerce}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis 7 In-Memory Cache & Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: megacommerce_redis
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - megacommerce_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Laravel PHP-FPM Application Service
+  backend:
+    build:
+      context: ./
+      dockerfile: infrastructure/docker/php/Dockerfile
+    container_name: megacommerce_backend
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      APP_NAME: "MegaCommerce"
+      APP_ENV: "local"
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8000"
+      FRONTEND_URL: "http://localhost:3000"
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_DATABASE: "${DB_DATABASE:-megacommerce}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:-megacommerce_secret}"
+      REDIS_CLIENT: "predis"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      CACHE_STORE: "redis"
+      QUEUE_CONNECTION: "redis"
+      SESSION_DRIVER: "redis"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - megacommerce_network
+
+  # Nginx Web Server for Backend API
+  nginx:
+    image: nginx:alpine
+    container_name: megacommerce_nginx
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_NGINX_PORT:-8000}:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - megacommerce_network
+
+  # React + TypeScript Frontend Development Server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/frontend/Dockerfile
+    container_name: megacommerce_frontend
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: "http://localhost:8000/api/v1"
+      VITE_APP_NAME: "MegaCommerce"
+      VITE_APP_ENV: "development"
+    depends_on:
+      - nginx
+    networks:
+      - megacommerce_network
+
+networks:
+  megacommerce_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

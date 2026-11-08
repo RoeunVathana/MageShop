@@ -1,0 +1,289 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\Product;
+use App\Models\StoreSetting;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class CommerceAndTelegramSeeder extends Seeder
+{
+    /**
+     * Seed initial store settings, catalog, and orders.
+     */
+    public function run(): void
+    {
+        // 1. Official Store Information
+        $settings = [
+            'store_name' => 'MegaCommerce Flagship Store',
+            'store_description' => 'Premium Multi-Vendor Marketplace specializing in verified electronics, smartphones, acoustics, and smart lifestyle.',
+            'store_address' => '#182 Preah Norodom Boulevard, Sangkat Tonle Bassac, Khan Chamkarmon, Phnom Penh 12301, Cambodia',
+            'business_email' => 'business@megacommerce.local',
+            'support_email' => 'support@megacommerce.local',
+            'contact_phone' => '+855 (23) 998-888',
+            'telegram_bot_username' => 'MegaCommerceAiBot',
+            'telegram_support_contact' => '@MegaCommerceSupport',
+            'website_url' => 'http://localhost:3000',
+            'country' => 'Cambodia',
+            'default_currency' => 'USD',
+            'supported_languages' => json_encode(['en' => 'English', 'km' => 'Khmer']),
+            'brand_color' => '#4f46e5',
+            'receipt_footer_message' => 'Thank you for choosing MegaCommerce Flagship. For returns or warranty claims, contact support@megacommerce.local within 7 days.',
+            'tax_id' => 'KHM-VAT-9024881',
+            'return_policy_days' => '7',
+            'shipping_policy' => 'Free express shipping on all orders exceeding $50. Standard nationwide delivery within 24 to 48 hours.',
+        ];
+
+        foreach ($settings as $key => $val) {
+            StoreSetting::set($key, $val);
+        }
+
+        // 2. Categories
+        $categoriesData = [
+            ['name' => 'Laptops & Computers', 'slug' => 'laptops', 'icon' => 'Laptop', 'description' => 'High performance laptops, ultrabooks, and workstations'],
+            ['name' => 'Smartphones & Tablets', 'slug' => 'smartphones', 'icon' => 'Smartphone', 'description' => 'Flagship iOS and Android mobile devices'],
+            ['name' => 'Audio & Acoustics', 'slug' => 'audio', 'icon' => 'Headphones', 'description' => 'Wireless noise cancelling headphones and studio acoustics'],
+            ['name' => 'Wearables & Smartwatches', 'slug' => 'wearables', 'icon' => 'Watch', 'description' => 'GPS fitness smartwatches and smart bands'],
+            ['name' => 'Drones & Cameras', 'slug' => 'drones', 'icon' => 'Camera', 'description' => 'Aerial 4K HDR drones and handheld gimbals'],
+            ['name' => 'Fashion & Sportswear', 'slug' => 'fashion', 'icon' => 'Shirt', 'description' => 'Original footwear and athletic apparel'],
+        ];
+
+        $categories = [];
+        foreach ($categoriesData as $cat) {
+            $categories[$cat['slug']] = Category::firstOrCreate(['slug' => $cat['slug']], $cat);
+        }
+
+        // 3. Products
+        $productsData = [
+            [
+                'name' => 'Apple MacBook Pro 16" M3 Max (36GB RAM, 1TB SSD)',
+                'slug' => 'apple-macbook-pro-16-m3-max',
+                'sku' => 'LAP-MBP-016',
+                'category_id' => $categories['laptops']->id,
+                'description' => 'The ultimate pro laptop. Powered by M3 Max with a 14-core CPU, 30-core GPU, Liquid Retina XDR display, and up to 22 hours of battery life.',
+                'price' => 3499.00,
+                'discount_price' => 3299.00,
+                'stock_quantity' => 15,
+                'low_stock_threshold' => 3,
+                'rating' => 4.9,
+                'reviews_count' => 128,
+                'image_url' => 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => true,
+                'is_best_seller' => true,
+                'is_flash_sale' => false,
+                'is_new_arrival' => true,
+                'specifications' => [
+                    'Processor' => 'Apple M3 Max 14-core',
+                    'RAM' => '36GB Unified Memory',
+                    'Storage' => '1TB NVMe SSD',
+                    'Screen' => '16.2-inch Liquid Retina XDR',
+                    'Color' => 'Space Black',
+                ],
+            ],
+            [
+                'name' => 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
+                'slug' => 'sony-wh-1000xm5-wireless-headphones',
+                'sku' => 'AUD-SNY-XM5',
+                'category_id' => $categories['audio']->id,
+                'description' => 'Industry-leading noise cancellation optimized by two processors and 8 microphones. Exceptional sound with 30-hour battery life.',
+                'price' => 398.00,
+                'discount_price' => 349.00,
+                'stock_quantity' => 28,
+                'low_stock_threshold' => 5,
+                'rating' => 4.8,
+                'reviews_count' => 95,
+                'image_url' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => true,
+                'is_best_seller' => true,
+                'is_flash_sale' => true,
+                'is_new_arrival' => false,
+                'specifications' => [
+                    'Connectivity' => 'Bluetooth 5.2 / 3.5mm Aux',
+                    'Battery Life' => '30 hours (ANC on)',
+                    'Microphones' => '8 Beamforming mics',
+                    'Color' => 'Silver / Platinum',
+                ],
+            ],
+            [
+                'name' => 'Samsung Galaxy S24 Ultra 5G AI Smartphone (512GB)',
+                'slug' => 'samsung-galaxy-s24-ultra-512gb',
+                'sku' => 'PHN-SMS-S24',
+                'category_id' => $categories['smartphones']->id,
+                'description' => 'Galaxy AI is here. Titanium frame, 200MP camera with Quad Telephoto system, and Snapdragon 8 Gen 3 for Galaxy.',
+                'price' => 1299.00,
+                'discount_price' => 1199.00,
+                'stock_quantity' => 22,
+                'low_stock_threshold' => 4,
+                'rating' => 4.9,
+                'reviews_count' => 210,
+                'image_url' => 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => true,
+                'is_best_seller' => false,
+                'is_flash_sale' => true,
+                'is_new_arrival' => true,
+                'specifications' => [
+                    'Processor' => 'Snapdragon 8 Gen 3',
+                    'RAM' => '12GB',
+                    'Storage' => '512GB',
+                    'Camera' => '200MP + 50MP + 12MP + 10MP',
+                    'Display' => '6.8-inch Dynamic AMOLED 2X 120Hz',
+                ],
+            ],
+            [
+                'name' => 'Apple Watch Ultra 2 GPS + Cellular Titanium Case',
+                'slug' => 'apple-watch-ultra-2-titanium',
+                'sku' => 'WAT-APL-ULT2',
+                'category_id' => $categories['wearables']->id,
+                'description' => 'The most rugged and capable Apple Watch. Engineered for endurance athletes, outdoor adventurers, and water sports enthusiasts.',
+                'price' => 799.00,
+                'discount_price' => null,
+                'stock_quantity' => 4, // Intentionally low stock for testing alerts!
+                'low_stock_threshold' => 5,
+                'rating' => 4.8,
+                'reviews_count' => 64,
+                'image_url' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => false,
+                'is_best_seller' => false,
+                'is_flash_sale' => false,
+                'is_new_arrival' => true,
+                'specifications' => [
+                    'Case' => '49mm Aerospace-grade Titanium',
+                    'Display' => '3000 nits Always-On Retina',
+                    'Water Resistance' => '100m / EN13319 dive rated',
+                ],
+            ],
+            [
+                'name' => 'DJI Mini 4 Pro Drone with RC 2 Controller & 4K HDR',
+                'slug' => 'dji-mini-4-pro-drone-rc2',
+                'sku' => 'DRN-DJI-M4P',
+                'category_id' => $categories['drones']->id,
+                'description' => 'Sub-249g ultra-lightweight mini drone with omnidirectional obstacle sensing, 4K/60fps HDR true vertical shooting, and 20km FHD transmission.',
+                'price' => 959.00,
+                'discount_price' => 899.00,
+                'stock_quantity' => 7,
+                'low_stock_threshold' => 3,
+                'rating' => 4.9,
+                'reviews_count' => 43,
+                'image_url' => 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => true,
+                'is_best_seller' => false,
+                'is_flash_sale' => false,
+                'is_new_arrival' => false,
+                'specifications' => [
+                    'Weight' => '249g',
+                    'Flight Time' => '34 minutes',
+                    'Video' => '4K/60fps HDR True Vertical',
+                    'Sensing' => 'Omnidirectional Obstacle Avoidance',
+                ],
+            ],
+            [
+                'name' => 'Nike Air Zoom Alphafly NEXT% 2 Road Racing Shoes',
+                'slug' => 'nike-air-zoom-alphafly-next-2',
+                'sku' => 'FSH-NKE-ALP2',
+                'category_id' => $categories['fashion']->id,
+                'description' => 'Engineered for marathoners and competitive racers. Dual Zoom Air pods, full-length carbon fiber Flyplate, and ZoomX foam midsole.',
+                'price' => 275.00,
+                'discount_price' => 245.00,
+                'stock_quantity' => 19,
+                'low_stock_threshold' => 4,
+                'rating' => 4.7,
+                'reviews_count' => 88,
+                'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+                'is_featured' => false,
+                'is_best_seller' => true,
+                'is_flash_sale' => true,
+                'is_new_arrival' => false,
+                'specifications' => [
+                    'Type' => 'Marathon Road Racing',
+                    'Cushioning' => 'ZoomX Foam + Dual Air Pods',
+                    'Plate' => 'Full-length Carbon Fiber Flyplate',
+                ],
+            ],
+        ];
+
+        foreach ($productsData as $prod) {
+            Product::firstOrCreate(['sku' => $prod['sku']], $prod);
+        }
+
+        // 4. Create an Admin / Staff user for Telegram Bot management testing
+        $adminUser = User::firstOrCreate(
+            ['email' => 'admin.tele@megacommerce.local'],
+            [
+                'name' => 'MegaCommerce Store Manager',
+                'password' => Hash::make('AdminPass2026!'),
+                'status' => 'active',
+                'phone_number' => '+85512999001',
+            ]
+        );
+        $adminUser->assignRole('ADMIN');
+
+        // Customer user
+        $customerUser = User::firstOrCreate(
+            ['email' => 'customer.tele@megacommerce.local'],
+            [
+                'name' => 'Sopheap Seng',
+                'password' => Hash::make('CustomerPass2026!'),
+                'status' => 'active',
+                'phone_number' => '+85512888002',
+            ]
+        );
+        $customerUser->assignRole('CUSTOMER');
+
+        // 5. Seed Real Orders & Payments for Order Tracking and Receipt Testing
+        $order = Order::firstOrCreate(
+            ['order_number' => 'ORD-2026-9041'],
+            [
+                'user_id' => $customerUser->id,
+                'status' => 'shipped',
+                'subtotal' => 3499.00,
+                'discount' => 200.00,
+                'shipping_fee' => 0.00,
+                'tax' => 0.00,
+                'total_amount' => 3299.00,
+                'currency' => 'USD',
+                'payment_status' => 'paid',
+                'payment_method' => 'bakong_khqr',
+                'customer_name' => 'Sopheap Seng',
+                'customer_email' => 'customer.tele@megacommerce.local',
+                'customer_phone' => '+85512888002',
+                'delivery_address' => '#42 Street 240, Daun Penh, Phnom Penh, Cambodia',
+                'notes' => 'Call recipient upon arrival at ground lobby.',
+            ]
+        );
+
+        $productMac = Product::where('sku', 'LAP-MBP-016')->first();
+        if ($productMac) {
+            OrderItem::firstOrCreate(
+                ['order_id' => $order->id, 'product_id' => $productMac->id],
+                [
+                    'product_name' => $productMac->name,
+                    'product_sku' => $productMac->sku,
+                    'quantity' => 1,
+                    'unit_price' => 3299.00,
+                    'total_price' => 3299.00,
+                ]
+            );
+        }
+
+        Payment::firstOrCreate(
+            ['transaction_reference' => 'TXN-BKG-904128'],
+            [
+                'order_id' => $order->id,
+                'payment_method' => 'bakong_khqr',
+                'amount' => 3299.00,
+                'currency' => 'USD',
+                'status' => 'completed',
+                'khqr_string' => '00020101021229380016A0000007270228010108551299900052045999530384054073299.005802KH5911MEGACOMMERCE6010PHNOM PENH62210117ORD-2026-9041286304E8A2',
+                'khqr_md5' => 'e8a2b5c7d8e9f0123456789abcdef012',
+                'verified_at' => now()->subDay(),
+            ]
+        );
+    }
+}
+

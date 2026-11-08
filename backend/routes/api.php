@@ -1,0 +1,146 @@
+<?php
+
+use App\Http\Controllers\Api\V1\Admin\RolePermissionController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CategoryAttributeController;
+use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ReceiptController;
+use App\Http\Controllers\Api\V1\StoreSettingsController;
+use App\Http\Controllers\Api\V1\Telegram\TelegramAdminController;
+use App\Http\Controllers\Api\V1\Telegram\TelegramAiController;
+use App\Http\Controllers\Api\V1\Telegram\TelegramAuthController;
+use App\Http\Controllers\Api\V1\Telegram\TelegramProductController;
+use App\Http\Controllers\Api\V1\Telegram\TelegramWebhookController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes (v1)
+|--------------------------------------------------------------------------
+| All routes in this file are automatically prefixed with /api/v1
+*/
+
+// Health Check Endpoints
+Route::get('/health', [HealthController::class, 'index']);
+Route::get('/health/ready', [HealthController::class, 'readiness']);
+
+// Authentication Routes (Sanctum SPA Cookie & Rate-Limited)
+Route::prefix('auth')->group(function () {
+    // Registration
+    Route::post('/register', [AuthController::class, 'register'])
+        ->middleware('throttle:6,1');
+
+    // Login
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:login');
+
+    // Email OTP Password Recovery
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:5,1');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:5,1');
+
+    // Google OAuth 2.0 Socialite
+    Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
+    Route::get('/google/callback', [AuthController::class, 'googleCallback']);
+
+    // Authenticated Session Endpoints
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/logout-all', [AuthController::class, 'logoutAllDevices']);
+    });
+});
+
+// Backward-compatible alias for /user
+Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'me']);
+
+// Public Store Settings
+Route::get('/store-settings', [StoreSettingsController::class, 'show']);
+
+// Public Universal Categories & Attributes
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{category}', [CategoryController::class, 'show']);
+Route::get('/categories/{category}/attributes', [CategoryAttributeController::class, 'index']);
+
+// Core Product & Inventory APIs
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{product}', [ProductController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::patch('/products/{product}', [ProductController::class, 'update']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+    // Admin Category & Attribute Management
+    Route::prefix('admin')->group(function () {
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::patch('/categories/{category}', [CategoryController::class, 'update']);
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+        Route::post('/categories/{category}/attributes', [CategoryAttributeController::class, 'store']);
+        Route::patch('/category-attributes/{attribute}', [CategoryAttributeController::class, 'update']);
+        Route::delete('/category-attributes/{attribute}', [CategoryAttributeController::class, 'destroy']);
+    });
+
+    Route::prefix('inventory')->group(function () {
+        Route::get('/', [InventoryController::class, 'index']);
+        Route::get('/{product}', [InventoryController::class, 'show']);
+        Route::post('/{product}/adjust', [InventoryController::class, 'adjust']);
+        Route::get('/{product}/movements', [InventoryController::class, 'movements']);
+    });
+});
+
+// Admin Management (Roles, Permissions, Staff, Store Settings)
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // Role & Permission Management
+    Route::get('/roles', [RolePermissionController::class, 'indexRoles']);
+    Route::get('/permissions', [RolePermissionController::class, 'indexPermissions']);
+    Route::get('/staff', [RolePermissionController::class, 'indexStaff']);
+    Route::post('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
+
+    // Store Settings
+    Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);
+    Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+});
+
+// Orders & Branded PDF Receipts
+Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/admin/orders/{order}/resend-receipt', [ReceiptController::class, 'resend']);
+});
+
+// Telegram Bot Webhook & Mini App API
+Route::prefix('telegram')->group(function () {
+    // Webhook receiver (called by Telegram Bot servers)
+    Route::post('/webhook', TelegramWebhookController::class);
+
+    // Mini App Authentication (HMAC verification)
+    Route::post('/auth', [TelegramAuthController::class, 'authenticate']);
+
+    // Mini App Catalog Browsing
+    Route::get('/products', [TelegramProductController::class, 'index']);
+    Route::get('/products/{idOrSku}', [TelegramProductController::class, 'show']);
+    Route::get('/categories', [TelegramProductController::class, 'categories']);
+
+    // AI Shopping Assistant Chat & History
+    Route::post('/ai/chat', [TelegramAiController::class, 'chat']);
+    Route::get('/ai/history/{sessionId}', [TelegramAiController::class, 'history']);
+
+    // Authenticated Mini App Profile & Actions
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/profile', [TelegramAuthController::class, 'profile']);
+
+        // Admin Management over Telegram
+        Route::prefix('admin')->group(function () {
+            Route::get('/stock', [TelegramAdminController::class, 'stock']);
+            Route::post('/stock-adjust', [TelegramAdminController::class, 'adjustStock']);
+            Route::get('/sales-summary', [TelegramAdminController::class, 'salesSummary']);
+        });
+    });
+});
