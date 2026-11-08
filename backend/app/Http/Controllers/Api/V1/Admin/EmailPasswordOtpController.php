@@ -322,7 +322,7 @@ class EmailPasswordOtpController extends Controller
                 'mail_password_set' => ! empty(StoreSetting::get('mail_password', config('mail.mailers.smtp.password'))),
                 'mail_encryption' => StoreSetting::get('mail_encryption', config('mail.mailers.smtp.encryption', 'tls')),
                 'mail_from_address' => StoreSetting::get('mail_from_address', config('mail.from.address', 'noreply@tyushop.blog')),
-                'mail_from_name' => StoreSetting::get('mail_from_name', config('mail.from.name', 'MegaCommerce')),
+                'mail_from_name' => StoreSetting::get('mail_from_name', config('mail.from.name', 'TYUSHOP')),
             ],
         ]);
     }
@@ -391,8 +391,8 @@ class EmailPasswordOtpController extends Controller
         $testOtp = (string) random_int(100000, 999999);
 
         try {
-            Mail::raw("MegaCommerce SMTP Live Verification Test\n\nYour test OTP verification code is: {$testOtp}\n\nTimestamp: ".now()->toIso8601String()."\n\nIf you received this message, your mail configuration is operational.", function ($m) use ($testEmail) {
-                $m->to($testEmail)->subject('MegaCommerce — SMTP & OTP Delivery Test');
+            Mail::raw("TYUSHOP SMTP Live Verification Test\n\nYour test OTP verification code is: {$testOtp}\n\nTimestamp: ".now()->toIso8601String()."\n\nIf you received this message, your mail configuration is operational.", function ($m) use ($testEmail) {
+                $m->to($testEmail)->subject('TYUSHOP — SMTP & OTP Delivery Test');
             });
 
             SecurityLogService::log('ADMIN_TEST_OTP_EMAIL_SENT', $request->user()->id, [

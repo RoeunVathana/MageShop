@@ -21,7 +21,7 @@ interface TelegramAiChatModalProps {
 export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
   isOpen,
   onClose,
-  storeName = 'MegaCommerce Flagship',
+  storeName = 'TYUSHOP Flagship',
 }) => {
   const [messages, setMessages] = useState<AiChatMessage[]>([
     {

@@ -40,7 +40,7 @@ export function Logo({
       >
         <img
           src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-          alt="MegaCommerce Logo"
+          alt="TyuShop Logo"
           className="w-full h-full object-cover"
           onError={(e) => {
             const target = e.currentTarget
@@ -58,7 +58,7 @@ export function Logo({
               textMap[size]
             )}
           >
-            MEGA<span className="text-primary">COMMERCE</span>
+            TYU<span className="text-primary">SHOP</span>
           </span>
           {subtitle && (
             <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase mt-0.5">

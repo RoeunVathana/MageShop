@@ -70,7 +70,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              MegaCommerce Wallet
+              TYUSHOP Wallet
             </div>
             <div className="text-sm font-extrabold text-foreground">
               $0.00 USD <span className="text-[10px] font-normal text-muted-foreground">(0 pts)</span>

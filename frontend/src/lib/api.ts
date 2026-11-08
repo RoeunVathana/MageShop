@@ -47,7 +47,7 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
     } else if (axiosError.request) {
       return {
         status: 'error',
-        message: 'No response received from the MegaCommerce API server. Please check your backend connection.',
+        message: 'No response received from the TYUSHOP API server. Please check your backend connection.',
         code: 0,
       }
     }

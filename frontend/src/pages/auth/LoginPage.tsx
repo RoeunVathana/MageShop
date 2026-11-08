@@ -45,7 +45,7 @@ export function LoginPage() {
       const res = await authService.login(data)
       toast({
         title: 'Sign In Successful',
-        description: res.message || 'Welcome back to MegaCommerce!',
+        description: res.message || 'Welcome back to TYUSHOP!',
         type: 'success',
       })
 
@@ -84,10 +84,10 @@ export function LoginPage() {
       </div>
       <Card className="max-w-md w-full shadow-xl border">
         <CardHeader className="space-y-2 text-center pb-6">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto" aria-label="MegaCommerce Home">
+          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto" aria-label="TYUSHOP Home">
             <Logo size="lg" showText={false} />
           </Link>
-          <CardTitle className="text-2xl font-black tracking-tight">Sign In to MegaCommerce</CardTitle>
+          <CardTitle className="text-2xl font-black tracking-tight">Sign In to TYUSHOP</CardTitle>
           <CardDescription className="text-xs">
             Access your multi-vendor account, orders, and dashboard
           </CardDescription>

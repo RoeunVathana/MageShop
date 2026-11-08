@@ -30,7 +30,7 @@ export function SupportWidget() {
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       sender: 'bot',
-      text: '👋 សួស្តី! Welcome to MegaCommerce 24/7 Supporter! Ask me about Loyalty Points (+5 pts/buy, 100 pts = FREE item under $20–$30), Discount Coupons, or Real-Time GPS Delivery Tracking!',
+      text: '👋 សួស្តី! Welcome to TYUSHOP 24/7 Supporter! Ask me about Loyalty Points (+5 pts/buy, 100 pts = FREE item under $20–$30), Discount Coupons, or Real-Time GPS Delivery Tracking!',
       time: 'Just now',
     },
   ])

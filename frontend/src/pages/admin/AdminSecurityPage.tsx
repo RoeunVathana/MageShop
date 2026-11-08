@@ -76,7 +76,7 @@ export function AdminSecurityPage() {
     mail_password_set: false,
     mail_encryption: 'tls',
     mail_from_address: 'noreply@tyushop.blog',
-    mail_from_name: 'MegaCommerce',
+    mail_from_name: 'TYUSHOP',
   })
   const [mailPasswordInput, setMailPasswordInput] = useState('')
   const [emailSettingsLoading, setEmailSettingsLoading] = useState(false)
@@ -565,7 +565,7 @@ export function AdminSecurityPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-bold">Active Personal Access Tokens</CardTitle>
                 <CardDescription className="text-xs">
-                  Tokens grant direct authenticated API access to MegaCommerce REST services via Bearer Authentication.
+                  Tokens grant direct authenticated API access to TYUSHOP REST services via Bearer Authentication.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -997,7 +997,7 @@ export function AdminSecurityPage() {
                         Dispatched OTP Codes & Verification Logs
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        Audit history of 6-digit recovery codes sent by MegaCommerce.
+                        Audit history of 6-digit recovery codes sent by TYUSHOP.
                       </CardDescription>
                     </div>
                   </CardHeader>

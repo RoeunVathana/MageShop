@@ -39,7 +39,7 @@ class PaymentReceiptMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $storeName = StoreSetting::get('store_name', 'MegaCommerce');
+        $storeName = StoreSetting::get('store_name', 'TYUSHOP');
 
         return new Envelope(
             null,

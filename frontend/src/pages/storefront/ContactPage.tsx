@@ -106,7 +106,7 @@ export function ContactPage() {
               <div className="space-y-3 text-xs text-muted-foreground border-t pt-4">
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span>MegaCommerce Tower, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia</span>
+                  <span>TYUSHOP Tower, Preah Monivong Blvd, BKK1, Phnom Penh, Cambodia</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-primary shrink-0" />

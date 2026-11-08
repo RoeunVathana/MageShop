@@ -107,14 +107,14 @@ class TelegramService
 
         if (str_starts_with($text, '/')) {
             $parts = explode(' ', $text, 2);
-            $command = strtolower(explode('@', $parts[0])[0]); // strip bot username if present: /start@MegaCommerceAiBot
+            $command = strtolower(explode('@', $parts[0])[0]); // strip bot username if present: /start@TYUSHOPAiBot
             $param = isset($parts[1]) ? trim($parts[1]) : '';
 
             return $this->executeCommand($command, $param, $chatId, $account, $from);
         }
 
         // Natural conversation handled by AI or friendly greeting
-        $storeName = StoreSetting::get('store_name', 'MegaCommerce');
+        $storeName = StoreSetting::get('store_name', 'TYUSHOP');
         $reply = "Hello {$from['first_name']}! 👋 Welcome to {$storeName}.\n\n"
                .'You can open our shop Mini App below, or ask me any question about our products, stock, or policies!';
 
@@ -140,7 +140,7 @@ class TelegramService
      */
     public function executeCommand(string $command, string $param, int $chatId, TelegramAccount $account, array $from): array
     {
-        $storeName = StoreSetting::get('store_name', 'MegaCommerce');
+        $storeName = StoreSetting::get('store_name', 'TYUSHOP');
         $currency = StoreSetting::get('default_currency', 'USD');
         $isAdmin = $this->isAccountAdmin($account);
 
@@ -159,7 +159,7 @@ class TelegramService
                 $keyboard = [
                     'inline_keyboard' => [
                         [
-                            ['text' => '🛍️ Open MegaCommerce Mini App', 'web_app' => ['url' => $this->miniAppUrl]],
+                            ['text' => '🛍️ Open TYUSHOP Mini App', 'web_app' => ['url' => $this->miniAppUrl]],
                         ],
                         [
                             ['text' => '🔥 Featured Items', 'callback_data' => 'cmd:products'],
@@ -189,7 +189,7 @@ class TelegramService
                 $this->sendMessage($chatId, '🛍️ Tap below to browse products and check out inside Telegram:', [
                     'reply_markup' => [
                         'inline_keyboard' => [
-                            [['text' => '🚀 Launch MegaCommerce Mini App', 'web_app' => ['url' => $this->miniAppUrl]]],
+                            [['text' => '🚀 Launch TYUSHOP Mini App', 'web_app' => ['url' => $this->miniAppUrl]]],
                         ],
                     ],
                 ]);
@@ -329,7 +329,7 @@ class TelegramService
                 $supportEmail = StoreSetting::get('support_email', 'support@megacommerce.local');
                 $phone = StoreSetting::get('contact_phone', '+855 (23) 998-888');
 
-                $help = "ℹ️ *MegaCommerce Shopping Assistant Help*\n\n"
+                $help = "ℹ️ *TYUSHOP Shopping Assistant Help*\n\n"
                       ."*Customer Commands:*\n"
                       ."• `/start` — Restart bot and show navigation menu\n"
                       ."• `/shop` — Launch Telegram Mini App storefront\n"
@@ -389,7 +389,7 @@ class TelegramService
                 $pendingOrders = Order::where('status', 'pending')->count();
                 $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
 
-                $msg = "🔐 *MegaCommerce Admin Console*\n\n"
+                $msg = "🔐 *TYUSHOP Admin Console*\n\n"
                      ."📊 *Today's Operations:*\n"
                      ."• Orders Today: *{$ordersToday}*\n"
                      .'• Revenue Today: `$'.number_format($salesToday, 2)."`\n"
@@ -504,7 +504,7 @@ class TelegramService
                 $monthSales = Order::where('created_at', '>=', Carbon::now()->startOfMonth())->where('payment_status', 'paid')->sum('total_amount');
                 $totalPaidOrders = Order::where('payment_status', 'paid')->count();
 
-                $msg = "💰 *MegaCommerce Sales Performance:*\n\n"
+                $msg = "💰 *TYUSHOP Sales Performance:*\n\n"
                      .'• Today: `$'.number_format($todaySales, 2)."`\n"
                      .'• This Week: `$'.number_format($weekSales, 2)."`\n"
                      .'• This Month: `$'.number_format($monthSales, 2)."`\n"
@@ -569,7 +569,7 @@ class TelegramService
                 $paidOrders = Order::where('payment_status', 'paid')->count();
                 $lifetimeRev = Order::where('payment_status', 'paid')->sum('total_amount');
 
-                $msg = "📊 *MegaCommerce Operational Snapshot*\n\n"
+                $msg = "📊 *TYUSHOP Operational Snapshot*\n\n"
                      ."🏷️ *Catalog & Inventory:*\n"
                      ."• Active Catalog Items: *{$totalProducts}*\n"
                      ."• Total Warehouse Units: *{$totalStock}*\n"

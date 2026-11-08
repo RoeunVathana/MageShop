@@ -309,7 +309,7 @@ export function HomePage() {
                             price: p.selling_price,
                             originalPrice: p.discount_price || undefined,
                             image: p.image_url || '',
-                            vendor: p.brand || 'MegaCommerce',
+                            vendor: p.brand || 'TYUSHOP',
                             category: p.category?.name || 'Universal',
                           })
                           toast({
@@ -368,7 +368,7 @@ export function HomePage() {
                             price: p.selling_price,
                             originalPrice: p.discount_price || undefined,
                             image: p.image_url || '',
-                            vendor: p.brand || 'MegaCommerce',
+                            vendor: p.brand || 'TYUSHOP',
                           },
                           1
                         )

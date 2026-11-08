@@ -93,7 +93,7 @@ export function ProductDetailPage() {
         price: itemPrice,
         originalPrice: product.discount_price || undefined,
         image: activeImage || product.image_url || '',
-        vendor: product.brand || 'MegaCommerce',
+        vendor: product.brand || 'TYUSHOP',
       },
       quantity
     )
@@ -115,7 +115,7 @@ export function ProductDetailPage() {
       price: product.selling_price,
       originalPrice: product.discount_price || undefined,
       image: activeImage || product.image_url || '',
-      vendor: product.brand || 'MegaCommerce',
+      vendor: product.brand || 'TYUSHOP',
       category: product.category?.name || 'Universal',
     })
     toast({

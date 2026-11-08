@@ -109,7 +109,7 @@
     <table class="header-table">
         <tr>
             <td>
-                <div class="store-title">{{ $store['store_name'] ?? 'MegaCommerce' }}</div>
+                <div class="store-title">{{ $store['store_name'] ?? 'TYUSHOP' }}</div>
                 <div style="color: #6b7280;">{{ $store['store_address'] ?? 'Phnom Penh, Cambodia' }}</div>
                 <div style="color: #6b7280;">Email: {{ $store['support_email'] ?? 'support@megacommerce.local' }} | Tel: {{ $store['contact_phone'] ?? '+855 (23) 998-888' }}</div>
                 @if(!empty($store['tax_id']))
@@ -206,7 +206,7 @@
     @endif
 
     <div class="footer">
-        <div>{{ $store['receipt_footer_message'] ?? 'Thank you for shopping with MegaCommerce Flagship.' }}</div>
+        <div>{{ $store['receipt_footer_message'] ?? 'Thank you for shopping with TYUSHOP Flagship.' }}</div>
         <div>Return window: {{ $store['return_policy_days'] ?? 7 }} days from delivery date in accordance with store policies.</div>
     </div>
 

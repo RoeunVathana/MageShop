@@ -28,7 +28,7 @@ export function BrandsPage() {
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Official Partner Brands</h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Verified flagship brands, authorized manufacturers, and artisan designers on MegaCommerce.
+              Verified flagship brands, authorized manufacturers, and artisan designers on TYUSHOP.
             </p>
           </div>
           <Badge variant="outline" className="text-xs">Verified Direct Partners</Badge>

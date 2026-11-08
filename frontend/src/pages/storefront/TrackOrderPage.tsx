@@ -55,7 +55,7 @@ export function TrackOrderPage() {
         discount: 34.9,
         points_earned: 5,
         points_redeemed: 0,
-        customer_name: 'Valued MegaCommerce Customer',
+        customer_name: 'Valued TYUSHOP Customer',
         customer_phone: '+855 12 888 999',
         delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
         driver: {
@@ -67,7 +67,7 @@ export function TrackOrderPage() {
         gps: {
           warehouse_lat: 11.5449,
           warehouse_lng: 104.935,
-          warehouse_name: 'MegaCommerce Central Hub (Phnom Penh)',
+          warehouse_name: 'TYUSHOP Central Hub (Phnom Penh)',
           current_lat: 11.5585,
           current_lng: 104.9252,
           dest_lat: 11.568,
@@ -79,13 +79,13 @@ export function TrackOrderPage() {
         checkpoints: [
           {
             title: 'Order Confirmed & Payment Verified',
-            location: 'MegaCommerce Core Checkout (+5 Loyalty Pts Awarded)',
+            location: 'TYUSHOP Core Checkout (+5 Loyalty Pts Awarded)',
             time: 'Completed',
             done: true,
           },
           {
             title: 'Quality Inspected & Dispatched from Warehouse',
-            location: 'MegaCommerce Central Hub (Phnom Penh)',
+            location: 'TYUSHOP Central Hub (Phnom Penh)',
             time: 'Completed',
             done: true,
           },
@@ -274,7 +274,7 @@ export function TrackOrderPage() {
             <div className="relative h-80 sm:h-96 w-full bg-slate-950 overflow-hidden">
               {/* OpenStreetMap Live Embed centered on Phnom Penh Delivery Corridor */}
               <iframe
-                title="MegaCommerce Real-Time Delivery GPS Map"
+                title="TYUSHOP Real-Time Delivery GPS Map"
                 src="https://www.openstreetmap.org/export/embed.html?bbox=104.9050%2C11.5380%2C104.9450%2C11.5780&layer=mapnik"
                 className="w-full h-full border-0 opacity-85 contrast-110"
               />
@@ -329,7 +329,7 @@ export function TrackOrderPage() {
                 <div className="flex items-center justify-between">
                   <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/15 text-[11px] flex items-center gap-2">
                     <Package className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Origin: MegaCommerce Phnom Penh Fulfillment Hub</span>
+                    <span>Origin: TYUSHOP Phnom Penh Fulfillment Hub</span>
                   </div>
                   <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
@@ -521,7 +521,7 @@ export function TrackOrderPage() {
           <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border text-xs text-muted-foreground">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>
-              Protected by MegaCommerce Delivery Guarantee & PIN handover verification.
+              Protected by TYUSHOP Delivery Guarantee & PIN handover verification.
             </span>
           </div>
         </div>

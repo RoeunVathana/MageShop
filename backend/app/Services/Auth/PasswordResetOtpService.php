@@ -64,8 +64,8 @@ class PasswordResetOtpService
 
         // Queue/dispatch recovery email
         try {
-            Mail::raw("Your MegaCommerce password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
-                $m->to($email)->subject('MegaCommerce — 6-Digit Password Recovery OTP Code');
+            Mail::raw("Your TYUSHOP password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
+                $m->to($email)->subject('TYUSHOP — 6-Digit Password Recovery OTP Code');
             });
         } catch (\Throwable $e) {
             Log::warning("Failed to dispatch OTP email to [{$email}]: {$e->getMessage()}");
@@ -77,7 +77,7 @@ class PasswordResetOtpService
             if ($telegramAccount && ! empty($telegramAccount->telegram_chat_id)) {
                 app(TelegramService::class)->sendMessage(
                     $telegramAccount->telegram_chat_id,
-                    "🔐 *MegaCommerce Password Recovery OTP*\n\nYour 6-digit verification code is: *{$rawOtp}*\nExpires in 5 minutes.",
+                    "🔐 *TYUSHOP Password Recovery OTP*\n\nYour 6-digit verification code is: *{$rawOtp}*\nExpires in 5 minutes.",
                     ['parse_mode' => 'Markdown']
                 );
             }

@@ -264,7 +264,7 @@ export function CategoryCreatePage() {
                 <label className="font-semibold text-foreground">SEO Title</label>
                 <Input
                   {...register('seo_title')}
-                  placeholder="e.g. Buy Ergonomic Office Chairs Online | MegaCommerce"
+                  placeholder="e.g. Buy Ergonomic Office Chairs Online | TYUSHOP"
                   className="h-9 text-xs"
                 />
               </div>

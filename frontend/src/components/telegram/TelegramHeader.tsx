@@ -32,7 +32,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
           <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm ring-1 ring-primary/30 shrink-0 bg-background flex items-center justify-center">
             <img
               src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-              alt="MegaCommerce Logo"
+              alt="TYUSHOP Logo"
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.currentTarget
@@ -45,7 +45,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
           <div>
             <div className="flex items-center space-x-1.5">
               <h1 className="font-bold text-sm tracking-tight leading-none text-foreground">
-                {storeSettings?.store_name || 'MegaCommerce'}
+                {storeSettings?.store_name || 'TYUSHOP'}
               </h1>
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
             </div>

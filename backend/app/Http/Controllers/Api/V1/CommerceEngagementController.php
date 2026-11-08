@@ -527,7 +527,7 @@ class CommerceEngagementController extends Controller
                 'gps' => [
                     'warehouse_lat' => 11.5449,
                     'warehouse_lng' => 104.9350,
-                    'warehouse_name' => 'MegaCommerce Central Fulfillment Hub (Phnom Penh)',
+                    'warehouse_name' => 'TYUSHOP Central Fulfillment Hub (Phnom Penh)',
                     'current_lat' => $lat,
                     'current_lng' => $lng,
                     'dest_lat' => $destLat,
@@ -542,13 +542,13 @@ class CommerceEngagementController extends Controller
                         'title' => $isCashOnArrival
                             ? 'Order Confirmed • Cash on Hand Upon Arrival ($'.number_format($amountDueOnArrival, 2).')'
                             : 'Order Confirmed & Online Payment Verified',
-                        'location' => 'MegaCommerce Core Checkout (+5 Loyalty Pts Awarded)',
+                        'location' => 'TYUSHOP Core Checkout (+5 Loyalty Pts Awarded)',
                         'time' => 'Completed',
                         'done' => true,
                     ],
                     [
                         'title' => 'Quality Inspected & Dispatched from Warehouse',
-                        'location' => 'MegaCommerce Central Hub (Chamkarmon, Phnom Penh)',
+                        'location' => 'TYUSHOP Central Hub (Chamkarmon, Phnom Penh)',
                         'time' => 'Completed',
                         'done' => true,
                     ],
@@ -731,13 +731,13 @@ class CommerceEngagementController extends Controller
         $q = strtolower($validated['message']);
 
         if (str_contains($q, 'point') || str_contains($q, 'free') || str_contains($q, '100') || str_contains($q, 'ពិន្ទុ')) {
-            $reply = '🎁 **MegaCommerce Loyalty Rewards**: Every time you place an order, you automatically earn **+5 Points** (`ទិញម្ដងបាន 5 ពិន្ទុ`). Once you reach **100 Points**, you can exchange them for **ANY product priced under $20–$30 (up to $30.00) 100% FREE** in the Cart or Rewards Center!';
+            $reply = '🎁 **TYUSHOP Loyalty Rewards**: Every time you place an order, you automatically earn **+5 Points** (`ទិញម្ដងបាន 5 ពិន្ទុ`). Once you reach **100 Points**, you can exchange them for **ANY product priced under $20–$30 (up to $30.00) 100% FREE** in the Cart or Rewards Center!';
         } elseif (str_contains($q, 'discount') || str_contains($q, 'coupon') || str_contains($q, 'code') || str_contains($q, 'promo')) {
             $reply = '🏷️ **Active Discount Codes**: Use **`WELCOME10`** for 10% OFF, **`MEGA20`** for 20% OFF orders over $50, **`KHQR5`** for $5 instant off with Bakong KHQR, or **`VIP30`** for 30% OFF orders over $100!';
         } elseif (str_contains($q, 'track') || str_contains($q, 'delivery') || str_contains($q, 'location') || str_contains($q, 'where')) {
             $reply = '🚚 **Real-Time GPS Delivery Tracking**: Click **Track Delivery** in the top navigation bar (or visit `/track-order`) to watch your driver’s live GPS location on the interactive map, view courier contact details, and see estimated arrival times!';
         } else {
-            $reply = '👋 Welcome to **MegaCommerce 24/7 Supporter**! I can help you with:\n• **Loyalty Points**: Earn +5 pts per order, redeem 100 pts for a FREE item under $20–$30\n• **Discount Coupons**: Try `WELCOME10`, `MEGA20`, or `KHQR5` at checkout\n• **Live GPS Tracking**: Watch your courier in real time on `/track-order`\n• **Direct Hotline**: +855 23 999 888 or submit a ticket on `/contact`.';
+            $reply = '👋 Welcome to **TYUSHOP 24/7 Supporter**! I can help you with:\n• **Loyalty Points**: Earn +5 pts per order, redeem 100 pts for a FREE item under $20–$30\n• **Discount Coupons**: Try `WELCOME10`, `MEGA20`, or `KHQR5` at checkout\n• **Live GPS Tracking**: Watch your courier in real time on `/track-order`\n• **Direct Hotline**: +855 23 999 888 or submit a ticket on `/contact`.';
         }
 
         return response()->json([

@@ -353,7 +353,7 @@ export function BannerListPage() {
                       </div>
                     )}
                     <div className="absolute bottom-2 left-2 right-2 p-2 rounded-lg bg-background/80 backdrop-blur-md border text-[10px] flex items-center justify-between">
-                      <span className="font-bold">MegaCommerce Official</span>
+                      <span className="font-bold">TYUSHOP Official</span>
                       <span className="text-muted-foreground">{previewBanner.placement.toUpperCase()}</span>
                     </div>
                   </div>

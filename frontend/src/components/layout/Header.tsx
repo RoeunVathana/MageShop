@@ -54,7 +54,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link to="/" aria-label="MegaCommerce Home">
+          <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="md" subtitle={t('Multi-Vendor', 'ផ្សារទំនើបអនឡាញ')} />
           </Link>
         </div>

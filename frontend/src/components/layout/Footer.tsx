@@ -64,11 +64,11 @@ export function Footer() {
       <div className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-8">
         {/* Brand & Mission */}
         <div className="md:col-span-2 space-y-4">
-          <Link to="/" aria-label="MegaCommerce Home">
+          <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="md" subtitle="Flagship Enterprise Platform" />
           </Link>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
-            MegaCommerce is a modern multi-vendor e-commerce platform connecting buyers with verified sellers, powered by high-performance Laravel and React architecture.
+            TYUSHOP is a modern multi-vendor e-commerce platform connecting buyers with verified sellers, powered by high-performance Laravel and React architecture.
           </p>
 
           {/* Newsletter Box */}
@@ -107,7 +107,7 @@ export function Footer() {
             Help & Company
           </h4>
           <ul className="space-y-2 text-xs text-muted-foreground">
-            <li><Link to="/about" className="hover:text-primary transition-colors">About MegaCommerce</Link></li>
+            <li><Link to="/about" className="hover:text-primary transition-colors">About TYUSHOP</Link></li>
             <li><Link to="/contact" className="hover:text-primary transition-colors">Contact Support</Link></li>
             <li><Link to="/faq" className="hover:text-primary transition-colors">Frequently Asked Questions</Link></li>
             <li><Link to="/diagnostics" className="hover:text-amber-500 transition-colors font-medium">System Diagnostics</Link></li>
@@ -133,7 +133,7 @@ export function Footer() {
       {/* Bottom Legal bar */}
       <div className="border-t py-6 bg-muted/20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>© 2026 MegaCommerce Platform. Phase 1 Project Foundation. All rights reserved.</p>
+          <p>© 2026 TYUSHOP Platform. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 font-medium">
               <CreditCard className="w-3.5 h-3.5 text-primary" /> Supported Payments: KHQR Bakong, Visa, Mastercard (Phase 2)

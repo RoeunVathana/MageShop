@@ -540,7 +540,7 @@ export function ProductsPage() {
                               price: effPrice,
                               originalPrice: p.discount_price ? p.selling_price : undefined,
                               image: p.image_url || '',
-                              vendor: p.brand || 'MegaCommerce Official',
+                              vendor: p.brand || 'TYUSHOP Official',
                             })
                             toast({
                               title: liked ? '❤️ Added to Favorites!' : 'Removed from Favorites',
@@ -618,7 +618,7 @@ export function ProductsPage() {
                             price: effPrice,
                             originalPrice: p.discount_price ? p.selling_price : undefined,
                             image: p.image_url || '',
-                            vendor: p.brand || 'MegaCommerce Official',
+                            vendor: p.brand || 'TYUSHOP Official',
                           })
                           toast({
                             title: '🛒 Added to Cart!',

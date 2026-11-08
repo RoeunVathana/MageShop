@@ -252,7 +252,7 @@ class TelegramAiService
                 if ($policyType === 'return' || $policyType === 'refund') {
                     return [
                         'return_policy_days' => $settings['return_policy_days'] ?? 7,
-                        'policy' => "MegaCommerce offers a {$settings['return_policy_days']}-day return policy for unopened items in original packaging.",
+                        'policy' => "TYUSHOP offers a {$settings['return_policy_days']}-day return policy for unopened items in original packaging.",
                     ];
                 }
 
@@ -263,7 +263,7 @@ class TelegramAiService
                 }
 
                 return [
-                    'store_name' => $settings['store_name'] ?? 'MegaCommerce Flagship',
+                    'store_name' => $settings['store_name'] ?? 'TYUSHOP Flagship',
                     'address' => $settings['store_address'] ?? 'Phnom Penh, Cambodia',
                     'support_email' => $settings['support_email'] ?? 'support@megacommerce.local',
                     'contact_phone' => $settings['contact_phone'] ?? '+855 (23) 998-888',
@@ -296,7 +296,7 @@ class TelegramAiService
         string $language
     ): array {
         $lower = strtolower($text);
-        $storeName = StoreSetting::get('store_name', 'MegaCommerce Flagship');
+        $storeName = StoreSetting::get('store_name', 'TYUSHOP Flagship');
         $isKhmer = ($language === 'km' || preg_match('/[\x{1780}-\x{17FF}]/u', $text));
 
         $toolCalls = [];

@@ -56,12 +56,12 @@ export function AnnouncementBar() {
         {/* Left message */}
         <div className="flex items-center gap-2 text-center sm:text-left">
           <span className="inline-flex items-center gap-1 bg-primary-600 text-white px-2 py-0.5 rounded-full font-medium text-[10px]">
-            <Sparkles className="w-3 h-3" /> {t('Mega Sale', 'ប្រូម៉ូសិនពិសេស')}
+            <Sparkles className="w-3 h-3" /> {t('TYUSHOP Sale', 'ប្រូម៉ូសិនពិសេស')}
           </span>
           <span>
             {t(
-              'TyuShop Multi-Vendor E-Commerce Platform • Fast Delivery & 100-Pt Free Rewards',
-              'TyuShop ផ្សារទំនើបអនឡាញ • ដឹកជញ្ជូនរហ័ស និងសន្សំ ១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ'
+              'TYUSHOP Multi-Vendor E-Commerce Platform • Fast Delivery & 100-Pt Free Rewards',
+              'TYUSHOP ផ្សារទំនើបអនឡាញ • ដឹកជញ្ជូនរហ័ស និងសន្សំ ១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ'
             )}
           </span>
         </div>
@@ -69,11 +69,11 @@ export function AnnouncementBar() {
         {/* Right utilities: Help, Language, Currency */}
         <div className="flex items-center gap-4 text-slate-300">
           <a
-            href="tel:+18005556342"
+            href="tel:+85523999888"
             className="hidden md:flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
           >
             <Phone className="w-3 h-3" />
-            <span>{t('Support: +1 (800) 555-MEGA', 'ជំនួយអតិថិជន: +1 (800) 555-MEGA')}</span>
+            <span>{t('Support: +855 23 999 888', 'ជំនួយអតិថិជន: +855 23 999 888')}</span>
           </a>
 
           <div className="flex items-center gap-2">

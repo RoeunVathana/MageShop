@@ -86,7 +86,7 @@ export function WishlistPage() {
                   <div className="space-y-1">
                     <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      Vendor: {item.vendor || 'MegaCommerce Official'}
+                      Vendor: {item.vendor || 'TYUSHOP Official'}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-base font-extrabold text-primary">

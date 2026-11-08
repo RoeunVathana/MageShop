@@ -451,7 +451,7 @@ export function CartPage() {
                         {item.name}
                       </Link>
                       <p className="text-xs text-muted-foreground">
-                        Sold by: {item.vendor || 'MegaCommerce Official'}
+                        Sold by: {item.vendor || 'TYUSHOP Official'}
                       </p>
                       <div className="flex items-center justify-center sm:justify-start gap-2">
                         <span className="text-sm font-extrabold text-primary">

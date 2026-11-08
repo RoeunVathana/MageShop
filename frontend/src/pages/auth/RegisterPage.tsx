@@ -66,7 +66,7 @@ export function RegisterPage() {
       })
       toast({
         title: 'Account Created Successfully! 🎉',
-        description: 'Welcome to MegaCommerce! Please sign in with your credentials.',
+        description: 'Welcome to TYUSHOP! Please sign in with your credentials.',
         type: 'success',
       })
       navigate('/login')
@@ -88,12 +88,12 @@ export function RegisterPage() {
       </div>
       <Card className="max-w-md w-full shadow-xl border">
         <CardHeader className="space-y-2 text-center pb-6">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto" aria-label="MegaCommerce Home">
+          <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto" aria-label="TYUSHOP Home">
             <Logo size="lg" showText={false} />
           </Link>
           <CardTitle className="text-2xl font-black tracking-tight">Create Account</CardTitle>
           <CardDescription className="text-xs">
-            Join MegaCommerce to shop, save wishlist, or register your vendor store
+            Join TYUSHOP to shop, save wishlist, or register your vendor store
           </CardDescription>
         </CardHeader>
 
@@ -218,7 +218,7 @@ export function RegisterPage() {
 
             {/* Submit */}
             <Button type="submit" disabled={loading} className="w-full rounded-lg font-semibold shadow-md mt-2">
-              {loading ? 'Validating Account...' : 'Create MegaCommerce Account'}
+              {loading ? 'Validating Account...' : 'Create TYUSHOP Account'}
             </Button>
           </form>
 

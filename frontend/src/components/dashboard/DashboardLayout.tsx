@@ -70,7 +70,7 @@ export function DashboardLayout({
       <aside className="hidden lg:flex flex-col w-64 border-r bg-card z-30 shrink-0">
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-6 border-b">
-          <Link to="/" aria-label="MegaCommerce Home">
+          <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="sm" subtitle="WORKSPACE" />
           </Link>
         </div>
@@ -131,7 +131,7 @@ export function DashboardLayout({
             </Button>
           </Link>
           <div className="text-[10px] text-muted-foreground text-center">
-            MegaCommerce v1.0 • Phase 1
+            TYUSHOP v1.0 • Phase 1
           </div>
         </div>
       </aside>
@@ -145,7 +145,7 @@ export function DashboardLayout({
           />
           <div className="relative w-64 bg-card h-full shadow-2xl flex flex-col p-4 z-10 animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between pb-3 border-b">
-              <Link to="/" aria-label="MegaCommerce Home">
+              <Link to="/" aria-label="TYUSHOP Home">
                 <Logo size="sm" subtitle="WORKSPACE" />
               </Link>
               <Button

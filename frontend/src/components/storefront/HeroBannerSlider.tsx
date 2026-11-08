@@ -133,7 +133,7 @@ export function HeroBannerSlider() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-semibold border border-primary/20 backdrop-blur-sm animate-in fade-in slide-in-from-left duration-500">
                 <img
                   src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-                  alt="MegaCommerce"
+                  alt="TYUSHOP"
                   className="w-4 h-4 rounded-full object-cover"
                 />
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
@@ -236,12 +236,12 @@ export function HeroBannerSlider() {
                   <div className="flex items-center gap-3">
                     <img
                       src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-                      alt="MegaCommerce Official Emblem"
+                      alt="TYUSHOP Official Emblem"
                       className="w-10 h-10 rounded-lg object-cover ring-2 ring-primary/40 shadow-sm"
                     />
                     <div>
                       <div className="text-xs font-bold tracking-tight text-foreground flex items-center gap-1.5">
-                        MegaCommerce Official
+                        TYUSHOP Official
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       </div>
                       <div className="text-[10px] text-muted-foreground">Premier Universal Marketplace</div>

@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils'
 
 const faqs = [
   {
-    q: 'What is MegaCommerce?',
-    a: 'MegaCommerce is a modern multi-vendor marketplace platform built for scale, supporting independent sellers, regional warehouses, dispatch drivers, and customer ordering.',
+    q: 'What is TYUSHOP?',
+    a: 'TYUSHOP is a modern multi-vendor marketplace platform built for scale, supporting independent sellers, regional warehouses, dispatch drivers, and customer ordering.',
   },
   {
     q: 'What features are active in Phase 1?',
@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: 'What payment options will be supported in Phase 2?',
-    a: 'MegaCommerce will support Bakong KHQR real-time payment gateway, standard Credit/Debit Cards (Visa/Mastercard), Cash on Delivery (COD), and digital merchant payouts.',
+    a: 'TYUSHOP will support Bakong KHQR real-time payment gateway, standard Credit/Debit Cards (Visa/Mastercard), Cash on Delivery (COD), and digital merchant payouts.',
   },
   {
     q: 'Where can I inspect the live backend health status?',
@@ -38,7 +38,7 @@ export function FaqPage() {
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight">Frequently Asked Questions</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          Everything you need to know about MegaCommerce Phase 1 architecture and roadmap.
+          Everything you need to know about TYUSHOP Phase 1 architecture and roadmap.
         </p>
       </div>
 
