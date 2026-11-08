@@ -48,6 +48,9 @@ import { CategoryEditPage } from '@/pages/admin/CategoryEditPage'
 // Brand Administration
 import { BrandListPage } from '@/pages/admin/BrandListPage'
 
+// API Token Keys & Security Administration
+import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
+
 // Telegram Mini App
 import { TelegramApp } from '@/pages/telegram/TelegramApp'
 
@@ -120,6 +123,10 @@ export default function App() {
 
               {/* Brand Management */}
               <Route path="/admin/brands" element={<BrandListPage />} />
+
+              {/* API Token Keys & Security Management */}
+              <Route path="/admin/security" element={<AdminSecurityPage />} />
+              <Route path="/admin/api-tokens" element={<AdminSecurityPage />} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

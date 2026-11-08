@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\ApiTokenController;
+use App\Http\Controllers\Api\V1\Admin\EmailPasswordOtpController;
 use App\Http\Controllers\Api\V1\Admin\RolePermissionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BrandController;
@@ -117,6 +119,34 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Store Settings
     Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);
     Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+
+    // API Token Keys Management
+    Route::prefix('api-tokens')->group(function () {
+        Route::get('/', [ApiTokenController::class, 'index']);
+        Route::post('/', [ApiTokenController::class, 'store']);
+        Route::delete('/{id}', [ApiTokenController::class, 'destroy']);
+        Route::post('/{id}/regenerate', [ApiTokenController::class, 'regenerate']);
+    });
+
+    // Email, Password, User Security & Sent OTP Management
+    Route::prefix('security')->group(function () {
+        // Users & Credentials
+        Route::get('/users', [EmailPasswordOtpController::class, 'indexUsers']);
+        Route::patch('/users/{user}/email', [EmailPasswordOtpController::class, 'updateEmail']);
+        Route::patch('/users/{user}/password', [EmailPasswordOtpController::class, 'updatePassword']);
+        Route::post('/users/{user}/send-otp', [EmailPasswordOtpController::class, 'sendUserOtp']);
+
+        // Sent OTP Logs & Real-time Management
+        Route::get('/otps', [EmailPasswordOtpController::class, 'indexOtps']);
+        Route::post('/otps/dispatch', [EmailPasswordOtpController::class, 'dispatchOtp']);
+        Route::post('/otps/{id}/invalidate', [EmailPasswordOtpController::class, 'invalidateOtp']);
+        Route::post('/otps/{id}/resend', [EmailPasswordOtpController::class, 'resendOtp']);
+
+        // Email / SMTP Settings & Deliverability Testing
+        Route::get('/email-settings', [EmailPasswordOtpController::class, 'getEmailSettings']);
+        Route::patch('/email-settings', [EmailPasswordOtpController::class, 'updateEmailSettings']);
+        Route::post('/email-settings/test-otp', [EmailPasswordOtpController::class, 'sendTestEmailOtp']);
+    });
 });
 
 // Orders & Branded PDF Receipts
