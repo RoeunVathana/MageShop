@@ -1901,33 +1901,36 @@ export function CartPage() {
 
       {/* LIVE BAKONG KHQR SCAN-TO-PAY MODAL */}
       {qrModalData && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] my-auto">
             {/* Official Red KHQR Top Bar */}
-            <div className="bg-[#E1232E] text-white px-6 py-4 flex items-center justify-between">
+            <div className="bg-[#E1232E] text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-sm">
               <div>
-                <div className="text-lg font-black tracking-wider">KHQR • BAKONG</div>
-                <div className="text-[11px] text-white/85">
+                <div className="text-base sm:text-lg font-black tracking-wider flex items-center gap-2">
+                  <span>KHQR • BAKONG</span>
+                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NBC</span>
+                </div>
+                <div className="text-[11px] text-white/90">
                   National Bank of Cambodia • Instant Scan Payment
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setQrModalData(null)}
-                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white cursor-pointer"
+                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close QR Modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-5 text-center">
+            <div className="p-4 sm:p-5 space-y-3 text-center overflow-y-auto">
               {/* Merchant & Amount Header */}
-              <div className="space-y-1">
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="space-y-0.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {qrModalData.merchant_name} ({qrModalData.merchant_account})
                 </div>
-                <div className="text-3xl font-black text-slate-900 dark:text-white">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                   ${qrModalData.amount_usd.toFixed(2)}{' '}
                   <span className="text-sm font-bold text-muted-foreground">USD</span>
                 </div>
@@ -1937,9 +1940,9 @@ export function CartPage() {
               </div>
 
               {/* Scannable QR Code Frame */}
-              <div className="relative mx-auto w-60 h-60 rounded-2xl border-4 border-[#E1232E]/20 bg-white p-3 shadow-inner flex items-center justify-center">
+              <div className="relative mx-auto w-44 h-44 sm:w-48 sm:h-48 rounded-2xl border-4 border-[#E1232E]/25 bg-white p-2.5 shadow-inner flex items-center justify-center">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=6&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${encodeURIComponent(
                     qrModalData.qr_string
                   )}`}
                   alt={`Bakong KHQR for Order ${qrModalData.order_number}`}
@@ -1953,7 +1956,7 @@ export function CartPage() {
               </div>
 
               {/* Order Reference & Countdown Timer */}
-              <div className="rounded-2xl bg-muted/50 p-3 text-xs space-y-1.5 border">
+              <div className="rounded-xl bg-muted/40 p-2.5 text-xs space-y-1 border">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{t('Order Number:', 'លេខបញ្ជាទិញ:')}</span>
                   <span className="font-black text-foreground">#{qrModalData.order_number}</span>
@@ -1974,11 +1977,11 @@ export function CartPage() {
               </div>
 
               {/* Supported Banks */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <div className="flex flex-wrap items-center justify-center gap-1">
                 {['ABA PAY', 'ACLEDA Mobile', 'Bakong App', 'Wing Bank', 'Sathapana'].map((bank) => (
                   <span
                     key={bank}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                   >
                     {bank}
                   </span>
@@ -1986,12 +1989,12 @@ export function CartPage() {
               </div>
 
               {/* Confirm / Test False Buttons */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2 pt-0.5">
                 <Button
                   type="button"
                   disabled={verifyingQrPayment}
                   onClick={() => handleConfirmQrPayment(false)}
-                  className="w-full rounded-2xl h-12 font-black text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25"
+                  className="w-full rounded-2xl h-11 font-black text-xs sm:text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25"
                 >
                   {verifyingQrPayment ? (
                     <>
@@ -2000,7 +2003,7 @@ export function CartPage() {
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-4 h-4" />
                       {t(
                         'I Have Scanned & Paid — Confirm Payment',
                         'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់ប្រាក់'
@@ -2015,10 +2018,10 @@ export function CartPage() {
                     variant="outline"
                     disabled={verifyingQrPayment}
                     onClick={() => handleConfirmQrPayment(true)}
-                    className="rounded-xl h-10 text-xs font-bold gap-1.5 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    className="rounded-xl h-9 text-[11px] font-bold gap-1 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                   >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {t('Payment Failed (False)', 'ការទូទាត់មិនជោគជ័យ (False)')}
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{t('Payment Failed (False)', 'ការទូទាត់មិនជោគជ័យ (False)')}</span>
                   </Button>
 
                   <Button
@@ -2026,14 +2029,14 @@ export function CartPage() {
                     variant="ghost"
                     disabled={verifyingQrPayment}
                     onClick={() => setQrModalData(null)}
-                    className="rounded-xl h-10 text-xs font-semibold text-muted-foreground hover:bg-muted"
+                    className="rounded-xl h-9 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
                   >
                     <X className="w-3.5 h-3.5 mr-1" />
-                    {t('Cancel / Close', 'បោះបង់ / បិទ')}
+                    <span>{t('Cancel / Close', 'បោះបង់ / បិទ')}</span>
                   </Button>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground leading-tight">
                   {t(
                     'Confirming sends your payment receipt to your email and alerts the Telegram Admin immediately.',
                     'ការបញ្ជាក់នឹងផ្ញើវិក្កយបត្រទៅអ៊ីមែលរបស់អ្នក និងផ្ញើរបាយការណ៍ទៅ Telegram Admin ភ្លាមៗ។'
@@ -2047,33 +2050,33 @@ export function CartPage() {
 
       {/* POPUP PAYMENT SUCCESS MODAL */}
       {paymentSuccessData && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 my-8">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col max-h-[92vh] my-auto">
             {/* Celebratory Emerald Top Banner */}
-            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-6 py-6 text-center relative overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
               <button
                 type="button"
                 onClick={() => setPaymentSuccessData(null)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close Success Popup"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="w-16 h-16 rounded-full bg-white text-emerald-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-bounce">
-                <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+              <div className="w-12 h-12 rounded-full bg-white text-emerald-600 mx-auto flex items-center justify-center shadow-lg ring-4 ring-white/20 mb-2 animate-bounce">
+                <CheckCircle2 className="w-7 h-7 stroke-[2.5]" />
               </div>
 
-              <h2 className="text-2xl font-black tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
                 {t('Payment Successful!', 'ការទូទាត់ប្រាក់ជោគជ័យ!')}
               </h2>
-              <p className="text-xs text-white/90 mt-1 font-medium">
+              <p className="text-xs text-white/90 mt-0.5 font-medium">
                 {t('Your order has been placed and verified successfully.', 'ការបញ្ជាទិញរបស់អ្នកត្រូវបានផ្ទៀងផ្ទាត់ និងទទួលដោយជោគជ័យ។')}
               </p>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
               {/* Receipt Summary Card */}
               <div className="rounded-2xl bg-muted/40 p-4 border border-border/70 space-y-2.5 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
@@ -2187,32 +2190,32 @@ export function CartPage() {
 
       {/* POPUP PAYMENT FALSE / FAILED MODAL */}
       {paymentFailedData && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-rose-500/50 my-8">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-rose-500/50 flex flex-col max-h-[92vh] my-auto">
             {/* Warning Red Top Banner */}
-            <div className="bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white px-6 py-6 text-center relative overflow-hidden">
+            <div className="bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
               <button
                 type="button"
                 onClick={() => setPaymentFailedData(null)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close Failed Popup"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="w-16 h-16 rounded-full bg-white text-rose-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-pulse">
-                <AlertTriangle className="w-10 h-10 stroke-[2.5]" />
+              <div className="w-12 h-12 rounded-full bg-white text-rose-600 mx-auto flex items-center justify-center shadow-lg ring-4 ring-white/20 mb-2 animate-pulse">
+                <AlertTriangle className="w-7 h-7 stroke-[2.5]" />
               </div>
 
-              <h2 className="text-2xl font-black tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
                 {t('Payment Failed / Declined', 'ការទូទាត់ប្រាក់មិនជោគជ័យ!')}
               </h2>
-              <p className="text-xs text-white/90 mt-1 font-medium">
+              <p className="text-xs text-white/90 mt-0.5 font-medium">
                 {t('Status: Transaction False / Unverified', 'ស្ថានភាព៖ បរាជ័យ / មិនអាចផ្ទៀងផ្ទាត់បាន (False)')}
               </p>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
               {/* Detailed Failure Notice */}
               <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 p-4 space-y-2">
                 <div className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
@@ -2297,27 +2300,27 @@ export function CartPage() {
 
       {/* CUSTOMER LOGIN REQUIRED MODAL DIALOG */}
       {isLoginRequiredModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-amber-500/40 my-8">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-amber-500/40 flex flex-col max-h-[92vh] my-auto">
             {/* Top Amber / Orange Branded Banner */}
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-6 py-6 text-center relative overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
               <button
                 type="button"
                 onClick={() => setIsLoginRequiredModalOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close Login Modal"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="w-16 h-16 rounded-full bg-white text-amber-600 mx-auto flex items-center justify-center shadow-lg ring-8 ring-white/20 mb-3 animate-bounce">
-                <Lock className="w-8 h-8 stroke-[2.5]" />
+              <div className="w-12 h-12 rounded-full bg-white text-amber-600 mx-auto flex items-center justify-center shadow-lg ring-4 ring-white/20 mb-2 animate-bounce">
+                <Lock className="w-7 h-7 stroke-[2.5]" />
               </div>
 
               <h2 className="text-xl font-black tracking-tight">
                 {t('Customer Sign In Required', 'តម្រូវឱ្យចូលគណនីអតិថិជន')}
               </h2>
-              <p className="text-xs text-white/90 mt-1 font-medium">
+              <p className="text-xs text-white/90 mt-0.5 font-medium">
                 {t(
                   'Please sign in or register to complete your order and track live GPS delivery.',
                   'សូមចូលគណនី ឬចុះឈ្មោះបង្កើតគណនី ដើម្បីទូទាត់ប្រាក់ និងតាមដានការដឹកជញ្ជូន។'
@@ -2325,7 +2328,7 @@ export function CartPage() {
               </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto">
               {/* Value Highlights */}
               <div className="rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 p-3.5 space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-bold">
