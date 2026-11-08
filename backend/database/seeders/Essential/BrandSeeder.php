@@ -138,11 +138,11 @@ class BrandSeeder extends Seeder
             ],
         ];
 
-        DB::transaction(function () use ($brands) {
-            foreach ($brands as $item) {
-                $translations = $item['translations'] ?? [];
-                unset($item['translations']);
+        foreach ($brands as $item) {
+            $translations = $item['translations'] ?? [];
+            unset($item['translations']);
 
+            try {
                 $brand = Brand::updateOrCreate(
                     ['slug' => $item['slug']],
                     array_merge($item, [
@@ -167,8 +167,10 @@ class BrandSeeder extends Seeder
                 // Associate products matching brand name in their title
                 Product::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($brand->name) . '%'])
                     ->update(['brand_id' => $brand->id]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("BrandSeeder item {$item['slug']} error: " . $e->getMessage());
             }
-        });
+        }
     }
 }
 
