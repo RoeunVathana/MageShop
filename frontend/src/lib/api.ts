@@ -2,8 +2,15 @@ import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type Ax
 import type { ApiErrorResponse } from '@/types/api.types'
 
 const getApiBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
-    return 'https://mageshop-production.up.railway.app/api/v1'
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    }
+    if (host.includes('railway.app')) {
+      return 'https://mageshop-production.up.railway.app/api/v1'
+    }
+    return 'https://api.tyushop.blog/api/v1'
   }
   return import.meta.env.VITE_API_BASE_URL || 'https://api.tyushop.blog/api/v1'
 }

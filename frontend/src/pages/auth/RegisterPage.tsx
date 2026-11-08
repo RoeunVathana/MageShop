@@ -130,12 +130,38 @@ export function RegisterPage() {
       const loginTarget = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login'
       navigate(loginTarget)
     } catch (err: any) {
+      let errorDescription = t('Unable to register account. Please check your details.', 'មិនអាចចុះឈ្មោះបានទេ។ សូមពិនិត្យព័ត៌មានម្តងទៀត។')
+
+      const emailTaken = err.errors?.email?.some((m: string) => m.toLowerCase().includes('already been taken'))
+      const phoneTaken = err.errors?.phone_number?.some((m: string) => m.toLowerCase().includes('already been taken'))
+
+      if (emailTaken && phoneTaken) {
+        errorDescription = t(
+          'This email and phone number are already registered. Please sign in instead.',
+          'អ៊ីមែល និងលេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលប្រើប្រាស់ជំនួសវិញ។'
+        )
+      } else if (emailTaken) {
+        errorDescription = t(
+          'This email address is already registered. Please sign in instead.',
+          'អ៊ីមែលនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលប្រើប្រាស់ជំនួសវិញ។'
+        )
+      } else if (phoneTaken) {
+        errorDescription = t(
+          'This phone number is already registered. Please sign in instead.',
+          'លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ។ សូមចូលប្រើប្រាស់ជំនួសវិញ។'
+        )
+      } else if (err.errors) {
+        const firstErrorKey = Object.keys(err.errors)[0]
+        if (firstErrorKey && err.errors[firstErrorKey]?.[0]) {
+          errorDescription = err.errors[firstErrorKey][0]
+        }
+      } else if (err.message && !err.message.includes('The given data was invalid')) {
+        errorDescription = err.message
+      }
+
       toast({
         title: t('Registration Failed', 'ការចុះឈ្មោះមិនបានជោគជ័យ'),
-        description:
-          err.message ||
-          err.response?.data?.message ||
-          t('Unable to register account. Please check your details.', 'មិនអាចចុះឈ្មោះបានទេ។ សូមពិនិត្យព័ត៌មានម្តងទៀត។'),
+        description: errorDescription,
         type: 'error',
       })
     } finally {

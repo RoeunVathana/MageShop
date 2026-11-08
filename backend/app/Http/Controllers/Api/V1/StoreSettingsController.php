@@ -22,6 +22,14 @@ class StoreSettingsController extends Controller
             'store_name',
             'store_description',
             'store_address',
+            'company_city',
+            'company_country',
+            'company_postal_code',
+            'company_latitude',
+            'company_longitude',
+            'company_map_embed_url',
+            'company_google_maps_url',
+            'business_hours',
             'contact_phone',
             'support_email',
             'business_email',
@@ -35,11 +43,37 @@ class StoreSettingsController extends Controller
             'brand_color',
             'return_policy_days',
             'shipping_policy',
+            'tax_id',
             'telegram_bot_username',
             'telegram_support_contact',
         ];
 
         $publicSettings = array_intersect_key($all, array_flip($publicKeys));
+
+        // Default Company Location & Details
+        if (! isset($publicSettings['store_address']) || empty($publicSettings['store_address'])) {
+            $publicSettings['store_address'] = 'Preah Monivong Blvd, Sangkat Boeung Keng Kang 1, Khan Chamkarmon, Phnom Penh, Cambodia';
+        }
+        if (! isset($publicSettings['company_city']) || empty($publicSettings['company_city'])) {
+            $publicSettings['company_city'] = 'Phnom Penh';
+        }
+        if (! isset($publicSettings['company_country']) || empty($publicSettings['company_country'])) {
+            $publicSettings['company_country'] = 'Cambodia';
+        }
+        if (! isset($publicSettings['company_latitude']) || empty($publicSettings['company_latitude'])) {
+            $publicSettings['company_latitude'] = '11.5564';
+        }
+        if (! isset($publicSettings['company_longitude']) || empty($publicSettings['company_longitude'])) {
+            $publicSettings['company_longitude'] = '104.9282';
+        }
+        if (! isset($publicSettings['business_hours']) || empty($publicSettings['business_hours'])) {
+            $publicSettings['business_hours'] = 'Mon - Sun: 8:00 AM - 10:00 PM (24/7 Support Desk)';
+        }
+        if (! isset($publicSettings['company_google_maps_url']) || empty($publicSettings['company_google_maps_url'])) {
+            $lat = $publicSettings['company_latitude'];
+            $lng = $publicSettings['company_longitude'];
+            $publicSettings['company_google_maps_url'] = "https://maps.google.com/?q={$lat},{$lng}";
+        }
 
         // Intelligent currency defaults
         if (! isset($publicSettings['default_currency']) || empty($publicSettings['default_currency'])) {
@@ -107,6 +141,14 @@ class StoreSettingsController extends Controller
             'store_name' => 'nullable|string|max:100',
             'store_description' => 'nullable|string|max:500',
             'store_address' => 'nullable|string|max:255',
+            'company_city' => 'nullable|string|max:100',
+            'company_country' => 'nullable|string|max:100',
+            'company_postal_code' => 'nullable|string|max:20',
+            'company_latitude' => 'nullable|numeric|between:-90,90',
+            'company_longitude' => 'nullable|numeric|between:-180,180',
+            'company_map_embed_url' => 'nullable|string|max:1500',
+            'company_google_maps_url' => 'nullable|string|max:1000',
+            'business_hours' => 'nullable|string|max:255',
             'contact_phone' => 'nullable|string|max:50',
             'support_email' => 'nullable|email|max:100',
             'business_email' => 'nullable|email|max:100',

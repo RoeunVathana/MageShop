@@ -56,6 +56,7 @@ import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
 
 // Currency & Store Settings Administration
 import { AdminCurrencyPage } from '@/pages/admin/AdminCurrencyPage'
+import { AdminCompanyLocationPage } from '@/pages/admin/AdminCompanyLocationPage'
 
 // Slide Banner Administration
 import { BannerListPage } from '@/pages/admin/BannerListPage'
@@ -144,6 +145,10 @@ export default function App() {
               {/* Currency & Exchange Rate Management (Admin Only) */}
               <Route path="/admin/currency" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
               <Route path="/admin/settings" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
+
+              {/* Company Profile & Location Management (Admin Only) */}
+              <Route path="/admin/company" element={<AdminOnlyRoute><AdminCompanyLocationPage /></AdminOnlyRoute>} />
+              <Route path="/admin/location" element={<AdminOnlyRoute><AdminCompanyLocationPage /></AdminOnlyRoute>} />
 
               {/* API Token Keys & Security Management (Admin Only) */}
               <Route path="/admin/security" element={<AdminOnlyRoute><AdminSecurityPage /></AdminOnlyRoute>} />

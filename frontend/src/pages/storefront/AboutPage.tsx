@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ShieldCheck,
@@ -10,14 +11,24 @@ import {
   Headphones,
   ArrowRight,
   Award,
+  Building2,
+  MapPin,
+  Clock,
+  ExternalLink,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { storeSettingsService, type StoreCurrencySettings } from '@/services/storeSettings.service'
 
 export function AboutPage() {
   const { t } = useShopEngagement()
+  const [settings, setSettings] = useState<StoreCurrencySettings | null>(null)
+
+  useEffect(() => {
+    storeSettingsService.getPublicSettings().then(setSettings)
+  }, [])
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
@@ -140,6 +151,76 @@ export function AboutPage() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Flagship Headquarters & Location */}
+      <div className="rounded-3xl border bg-gradient-to-br from-card to-muted/30 p-6 md:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-primary/10 text-primary font-bold text-xs">
+                <Building2 className="w-3.5 h-3.5 mr-1" />
+                {t('Headquarters & Official Office', 'ការិយាល័យកណ្តាល & ទីតាំងផ្លូវការ')}
+              </Badge>
+              <Badge className="bg-emerald-500/15 text-emerald-600 font-bold text-xs">
+                {t('Verified Physical Address', 'អាសយដ្ឋានជាក់ស្តែង')}
+              </Badge>
+            </div>
+            <h2 className="text-2xl font-black text-foreground">
+              {settings?.store_name || 'TYUSHOP'} {t('Flagship Center', 'មជ្ឈមណ្ឌលធំ')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href={settings?.company_google_maps_url || `https://maps.google.com/?q=${settings?.company_latitude || 11.5564},${settings?.company_longitude || 104.9282}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="rounded-xl text-xs font-bold gap-2">
+                <ExternalLink className="w-4 h-4 text-primary" />
+                {t('Open Google Maps', 'បើកលើ Google Maps')}
+              </Button>
+            </a>
+            <Link to="/contact">
+              <Button className="rounded-xl text-xs font-bold gap-2">
+                <MapPin className="w-4 h-4" />
+                {t('View Full Map & Contact', 'មើលផែនទី & ទំនាក់ទំនង')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="p-4 rounded-2xl border bg-background/80 space-y-1">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-primary" />
+              {t('Headquarters Address', 'អាសយដ្ឋានការិយាល័យកណ្តាល')}
+            </span>
+            <p className="text-sm font-semibold text-foreground">
+              {settings?.store_address || 'Monivong Blvd, BKK1, Chamkarmon, Phnom Penh, Cambodia'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl border bg-background/80 space-y-1">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              {t('Operating Hours', 'ម៉ោងធ្វើការ')}
+            </span>
+            <p className="text-sm font-semibold text-foreground">
+              {settings?.business_hours || 'Mon - Sun: 08:00 AM - 09:00 PM (24/7 Online Supporter)'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl border bg-background/80 space-y-1">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-indigo-500" />
+              {t('GPS Coordinates', 'កូអរដោនេ GPS')}
+            </span>
+            <p className="text-sm font-mono font-semibold text-foreground">
+              {settings?.company_latitude || '11.5564'}° N, {settings?.company_longitude || '104.9282'}° E
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
