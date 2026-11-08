@@ -62,9 +62,13 @@ class TelegramAiController extends Controller
     /**
      * Retrieve conversation history for a given session.
      */
-    public function history(int $sessionId): JsonResponse
+    public function history(string|int $sessionId): JsonResponse
     {
-        $session = TelegramChatSession::with('messages')->find($sessionId);
+        if (!is_numeric($sessionId)) {
+            return response()->json(['status' => 'error', 'message' => 'Chat session not found.'], 404);
+        }
+
+        $session = TelegramChatSession::with('messages')->find((int) $sessionId);
         if (!$session) {
             return response()->json(['status' => 'error', 'message' => 'Chat session not found.'], 404);
         }

@@ -142,8 +142,8 @@ class TelegramAiService
             case 'getProductDetails':
                 $identifier = trim((string) ($parameters['sku_or_id'] ?? ''));
                 $product = is_numeric($identifier)
-                    ? Product::with('category')->find($identifier)
-                    : Product::with('category')->where('sku', strtoupper($identifier))->first();
+                    ? Product::with(['category', 'brandRecord'])->find((int) $identifier)
+                    : Product::with(['category', 'brandRecord'])->where('sku', strtoupper($identifier))->orWhere('slug', $identifier)->first();
 
                 if (!$product) {
                     return ['error' => "Product '{$identifier}' not found in catalog."];
@@ -159,6 +159,7 @@ class TelegramAiService
                     'in_stock' => $product->stock_quantity > 0,
                     'description' => $product->description,
                     'category' => $product->category?->name,
+                    'brand' => $product->brand ?? $product->brandRecord?->name,
                     'is_featured' => $product->is_featured,
                     'specifications' => $product->specifications,
                 ];
@@ -166,8 +167,8 @@ class TelegramAiService
             case 'checkStock':
                 $identifier = trim((string) ($parameters['sku_or_id'] ?? ''));
                 $product = is_numeric($identifier)
-                    ? Product::find($identifier)
-                    : Product::where('sku', strtoupper($identifier))->first();
+                    ? Product::find((int) $identifier)
+                    : Product::where('sku', strtoupper($identifier))->orWhere('slug', $identifier)->first();
 
                 if (!$product) {
                     return ['error' => "Product '{$identifier}' not found."];

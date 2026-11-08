@@ -276,17 +276,21 @@ class Product extends Model
 
     /**
      * Resolve the model for route binding (supports both numeric ID and slug).
+     * Prevents PostgreSQL 22P02 invalid input syntax error.
      */
     public function resolveRouteBinding($value, $field = null)
     {
         if ($field) {
-            return parent::resolveRouteBinding($value, $field);
+            if ($field === 'id' && !is_numeric($value)) {
+                return null;
+            }
+            return $this->where($field, $value)->first();
         }
 
         if (is_numeric($value)) {
             return $this->where('id', (int) $value)->first();
         }
 
-        return $this->where('slug', $value)->first();
+        return $this->where('slug', (string) $value)->first();
     }
 }

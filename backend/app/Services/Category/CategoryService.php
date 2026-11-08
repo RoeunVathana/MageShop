@@ -37,10 +37,10 @@ class CategoryService
 
         // Parent filter
         if (isset($filters['parent_id'])) {
-            if ($filters['parent_id'] === 'null' || $filters['parent_id'] === '') {
+            if ($filters['parent_id'] === 'null' || $filters['parent_id'] === 'root' || $filters['parent_id'] === '') {
                 $query->whereNull('parent_id');
-            } else {
-                $query->where('parent_id', $filters['parent_id']);
+            } else if (is_numeric($filters['parent_id'])) {
+                $query->where('parent_id', (int) $filters['parent_id']);
             }
         }
 

@@ -54,5 +54,25 @@ class CategoryAttribute extends Model
     {
         return $this->hasMany(ProductAttributeValue::class);
     }
+
+    /**
+     * Resolve route binding supporting numeric ID and code.
+     * Prevents PostgreSQL 22P02 error.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field) {
+            if ($field === 'id' && !is_numeric($value)) {
+                return null;
+            }
+            return $this->where($field, $value)->first();
+        }
+
+        if (is_numeric($value)) {
+            return $this->where('id', (int) $value)->first();
+        }
+
+        return $this->where('code', (string) $value)->first();
+    }
 }
 

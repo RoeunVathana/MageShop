@@ -35,16 +35,22 @@ class Category extends Model
 
     /**
      * Resolve route model binding by ID or slug.
+     * Prevents PostgreSQL 22P02 invalid input syntax error.
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        if (is_numeric($value)) {
-            return $this->where('id', (int) $value)->first()
-                ?? parent::resolveRouteBinding($value, $field);
+        if ($field) {
+            if ($field === 'id' && !is_numeric($value)) {
+                return null;
+            }
+            return $this->where($field, $value)->first();
         }
 
-        return $this->where('slug', $value)->first()
-            ?? parent::resolveRouteBinding($value, $field);
+        if (is_numeric($value)) {
+            return $this->where('id', (int) $value)->first();
+        }
+
+        return $this->where('slug', (string) $value)->first();
     }
 
     /**

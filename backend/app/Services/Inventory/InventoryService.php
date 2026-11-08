@@ -16,7 +16,7 @@ class InventoryService
      */
     public function listInventory(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Product::with(['inventory', 'category']);
+        $query = Product::with(['inventory', 'category', 'brandRecord']);
 
         // Search by product name or SKU
         if (!empty($filters['search'])) {

@@ -272,5 +272,68 @@ class ProductManagementTest extends TestCase
             'is_active' => false,
         ]);
     }
+
+    public function test_public_user_can_view_single_product_by_slug(): void
+    {
+        $product = Product::firstOrFail();
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.slug', $product->slug)
+            ->assertJsonPath('data.sku', $product->sku);
+    }
+
+    public function test_nonexistent_product_and_category_slug_returns_404_not_500(): void
+    {
+        // Non-existent product slug must return structured 404, NEVER PostgreSQL 22P02 exception 500
+        $prodResponse = $this->getJson('/api/v1/products/totally-nonexistent-slug-xyz');
+        $prodResponse->assertStatus(404);
+
+        // Non-existent category slug must return structured 404
+        $catResponse = $this->getJson('/api/v1/categories/nonexistent-category-slug-abc/attributes');
+        $catResponse->assertStatus(404);
+    }
+
+    public function test_public_user_can_filter_products_by_category_slug(): void
+    {
+        $response = $this->getJson("/api/v1/products?category_id={$this->category->slug}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_admin_can_create_product_with_advanced_flags_and_discounts(): void
+    {
+        Sanctum::actingAs($this->adminUser);
+
+        $payload = [
+            'name' => 'Flagship Smart Watch Ultimate',
+            'sku' => 'WATCH-ULT-2026',
+            'selling_price' => 399.00,
+            'cost_price' => 220.00,
+            'discount_price' => 349.00,
+            'is_featured' => true,
+            'is_flash_sale' => true,
+            'initial_stock' => 15,
+            'specifications' => [
+                'display' => 'AMOLED 1.4 inch',
+                'battery_life' => '7 days',
+            ],
+        ];
+
+        $response = $this->postJson('/api/v1/products', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.is_featured', true)
+            ->assertJsonPath('data.is_flash_sale', true)
+            ->assertJsonPath('data.discount_price', 349);
+
+        $this->assertDatabaseHas('products', [
+            'sku' => 'WATCH-ULT-2026',
+            'is_featured' => true,
+            'is_flash_sale' => true,
+        ]);
+    }
 }
 

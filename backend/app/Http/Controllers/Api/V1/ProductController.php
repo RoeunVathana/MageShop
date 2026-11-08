@@ -56,6 +56,7 @@ class ProductController extends Controller
         $product->load([
             'category.parent',
             'categories',
+            'brandRecord',
             'inventory',
             'variants.attributeValues.attribute',
             'variants.attributeValues.option',

@@ -12,12 +12,14 @@ class ProductResource extends JsonResource
         $user = $request->user();
         $canViewCost = $user && ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('FINANCE_MANAGER') || $user->hasRole('ACCOUNTANT') || $user->hasRole('INVENTORY_MANAGER'));
 
+        $hasBrand = $this->relationLoaded('brandRecord') && $this->brandRecord;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'brand_id' => $this->brand_id,
-            'brand' => $this->brand ?? $this->brandRecord?->name,
-            'brand_record' => $this->brandRecord ? [
+            'brand' => $this->brand ?? ($hasBrand ? $this->brandRecord->name : null),
+            'brand_record' => $hasBrand ? [
                 'id' => $this->brandRecord->id,
                 'name' => $this->brandRecord->name,
                 'slug' => $this->brandRecord->slug,
@@ -34,20 +36,33 @@ class ProductResource extends JsonResource
             'discount_price' => $this->discount_price ? (float) $this->discount_price : null,
             'status' => $this->status ?? ($this->is_active ? 'active' : 'draft'),
             'is_active' => (bool) $this->is_active,
+            'is_featured' => (bool) $this->is_featured,
+            'is_new_arrival' => (bool) $this->is_new_arrival,
+            'is_best_seller' => (bool) $this->is_best_seller,
+            'is_flash_sale' => (bool) $this->is_flash_sale,
+            'rating' => (float) ($this->rating ?? 0),
+            'reviews_count' => (int) ($this->reviews_count ?? 0),
             'stock_quantity' => (int) ($this->stock_quantity ?? 0),
             'available_stock' => (int) $this->available_stock,
-            'quantity_on_hand' => (int) ($this->inventory?->quantity_on_hand ?? $this->stock_quantity ?? 0),
-            'quantity_reserved' => (int) ($this->inventory?->quantity_reserved ?? 0),
+            'quantity_on_hand' => (int) ($this->relationLoaded('inventory') && $this->inventory ? $this->inventory->quantity_on_hand : ($this->stock_quantity ?? 0)),
+            'quantity_reserved' => (int) ($this->relationLoaded('inventory') && $this->inventory ? $this->inventory->quantity_reserved : 0),
             'low_stock_threshold' => (int) ($this->low_stock_threshold ?? 5),
             'weight' => $this->weight ? (float) $this->weight : null,
             'dimensions' => $this->dimensions,
-            'category' => $this->category ? [
+            'specifications' => $this->specifications,
+            'category' => $this->relationLoaded('category') && $this->category ? [
                 'id' => $this->category->id,
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
                 'parent_id' => $this->category->parent_id,
                 'parent_name' => $this->category->relationLoaded('parent') ? $this->category->parent?->name : null,
-            ] : null,
+            ] : ($this->category ? [
+                'id' => $this->category->id,
+                'name' => $this->category->name,
+                'slug' => $this->category->slug,
+                'parent_id' => $this->category->parent_id,
+                'parent_name' => null,
+            ] : null),
             'categories' => $this->relationLoaded('categories')
                 ? $this->categories->map(fn ($c) => [
                     'id' => $c->id,
@@ -78,4 +93,3 @@ class ProductResource extends JsonResource
         ];
     }
 }
-

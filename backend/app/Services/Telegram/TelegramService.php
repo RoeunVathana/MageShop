@@ -676,10 +676,10 @@ class TelegramService
             $delta = (int) ($action->payload['delta'] ?? 0);
             try {
                 $product->adjustStock(
-                    $delta,
-                    'adjustment',
-                    "Telegram Bot Adjustment by Staff #{$account->user_id}",
-                    $account->user_id
+                    quantityChange: $delta,
+                    type: 'adjustment',
+                    userId: $account->user_id,
+                    reason: "Telegram Bot Adjustment by Staff #{$account->user_id}"
                 );
 
                 $action->update(['confirmation_status' => 'confirmed']);

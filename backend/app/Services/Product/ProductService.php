@@ -51,8 +51,12 @@ class ProductService
         }
 
         // Filter by category (including all nested subcategories!)
-        if (!empty($filters['category_id'])) {
-            $category = Category::find($filters['category_id']);
+        $categoryParam = $filters['category_id'] ?? $filters['category'] ?? null;
+        if (!empty($categoryParam)) {
+            $category = is_numeric($categoryParam)
+                ? Category::find((int) $categoryParam)
+                : Category::where('slug', (string) $categoryParam)->first();
+
             if ($category) {
                 $categoryIds = array_merge([$category->id], $category->getAllDescendantIds());
                 $query->where(function ($q) use ($categoryIds) {
@@ -61,8 +65,8 @@ class ProductService
                           $cq->whereIn('categories.id', $categoryIds);
                       });
                 });
-            } else {
-                $query->where('category_id', $filters['category_id']);
+            } else if (is_numeric($categoryParam)) {
+                $query->where('category_id', (int) $categoryParam);
             }
         }
 
@@ -73,8 +77,22 @@ class ProductService
                    ->orWhereHas('brandRecord', fn($br) => $br->where('slug', $filters['brand'])->orWhere('name', $filters['brand']));
             });
         }
-        if (!empty($filters['brand_id'])) {
-            $query->where('brand_id', $filters['brand_id']);
+        if (!empty($filters['brand_id']) && is_numeric($filters['brand_id'])) {
+            $query->where('brand_id', (int) $filters['brand_id']);
+        }
+
+        // Filter by product flags
+        if (isset($filters['is_featured'])) {
+            $query->where('is_featured', filter_var($filters['is_featured'], FILTER_VALIDATE_BOOLEAN));
+        }
+        if (isset($filters['is_new_arrival'])) {
+            $query->where('is_new_arrival', filter_var($filters['is_new_arrival'], FILTER_VALIDATE_BOOLEAN));
+        }
+        if (isset($filters['is_best_seller'])) {
+            $query->where('is_best_seller', filter_var($filters['is_best_seller'], FILTER_VALIDATE_BOOLEAN));
+        }
+        if (isset($filters['is_flash_sale'])) {
+            $query->where('is_flash_sale', filter_var($filters['is_flash_sale'], FILTER_VALIDATE_BOOLEAN));
         }
 
         // Filter by product_type (simple, variable, digital)
@@ -90,7 +108,18 @@ class ProductService
             $query->where('selling_price', '<=', (float) $filters['max_price']);
         }
 
-        return $query->orderByDesc('id')->paginate($perPage);
+        // Dynamic sorting
+        $sortBy = $filters['sort_by'] ?? 'id';
+        $sortDirection = strtolower($filters['sort_direction'] ?? $filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = ['id', 'name', 'selling_price', 'price', 'stock_quantity', 'created_at', 'rating', 'reviews_count'];
+
+        if (in_array($sortBy, $allowedSorts, true)) {
+            $query->orderBy($sortBy, $sortDirection);
+        } else {
+            $query->orderByDesc('id');
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**
@@ -147,13 +176,20 @@ class ProductService
                 'cost_price' => $costPrice,
                 'currency' => $data['currency'] ?? 'USD',
                 'price' => $sellingPrice,
+                'discount_price' => isset($data['discount_price']) && is_numeric($data['discount_price']) ? (float) $data['discount_price'] : null,
                 'status' => $data['status'] ?? 'active',
                 'stock_quantity' => $initialStock,
                 'low_stock_threshold' => (int) ($data['low_stock_threshold'] ?? 5),
                 'weight' => isset($data['weight']) ? (float) $data['weight'] : null,
                 'dimensions' => $data['dimensions'] ?? null,
                 'is_active' => ($data['status'] ?? 'active') === 'active',
+                'is_featured' => !empty($data['is_featured']),
+                'is_new_arrival' => !empty($data['is_new_arrival']),
+                'is_best_seller' => !empty($data['is_best_seller']),
+                'is_flash_sale' => !empty($data['is_flash_sale']),
                 'image_url' => $data['image_url'] ?? null,
+                'gallery_urls' => !empty($data['gallery_urls']) && is_array($data['gallery_urls']) ? $data['gallery_urls'] : [],
+                'specifications' => !empty($data['specifications']) && is_array($data['specifications']) ? $data['specifications'] : null,
             ]);
 
             // Sync product_categories pivot
@@ -204,6 +240,7 @@ class ProductService
             return $product->load([
                 'category.parent',
                 'categories',
+                'brandRecord',
                 'inventory',
                 'variants.attributeValues.attribute',
                 'variants.attributeValues.option',
@@ -229,61 +266,87 @@ class ProductService
 
             $updateData = [];
 
-            if (isset($data['name'])) {
+            if (array_key_exists('name', $data) && $data['name'] !== null) {
                 $updateData['name'] = trim($data['name']);
             }
-            if (isset($data['brand_id'])) {
+            if (array_key_exists('brand_id', $data)) {
                 $updateData['brand_id'] = $data['brand_id'];
             }
-            if (isset($data['brand'])) {
-                $updateData['brand'] = trim($data['brand']);
-                if (!isset($data['brand_id'])) {
+            if (array_key_exists('brand', $data)) {
+                $updateData['brand'] = $data['brand'] !== null ? trim($data['brand']) : null;
+                if (!array_key_exists('brand_id', $data) && !empty($data['brand'])) {
                     $brandRecord = \App\Models\Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
                         ->orWhere('slug', Str::slug($data['brand']))
                         ->first();
                     $updateData['brand_id'] = $brandRecord?->id;
                 }
             }
-            if (isset($data['sku'])) {
+            if (array_key_exists('sku', $data) && $data['sku'] !== null) {
                 $updateData['sku'] = strtoupper(trim($data['sku']));
             }
-            if (isset($data['product_type'])) {
+            if (array_key_exists('product_type', $data)) {
                 $updateData['product_type'] = $data['product_type'];
             }
-            if (isset($data['description'])) {
+            if (array_key_exists('description', $data)) {
                 $updateData['description'] = $data['description'];
             }
-            if (isset($data['selling_price'])) {
+            if (array_key_exists('selling_price', $data) && $data['selling_price'] !== null) {
                 $updateData['selling_price'] = (float) $data['selling_price'];
                 $updateData['price'] = (float) $data['selling_price'];
             }
-            if (isset($data['cost_price'])) {
-                $updateData['cost_price'] = (float) $data['cost_price'];
+            if (array_key_exists('cost_price', $data)) {
+                $updateData['cost_price'] = $data['cost_price'] !== null ? (float) $data['cost_price'] : null;
             }
-            if (isset($data['currency'])) {
+            if (array_key_exists('discount_price', $data)) {
+                $updateData['discount_price'] = $data['discount_price'] !== null ? (float) $data['discount_price'] : null;
+            }
+            if (array_key_exists('currency', $data) && $data['currency'] !== null) {
                 $updateData['currency'] = $data['currency'];
             }
-            if (isset($data['status'])) {
+            if (array_key_exists('status', $data) && $data['status'] !== null) {
                 $updateData['status'] = $data['status'];
                 $updateData['is_active'] = ($data['status'] === 'active');
             }
-            if (isset($data['category_id'])) {
+            if (array_key_exists('is_active', $data)) {
+                $updateData['is_active'] = (bool) $data['is_active'];
+            }
+            if (array_key_exists('is_featured', $data)) {
+                $updateData['is_featured'] = (bool) $data['is_featured'];
+            }
+            if (array_key_exists('is_new_arrival', $data)) {
+                $updateData['is_new_arrival'] = (bool) $data['is_new_arrival'];
+            }
+            if (array_key_exists('is_best_seller', $data)) {
+                $updateData['is_best_seller'] = (bool) $data['is_best_seller'];
+            }
+            if (array_key_exists('is_flash_sale', $data)) {
+                $updateData['is_flash_sale'] = (bool) $data['is_flash_sale'];
+            }
+            if (array_key_exists('category_id', $data)) {
                 $updateData['category_id'] = $data['category_id'];
             }
-            if (isset($data['low_stock_threshold'])) {
+            if (array_key_exists('low_stock_threshold', $data) && $data['low_stock_threshold'] !== null) {
                 $updateData['low_stock_threshold'] = (int) $data['low_stock_threshold'];
             }
-            if (isset($data['weight'])) {
-                $updateData['weight'] = (float) $data['weight'];
+            if (array_key_exists('weight', $data)) {
+                $updateData['weight'] = $data['weight'] !== null ? (float) $data['weight'] : null;
             }
-            if (isset($data['dimensions'])) {
+            if (array_key_exists('dimensions', $data)) {
                 $updateData['dimensions'] = $data['dimensions'];
             }
-            if (isset($data['image_url'])) {
+            if (array_key_exists('image_url', $data)) {
                 $updateData['image_url'] = $data['image_url'];
             }
+            if (array_key_exists('gallery_urls', $data) && is_array($data['gallery_urls'])) {
+                $updateData['gallery_urls'] = $data['gallery_urls'];
+            }
+            if (array_key_exists('specifications', $data)) {
+                $updateData['specifications'] = $data['specifications'];
+            }
 
-            $product->update($updateData);
+            if (!empty($updateData)) {
+                $product->update($updateData);
+            }
 
             // Update attributes if provided
             if (isset($data['attributes']) && is_array($data['attributes'])) {
@@ -307,6 +370,7 @@ class ProductService
             return $product->load([
                 'category.parent',
                 'categories',
+                'brandRecord',
                 'inventory',
                 'variants.attributeValues.attribute',
                 'variants.attributeValues.option',

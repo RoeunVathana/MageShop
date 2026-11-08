@@ -27,6 +27,8 @@ class User extends Authenticatable
         'phone_number',
         'status',
         'password',
+        'email_verified_at',
+        'phone_verified_at',
     ];
 
     /**
@@ -119,8 +121,12 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
+        if ($this->hasRole('SUPER_ADMIN')) {
+            return true;
+        }
+
         return $this->roles->flatMap(function (Role $role) {
-            return $role->permissions;
+            return $role->relationLoaded('permissions') ? $role->permissions : $role->permissions()->get();
         })->contains(function (Permission $p) use ($permission) {
             return strtolower($p->slug) === strtolower($permission);
         });

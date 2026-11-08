@@ -45,6 +45,13 @@ export interface Product {
   id: number
   name: string
   brand?: string | null
+  brand_id?: number | null
+  brand_record?: {
+    id: number
+    name: string
+    slug: string
+    logo_url?: string | null
+  } | null
   sku: string
   slug: string
   product_type: ProductType
@@ -56,6 +63,12 @@ export interface Product {
   discount_price?: number | null
   status: ProductStatus
   is_active: boolean
+  is_featured?: boolean
+  is_new_arrival?: boolean
+  is_best_seller?: boolean
+  is_flash_sale?: boolean
+  rating?: number
+  reviews_count?: number
   stock_quantity: number
   available_stock: number
   quantity_on_hand: number
@@ -68,6 +81,7 @@ export interface Product {
     height?: number
     unit?: string
   } | null
+  specifications?: Record<string, any> | null
   category?: ProductCategory | null
   categories?: Array<{
     id: number

@@ -76,6 +76,9 @@ class Brand extends Model
     public function resolveRouteBinding($value, $field = null): ?self
     {
         if ($field) {
+            if ($field === 'id' && !is_numeric($value)) {
+                return null;
+            }
             return $this->where($field, $value)->first();
         }
 

@@ -20,12 +20,14 @@ class TelegramProductController extends Controller
         $search = $request->query('search');
         $limit = min((int) $request->query('limit', 20), 50);
 
-        $query = Product::with('category')->where('is_active', true);
+        $query = Product::with(['category', 'brandRecord'])->where('is_active', true);
 
         if (!empty($categorySlug) && $categorySlug !== 'all') {
-            $cat = Category::where('slug', $categorySlug)
-                ->orWhere('id', is_numeric($categorySlug) ? (int) $categorySlug : null)
-                ->first();
+            $catQuery = Category::where('slug', $categorySlug);
+            if (is_numeric($categorySlug)) {
+                $catQuery->orWhere('id', (int) $categorySlug);
+            }
+            $cat = $catQuery->first();
 
             if ($cat) {
                 $categoryIds = array_merge([$cat->id], $cat->getAllDescendantIds());
@@ -82,6 +84,7 @@ class TelegramProductController extends Controller
     {
         $relations = [
             'category.parent',
+            'brandRecord',
             'variants.attributeValues.attribute',
             'variants.attributeValues.option',
             'attributeValues.attribute',

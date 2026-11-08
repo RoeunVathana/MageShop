@@ -56,6 +56,26 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'The requested resource was not found.',
+                ], 404);
+            }
+        });
+
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, Request $request) {
+            if ($request->is('api/*')) {
+                if (str_contains($e->getMessage(), '22P02')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'The requested resource was not found or invalid identifier provided.',
+                    ], 404);
+                }
+            }
+        });
+
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
