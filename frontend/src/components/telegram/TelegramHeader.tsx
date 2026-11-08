@@ -22,7 +22,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
   onToggleAdminMode,
   onOpenProfile,
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme, isDark } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2.5 transition-colors">
@@ -65,11 +65,11 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
 
           {/* Theme Toggle */}
           <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
             title="Toggle Theme"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
 
           {/* User Avatar / Profile */}

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -55,9 +56,12 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       <div className="relative w-4/5 max-w-xs bg-background h-full shadow-2xl flex flex-col p-5 overflow-y-auto animate-in slide-in-from-left duration-300">
         <div className="flex items-center justify-between pb-4 border-b">
           <div className="font-extrabold text-lg text-primary">MEGACOMMERCE</div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Auth Buttons */}

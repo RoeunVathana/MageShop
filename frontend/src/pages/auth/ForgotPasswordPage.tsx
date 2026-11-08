@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const forgotSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address format'),
@@ -52,7 +53,10 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="max-w-md w-full shadow-xl border">
         <CardHeader className="space-y-2 text-center pb-6">
           <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">

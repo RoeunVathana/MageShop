@@ -277,7 +277,7 @@ export function BrandListPage() {
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'all'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 }`}
               >
                 All Status
@@ -287,8 +287,8 @@ export function BrandListPage() {
                 onClick={() => setStatusFilter('active')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'active'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 }`}
               >
                 Active Only
@@ -298,8 +298,8 @@ export function BrandListPage() {
                 onClick={() => setStatusFilter('archived')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'archived'
-                    ? 'bg-white dark:bg-slate-800 text-rose-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 }`}
               >
                 Archived
