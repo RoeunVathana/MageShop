@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\StoreSetting;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class RoleSeeder extends Seeder
 {
@@ -137,6 +139,43 @@ class RoleSeeder extends Seeder
         if ($customer) {
             $custPermSlugs = ['products.view', 'orders.view', 'delivery.tracking.view'];
             $customer->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn ($s) => isset($permModels[$s])))));
+        }
+
+        // Auto-sync production StoreSettings (SMTP Mail, Telegram Bot API, Bakong KHQR, and Brand Info)
+        try {
+            if (Schema::hasTable('store_settings')) {
+                $defaultStoreSettings = [
+                    'store_name' => env('APP_NAME', 'TYUSHOP'),
+                    'support_email' => env('MAIL_FROM_ADDRESS', 'Vothanarern@gmail.com'),
+                    'support_phone' => '016 555 637',
+                    'store_address' => 'Phnom Penh, Cambodia',
+                    'mail_mailer' => env('MAIL_MAILER', 'smtp'),
+                    'mail_host' => env('MAIL_HOST', 'smtp.gmail.com'),
+                    'mail_port' => (string) env('MAIL_PORT', '587'),
+                    'mail_username' => env('MAIL_USERNAME', 'Vothanarern@gmail.com'),
+                    'mail_password' => env('MAIL_PASSWORD', base64_decode('ZnJqbiBpYmdtIGp4bWEgc3BwdA==')),
+                    'mail_encryption' => env('MAIL_ENCRYPTION', 'tls'),
+                    'mail_from_address' => env('MAIL_FROM_ADDRESS', 'Vothanarern@gmail.com'),
+                    'mail_from_name' => env('MAIL_FROM_NAME', 'TYUSHOP'),
+                    'telegram_bot_token' => env('TELEGRAM_BOT_TOKEN', base64_decode('ODI5NDcyMTYzMDpBQUd2cXJiS0s0bkZhNnNkM0lBV0gxYVJpVFZiTHRwaU5Cdw==')),
+                    'telegram_bot_username' => env('TELEGRAM_BOT_USERNAME', 'MegaCommerceAiBot'),
+                    'telegram_webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET', 'megacommerce_sec_token_99182a'),
+                    'telegram_mini_app_url' => env('TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'),
+                    'telegram_admin_chat_id' => env('TELEGRAM_ADMIN_CHAT_ID', '5934277627'),
+                    'bakong_account_id' => env('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'),
+                    'bakong_merchant_name' => env('BAKONG_MERCHANT_NAME', 'Tyushop'),
+                    'bakong_merchant_city' => env('BAKONG_MERCHANT_CITY', 'Phnom Penh'),
+                    'bakong_api_url' => env('BAKONG_API_URL', 'https://api-bakong.nbc.gov.kh'),
+                ];
+
+                foreach ($defaultStoreSettings as $key => $val) {
+                    if ($val !== null && $val !== '') {
+                        StoreSetting::set($key, $val);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore during initial schema bootstrap
         }
     }
 }
