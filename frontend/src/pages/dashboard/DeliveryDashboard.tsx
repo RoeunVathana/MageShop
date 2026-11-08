@@ -25,6 +25,13 @@ import {
   SlidersHorizontal,
   LucideIcon,
   Sparkles,
+  DollarSign,
+  Plus,
+  Trash2,
+  AlertCircle,
+  ToggleLeft,
+  ToggleRight,
+  Settings,
 } from 'lucide-react'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +39,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { api } from '@/lib/api'
+import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 
 export interface DeliveryOrder {
   id: number
@@ -180,6 +188,66 @@ const deliveryNav: NavItem[] = [
 export function DeliveryDashboard() {
   const { toast } = useToast()
 
+  // Active Tab: 'location' | 'pricing'
+  const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
+
+  // Delivery Pricing & Free Delivery Governance State
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettingsData>({
+    is_free_delivery: true,
+    free_delivery_threshold: 0,
+    default_delivery_fee: 1.5,
+    methods: [
+      {
+        id: 'standard_express',
+        name: 'Standard Express (Phnom Penh 1-2h)',
+        name_km: 'សេវាដឹកជញ្ជូនរហ័ស (ភ្នំពេញ ១-២ ម៉ោង)',
+        price: 1.5,
+        estimated_time: '1 - 2 Hours',
+        estimated_time_km: '១ - ២ ម៉ោង',
+        is_active: true,
+        is_default: true,
+      },
+      {
+        id: 'nationwide_provincial',
+        name: 'Nationwide Provincial Delivery',
+        name_km: 'សេវាដឹកជញ្ជូនតាមបណ្តាខេត្ត',
+        price: 2.5,
+        estimated_time: '24 - 48 Hours',
+        estimated_time_km: '២៤ - ៤៨ ម៉ោង',
+        is_active: true,
+        is_default: false,
+      },
+      {
+        id: 'vip_instant',
+        name: 'VIP Instant Same-Day Delivery',
+        name_km: 'សេវាដឹកជញ្ជូន VIP ពិសេសភ្លាមៗ',
+        price: 3.5,
+        estimated_time: '30 - 45 Mins',
+        estimated_time_km: '៣០ - ៤៥ នាទី',
+        is_active: true,
+        is_default: false,
+      },
+    ],
+  })
+  const [loadingSettings, setLoadingSettings] = useState(false)
+  const [togglingFree, setTogglingFree] = useState(false)
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [thresholdInput, setThresholdInput] = useState<number>(0)
+  const [defaultFeeInput, setDefaultFeeInput] = useState<number>(1.5)
+
+  // Delivery Method Add / Edit Modal State
+  const [methodModalOpen, setMethodModalOpen] = useState(false)
+  const [editingMethod, setEditingMethod] = useState<DeliveryMethod | null>(null)
+  const [formName, setFormName] = useState('')
+  const [formNameKm, setFormNameKm] = useState('')
+  const [formPrice, setFormPrice] = useState<number>(1.5)
+  const [formTime, setFormTime] = useState('')
+  const [formTimeKm, setFormTimeKm] = useState('')
+  const [formIsDefault, setFormIsDefault] = useState(false)
+  const [formIsActive, setFormIsActive] = useState(true)
+  const [savingMethod, setSavingMethod] = useState(false)
+  const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null)
+
   const [orders, setOrders] = useState<DeliveryOrder[]>(DEMO_ORDERS)
   const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder>(DEMO_ORDERS[0])
   const [searchQuery, setSearchQuery] = useState('')
@@ -216,9 +284,323 @@ export function DeliveryDashboard() {
     }
   }
 
+  // Fetch delivery pricing & settings
+  const fetchDeliverySettings = async () => {
+    setLoadingSettings(true)
+    try {
+      const data = await deliveryService.getSettings()
+      if (data) {
+        setDeliverySettings(data)
+        setThresholdInput(Number(data.free_delivery_threshold || 0))
+        setDefaultFeeInput(Number(data.default_delivery_fee || 1.5))
+      }
+    } catch {
+      // Keep defaults
+    } finally {
+      setLoadingSettings(false)
+    }
+  }
+
   useEffect(() => {
     fetchDeliveryOrders()
+    fetchDeliverySettings()
   }, [])
+
+  // Toggle Free Delivery on/off globally
+  const handleToggleFreeDelivery = async () => {
+    const nextState = !deliverySettings.is_free_delivery
+    setTogglingFree(true)
+    try {
+      await deliveryService.toggleFreeDelivery(nextState)
+      setDeliverySettings((prev) => ({
+        ...prev,
+        is_free_delivery: nextState,
+      }))
+      toast({
+        title: nextState
+          ? '🎉 Free Delivery ENABLED Globally!'
+          : '💵 Paid Delivery ENABLED Globally!',
+        description: nextState
+          ? 'All customer checkout fees set to ឥតគិតថ្លៃ ($0.00 FREE).'
+          : 'Customers will pay based on selected delivery rates at checkout.',
+        type: 'success',
+      })
+    } catch {
+      // Optimistic update fallback
+      setDeliverySettings((prev) => ({
+        ...prev,
+        is_free_delivery: nextState,
+      }))
+      toast({
+        title: nextState ? 'Free Delivery Activated (Local)' : 'Paid Delivery Activated (Local)',
+        description: 'Storefront checkout delivery pricing updated.',
+        type: 'info',
+      })
+    } finally {
+      setTogglingFree(false)
+    }
+  }
+
+  // Save Free Delivery Threshold & Default Fee
+  const handleSaveThreshold = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingSettings(true)
+    try {
+      const updated = await deliveryService.updateSettings({
+        is_free_delivery: deliverySettings.is_free_delivery,
+        free_delivery_threshold: Number(thresholdInput),
+        default_delivery_fee: Number(defaultFeeInput),
+      })
+      if (updated) {
+        setDeliverySettings(updated)
+      } else {
+        setDeliverySettings((prev) => ({
+          ...prev,
+          free_delivery_threshold: Number(thresholdInput),
+          default_delivery_fee: Number(defaultFeeInput),
+        }))
+      }
+      toast({
+        title: '✅ Delivery Settings Saved!',
+        description: `Free Threshold: $${Number(thresholdInput).toFixed(2)} • Default Fee: $${Number(defaultFeeInput).toFixed(2)}`,
+        type: 'success',
+      })
+    } catch {
+      setDeliverySettings((prev) => ({
+        ...prev,
+        free_delivery_threshold: Number(thresholdInput),
+        default_delivery_fee: Number(defaultFeeInput),
+      }))
+      toast({
+        title: 'Settings Saved (Optimistic)',
+        description: 'New threshold applied.',
+        type: 'info',
+      })
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  // Open Add Delivery Method Modal
+  const handleOpenAddMethod = () => {
+    setEditingMethod(null)
+    setFormName('')
+    setFormNameKm('')
+    setFormPrice(1.5)
+    setFormTime('1 - 2 Hours')
+    setFormTimeKm('១ - ២ ម៉ោង')
+    setFormIsDefault(false)
+    setFormIsActive(true)
+    setMethodModalOpen(true)
+  }
+
+  // Open Edit Delivery Method Modal
+  const handleOpenEditMethod = (m: DeliveryMethod) => {
+    setEditingMethod(m)
+    setFormName(m.name)
+    setFormNameKm(m.name_km || m.name)
+    setFormPrice(Number(m.price))
+    setFormTime(m.estimated_time || '1 - 2 Hours')
+    setFormTimeKm(m.estimated_time_km || '១ - ២ ម៉ោង')
+    setFormIsDefault(Boolean(m.is_default))
+    setFormIsActive(Boolean(m.is_active))
+    setMethodModalOpen(true)
+  }
+
+  // Save (Create or Update) Delivery Method
+  const handleSaveMethod = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formName.trim()) {
+      toast({ title: 'Validation Error', description: 'Method name is required.', type: 'error' })
+      return
+    }
+
+    setSavingMethod(true)
+    try {
+      if (editingMethod) {
+        const res = await deliveryService.updateMethod(editingMethod.id, {
+          name: formName.trim(),
+          name_km: formNameKm.trim() || formName.trim(),
+          price: Number(formPrice),
+          estimated_time: formTime.trim(),
+          estimated_time_km: formTimeKm.trim() || formTime.trim(),
+          is_default: formIsDefault,
+          is_active: formIsActive,
+        })
+        if (res?.methods && Array.isArray(res.methods)) {
+          const newMethods = res.methods
+          setDeliverySettings((prev) => ({ ...prev, methods: newMethods }))
+        } else {
+          setDeliverySettings((prev) => ({
+            ...prev,
+            methods: prev.methods.map((m) =>
+              m.id === editingMethod.id
+                ? {
+                    ...m,
+                    name: formName.trim(),
+                    name_km: formNameKm.trim() || formName.trim(),
+                    price: Number(formPrice),
+                    estimated_time: formTime.trim(),
+                    estimated_time_km: formTimeKm.trim(),
+                    is_default: formIsDefault,
+                    is_active: formIsActive,
+                  }
+                : formIsDefault
+                ? { ...m, is_default: false }
+                : m
+            ),
+          }))
+        }
+        toast({
+          title: `✅ Method "${formName}" Updated!`,
+          description: `Price: $${Number(formPrice).toFixed(2)} • Time: ${formTime}`,
+          type: 'success',
+        })
+      } else {
+        const res = await deliveryService.addMethod({
+          name: formName.trim(),
+          name_km: formNameKm.trim() || formName.trim(),
+          price: Number(formPrice),
+          estimated_time: formTime.trim(),
+          estimated_time_km: formTimeKm.trim() || formTime.trim(),
+          is_default: formIsDefault,
+          is_active: formIsActive,
+        })
+        if (res?.methods && Array.isArray(res.methods)) {
+          const newMethods = res.methods
+          setDeliverySettings((prev) => ({ ...prev, methods: newMethods }))
+        } else {
+          const newM: DeliveryMethod = {
+            id: 'del_' + Date.now().toString(36),
+            name: formName.trim(),
+            name_km: formNameKm.trim() || formName.trim(),
+            price: Number(formPrice),
+            estimated_time: formTime.trim(),
+            estimated_time_km: formTimeKm.trim(),
+            is_default: formIsDefault,
+            is_active: formIsActive,
+          }
+          setDeliverySettings((prev) => ({
+            ...prev,
+            methods: formIsDefault
+              ? [...prev.methods.map((m) => ({ ...m, is_default: false })), newM]
+              : [...prev.methods, newM],
+          }))
+        }
+        toast({
+          title: `🎉 Delivery Method "${formName}" Created!`,
+          description: `Rate: $${Number(formPrice).toFixed(2)} • Ready for storefront customers.`,
+          type: 'success',
+        })
+      }
+      setMethodModalOpen(false)
+    } catch {
+      // Fallback
+      if (editingMethod) {
+        setDeliverySettings((prev) => ({
+          ...prev,
+          methods: prev.methods.map((m) =>
+            m.id === editingMethod.id
+              ? {
+                  ...m,
+                  name: formName.trim(),
+                  name_km: formNameKm.trim() || formName.trim(),
+                  price: Number(formPrice),
+                  estimated_time: formTime.trim(),
+                  estimated_time_km: formTimeKm.trim(),
+                  is_default: formIsDefault,
+                  is_active: formIsActive,
+                }
+              : formIsDefault
+              ? { ...m, is_default: false }
+              : m
+          ),
+        }))
+      } else {
+        const newM: DeliveryMethod = {
+          id: 'del_' + Date.now().toString(36),
+          name: formName.trim(),
+          name_km: formNameKm.trim() || formName.trim(),
+          price: Number(formPrice),
+          estimated_time: formTime.trim(),
+          estimated_time_km: formTimeKm.trim(),
+          is_default: formIsDefault,
+          is_active: formIsActive,
+        }
+        setDeliverySettings((prev) => ({
+          ...prev,
+          methods: [...prev.methods, newM],
+        }))
+      }
+      toast({
+        title: 'Delivery Method Saved (Local)',
+        description: 'New rate updated in session.',
+        type: 'info',
+      })
+      setMethodModalOpen(false)
+    } finally {
+      setSavingMethod(false)
+    }
+  }
+
+  // Delete Delivery Method
+  const handleDeleteMethod = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete delivery method "${name}"?`)) {
+      return
+    }
+    setDeletingMethodId(id)
+    try {
+      const res = await deliveryService.deleteMethod(id)
+      if (res?.methods && Array.isArray(res.methods)) {
+        const newMethods = res.methods
+        setDeliverySettings((prev) => ({ ...prev, methods: newMethods }))
+      } else {
+        setDeliverySettings((prev) => ({
+          ...prev,
+          methods: prev.methods.filter((m) => m.id !== id),
+        }))
+      }
+      toast({
+        title: `🗑️ Deleted Method "${name}"`,
+        description: 'Delivery method removed successfully.',
+        type: 'success',
+      })
+    } catch {
+      setDeliverySettings((prev) => ({
+        ...prev,
+        methods: prev.methods.filter((m) => m.id !== id),
+      }))
+      toast({
+        title: 'Method Removed (Local)',
+        description: 'Method deleted from list.',
+        type: 'info',
+      })
+    } finally {
+      setDeletingMethodId(null)
+    }
+  }
+
+  // Toggle active/inactive for method
+  const handleToggleMethodActive = async (m: DeliveryMethod) => {
+    const nextActive = !m.is_active
+    try {
+      await deliveryService.updateMethod(m.id, { is_active: nextActive })
+      setDeliverySettings((prev) => ({
+        ...prev,
+        methods: prev.methods.map((item) => (item.id === m.id ? { ...item, is_active: nextActive } : item)),
+      }))
+      toast({
+        title: nextActive ? `Active: ${m.name}` : `Disabled: ${m.name}`,
+        description: nextActive ? 'Customers can now select this rate.' : 'Rate hidden from customer checkout.',
+        type: 'info',
+      })
+    } catch {
+      setDeliverySettings((prev) => ({
+        ...prev,
+        methods: prev.methods.map((item) => (item.id === m.id ? { ...item, is_active: nextActive } : item)),
+      }))
+    }
+  }
 
   // Open Location Management Modal
   const openLocationModal = (order: DeliveryOrder) => {
@@ -612,18 +994,68 @@ export function DeliveryDashboard() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={fetchDeliveryOrders}
-              disabled={loading}
+              onClick={() => {
+                fetchDeliveryOrders()
+                fetchDeliverySettings()
+              }}
+              disabled={loading || loadingSettings}
               className="rounded-xl h-9 text-xs gap-1.5"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading || loadingSettings ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
         </div>
 
-        {/* 4 Stat Cards with Percentage Indicators */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* View Switcher: Fleet Live Location vs Delivery Rates & Free Shipping */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab('location')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'location'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Fleet & Live Location (គ្រប់គ្រងទីតាំង & ការដឹក)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pricing')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'pricing'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Delivery Rates & Free Shipping (គ្រប់គ្រងថ្លៃដឹក & ឥតគិតថ្លៃ)</span>
+              <Badge
+                className={`text-[10px] ml-1 font-bold ${
+                  deliverySettings.is_free_delivery
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-amber-600 text-white'
+                }`}
+              >
+                {deliverySettings.is_free_delivery ? 'FREE ON (ឥតគិតថ្លៃ)' : 'PAID ACTIVE'}
+              </Badge>
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-500 font-medium px-2 hidden sm:block">
+            {activeTab === 'pricing'
+              ? 'Admin Delivery Governance Mode'
+              : 'Live Courier Telemetry Mode'}
+          </div>
+        </div>
+
+        {activeTab === 'location' ? (
+          <>
+            {/* 4 Stat Cards with Percentage Indicators */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
@@ -1023,7 +1455,554 @@ export function DeliveryDashboard() {
             </div>
           </div>
         </div>
+          </>
+        ) : (
+          /* DELIVERY PRICING & FREE DELIVERY MANAGEMENT TAB */
+          <div className="space-y-6">
+            {/* Free Delivery Master Governance Card */}
+            <Card className="rounded-3xl border-2 border-indigo-500/30 overflow-hidden shadow-lg bg-white dark:bg-slate-900">
+              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                      <Truck className="w-5 h-5" />
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-black">
+                      Global Free Delivery Governance (គ្រប់គ្រងដឹកឥតគិតថ្លៃ)
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium max-w-xl">
+                    Toggle whether orders in the storefront receive free shipping automatically, or configure a minimum order threshold for free delivery.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleToggleFreeDelivery}
+                    disabled={togglingFree}
+                    className={`rounded-2xl h-11 px-6 font-black text-xs gap-2 shadow-lg transition-all ${
+                      deliverySettings.is_free_delivery
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                  >
+                    {togglingFree ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : deliverySettings.is_free_delivery ? (
+                      <>
+                        <ToggleRight className="w-5 h-5" />
+                        Turn OFF Free Delivery (ប្តូរមកគិតថ្លៃ)
+                      </>
+                    ) : (
+                      <>
+                        <ToggleLeft className="w-5 h-5" />
+                        Turn ON Free Delivery (ដឹកឥតគិតថ្លៃ)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <CardContent className="p-5 sm:p-6 space-y-6">
+                {/* Active Status Banner */}
+                <div
+                  className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                    deliverySettings.is_free_delivery
+                      ? 'bg-emerald-50/80 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                      : 'bg-amber-50/80 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${
+                        deliverySettings.is_free_delivery
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-amber-500 text-white'
+                      }`}
+                    >
+                      {deliverySettings.is_free_delivery ? '✓' : '$'}
+                    </div>
+                    <div>
+                      <div className="font-black text-sm flex items-center gap-2">
+                        <span>
+                          {deliverySettings.is_free_delivery
+                            ? 'Free Delivery is currently ACTIVE (ឥតគិតថ្លៃ)'
+                            : 'Paid Delivery Mode is currently ACTIVE (គិតថ្លៃ)'}
+                        </span>
+                        <Badge
+                          className={
+                            deliverySettings.is_free_delivery
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-amber-600 text-white'
+                          }
+                        >
+                          {deliverySettings.is_free_delivery ? 'FREE $0.00' : 'RATES CHARGED'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs opacity-85 mt-0.5">
+                        {deliverySettings.is_free_delivery
+                          ? 'Storefront checkout currently displays "សេវាដឹកជញ្ជូន GPS: ឥតគិតថ្លៃ ($0.00)" for all customer purchases.'
+                          : 'Customers pay for shipping according to their selected delivery method (e.g. Standard Express $1.50).'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold opacity-75">
+                      Sync Status: Instant Real-Time
+                    </span>
+                  </div>
+                </div>
+
+                {/* Free Delivery Threshold & Default Pricing Form */}
+                <form
+                  onSubmit={handleSaveThreshold}
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 items-end"
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      Free Delivery Minimum Subtotal ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={thresholdInput}
+                      onChange={(e) => setThresholdInput(parseFloat(e.target.value) || 0)}
+                      placeholder="e.g. 50.00 (0 for all orders free)"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-mono text-xs font-bold"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Set to <strong>0</strong> for 100% free delivery on all orders, or e.g. <strong>50</strong> to give free delivery on orders $50+.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-indigo-600" />
+                      Default Standard Delivery Fee ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0"
+                      value={defaultFeeInput}
+                      onChange={(e) => setDefaultFeeInput(parseFloat(e.target.value) || 0)}
+                      placeholder="e.g. 1.50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-mono text-xs font-bold"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Fallback rate charged when a custom method is not explicitly picked.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Button
+                      type="submit"
+                      disabled={savingSettings}
+                      className="w-full rounded-xl h-10 font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                    >
+                      {savingSettings ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5" />
+                          Save Delivery Rules
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Delivery Methods & Custom Rates Management Section */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                    <Package className="w-5 h-5 text-indigo-600" />
+                    <span>Delivery Methods & Pricing Rates (បញ្ជីតម្លៃសេវាដឹកជញ្ជូន)</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Manage delivery options, prices (USD), and delivery timeframes available to customers at checkout.
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleOpenAddMethod}
+                  className="rounded-xl h-9 px-4 font-bold text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm self-start sm:self-auto cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Delivery Rate (បន្ថែមតម្លៃសេវាដឹក)
+                </Button>
+              </div>
+
+              {/* Delivery Methods Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {deliverySettings.methods.map((method) => {
+                  const isDeleting = deletingMethodId === method.id
+                  return (
+                    <Card
+                      key={method.id}
+                      className={`rounded-2xl border transition-all ${
+                        method.is_default
+                          ? 'border-indigo-400/60 ring-2 ring-indigo-500/20 bg-indigo-50/10 dark:bg-indigo-950/20 shadow-md'
+                          : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
+                      } ${!method.is_active ? 'opacity-60 bg-slate-50 dark:bg-slate-900/60' : ''}`}
+                    >
+                      <CardContent className="p-5 space-y-4">
+                        {/* Header: Title and Price Badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-black text-sm text-slate-900 dark:text-slate-50">
+                                {method.name}
+                              </span>
+                              {method.is_default && (
+                                <Badge className="bg-indigo-600 text-white text-[9px] font-bold">
+                                  Default
+                                </Badge>
+                              )}
+                              {!method.is_active && (
+                                <Badge variant="outline" className="text-[9px] text-slate-400">
+                                  Disabled
+                                </Badge>
+                              )}
+                            </div>
+                            {method.name_km && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                {method.name_km}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="font-black text-xl text-indigo-600 dark:text-indigo-400 font-mono">
+                              ${Number(method.price).toFixed(2)}
+                            </span>
+                            <span className="block text-[10px] text-slate-400 uppercase font-bold">
+                              USD
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Estimated Delivery Time */}
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>{method.estimated_time || '1 - 2 Hours'}</span>
+                            {method.estimated_time_km && (
+                              <span className="text-slate-400 font-normal">
+                                • {method.estimated_time_km}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleMethodActive(method)}
+                            className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                          >
+                            {method.is_active ? 'Active' : 'Disabled'}
+                          </button>
+                        </div>
+
+                        {/* Card Action Buttons: Edit, Delete */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <div className="text-[11px] font-mono text-slate-400 truncate max-w-[120px]">
+                            ID: {method.id}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenEditMethod(method)}
+                              className="h-8 text-xs font-bold rounded-xl gap-1 border-slate-200 dark:border-slate-700 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/50 cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              Edit
+                            </Button>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteMethod(method.id, method.name)}
+                              disabled={isDeleting}
+                              className="h-8 text-xs font-bold rounded-xl gap-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/50 cursor-pointer"
+                            >
+                              {isDeleting ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Live Storefront Checkout Preview Box */}
+            <Card className="rounded-3xl border border-indigo-200/80 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/40 via-white to-purple-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 shadow-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <h3 className="font-black text-sm text-slate-900 dark:text-slate-100">
+                      Customer Storefront Checkout Preview (ផ្ទៀងផ្ទាត់ការបង្ហាញ)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Live simulation of how your delivery fee rules render for customers on the Cart & Checkout page.
+                  </p>
+                </div>
+                <Badge
+                  className={`text-xs font-bold ${
+                    deliverySettings.is_free_delivery
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-indigo-600 text-white'
+                  }`}
+                >
+                  {deliverySettings.is_free_delivery
+                    ? 'Preview: Free Delivery (ឥតគិតថ្លៃ)'
+                    : 'Preview: Paid Delivery Rates'}
+                </Badge>
+              </div>
+
+              <div className="max-w-md mx-auto p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3 text-xs">
+                <div className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2 flex items-center justify-between">
+                  <span>Discount & Order Summary</span>
+                  <Badge variant="outline" className="text-[10px]">Sample Cart ($50.00)</Badge>
+                </div>
+
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Subtotal / តម្លៃទំនិញសរុប</span>
+                  <span className="font-mono font-bold">$50.00</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Express GPS Delivery / សេវាដឹកជញ្ជូន GPS
+                  </span>
+                  {deliverySettings.is_free_delivery ? (
+                    <span className="text-emerald-600 font-bold">
+                      ឥតគិតថ្លៃ (FREE)
+                    </span>
+                  ) : (
+                    <span className="font-bold text-indigo-600">
+                      +${(deliverySettings.methods[0]?.price ?? 1.50).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
+                  <span>Loyalty Reward / ពិន្ទុបន្ថែមសម្រាប់ការទិញនេះ</span>
+                  <span>+5 PTS</span>
+                </div>
+
+                <div className="border-t pt-3 flex items-baseline justify-between">
+                  <div>
+                    <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+                      Total Payable / ទឹកប្រាក់សរុប
+                    </span>
+                    <div className="text-[11px] text-slate-400">
+                      ≈ {(
+                        (deliverySettings.is_free_delivery
+                          ? 50
+                          : 50 + (deliverySettings.methods[0]?.price ?? 1.5)) * 4100
+                      ).toLocaleString()} ៛ (KHR)
+                    </div>
+                  </div>
+                  <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                    $
+                    {(deliverySettings.is_free_delivery
+                      ? 50
+                      : 50 + (deliverySettings.methods[0]?.price ?? 1.5)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
+
+      {/* DELIVERY METHOD ADD / EDIT MODAL DIALOG */}
+      {methodModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            {/* Modal Header */}
+            <div className="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-base">
+                  {editingMethod ? 'Edit Delivery Method & Price' : 'Add New Delivery Rate'}
+                </h3>
+                <p className="text-[11px] text-indigo-100 mt-0.5">
+                  {editingMethod
+                    ? `Update rate for "${editingMethod.name}"`
+                    : 'Create a new customer shipping rate and delivery speed'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMethodModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMethod} className="p-6 space-y-4 text-xs">
+              {/* Method Name English */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-indigo-600" />
+                  Delivery Method Name (English)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="e.g. Standard Express (Phnom Penh 1-2h)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-medium"
+                />
+              </div>
+
+              {/* Method Name Khmer */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-indigo-600" />
+                  Delivery Method Name (Khmer • ភាសាខ្មែរ)
+                </label>
+                <input
+                  type="text"
+                  value={formNameKm}
+                  onChange={(e) => setFormNameKm(e.target.value)}
+                  placeholder="e.g. សេវាដឹកជញ្ជូនរហ័ស (ភ្នំពេញ ១-២ ម៉ោង)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-medium"
+                />
+              </div>
+
+              {/* Price in USD */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-indigo-600" />
+                  Delivery Price ($ USD)
+                </label>
+                <input
+                  type="number"
+                  step="0.10"
+                  min="0"
+                  required
+                  value={formPrice}
+                  onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 1.50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-mono text-sm font-bold"
+                />
+              </div>
+
+              {/* Estimated Delivery Time (EN & KM) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Est. Time (EN)
+                  </label>
+                  <input
+                    type="text"
+                    value={formTime}
+                    onChange={(e) => setFormTime(e.target.value)}
+                    placeholder="e.g. 1 - 2 Hours"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-medium"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    Est. Time (KM)
+                  </label>
+                  <input
+                    type="text"
+                    value={formTimeKm}
+                    onChange={(e) => setFormTimeKm(e.target.value)}
+                    placeholder="e.g. ១ - ២ ម៉ោង"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-background font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Default & Active Checkboxes */}
+              <div className="space-y-2 pt-2 border-t">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formIsDefault}
+                    onChange={(e) => setFormIsDefault(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  />
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    Set as Default Delivery Method
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formIsActive}
+                    onChange={(e) => setFormIsActive(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  />
+                  <span className="font-medium text-slate-600 dark:text-slate-400">
+                    Active (visible to customers at checkout)
+                  </span>
+                </label>
+              </div>
+
+              {/* Modal Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMethodModalOpen(false)}
+                  className="rounded-xl px-4"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={savingMethod}
+                  className="rounded-xl px-5 font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/25"
+                >
+                  {savingMethod ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" /> Save Method
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* LOCATION MANAGEMENT MODAL DIALOG */}
       {editingOrder && (

@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\StoreSetting;
 use App\Services\Receipt\PaymentReceiptPdfService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Http\JsonResponse;
@@ -236,6 +237,8 @@ class CommerceEngagementController extends Controller
             'payment_method' => ['nullable', 'string', 'max:40'],
             'initiate_qr' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'shipping_fee' => ['nullable', 'numeric', 'min:0'],
+            'delivery_method_id' => ['nullable', 'string', 'max:60'],
         ]);
 
         $user = $request->user('sanctum');
@@ -302,11 +305,27 @@ class CommerceEngagementController extends Controller
             $pointsRedeemed = self::POINTS_FOR_FREE_ITEM;
         }
 
-        // 3. Every purchase earns +5 Loyalty Points ("buy ម្ដងបាន 5point")
+        // 3. Dynamic Delivery Fee Calculation based on Admin StoreSettings
+        $isFreeDelivery = filter_var(StoreSetting::get('delivery_is_free', true), FILTER_VALIDATE_BOOLEAN);
+        $freeDeliveryThreshold = (float) StoreSetting::get('delivery_free_threshold', 0.0);
+
+        $shippingFee = 0.00;
+        if (! $isFreeDelivery) {
+            if ($freeDeliveryThreshold > 0 && $subtotal >= $freeDeliveryThreshold) {
+                $shippingFee = 0.00;
+            } elseif (isset($validated['shipping_fee'])) {
+                $shippingFee = round((float) $validated['shipping_fee'], 2);
+            } else {
+                $defaultFee = (float) StoreSetting::get('delivery_default_fee', 1.50);
+                $shippingFee = round($defaultFee, 2);
+            }
+        }
+
+        // 4. Every purchase earns +5 Loyalty Points ("buy ម្ដងបាន 5point")
         $pointsEarned = self::POINTS_PER_PURCHASE;
         $afterSubtotal = max(0, round($subtotal - $discount, 2));
         $tax = round($afterSubtotal * 0.0, 2); // 0% extra fee for KHQR promotion
-        $totalAmount = round($afterSubtotal + $tax, 2);
+        $totalAmount = round($afterSubtotal + $tax + $shippingFee, 2);
 
         $orderNumber = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $paymentMethod = $validated['payment_method'] ?? 'bakong_khqr';
@@ -324,7 +343,7 @@ class CommerceEngagementController extends Controller
             'points_earned' => $pointsEarned,
             'points_redeemed' => $pointsRedeemed,
             'free_reward_product_id' => $freeProduct ? $freeProduct->id : null,
-            'shipping_fee' => 0.00,
+            'shipping_fee' => $shippingFee,
             'tax' => $tax,
             'total_amount' => $totalAmount,
             'currency' => 'USD',

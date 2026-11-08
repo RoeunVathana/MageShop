@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement, type FreeRewardProduct } from '@/context/ShopEngagementContext'
 import { api } from '@/lib/api'
+import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 
 const PROMO_COUPONS = [
   { code: 'WELCOME10', label: '10% OFF', type: 'percentage' as const, value: 10, min: 10 },
@@ -171,6 +172,7 @@ export function CartPage() {
     appliedCoupon,
     setAppliedCoupon,
     addRecentOrder,
+    language,
     t,
     formatPrice,
   } = useShopEngagement()
@@ -178,6 +180,65 @@ export function CartPage() {
   const [couponInput, setCouponInput] = useState(appliedCoupon?.code || '')
   const [couponLoading, setCouponLoading] = useState(false)
   const [showFreeRewards, setShowFreeRewards] = useState(false)
+
+  // Delivery Settings & Free Delivery Mode State
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettingsData>({
+    is_free_delivery: true,
+    free_delivery_threshold: 0,
+    default_delivery_fee: 1.5,
+    methods: [
+      {
+        id: 'standard_express',
+        name: 'Standard Express (Phnom Penh 1-2h)',
+        name_km: 'សេវាដឹកជញ្ជូនរហ័ស (ភ្នំពេញ ១-២ ម៉ោង)',
+        price: 1.5,
+        estimated_time: '1 - 2 Hours',
+        estimated_time_km: '១ - ២ ម៉ោង',
+        is_active: true,
+        is_default: true,
+      },
+      {
+        id: 'nationwide_provincial',
+        name: 'Nationwide Provincial Delivery',
+        name_km: 'សេវាដឹកជញ្ជូនតាមបណ្តាខេត្ត',
+        price: 2.5,
+        estimated_time: '24 - 48 Hours',
+        estimated_time_km: '២៤ - ៤៨ ម៉ោង',
+        is_active: true,
+        is_default: false,
+      },
+      {
+        id: 'vip_instant',
+        name: 'VIP Instant Same-Day Delivery',
+        name_km: 'សេវាដឹកជញ្ជូន VIP ពិសេសភ្លាមៗ',
+        price: 3.5,
+        estimated_time: '30 - 45 Mins',
+        estimated_time_km: '៣០ - ៤៥ នាទី',
+        is_active: true,
+        is_default: false,
+      },
+    ],
+  })
+  const [selectedDeliveryMethodId, setSelectedDeliveryMethodId] = useState<string>('standard_express')
+
+  useEffect(() => {
+    let mounted = true
+    deliveryService
+      .getSettings()
+      .then((data) => {
+        if (mounted && data) {
+          setDeliverySettings(data)
+          const def =
+            data.methods.find((m) => m.is_default && m.is_active) ||
+            data.methods.find((m) => m.is_active)
+          if (def) setSelectedDeliveryMethodId(def.id)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // Checkout Form State
   const [customerName, setCustomerName] = useState('Dara Sok')
@@ -442,13 +503,30 @@ export function CartPage() {
     }
   }
 
+  const activeDeliveryMethods = deliverySettings.methods.filter((m) => m.is_active)
+  const selectedDeliveryMethod =
+    activeDeliveryMethods.find((m) => m.id === selectedDeliveryMethodId) ||
+    activeDeliveryMethods.find((m) => m.is_default) ||
+    activeDeliveryMethods[0]
+
+  const isThresholdQualified =
+    deliverySettings.free_delivery_threshold > 0 &&
+    subtotal >= deliverySettings.free_delivery_threshold
+  const isFreeDelivery = deliverySettings.is_free_delivery || isThresholdQualified
+
+  const effectiveShippingFee = isFreeDelivery
+    ? 0
+    : selectedDeliveryMethod
+    ? Number(selectedDeliveryMethod.price)
+    : Number(deliverySettings.default_delivery_fee || 1.5)
+
   const discountAmount = appliedCoupon
     ? appliedCoupon.discount_type === 'percentage'
       ? Number(((subtotal * appliedCoupon.discount_value) / 100).toFixed(2))
       : Math.min(subtotal, appliedCoupon.discount_value)
     : 0
 
-  const finalTotal = Math.max(0, Number((subtotal - discountAmount).toFixed(2)))
+  const finalTotal = Math.max(0, Number((subtotal - discountAmount + effectiveShippingFee).toFixed(2)))
   const finalTotalKhr = Math.round((finalTotal * 4100) / 100) * 100
   const pointsEarnedThisOrder = 5
   const pointsRedeemedThisOrder = freeRewardItem ? 100 : 0
@@ -520,6 +598,8 @@ export function CartPage() {
         dest_lng: customerCoords?.lng ?? 104.9282,
         payment_method: apiPaymentMethod,
         initiate_qr: isKhqrFlow,
+        shipping_fee: effectiveShippingFee,
+        delivery_method_id: selectedDeliveryMethod?.id || null,
       }
 
       const res = await api.post<any>('/orders/checkout', payload)
@@ -1610,6 +1690,61 @@ export function CartPage() {
                 </div>
               </div>
 
+              {/* Delivery Speed / Rate Selector (when paid delivery is enabled) */}
+              {!isFreeDelivery && activeDeliveryMethods.length > 0 && (
+                <div className="space-y-2 pt-3 border-t">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold flex items-center gap-1.5 text-foreground">
+                      <Truck className="w-3.5 h-3.5 text-primary" />
+                      {t('Select Delivery Speed & Rate', 'ជ្រើសរើសសេវាកម្មដឹកជញ្ជូន')}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {activeDeliveryMethods.length} {t('Options', 'ជម្រើស')}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {activeDeliveryMethods.map((method) => {
+                      const isSelected = selectedDeliveryMethod?.id === method.id
+                      return (
+                        <button
+                          key={method.id}
+                          type="button"
+                          onClick={() => setSelectedDeliveryMethodId(method.id)}
+                          className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'border-primary ring-2 ring-primary/20 bg-primary/5 dark:bg-primary/10 shadow-sm'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-primary/50 bg-card/60'
+                          }`}
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="font-bold text-xs text-foreground truncate">
+                              {language === 'KM' && method.name_km ? method.name_km : method.name}
+                            </div>
+                            {(method.estimated_time || method.estimated_time_km) && (
+                              <div className="text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
+                                <Clock className="w-3 h-3 text-muted-foreground" />
+                                <span>
+                                  {language === 'KM' && method.estimated_time_km
+                                    ? method.estimated_time_km
+                                    : method.estimated_time}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="font-black text-sm text-primary font-mono">
+                              ${Number(method.price).toFixed(2)}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Clean Order Breakdown */}
               <div className="space-y-2 text-xs border-t pt-4">
                 <div className="flex justify-between">
@@ -1633,9 +1768,29 @@ export function CartPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('Express GPS Delivery', 'សេវាដឹកជញ្ជូន GPS')}</span>
-                  <span className="text-emerald-600 font-semibold">{t('FREE', 'ឥតគិតថ្លៃ')}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-primary" />
+                    {isFreeDelivery
+                      ? t('Express GPS Delivery', 'សេវាដឹកជញ្ជូន GPS')
+                      : (language === 'KM' && selectedDeliveryMethod?.name_km
+                          ? selectedDeliveryMethod.name_km
+                          : selectedDeliveryMethod?.name || t('Delivery Fee', 'សេវាដឹកជញ្ជូន'))}
+                  </span>
+                  {isFreeDelivery ? (
+                    <div className="flex items-center gap-1.5">
+                      {isThresholdQualified && (
+                        <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full font-bold">
+                          ≥${deliverySettings.free_delivery_threshold}
+                        </span>
+                      )}
+                      <span className="text-emerald-600 font-bold">{t('FREE', 'ឥតគិតថ្លៃ')}</span>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-foreground font-mono">
+                      +${effectiveShippingFee.toFixed(2)}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">

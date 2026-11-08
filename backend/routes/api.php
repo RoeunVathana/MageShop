@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Admin\AdminBannerController;
 use App\Http\Controllers\Api\V1\Admin\ApiTokenController;
+use App\Http\Controllers\Api\V1\Admin\DeliveryPricingController;
 use App\Http\Controllers\Api\V1\Admin\EmailPasswordOtpController;
 use App\Http\Controllers\Api\V1\Admin\RolePermissionController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -171,6 +172,16 @@ Route::prefix('admin')->group(function () {
         Route::patch('/telegram-settings', [EmailPasswordOtpController::class, 'updateTelegramSettings']);
         Route::post('/telegram-settings/test', [EmailPasswordOtpController::class, 'testTelegramBotConnection']);
     });
+
+    // Delivery & Shipping Pricing Management (Free Delivery Toggle, Add/Update/Delete Rates)
+    Route::prefix('delivery')->group(function () {
+        Route::get('/settings', [DeliveryPricingController::class, 'getSettings']);
+        Route::post('/settings', [DeliveryPricingController::class, 'updateSettings']);
+        Route::post('/toggle-free', [DeliveryPricingController::class, 'toggleFreeDelivery']);
+        Route::post('/methods', [DeliveryPricingController::class, 'addMethod']);
+        Route::patch('/methods/{id}', [DeliveryPricingController::class, 'updateMethod']);
+        Route::delete('/methods/{id}', [DeliveryPricingController::class, 'deleteMethod']);
+    });
 });
 
 // Orders & Branded PDF Receipts
@@ -196,6 +207,12 @@ Route::post('/orders/track/{orderNumber}/confirm-payment', [CommerceEngagementCo
 
 // Staff & Delivery Fleet Dispatch & Location Management
 Route::prefix('delivery')->group(function () {
+    Route::get('/settings', [DeliveryPricingController::class, 'getSettings']);
+    Route::post('/settings', [DeliveryPricingController::class, 'updateSettings']);
+    Route::post('/toggle-free', [DeliveryPricingController::class, 'toggleFreeDelivery']);
+    Route::post('/methods', [DeliveryPricingController::class, 'addMethod']);
+    Route::patch('/methods/{id}', [DeliveryPricingController::class, 'updateMethod']);
+    Route::delete('/methods/{id}', [DeliveryPricingController::class, 'deleteMethod']);
     Route::get('/orders', [CommerceEngagementController::class, 'deliveryOrders']);
     Route::patch('/orders/{orderNumber}/location', [CommerceEngagementController::class, 'updateDeliveryLocation']);
     Route::post('/orders/{orderNumber}/status', [CommerceEngagementController::class, 'updateDeliveryStatus']);
