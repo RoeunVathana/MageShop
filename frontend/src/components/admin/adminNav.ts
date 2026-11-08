@@ -8,13 +8,14 @@ import {
   Users,
   AlertTriangle,
   Server,
-  Settings,
   Key,
+  Sliders,
 } from 'lucide-react'
 import type { NavItem } from '@/components/dashboard/DashboardLayout'
 
 export const adminNavItems: NavItem[] = [
   { label: 'Platform Overview', href: '/dashboard/admin', icon: Shield },
+  { label: 'Hero Slide Banners', href: '/admin/banners', icon: Sliders },
   { label: 'Products Catalog', href: '/admin/products', icon: Package },
   { label: 'Categories & Attributes', href: '/admin/categories', icon: FolderTree },
   { label: 'Brands & Trademarks', href: '/admin/brands', icon: Award },

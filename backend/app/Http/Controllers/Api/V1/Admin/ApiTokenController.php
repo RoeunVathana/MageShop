@@ -211,4 +211,3 @@ class ApiTokenController extends Controller
         ]);
     }
 }
-

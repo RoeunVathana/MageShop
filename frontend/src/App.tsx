@@ -51,6 +51,9 @@ import { BrandListPage } from '@/pages/admin/BrandListPage'
 // API Token Keys & Security Administration
 import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
 
+// Slide Banner Administration
+import { BannerListPage } from '@/pages/admin/BannerListPage'
+
 // Telegram Mini App
 import { TelegramApp } from '@/pages/telegram/TelegramApp'
 
@@ -127,6 +130,9 @@ export default function App() {
               {/* API Token Keys & Security Management */}
               <Route path="/admin/security" element={<AdminSecurityPage />} />
               <Route path="/admin/api-tokens" element={<AdminSecurityPage />} />
+
+              {/* Slide Banner Management */}
+              <Route path="/admin/banners" element={<BannerListPage />} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

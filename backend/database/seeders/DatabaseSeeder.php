@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             CommerceAndTelegramSeeder::class,
             UniversalCategorySeeder::class,
             BrandSeeder::class,
+            BannerSeeder::class,
         ]);
     }
 }

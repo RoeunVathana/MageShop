@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminBannerController;
 use App\Http\Controllers\Api\V1\Admin\ApiTokenController;
 use App\Http\Controllers\Api\V1\Admin\EmailPasswordOtpController;
 use App\Http\Controllers\Api\V1\Admin\RolePermissionController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BannerController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
@@ -66,6 +68,11 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'me']);
 // Public Store Settings
 Route::get('/store-settings', [StoreSettingsController::class, 'show']);
 
+// Public Slide Banners
+Route::get('/banners', [BannerController::class, 'index']);
+Route::get('/banners/{banner}', [BannerController::class, 'show']);
+Route::post('/banners/{banner}/click', [BannerController::class, 'click']);
+
 // Public Universal Categories, Brands & Attributes
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
@@ -119,6 +126,17 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Store Settings
     Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);
     Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
+
+    // Admin Slide Banner Management
+    Route::prefix('banners')->group(function () {
+        Route::get('/', [AdminBannerController::class, 'index']);
+        Route::post('/', [AdminBannerController::class, 'store']);
+        Route::get('/{banner}', [AdminBannerController::class, 'show']);
+        Route::patch('/{banner}', [AdminBannerController::class, 'update']);
+        Route::delete('/{banner}', [AdminBannerController::class, 'destroy']);
+        Route::post('/{banner}/toggle', [AdminBannerController::class, 'toggleActive']);
+        Route::post('/reorder', [AdminBannerController::class, 'reorder']);
+    });
 
     // API Token Keys Management
     Route::prefix('api-tokens')->group(function () {

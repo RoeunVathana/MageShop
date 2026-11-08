@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { HeroBannerSlider } from '@/components/storefront/HeroBannerSlider'
 import { productService } from '@/services/product.service'
 import type { Product } from '@/types/product.types'
 
@@ -55,118 +56,8 @@ export function HomePage() {
 
   return (
     <div className="space-y-12 pb-16">
-      {/* Hero Banner Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-20 border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-semibold border border-primary/20 backdrop-blur-sm">
-                <img
-                  src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-                  alt="MegaCommerce"
-                  className="w-4 h-4 rounded-full object-cover"
-                />
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Universal Multi-Category Marketplace</span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight text-foreground">
-                The Next-Gen <br className="hidden sm:inline" />
-                <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Universal Marketplace
-                </span>
-              </h1>
-
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
-                Engineered with modern multi-vendor commerce architecture. Browse 26 universal departments, dynamic specifications, and multi-SKU variants powered by real-time inventory control and instant Bakong KHQR checkout.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link to="/products">
-                  <Button size="lg" className="rounded-full shadow-lg shadow-primary/20 gap-2 font-semibold">
-                    <ShoppingBag className="w-4 h-4" /> Explore Catalog
-                  </Button>
-                </Link>
-                <Link to="/categories">
-                  <Button variant="outline" size="lg" className="rounded-full gap-2">
-                    <Layers className="w-4 h-4" /> Browse 26 Departments
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Trust badges */}
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/60">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <CheckCircle className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs">
-                    <div className="font-semibold text-foreground">Bakong KHQR</div>
-                    <div className="text-muted-foreground text-[11px]">Instant 0% Fee Pay</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <Truck className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs">
-                    <div className="font-semibold text-foreground">Nationwide Express</div>
-                    <div className="text-muted-foreground text-[11px]">Live GPS Courier</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs">
-                    <div className="font-semibold text-foreground">100% Genuine</div>
-                    <div className="text-muted-foreground text-[11px]">Enterprise Warranty</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Video & Visual Showcase */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl p-2 bg-gradient-to-tr from-primary/30 via-purple-500/20 to-indigo-500/30 shadow-2xl backdrop-blur-xl border border-white/20 dark:border-slate-800">
-                <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video lg:aspect-[4/3] group">
-                  <video
-                    src="/gemini_generated_video_4b7f1e53.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Brand Floating Badge */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between p-3 rounded-xl bg-background/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-                        alt="MegaCommerce Official Emblem"
-                        className="w-10 h-10 rounded-lg object-cover ring-2 ring-primary/40 shadow-sm"
-                      />
-                      <div>
-                        <div className="text-xs font-bold tracking-tight text-foreground flex items-center gap-1.5">
-                          MegaCommerce Official
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">Premier Universal Marketplace</div>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
-                      LIVE
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Dynamic Slide Banner Carousel (Managed via Admin Console) */}
+      <HeroBannerSlider />
 
       {/* Quick Departments Carousel / Grid */}
       <section className="container mx-auto px-4 space-y-4">
