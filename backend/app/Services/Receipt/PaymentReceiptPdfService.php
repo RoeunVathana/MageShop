@@ -87,7 +87,8 @@ class PaymentReceiptPdfService
 
             // Store PDF to receipts directory
             $fileName = "receipts/receipt-{$receipt->receipt_number}.pdf";
-            Storage::disk('local')->put($fileName, $pdfBytes);
+            // Default disk is S3 in production (FILESYSTEM_DISK=s3), so receipts survive redeploys.
+            Storage::disk(config('filesystems.default', 'local'))->put($fileName, $pdfBytes);
 
             $receipt->update([
                 'receipt_file_path' => $fileName,

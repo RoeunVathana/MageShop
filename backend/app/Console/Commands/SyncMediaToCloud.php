@@ -115,3 +115,4 @@ class SyncMediaToCloud extends Command
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 }
+
