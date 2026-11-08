@@ -1590,30 +1590,7 @@ export function CartPage() {
                 </button>
               </div>
 
-              {/* Bakong KHQR Information Note (No inline static QR) */}
-              {paymentMethod === 'bakong_khqr' && (
-                <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-3.5 flex items-center gap-3 animate-in fade-in duration-200">
-                  <div className="w-10 h-10 rounded-xl bg-[#E1232E] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
-                    KHQR
-                  </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-foreground">
-                        {t('Bakong KHQR Instant Scan', 'ស្កេនទូទាត់ភ្លាមៗជាមួយ Bakong KHQR')}
-                      </span>
-                      <span className="text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.2 rounded-full">
-                        0% Fee
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground leading-snug">
-                      {t(
-                        'Click the button below to open the official Bakong KHQR popup modal to scan & pay.',
-                        'ចុចប៊ូតុងខាងក្រោមដើម្បីបើកផ្ទាំង Popup QR ផ្លូវការសម្រាប់ស្កេនទូទាត់ប្រាក់។'
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
+
 
               {paymentMethod === 'card' && (
                 <div className="rounded-2xl border p-4 bg-muted/20 space-y-3 animate-in fade-in duration-200">
