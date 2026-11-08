@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { bannerService, type Banner } from '@/services/banner.service'
 import { mediaService } from '@/services/media.service'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const defaultFallbackBanners: Banner[] = [
   {
@@ -66,6 +67,7 @@ export function HeroBannerSlider() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const { t } = useShopEngagement()
 
   useEffect(() => {
     bannerService
@@ -121,14 +123,14 @@ export function HeroBannerSlider() {
     <section
       className={`relative overflow-hidden bg-gradient-to-b ${getGradientClass(
         currentBanner.background_style
-      )} py-12 md:py-20 border-b transition-colors duration-1000`}
+      )} py-6 sm:py-10 md:py-16 border-b transition-colors duration-1000`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[480px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center min-h-0 lg:min-h-[440px]">
           {/* Left Content Column */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6">
             {currentBanner.badge_text && (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-semibold border border-primary/20 backdrop-blur-sm animate-in fade-in slide-in-from-left duration-500">
                 <img
@@ -141,62 +143,62 @@ export function HeroBannerSlider() {
               </div>
             )}
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight text-foreground key={currentBanner.id}">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-foreground">
               <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 {currentBanner.title}
               </span>
             </h1>
 
             {currentBanner.subtitle && (
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
                 {currentBanner.subtitle}
               </p>
             )}
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link
                 to={currentBanner.link_url || '/products'}
                 onClick={() => bannerService.trackClick(currentBanner.id)}
               >
                 <Button size="lg" className="rounded-full shadow-lg shadow-primary/20 gap-2 font-semibold">
-                  <ShoppingBag className="w-4 h-4" /> {currentBanner.button_text || 'Explore Catalog'}
+                  <ShoppingBag className="w-4 h-4" /> {currentBanner.button_text || t('Explore Catalog', 'មើលទំនិញទាំងអស់')}
                 </Button>
               </Link>
               <Link to="/categories">
                 <Button variant="outline" size="lg" className="rounded-full gap-2">
-                  <Layers className="w-4 h-4" /> Browse 26 Departments
+                  <Layers className="w-4 h-4" /> {t('Browse 26 Departments', 'មើល ២៦ ផ្នែកទំនិញ')}
                 </Button>
               </Link>
             </div>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/60">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60">
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card/60 border border-border/50">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <CheckCircle className="w-4 h-4" />
                 </div>
                 <div className="text-xs">
-                  <div className="font-semibold text-foreground">Bakong KHQR</div>
-                  <div className="text-muted-foreground text-[11px]">Instant 0% Fee Pay</div>
+                  <div className="font-semibold text-foreground">{t('Bakong KHQR & COD', 'Bakong KHQR និងសាច់ប្រាក់')}</div>
+                  <div className="text-muted-foreground text-[11px]">{t('Pay Now or On Arrival', 'បង់ឥឡូវ ឬពេលទំនិញមកដល់')}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card/60 border border-border/50">
+                <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <Truck className="w-4 h-4" />
                 </div>
                 <div className="text-xs">
-                  <div className="font-semibold text-foreground">Nationwide Express</div>
-                  <div className="text-muted-foreground text-[11px]">Live GPS Courier</div>
+                  <div className="font-semibold text-foreground">{t('Nationwide Express', 'ដឹកជញ្ជូនទូទាំងប្រទេស')}</div>
+                  <div className="text-muted-foreground text-[11px]">{t('Live GPS Courier', 'តាមដាន GPS ផ្ទាល់')}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-card/60 border border-border/50">
+                <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                   <Shield className="w-4 h-4" />
                 </div>
                 <div className="text-xs">
-                  <div className="font-semibold text-foreground">100% Genuine</div>
-                  <div className="text-muted-foreground text-[11px]">Enterprise Warranty</div>
+                  <div className="font-semibold text-foreground">{t('100 Pts = Free Item', '១០០ ពិន្ទុ = ទំនិញឥតគិតថ្លៃ')}</div>
+                  <div className="text-muted-foreground text-[11px]">{t('+5 Pts Every Purchase', '+5 ពិន្ទុរាល់ការទិញ')}</div>
                 </div>
               </div>
             </div>
