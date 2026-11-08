@@ -271,10 +271,32 @@ export function CartPage() {
   const [isLocating, setIsLocating] = useState(false)
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'card' | 'cash_on_delivery'>('bakong_khqr')
-  const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8891')
+  const [cardNumber, setCardNumber] = useState('4408 4422 0881 9148')
   const [cardExpiry, setCardExpiry] = useState('08/29')
   const [cardCvc, setCardCvc] = useState('888')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  // Format Card Number in groups of 4 digits (e.g. 4408 4422 0881 9148)
+  const handleCardNumberChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 19)
+    const formatted = digits.match(/.{1,4}/g)?.join(' ') || ''
+    setCardNumber(formatted)
+  }
+
+  // Format Card Expiry (MM/YY)
+  const handleCardExpiryChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 4)
+    if (digits.length >= 3) {
+      setCardExpiry(`${digits.slice(0, 2)}/${digits.slice(2)}`)
+    } else {
+      setCardExpiry(digits)
+    }
+  }
+
+  // Format Card CVC (3-4 digits)
+  const handleCardCvcChange = (raw: string) => {
+    setCardCvc(raw.replace(/\D/g, '').slice(0, 4))
+  }
 
   // Real-time GPS Geolocation Detector
   const handleDetectCurrentLocation = () => {
@@ -1596,29 +1618,46 @@ export function CartPage() {
                 <div className="rounded-2xl border p-4 bg-muted/20 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between text-xs font-bold">
                     <span>{t('Credit / Debit Card Details', 'ព័ត៌មានកាតធនាគារ')}</span>
-                    <span className="text-primary">VISA • MASTERCARD</span>
+                    <span className="text-primary font-semibold flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      VISA • MASTERCARD
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="Card Number"
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                      value={cardNumber}
+                      onChange={(e) => handleCardNumberChange(e.target.value)}
+                      placeholder="4408 4422 0881 9148"
+                      maxLength={23}
+                      className="w-full pl-3 pr-10 py-2.5 text-xs font-mono tracking-wider rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                      <CreditCard className="w-4 h-4 opacity-50" />
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="cc-exp"
                       value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
+                      onChange={(e) => handleCardExpiryChange(e.target.value)}
                       placeholder="MM/YY"
-                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background"
+                      maxLength={5}
+                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
                     />
                     <input
                       type="password"
+                      inputMode="numeric"
+                      autoComplete="cc-csc"
                       value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value)}
+                      onChange={(e) => handleCardCvcChange(e.target.value)}
                       placeholder="CVC"
-                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background"
+                      maxLength={4}
+                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
                     />
                   </div>
                 </div>
