@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Admin\RolePermissionController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\HealthController;
@@ -63,10 +64,14 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'me']);
 // Public Store Settings
 Route::get('/store-settings', [StoreSettingsController::class, 'show']);
 
-// Public Universal Categories & Attributes
+// Public Universal Categories, Brands & Attributes
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
 Route::get('/categories/{category}/attributes', [CategoryAttributeController::class, 'index']);
+
+// Public Brands
+Route::get('/brands', [BrandController::class, 'index']);
+Route::get('/brands/{brand}', [BrandController::class, 'show']);
 
 // Core Product & Inventory APIs
 Route::get('/products', [ProductController::class, 'index']);
@@ -86,6 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/categories/{category}/attributes', [CategoryAttributeController::class, 'store']);
         Route::patch('/category-attributes/{attribute}', [CategoryAttributeController::class, 'update']);
         Route::delete('/category-attributes/{attribute}', [CategoryAttributeController::class, 'destroy']);
+
+        // Admin Brand Management
+        Route::post('/brands', [BrandController::class, 'store']);
+        Route::patch('/brands/{brand}', [BrandController::class, 'update']);
+        Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);
     });
 
     Route::prefix('inventory')->group(function () {

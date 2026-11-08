@@ -19,6 +19,7 @@ class StoreProductRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:100', 'unique:products,sku'],
             'brand' => ['nullable', 'string', 'max:100'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
             'product_type' => ['nullable', 'string', 'in:simple,variable,digital,bundle'],
             'description' => ['nullable', 'string'],
             'selling_price' => ['required', 'numeric', 'min:0'],

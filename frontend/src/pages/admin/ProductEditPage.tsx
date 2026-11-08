@@ -29,8 +29,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
+import { brandService } from '@/services/brand.service'
 import type { CategoryAttribute } from '@/types/category.types'
 import type { Product, ProductType } from '@/types/product.types'
+import type { Brand } from '@/types/brand.types'
 
 const productEditSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters').max(255),
@@ -71,6 +73,7 @@ export function ProductEditPage() {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [categories, setCategories] = useState<Array<{ id: number; name: string; parent_name?: string | null }>>([])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([])
   const [attributeFormValues, setAttributeFormValues] = useState<Record<string, string>>({})
   const [variantsList, setVariantsList] = useState<VariantDraft[]>([])
@@ -98,10 +101,15 @@ export function ProductEditPage() {
   useEffect(() => {
     if (!id) return
 
-    Promise.all([productService.getProduct(id), productService.getCategories()])
-      .then(async ([prod, cats]) => {
+    Promise.all([
+      productService.getProduct(id),
+      productService.getCategories(),
+      brandService.getBrands({ per_page: 100 }),
+    ])
+      .then(async ([prod, cats, brandsRes]) => {
         setProduct(prod)
         setCategories(cats)
+        setBrands(brandsRes.data || [])
 
         reset({
           name: prod.name,
@@ -444,9 +452,17 @@ export function ProductEditPage() {
                   <label className="font-semibold text-foreground">Brand / Manufacturer</label>
                   <Input
                     {...register('brand')}
-                    placeholder="e.g. Nike, Apple, Sony, IKEA"
+                    list="registered-brands"
+                    placeholder="e.g. MegaBasics, Aura Silk, UrbanPulse"
                     className="h-9 text-xs"
                   />
+                  <datalist id="registered-brands">
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.name}>
+                        {b.country ? `${b.name} (${b.country})` : b.name}
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
               </div>
 

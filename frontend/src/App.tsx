@@ -45,6 +45,9 @@ import { CategoryListPage } from '@/pages/admin/CategoryListPage'
 import { CategoryCreatePage } from '@/pages/admin/CategoryCreatePage'
 import { CategoryEditPage } from '@/pages/admin/CategoryEditPage'
 
+// Brand Administration
+import { BrandListPage } from '@/pages/admin/BrandListPage'
+
 // Telegram Mini App
 import { TelegramApp } from '@/pages/telegram/TelegramApp'
 
@@ -114,6 +117,9 @@ export default function App() {
               <Route path="/admin/categories" element={<CategoryListPage />} />
               <Route path="/admin/categories/create" element={<CategoryCreatePage />} />
               <Route path="/admin/categories/:id/edit" element={<CategoryEditPage />} />
+
+              {/* Brand Management */}
+              <Route path="/admin/brands" element={<BrandListPage />} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,0 +1,46 @@
+import { apiClient } from '@/lib/api'
+import type { Brand, BrandFormData } from '@/types/brand.types'
+
+export const brandService = {
+  /**
+   * Get paginated or filtered list of brands.
+   */
+  async getBrands(params: Record<string, any> = {}): Promise<{ data: Brand[]; meta?: any }> {
+    const response = await apiClient.get<{ data: Brand[]; meta: any }>('/brands', { params })
+    return response.data
+  },
+
+  /**
+   * Get single brand by ID or slug.
+   */
+  async getBrand(idOrSlug: string | number): Promise<Brand> {
+    const response = await apiClient.get<{ status: string; data: Brand }>(`/brands/${idOrSlug}`)
+    return response.data.data
+  },
+
+  /**
+   * Create a new brand with optional translations (Admin/Staff only).
+   */
+  async createBrand(payload: BrandFormData): Promise<Brand> {
+    const response = await apiClient.post<{ data: Brand }>('/admin/brands', payload)
+    return response.data.data
+  },
+
+  /**
+   * Update existing brand (Admin/Staff only).
+   */
+  async updateBrand(id: number, payload: Partial<BrandFormData>): Promise<Brand> {
+    const response = await apiClient.patch<{ data: Brand }>(`/admin/brands/${id}`, payload)
+    return response.data.data
+  },
+
+  /**
+   * Safely archive a brand (Admin only).
+   */
+  async archiveBrand(id: number): Promise<Brand> {
+    const response = await apiClient.delete<{ status: string; message: string; data: Brand }>(
+      `/admin/brands/${id}`
+    )
+    return response.data.data
+  },
+}

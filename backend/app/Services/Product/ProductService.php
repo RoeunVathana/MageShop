@@ -25,6 +25,7 @@ class ProductService
         $query = Product::with([
             'category.parent',
             'categories',
+            'brandRecord',
             'inventory',
             'variants.attributeValues.attribute',
             'variants.attributeValues.option',
@@ -67,7 +68,13 @@ class ProductService
 
         // Filter by brand
         if (!empty($filters['brand'])) {
-            $query->where('brand', $filters['brand']);
+            $query->where(function ($bq) use ($filters) {
+                $bq->where('brand', $filters['brand'])
+                   ->orWhereHas('brandRecord', fn($br) => $br->where('slug', $filters['brand'])->orWhere('name', $filters['brand']));
+            });
+        }
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
         }
 
         // Filter by product_type (simple, variable, digital)
@@ -117,8 +124,19 @@ class ProductService
             $productType = $data['product_type'] ?? 'simple';
             $initialStock = max(0, (int) ($data['initial_stock'] ?? $data['stock_quantity'] ?? $data['quantity_on_hand'] ?? 0));
 
+            $brandId = !empty($data['brand_id']) ? (int) $data['brand_id'] : null;
+            if (!$brandId && !empty($data['brand'])) {
+                $brandRecord = \App\Models\Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
+                    ->orWhere('slug', Str::slug($data['brand']))
+                    ->first();
+                if ($brandRecord) {
+                    $brandId = $brandRecord->id;
+                }
+            }
+
             $product = Product::create([
                 'category_id' => $categoryId,
+                'brand_id' => $brandId,
                 'name' => trim($data['name']),
                 'brand' => !empty($data['brand']) ? trim($data['brand']) : null,
                 'slug' => $slug,
@@ -214,8 +232,17 @@ class ProductService
             if (isset($data['name'])) {
                 $updateData['name'] = trim($data['name']);
             }
+            if (isset($data['brand_id'])) {
+                $updateData['brand_id'] = $data['brand_id'];
+            }
             if (isset($data['brand'])) {
                 $updateData['brand'] = trim($data['brand']);
+                if (!isset($data['brand_id'])) {
+                    $brandRecord = \App\Models\Brand::whereRaw('LOWER(name) = ?', [strtolower(trim($data['brand']))])
+                        ->orWhere('slug', Str::slug($data['brand']))
+                        ->first();
+                    $updateData['brand_id'] = $brandRecord?->id;
+                }
             }
             if (isset($data['sku'])) {
                 $updateData['sku'] = strtoupper(trim($data['sku']));

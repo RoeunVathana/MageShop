@@ -22,14 +22,17 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
+import { brandService } from '@/services/brand.service'
 import type { Product, ProductType } from '@/types/product.types'
 import type { Category } from '@/types/category.types'
+import type { Brand } from '@/types/brand.types'
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [totalPages, setTotalPages] = useState<number>(1)
@@ -37,6 +40,7 @@ export function ProductsPage() {
   // Filters state from searchParams
   const currentPage = Number(searchParams.get('page') || '1')
   const currentCategory = searchParams.get('category_id') || ''
+  const currentBrand = searchParams.get('brand') || ''
   const currentSearch = searchParams.get('search') || ''
   const currentType = (searchParams.get('product_type') as ProductType | 'all') || 'all'
   const currentSort = searchParams.get('sort_by') || 'created_at'
@@ -50,7 +54,7 @@ export function ProductsPage() {
   const [maxPriceInput, setMaxPriceInput] = useState<string>(maxPrice)
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({})
 
-  // Load category tree on mount
+  // Load category tree & brands on mount
   useEffect(() => {
     categoryService
       .getCategories({ tree: true })
@@ -59,6 +63,15 @@ export function ProductsPage() {
       })
       .catch((err) => {
         console.error('Failed to load categories', err)
+      })
+
+    brandService
+      .getBrands({ per_page: 50, is_active: true })
+      .then((res) => {
+        setBrands(res.data || [])
+      })
+      .catch((err) => {
+        console.error('Failed to load brands', err)
       })
   }, [])
 
@@ -74,6 +87,7 @@ export function ProductsPage() {
 
     if (currentSearch) params.search = currentSearch
     if (currentCategory) params.category_id = currentCategory
+    if (currentBrand) params.brand = currentBrand
     if (currentType && currentType !== 'all') params.product_type = currentType
     if (minPrice) params.min_price = Number(minPrice)
     if (maxPrice) params.max_price = Number(maxPrice)
@@ -357,6 +371,45 @@ export function ProductsPage() {
                 Apply Price
               </Button>
             </div>
+
+            {/* Brand Filter */}
+            {brands.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Featured Brands
+                  </label>
+                  {currentBrand && (
+                    <button
+                      type="button"
+                      onClick={() => updateParam('brand', '')}
+                      className="text-[11px] text-primary hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto pr-1">
+                  {brands.map((b) => {
+                    const isSelected = currentBrand.toLowerCase() === b.name.toLowerCase()
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => updateParam('brand', isSelected ? '' : b.name)}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary font-bold shadow-sm'
+                            : 'bg-background hover:bg-muted border-input text-foreground'
+                        }`}
+                      >
+                        {b.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 

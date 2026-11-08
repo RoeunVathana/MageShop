@@ -28,7 +28,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
+import { brandService } from '@/services/brand.service'
 import type { CategoryAttribute } from '@/types/category.types'
+import type { Brand } from '@/types/brand.types'
 
 const productSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters').max(255),
@@ -67,6 +69,7 @@ export function ProductCreatePage() {
   const { toast } = useToast()
 
   const [categories, setCategories] = useState<Array<{ id: number; name: string; parent_name?: string | null }>>([])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([])
   const [attributeFormValues, setAttributeFormValues] = useState<Record<string, string>>({})
   const [variantsList, setVariantsList] = useState<VariantDraft[]>([])
@@ -100,6 +103,11 @@ export function ProductCreatePage() {
       .getCategories()
       .then((cats) => setCategories(cats))
       .catch(() => setCategories([]))
+
+    brandService
+      .getBrands({ per_page: 100 })
+      .then((res) => setBrands(res.data || []))
+      .catch(() => setBrands([]))
   }, [])
 
   // When category changes, dynamically load its configured attributes!
@@ -298,9 +306,17 @@ export function ProductCreatePage() {
                   <label className="font-semibold text-foreground">Brand / Manufacturer</label>
                   <Input
                     {...register('brand')}
-                    placeholder="e.g. Sony, Nike, IKEA, MegaBasics"
+                    list="registered-brands"
+                    placeholder="e.g. MegaBasics, Aura Silk, UrbanPulse"
                     className="h-9 text-xs"
                   />
+                  <datalist id="registered-brands">
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.name}>
+                        {b.country ? `${b.name} (${b.country})` : b.name}
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
