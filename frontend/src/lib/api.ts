@@ -1,8 +1,15 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiErrorResponse } from '@/types/api.types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
-// Sanctum csrf cookie endpoint is at the backend root: http://localhost:8000/sanctum/csrf-cookie
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+    return 'https://mageshop-production.up.railway.app/api/v1'
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'https://api.tyushop.blog/api/v1'
+}
+
+const API_BASE_URL = getApiBaseUrl()
+// Sanctum csrf cookie endpoint is at the backend root: https://api.tyushop.blog/sanctum/csrf-cookie
 const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
 
 /**

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             CommerceAndTelegramSeeder::class,
             UniversalCategorySeeder::class,
+            \Database\Seeders\Essential\BrandSeeder::class,
         ]);
     }
 }
