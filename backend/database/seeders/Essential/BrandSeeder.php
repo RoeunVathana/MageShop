@@ -164,11 +164,9 @@ class BrandSeeder extends Seeder
                     );
                 }
 
-                // Associate products matching brand name or brand slug
-                Product::where(function ($q) use ($brand) {
-                    $q->whereRaw('LOWER(brand) = ?', [strtolower($brand->name)])
-                      ->orWhereRaw('LOWER(name) LIKE ?', ['%' . strtolower($brand->name) . '%']);
-                })->update(['brand_id' => $brand->id]);
+                // Associate products matching brand name in their title
+                Product::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($brand->name) . '%'])
+                    ->update(['brand_id' => $brand->id]);
             }
         });
     }
