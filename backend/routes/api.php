@@ -99,9 +99,9 @@ Route::get('/brands/{brand}', [BrandController::class, 'show']);
 // Core Product & Inventory APIs
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
-Route::post('/products', [ProductController::class, 'store']);
-Route::patch('/products/{product}', [ProductController::class, 'update']);
-Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+Route::post('/products', [ProductController::class, 'store'])->middleware('auth:sanctum');
+Route::patch('/products/{product}', [ProductController::class, 'update'])->middleware('auth:sanctum');
+Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('auth:sanctum');
 
 Route::get('/inventory', [InventoryController::class, 'index']);
 Route::get('/inventory/{product}', [InventoryController::class, 'show']);
