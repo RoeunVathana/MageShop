@@ -107,14 +107,14 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
 
         {/* Right: Actions Cluster in Two Rows */}
         <div className="shrink-0 flex items-center">
-          <div className="grid grid-rows-2 grid-cols-3 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-muted/40 dark:bg-slate-800/60 border border-border/50 shadow-sm backdrop-blur-sm">
+          <div className="grid grid-rows-2 grid-cols-3 gap-1 sm:gap-1.5 items-center justify-items-center">
             {/* ROW 1: Delivery Tracking, Wishlist, Cart */}
             {/* Col 1: GPS Delivery Tracker */}
             <Link to="/track-order" title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-95 transition-all text-muted-foreground p-0"
+                className="h-8 w-8 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
               >
                 <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                 <span className="sr-only">{t('Track Delivery', 'តាមដានការដឹកជញ្ជូន')}</span>
@@ -126,11 +126,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-rose-500/15 hover:text-rose-500 active:scale-95 transition-all text-muted-foreground p-0"
+                className="relative h-8 w-8 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
               >
                 <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center shadow-sm pointer-events-none">
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none">
                     {favoritesCount}
                   </span>
                 )}
@@ -143,11 +143,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-primary/15 hover:text-primary active:scale-95 transition-all text-muted-foreground p-0"
+                className="relative h-8 w-8 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
               >
                 <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-[9px] font-black text-primary-foreground flex items-center justify-center shadow-sm pointer-events-none">
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-[9px] font-black text-primary-foreground flex items-center justify-center shadow-xs pointer-events-none">
                     {cartCount}
                   </span>
                 )}
@@ -161,17 +161,20 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               to="/cart"
               title={t(
                 `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
-                `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ (១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ)`
+                `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
               )}
-              className="h-7 min-w-7 sm:h-8 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] font-black flex items-center justify-center gap-0.5 active:scale-95 transition-all"
+              className="relative h-8 w-8 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-95 transition-all flex items-center justify-center p-0"
             >
-              <Award className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500 shrink-0" />
-              <span className="leading-none">{loyaltyPoints}</span>
+              <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500" />
+              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none">
+                {loyaltyPoints}
+              </span>
+              <span className="sr-only">{t('Loyalty Points', 'ពិន្ទុសន្សំ')}</span>
             </Link>
 
             {/* Col 2: Theme Mode Toggle */}
             <div className="flex items-center justify-center">
-              <ThemeToggle className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border-0 hover:bg-muted active:scale-95" />
+              <ThemeToggle className="h-8 w-8 rounded-xl border-0 hover:bg-muted/80 active:scale-95" />
             </div>
 
             {/* Col 3: Account / Profile Dropdown */}
@@ -181,9 +184,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 size="icon"
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
                 title={currentUser ? currentUser.name : t('Account', 'គណនី')}
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-primary/15 text-primary active:scale-95 transition-all p-0 flex items-center justify-center"
+                className="h-8 w-8 rounded-xl hover:bg-primary/15 text-primary active:scale-95 transition-all p-0 flex items-center justify-center"
               >
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                   <UserIcon className="w-3.5 h-3.5" />
                 </div>
               </Button>
@@ -296,8 +299,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           <Input
             type="text"
             placeholder={t(
-              'Search across 50,000+ products, categories, or vendors...',
-              'ស្វែងរកផលិតផល ប្រភេទទំនិញ ឬហាងលក់ទំនិញ...'
+              'Search products, brands...',
+              'ស្វែងរកផលិតផល ម៉ាក...'
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

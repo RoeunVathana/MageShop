@@ -62,15 +62,13 @@ export function AnnouncementBar() {
     <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-1.5 sm:py-2 px-2.5 sm:px-4 border-b border-slate-800">
       <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap overflow-hidden">
         {/* Left message */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 truncate">
-          <span className="inline-flex items-center gap-1 bg-primary text-white px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 shadow-xs">
-            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('SALE', 'ពិសេស')}</span>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+          <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 shadow-xs">
+            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('HOT', 'ពិសេស')}</span>
           </span>
-          <span className="truncate text-[11px] sm:text-xs text-slate-300">
-            {t(
-              'Fast Delivery • 100-Pt Free Rewards',
-              'ដឹកជញ្ជូនរហ័ស • សន្សំ ១០០ ពិន្ទុប្តូររង្វាន់'
-            )}
+          <span className="truncate text-[11px] sm:text-xs text-slate-300 font-medium">
+            <span className="sm:hidden">{t('Delivery & Rewards', 'ដឹកជញ្ជូន & រង្វាន់')}</span>
+            <span className="hidden sm:inline">{t('Fast Delivery • 100-Pt Free Rewards • Nationwide', 'ដឹកជញ្ជូនរហ័ស • សន្សំ ១០០ ពិន្ទុប្តូររង្វាន់')}</span>
           </span>
         </div>
 
