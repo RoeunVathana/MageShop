@@ -159,6 +159,14 @@ class Product extends Model
     }
 
     /**
+     * Get selling price, falling back to price.
+     */
+    public function getSellingPriceAttribute($value): float
+    {
+        return (float) ($value ?? $this->attributes['price'] ?? 0);
+    }
+
+    /**
      * Ensure selling price and price stay synchronized and non-negative.
      */
     public function setSellingPriceAttribute($value): void

@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\VariantAttributeValue;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -347,8 +348,14 @@ class ProductService
 
             if (! empty($updateData)) {
                 $updateData['updated_at'] = now();
-                DB::table('products')->where('id', $product->id)->update($updateData);
-                $product->refresh();
+
+                // Safely filter keys to existing table columns in Postgres
+                $tableColumns = Schema::getColumnListing('products');
+                $filteredUpdate = array_intersect_key($updateData, array_flip($tableColumns));
+
+                if (! empty($filteredUpdate)) {
+                    DB::table('products')->where('id', $product->id)->update($filteredUpdate);
+                }
             }
 
             // Update attributes if provided
@@ -373,9 +380,11 @@ class ProductService
             return $product;
         });
 
-        $product->refresh();
+        // Fresh reload from database outside the transaction
+        $fresh = Product::find($product->id);
+        $resultProduct = $fresh ?: $product;
 
-        return $product->load([
+        return $resultProduct->load([
             'category.parent',
             'categories',
             'brandRecord',
