@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     protected array $alwaysRun = [
         RoleSeeder::class,
         BrandSeeder::class,
+        ProductGallerySeeder::class,
     ];
 
     /**

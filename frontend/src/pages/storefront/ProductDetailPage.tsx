@@ -15,6 +15,8 @@ import {
   Layers,
   SlidersHorizontal,
   ChevronRight,
+  ChevronLeft,
+  Images,
   RefreshCw,
   Boxes,
   Weight,
@@ -40,7 +42,73 @@ export function ProductDetailPage() {
   const [quantity, setQuantity] = useState<number>(1)
   const [loading, setLoading] = useState<boolean>(true)
   const [activeImage, setActiveImage] = useState<string>('')
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
+
+  // Consolidate all images from product.image_url, product.gallery_urls, and variant images
+  const allImages = React.useMemo(() => {
+    if (!product) return []
+    const list: string[] = []
+    if (product.image_url && typeof product.image_url === 'string' && product.image_url.trim()) {
+      list.push(product.image_url.trim())
+    }
+    if (Array.isArray(product.gallery_urls)) {
+      for (const url of product.gallery_urls) {
+        if (url && typeof url === 'string' && url.trim() && !list.includes(url.trim())) {
+          list.push(url.trim())
+        }
+      }
+    }
+    if (Array.isArray(product.variants)) {
+      for (const v of product.variants) {
+        if (v.image_url && typeof v.image_url === 'string' && v.image_url.trim() && !list.includes(v.image_url.trim())) {
+          list.push(v.image_url.trim())
+        }
+      }
+    }
+    return list
+  }, [product])
+
+  // Synchronize active slide index if activeImage changes or product loads
+  useEffect(() => {
+    if (allImages.length > 0) {
+      if (activeImage) {
+        const foundIdx = allImages.findIndex((img) => img === activeImage)
+        if (foundIdx >= 0) {
+          setActiveImageIndex(foundIdx)
+          return
+        }
+      }
+      setActiveImageIndex(0)
+    }
+  }, [allImages, activeImage])
+
+  const displayImage = allImages[activeImageIndex] || activeImage || product?.image_url || ''
+
+  const handlePrevImage = () => {
+    if (allImages.length <= 1) return
+    setActiveImageIndex((prev) => {
+      const nextIdx = (prev - 1 + allImages.length) % allImages.length
+      setActiveImage(allImages[nextIdx])
+      return nextIdx
+    })
+  }
+
+  const handleNextImage = () => {
+    if (allImages.length <= 1) return
+    setActiveImageIndex((prev) => {
+      const nextIdx = (prev + 1) % allImages.length
+      setActiveImage(allImages[nextIdx])
+      return nextIdx
+    })
+  }
+
+  const handleSelectThumbnail = (index: number) => {
+    setActiveImageIndex(index)
+    if (allImages[index]) {
+      setActiveImage(allImages[index])
+    }
+  }
 
   useEffect(() => {
     if (!slug) return
@@ -198,14 +266,14 @@ export function ProductDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
-        {/* Product Media Display */}
-        <div className="space-y-4">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50/80 dark:bg-slate-900/40 border p-6 flex items-center justify-center relative shadow-sm">
-            {activeImage ? (
+        {/* Product Media Display with Interactive Slider & Thumbnails */}
+        <div className="space-y-3">
+          <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 flex items-center justify-center shadow-sm group">
+            {displayImage ? (
               <img
-                src={activeImage}
-                alt={product.name}
-                className="w-full h-full object-contain max-h-full max-w-full transition-all"
+                src={displayImage}
+                alt={`${product.name} - slide ${activeImageIndex + 1}`}
+                className="w-full h-full object-contain max-h-full max-w-full transition-all duration-300 select-none"
               />
             ) : (
               <div className="text-center text-muted-foreground p-8">
@@ -215,7 +283,7 @@ export function ProductDetailPage() {
             )}
 
             {/* Badges Overlay */}
-            <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+            <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10 pointer-events-none">
               {product.category && (
                 <Badge className="bg-background/90 text-foreground text-xs backdrop-blur font-semibold shadow-xs">
                   {product.category.name}
@@ -232,7 +300,87 @@ export function ProductDetailPage() {
                 </Badge>
               )}
             </div>
+
+            {/* Slide Navigation Controls (Prev / Next Buttons) */}
+            {allImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous product image"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handlePrevImage()
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 dark:bg-slate-900/95 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-20"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next product image"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleNextImage()
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 dark:bg-slate-900/95 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-20"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Slide Counter Badge */}
+                <div className="absolute bottom-3 right-3 bg-black/75 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-mono font-medium shadow-md flex items-center gap-1.5 z-10 pointer-events-none">
+                  <Images className="w-3.5 h-3.5 text-blue-400" />
+                  <span>
+                    {activeImageIndex + 1} / {allImages.length}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Thumbnail Strip Gallery */}
+          {allImages.length > 1 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 overflow-x-auto p-1 scrollbar-thin">
+                {allImages.map((imgUrl, idx) => {
+                  const isActive = activeImageIndex === idx
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      aria-label={`Slide to photo ${idx + 1}`}
+                      onClick={() => handleSelectThumbnail(idx)}
+                      className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all p-1 bg-white dark:bg-slate-950 ${
+                        isActive
+                          ? 'border-blue-600 ring-2 ring-blue-500/50 shadow-md scale-102'
+                          : 'border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-400'
+                      }`}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`Thumbnail ${idx + 1}`}
+                        className="w-full h-full object-contain rounded-lg"
+                      />
+                      {isActive && (
+                        <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-blue-600" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1 px-1">
+                <Images className="w-3 h-3 opacity-70" />
+                <span>
+                  {t(
+                    `Slide through ${allImages.length} photos or tap thumbnails`,
+                    `ចុចលើរូបតូចៗ ឬព្រួញដើម្បីមើលរូបភាពទាំង ${allImages.length}`
+                  )}
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Product Info & Purchase Shell */}

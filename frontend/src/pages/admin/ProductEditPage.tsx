@@ -19,6 +19,11 @@ import {
   Trash2,
   Layers,
   Sparkles,
+  Star,
+  Upload,
+  ArrowRight,
+  Images,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -52,7 +57,7 @@ const productEditSchema = z.object({
   low_stock_threshold: z.coerce.number().int().min(0, 'Threshold cannot be negative').default(5),
   weight: z.coerce.number().min(0).optional(),
   status: z.enum(['active', 'draft', 'archived']).default('active'),
-  image_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  image_url: z.string().max(1000).optional().or(z.literal('')),
 })
 
 type ProductEditFormData = z.infer<typeof productEditSchema>
@@ -82,6 +87,9 @@ export function ProductEditPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [uploadingMedia, setUploadingMedia] = useState<boolean>(false)
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const [newGalleryInput, setNewGalleryInput] = useState<string>('')
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -135,6 +143,11 @@ export function ProductEditPage() {
           status: prod.status,
           image_url: prod.image_url || '',
         })
+
+        const loadedGallery = Array.isArray(prod.gallery_urls) && prod.gallery_urls.length > 0
+          ? prod.gallery_urls
+          : (prod.image_url ? [prod.image_url] : [])
+        setGalleryUrls(loadedGallery)
 
         // Preload dynamic category attributes
         if (prod.category?.id) {
@@ -257,6 +270,115 @@ export function ProductEditPage() {
     )
   }
 
+  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingMedia(true)
+    const uploadedUrls: string[] = []
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(`Uploading ${i + 1}/${files.length} to Cloud S3...`)
+        const file = files[i]
+        const uploaded = await mediaService.uploadMedia(file, 'products')
+        if (uploaded?.url) {
+          uploadedUrls.push(uploaded.url)
+        }
+      }
+
+      setGalleryUrls((prev) => {
+        const next = [...prev]
+        uploadedUrls.forEach((u) => {
+          if (!next.includes(u)) next.push(u)
+        })
+        return next
+      })
+
+      const currentCover = watch('image_url')
+      if (!currentCover && uploadedUrls.length > 0) {
+        setValue('image_url', uploadedUrls[0], { shouldValidate: true })
+      }
+
+      toast({
+        title: 'Uploaded to Cloud Storage ☁️',
+        description: `Successfully uploaded ${uploadedUrls.length} image(s) to permanent storage.`,
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Upload Failed',
+        description: err?.message || 'Could not upload media files.',
+        type: 'error',
+      })
+    } finally {
+      setUploadingMedia(false)
+      setUploadProgress(null)
+      e.target.value = ''
+    }
+  }
+
+  const handleAddGalleryUrl = () => {
+    const trimmed = newGalleryInput.trim()
+    if (!trimmed) return
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('/')) {
+      toast({
+        title: 'Invalid URL',
+        description: 'Please enter a valid image URL starting with http:// or https://',
+        type: 'error',
+      })
+      return
+    }
+    if (galleryUrls.includes(trimmed)) {
+      toast({
+        title: 'Already in Gallery',
+        description: 'This image is already added to the gallery list.',
+        type: 'error',
+      })
+      return
+    }
+
+    setGalleryUrls((prev) => [...prev, trimmed])
+    setNewGalleryInput('')
+
+    const currentCover = watch('image_url')
+    if (!currentCover) {
+      setValue('image_url', trimmed, { shouldValidate: true })
+    }
+  }
+
+  const handleRemoveGalleryImage = (indexToRemove: number) => {
+    const removedUrl = galleryUrls[indexToRemove]
+    const updated = galleryUrls.filter((_, idx) => idx !== indexToRemove)
+    setGalleryUrls(updated)
+
+    if (watch('image_url') === removedUrl) {
+      setValue('image_url', updated[0] || '', { shouldValidate: true })
+    }
+  }
+
+  const handleSetCover = (url: string) => {
+    setValue('image_url', url, { shouldValidate: true })
+    if (!galleryUrls.includes(url)) {
+      setGalleryUrls((prev) => [url, ...prev])
+    }
+    toast({
+      title: 'Cover Image Updated ⭐',
+      description: 'This image is now set as the primary cover photo.',
+      type: 'success',
+    })
+  }
+
+  const handleMoveGallery = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= galleryUrls.length) return
+    setGalleryUrls((prev) => {
+      const copy = [...prev]
+      const [item] = copy.splice(fromIdx, 1)
+      copy.splice(toIdx, 0, item)
+      return copy
+    })
+  }
+
   const onSubmit = async (data: ProductEditFormData) => {
     if (!id) return
     setIsSubmitting(true)
@@ -326,6 +448,11 @@ export function ProductEditPage() {
         })
       }
 
+      const finalCover = data.image_url?.trim() || (galleryUrls.length > 0 ? galleryUrls[0] : undefined)
+      const combinedGallery = Array.from(
+        new Set([...(finalCover ? [finalCover] : []), ...galleryUrls])
+      )
+
       const updated = await productService.updateProduct(id, {
         name: data.name.trim(),
         brand: data.brand?.trim() || undefined,
@@ -339,7 +466,8 @@ export function ProductEditPage() {
         low_stock_threshold: Number(data.low_stock_threshold || 5),
         weight: data.weight ? Number(data.weight) : undefined,
         status: data.status,
-        image_url: data.image_url?.trim() || undefined,
+        image_url: finalCover,
+        gallery_urls: combinedGallery,
         attributes: formattedAttributes as any,
         variants: formattedVariants as any,
       })
@@ -526,54 +654,183 @@ export function ProductEditPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <label className="font-semibold text-foreground">Image / Video / File URL</label>
-                    <label className="cursor-pointer inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:text-purple-700">
-                      <span>{uploadingMedia ? 'Uploading to Cloud S3...' : '☁️ Upload File to Cloud S3'}</span>
-                      <input
-                        type="file"
-                        accept="image/*,video/*,.pdf"
-                        className="hidden"
-                        disabled={uploadingMedia}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0]
-                          if (!file) return
-                          setUploadingMedia(true)
-                          try {
-                            const uploaded = await mediaService.uploadMedia(file, 'products')
-                            setValue('image_url', uploaded.url, { shouldValidate: true })
-                            toast({
-                              title: 'Uploaded to Cloud Storage ☁️',
-                              description: 'Media stored permanently in S3 (preserved across server updates).',
-                              type: 'success',
-                            })
-                          } catch (err: any) {
-                            toast({
-                              title: 'Upload Failed',
-                              description: err?.message || 'Could not upload media file.',
-                              type: 'error',
-                            })
-                          } finally {
-                            setUploadingMedia(false)
-                            e.target.value = ''
-                          }
-                        }}
-                      />
+              <div className="space-y-4 pt-2 border-t">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="font-bold text-sm text-foreground flex items-center gap-2">
+                      <Images className="w-4 h-4 text-purple-600" />
+                      <span>Product Media & Multi-Image Gallery</span>
+                      <Badge variant="secondary" className="text-[11px] font-mono">
+                        {galleryUrls.length} {galleryUrls.length === 1 ? 'image' : 'images'}
+                      </Badge>
                     </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Upload multiple images to cloud storage or add URLs to create an interactive slider on the product page.
+                    </p>
                   </div>
-                  <Input {...register('image_url')} className="h-9 text-xs" />
-                  {errors.image_url && (
-                    <p className="text-destructive text-[11px]">{errors.image_url.message}</p>
-                  )}
+
+                  {/* Multi-file Cloud Upload Button */}
+                  <label className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all flex-shrink-0">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{uploadingMedia ? (uploadProgress || 'Uploading to Cloud S3...') : '☁️ Upload Multiple Images'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={uploadingMedia}
+                      onChange={handleMultiImageUpload}
+                    />
+                  </label>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Status</label>
+                {/* Primary Cover URL Input & Manual Add URL */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>Primary Cover Image URL</span>
+                    </label>
+                    <Input
+                      {...register('image_url')}
+                      placeholder="https://... (Cover photo shown on catalog cards)"
+                      className="h-8 text-xs"
+                    />
+                    {errors.image_url && (
+                      <p className="text-destructive text-[11px]">{errors.image_url.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      Add Image URL to Gallery
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newGalleryInput}
+                        onChange={(e) => setNewGalleryInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddGalleryUrl()
+                          }
+                        }}
+                        placeholder="Paste image link and click Add..."
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddGalleryUrl}
+                        className="h-8 px-3 text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Gallery Thumbnail Grid */}
+                {galleryUrls.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
+                      <span>Gallery Slides Order (Shoppers can slide through these)</span>
+                      <span>Click ⭐ to set as cover</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+                      {galleryUrls.map((imgUrl, idx) => {
+                        const isCover = watch('image_url') === imgUrl || (!watch('image_url') && idx === 0)
+                        return (
+                          <div
+                            key={idx}
+                            className={`group relative rounded-lg border-2 p-1.5 bg-background transition-all flex flex-col justify-between ${
+                              isCover
+                                ? 'border-amber-500 shadow-sm ring-2 ring-amber-500/20'
+                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-400'
+                            }`}
+                          >
+                            <div className="aspect-square rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800 relative mb-1.5 flex items-center justify-center">
+                              <img
+                                src={imgUrl}
+                                alt={`Gallery slide ${idx + 1}`}
+                                className="w-full h-full object-contain"
+                              />
+                              <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                                #{idx + 1}
+                              </div>
+                              {isCover && (
+                                <div className="absolute top-1 right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                                  <Star className="w-2.5 h-2.5 fill-white" />
+                                  <span>Cover</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-1 text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveGallery(idx, idx - 1)}
+                                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"
+                                  title="Move earlier"
+                                >
+                                  <ArrowLeft className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === galleryUrls.length - 1}
+                                  onClick={() => handleMoveGallery(idx, idx + 1)}
+                                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30"
+                                  title="Move later"
+                                >
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-0.5">
+                                {!isCover && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetCover(imgUrl)}
+                                    className="p-1 rounded text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                                    title="Make cover"
+                                  >
+                                    <Star className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveGalleryImage(idx)}
+                                  className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+                                  title="Remove image"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/30">
+                    <ImageIcon className="w-8 h-8 text-muted-foreground/40 mx-auto mb-1.5" />
+                    <p className="text-xs font-medium text-foreground">No gallery images added yet</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Upload multiple images at once to enable the interactive multi-photo slider on storefront product detail.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 pt-2">
+                  <label className="font-semibold text-foreground text-xs">Status</label>
                   <select
                     {...register('status')}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="w-full h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="active">Active (Visible)</option>
                     <option value="draft">Draft (Hidden)</option>
