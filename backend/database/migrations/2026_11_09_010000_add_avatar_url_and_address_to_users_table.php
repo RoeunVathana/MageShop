@@ -12,14 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('users')) {
-            Schema::table('users', function (Blueprint $table) {
-                if (! Schema::hasColumn('users', 'avatar_url')) {
-                    $table->string('avatar_url', 1000)->nullable()->after('phone_number');
-                }
-                if (! Schema::hasColumn('users', 'address')) {
-                    $table->text('address')->nullable()->after('avatar_url');
-                }
-            });
+            $hasAvatar = Schema::hasColumn('users', 'avatar_url');
+            $hasAddress = Schema::hasColumn('users', 'address');
+
+            if (! $hasAvatar || ! $hasAddress) {
+                Schema::table('users', function (Blueprint $table) use ($hasAvatar, $hasAddress) {
+                    if (! $hasAvatar) {
+                        $table->string('avatar_url', 1000)->nullable();
+                    }
+                    if (! $hasAddress) {
+                        $table->text('address')->nullable();
+                    }
+                });
+            }
         }
     }
 
@@ -29,14 +34,19 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasTable('users')) {
-            Schema::table('users', function (Blueprint $table) {
-                if (Schema::hasColumn('users', 'avatar_url')) {
-                    $table->dropColumn('avatar_url');
-                }
-                if (Schema::hasColumn('users', 'address')) {
-                    $table->dropColumn('address');
-                }
-            });
+            $hasAvatar = Schema::hasColumn('users', 'avatar_url');
+            $hasAddress = Schema::hasColumn('users', 'address');
+
+            if ($hasAvatar || $hasAddress) {
+                Schema::table('users', function (Blueprint $table) use ($hasAvatar, $hasAddress) {
+                    if ($hasAvatar) {
+                        $table->dropColumn('avatar_url');
+                    }
+                    if ($hasAddress) {
+                        $table->dropColumn('address');
+                    }
+                });
+            }
         }
     }
 };
