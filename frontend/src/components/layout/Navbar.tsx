@@ -40,10 +40,10 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="hidden md:block border-b bg-card/60 backdrop-blur-sm">
+    <nav className="relative z-10 hidden md:block border-b bg-card/60 backdrop-blur-sm">
       <div className="container mx-auto px-4 flex items-center justify-between gap-4">
         {/* Left: Categories Menu */}
-        <div className="relative shrink-0">
+        <div className={`relative shrink-0 ${isCategoryOpen ? 'z-50' : ''}`}>
           <button
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}

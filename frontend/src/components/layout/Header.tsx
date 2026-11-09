@@ -62,7 +62,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }
 
   return (
-    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="relative z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Left: Mobile Toggle & Brand Logo */}
         <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           <ThemeToggle />
 
           {/* Account Dropdown */}
-          <div className="relative">
+          <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
             <Button
               variant="outline"
               size="sm"
@@ -173,9 +173,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setIsAccountOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border bg-card p-2 text-card-foreground shadow-xl z-50 animate-in fade-in zoom-in-95">
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-card dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b">
-                    <p className="text-xs font-medium text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground truncate">
                       {currentUser ? currentUser.email : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}
                     </p>
                     <p className="text-sm font-semibold truncate">
