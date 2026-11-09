@@ -62,21 +62,21 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <header className="relative z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Mobile Toggle & Brand Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden h-9 w-9 p-0 shrink-0"
             onClick={onToggleMobileMenu}
             aria-label="Toggle Navigation Menu"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link to="/" aria-label="TYUSHOP Home">
+          <Link to="/" aria-label="TYUSHOP Home" className="shrink-0 min-w-0 flex items-center">
             <Logo size="md" subtitle={t('Multi-Vendor', 'ផ្សារទំនើបអនឡាញ')} />
           </Link>
         </div>
@@ -107,7 +107,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
 
         {/* Right: Actions (Loyalty Points, Track GPS, Wishlist, Cart, Account, Theme Toggle) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Loyalty Points Pill */}
+          {/* Loyalty Points Pill (Desktop/Tablet) */}
           <Link
             to="/cart"
             title="Earn +5 pts per buy! 100 pts = Free Item under $20-$30"
@@ -117,16 +117,16 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             <span>{loyaltyPoints} {t('pts', 'ពិន្ទុ')}</span>
           </Link>
 
-          {/* Live GPS Delivery Tracker Link */}
-          <Link to="/track-order">
+          {/* Live GPS Delivery Tracker Link (Desktop/Tablet; Mobile users have it in MobileBottomNav) */}
+          <Link to="/track-order" className="hidden md:flex">
             <Button variant="ghost" size="icon" className="relative rounded-full" title="Real-Time GPS Delivery Tracker">
               <Truck className="h-5 w-5 text-muted-foreground hover:text-emerald-500 transition-colors" />
               <span className="sr-only">Track Delivery</span>
             </Button>
           </Link>
 
-          {/* Wishlist Link */}
-          <Link to="/wishlist">
+          {/* Wishlist Link (Desktop/Tablet; Mobile users have it in MobileBottomNav) */}
+          <Link to="/wishlist" className="hidden md:flex">
             <Button variant="ghost" size="icon" className="relative rounded-full" title="Customer Favorites">
               <Heart className="h-5 w-5 text-muted-foreground hover:text-rose-500 transition-colors" />
               <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center">
@@ -136,9 +136,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             </Button>
           </Link>
 
-          {/* Cart Link */}
+          {/* Cart Link (Always visible with badge) */}
           <Link to="/cart">
-            <Button variant="ghost" size="icon" className="relative rounded-full" title="Shopping Cart">
+            <Button variant="ghost" size="icon" className="relative rounded-full h-9 w-9 p-0" title="Shopping Cart">
               <ShoppingCart className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
               <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
                 {cartCount}
@@ -156,24 +156,24 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               variant="outline"
               size="sm"
               onClick={() => setIsAccountOpen(!isAccountOpen)}
-              className="flex items-center gap-2 rounded-full pl-2 pr-3 h-9"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-full pl-2 pr-2.5 sm:pr-3 h-9"
             >
-              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <UserIcon className="w-3.5 h-3.5" />
               </div>
-              <span className="hidden lg:inline text-xs font-semibold">
+              <span className="hidden lg:inline text-xs font-semibold max-w-[120px] truncate">
                 {currentUser ? currentUser.name : t('Account', 'គណនី')}
               </span>
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
             </Button>
 
             {isAccountOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40"
+                  className="fixed inset-0 z-40 bg-black/5"
                   onClick={() => setIsAccountOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-card dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in zoom-in-95">
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b">
                     <p className="text-xs font-medium text-muted-foreground truncate">
                       {currentUser ? currentUser.email : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}

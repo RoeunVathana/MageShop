@@ -53,9 +53,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])
         ->middleware('throttle:5,1');
 
-    // Google OAuth 2.0 Socialite
+    // Google OAuth 2.0 Socialite & Firebase
     Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
     Route::get('/google/callback', [AuthController::class, 'googleCallback']);
+    Route::post('/google/firebase', [AuthController::class, 'googleFirebase']);
 
     // Authenticated Session Endpoints
     Route::middleware('auth:sanctum')->group(function () {

@@ -116,6 +116,23 @@ export const authService = {
   },
 
   /**
+   * Authenticate with Firebase Google OAuth result.
+   */
+  loginWithFirebase: async (payload: {
+    id_token: string
+    email?: string | null
+    name?: string | null
+    avatar?: string | null
+    uid?: string | null
+  }): Promise<ApiResponse<{ user: User; token: string }>> => {
+    const res = await api.post<ApiResponse<{ user: User; token: string }>>('/auth/google/firebase', payload)
+    if (res?.data?.user) {
+      authService.saveSession(res.data.user, res.data.token)
+    }
+    return res
+  },
+
+  /**
    * Request password recovery OTP.
    */
   forgotPassword: async (email: string): Promise<ApiResponse<null>> => {

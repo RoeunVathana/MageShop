@@ -59,17 +59,17 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-1.5 sm:py-2 px-3 sm:px-4 border-b border-slate-800">
-      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4">
+    <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-1.5 sm:py-2 px-2.5 sm:px-4 border-b border-slate-800">
+      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap overflow-hidden">
         {/* Left message */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 truncate">
           <span className="inline-flex items-center gap-1 bg-primary-600 text-white px-2 py-0.5 rounded-full font-medium text-[10px] shrink-0">
-            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('TYUSHOP Sale', 'ប្រូម៉ូសិនពិសេស')}</span>
+            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('TYUSHOP', 'ពិសេស')}</span>
           </span>
           <span className="truncate text-[11px] sm:text-xs">
             {t(
-              'TYUSHOP Multi-Vendor E-Commerce Platform • Fast Delivery & 100-Pt Free Rewards',
-              'TYUSHOP ផ្សារទំនើបអនឡាញ • ដឹកជញ្ជូនរហ័ស និងសន្សំ ១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ'
+              'Fast Delivery • 100-Pt Free Rewards',
+              'ដឹកជញ្ជូនរហ័ស • សន្សំ ១០០ ពិន្ទុប្តូររង្វាន់'
             )}
           </span>
         </div>

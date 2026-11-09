@@ -1,6 +1,7 @@
 // Firebase Configuration & Initialization for TYUSHOP (tyushop-5aea2)
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAnalytics, isSupported } from 'firebase/analytics'
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBKs2OYgjUWXCO3JV32jFNrdSM5BdyzIIA',
@@ -14,6 +15,11 @@ export const firebaseConfig = {
 
 // Initialize Firebase App singleton
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+
+// Firebase Auth & Google Auth Provider
+export const auth = getAuth(app)
+export const googleAuthProvider = new GoogleAuthProvider()
+googleAuthProvider.setCustomParameters({ prompt: 'select_account' })
 
 // Initialize Analytics conditionally (only in browser environment when supported)
 export let analytics: ReturnType<typeof getAnalytics> | null = null

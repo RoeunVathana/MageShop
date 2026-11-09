@@ -148,13 +148,50 @@ export function LoginPage() {
     }
   }
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setLoading(true)
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    const apiBase = isLocal
-      ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1')
-      : 'https://api.tyushop.blog/api/v1'
-    window.location.href = `${apiBase}/auth/google/redirect`
+    try {
+      const { signInWithPopup } = await import('firebase/auth')
+      const { auth, googleAuthProvider } = await import('@/lib/firebase')
+      const result = await signInWithPopup(auth, googleAuthProvider)
+      const fbUser = result.user
+      const idToken = await fbUser.getIdToken()
+
+      const res = await authService.loginWithFirebase({
+        id_token: idToken,
+        email: fbUser.email,
+        name: fbUser.displayName,
+        avatar: fbUser.photoURL,
+        uid: fbUser.uid,
+      })
+
+      toast({
+        title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
+        description: t(`Signed in as ${fbUser.displayName || fbUser.email}!`, `បានចូលជា ${fbUser.displayName || fbUser.email}!`),
+        type: 'success',
+      })
+
+      if (redirectParam) {
+        navigate(redirectParam)
+      } else if (authService.isAdmin(res.data?.user)) {
+        navigate('/dashboard/admin')
+      } else {
+        navigate('/')
+      }
+    } catch (popupErr: any) {
+      if (popupErr?.code === 'auth/popup-closed-by-user') {
+        setLoading(false)
+        return
+      }
+      console.warn('Google Auth Error:', popupErr)
+      toast({
+        title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
+        description: popupErr?.message || t('Could not authenticate with Google. Please try again.', 'មិនអាចចូលតាម Google បានទេ សូមព្យាយាមម្តងទៀត។'),
+        type: 'error',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

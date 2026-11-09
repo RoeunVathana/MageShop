@@ -51,17 +51,17 @@ export function Logo({
         />
       </div>
       {showText && (
-        <div className="flex flex-col">
+        <div className="flex flex-col shrink-0 whitespace-nowrap min-w-0">
           <span
             className={cn(
-              'font-black tracking-tight leading-none bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent',
+              'font-black tracking-tight leading-none bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent whitespace-nowrap break-keep select-none',
               textMap[size]
             )}
           >
             TYU<span className="text-primary">SHOP</span>
           </span>
           {subtitle && (
-            <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase mt-0.5">
+            <span className="hidden sm:block text-[9px] font-bold tracking-wider text-muted-foreground uppercase mt-0.5 whitespace-nowrap break-keep">
               {subtitle}
             </span>
           )}

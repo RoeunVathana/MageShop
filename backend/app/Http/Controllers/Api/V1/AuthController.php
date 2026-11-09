@@ -356,4 +356,41 @@ class AuthController extends Controller
             return redirect()->to("{$frontendUrl}/login?error={$msg}");
         }
     }
+
+    /**
+     * Handle client-side Firebase Google OAuth authentication.
+     */
+    public function googleFirebase(Request $request, GoogleAuthService $googleService): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_token' => ['nullable', 'string'],
+            'email' => ['nullable', 'string'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'string', 'max:2048'],
+            'uid' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $result = $googleService->handleFirebaseUser(
+                $validated['email'] ?? null,
+                $validated['name'] ?? null,
+                $validated['avatar'] ?? null,
+                $validated['uid'] ?? null,
+                $validated['id_token'] ?? null
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Authenticated successfully with Google.',
+                'data' => $result,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Firebase Google Auth error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage() ?: 'Firebase Google authentication failed.',
+            ], 422);
+        }
+    }
 }
