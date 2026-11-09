@@ -37,7 +37,7 @@ export function Logo({
       {/* Brand Icon Medallion */}
       <div
         className={cn(
-          'relative overflow-hidden shadow-sm ring-1 ring-primary/25 border border-primary/20 group-hover:scale-105 group-hover:shadow-md transition-all duration-300 bg-background shrink-0 flex items-center justify-center',
+          'relative overflow-hidden shadow-xs ring-1 ring-primary/25 border border-primary/20 group-hover:scale-105 group-hover:-translate-y-0.5 group-hover:ring-2 group-hover:ring-primary/40 group-hover:shadow-md group-hover:shadow-primary/25 transition-all duration-300 bg-background shrink-0 flex items-center justify-center',
           sizeMap[size],
           imageClassName
         )}
@@ -45,7 +45,7 @@ export function Logo({
         <img
           src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
           alt="TYUSHOP Official"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           onError={(e) => {
             const target = e.currentTarget
             if (target.src.indexOf('logo.jpg') === -1) {
@@ -58,12 +58,12 @@ export function Logo({
       {/* Brand Wordmark & Tagline */}
       {showText && (
         <div className="flex flex-col justify-center shrink-0 whitespace-nowrap min-w-0 leading-none">
-          {/* Main Logo Text */}
-          <div className={cn('flex items-baseline tracking-tight font-black leading-none select-none', textMap[size])}>
+          {/* Main Logo Text with smooth hover sweep */}
+          <div className={cn('flex items-baseline tracking-tight font-black leading-none select-none transition-transform duration-200 group-hover:scale-[1.02]', textMap[size])}>
             <span className="text-slate-950 dark:text-white drop-shadow-xs transition-colors">
               TYU
             </span>
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent group-hover:brightness-115 transition-all duration-300">
               SHOP
             </span>
           </div>
@@ -71,7 +71,7 @@ export function Logo({
           {/* Clean Tagline */}
           {cleanSubtitle && (
             <div className="flex items-center gap-1 mt-1 min-w-0">
-              <span className="text-[8.5px] sm:text-[9.5px] font-black tracking-widest uppercase text-muted-foreground/80 leading-none whitespace-nowrap break-keep select-none">
+              <span className="text-[8.5px] sm:text-[9.5px] font-black tracking-widest uppercase text-muted-foreground/80 group-hover:text-primary/90 transition-colors duration-200 leading-none whitespace-nowrap break-keep select-none">
                 {cleanSubtitle}
               </span>
             </div>

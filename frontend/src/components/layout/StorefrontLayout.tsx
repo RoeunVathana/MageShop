@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { AnnouncementBar } from './AnnouncementBar'
 import { Header } from './Header'
@@ -7,16 +7,40 @@ import { Footer } from './Footer'
 import { MobileMenu } from './MobileMenu'
 import { MobileBottomNav } from './MobileBottomNav'
 import { SupportWidget } from '@/components/storefront/SupportWidget'
+import { cn } from '@/lib/utils'
 
 export function StorefrontLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground pb-16 md:pb-0 overflow-x-clip">
-      {/* Pinned Top Navigation Bar — Does Not Move When Scrolling Page */}
-      <div className="sticky top-0 z-40 w-full shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      {/* Pinned Top Navigation Bar with Smooth Scroll Glassmorphism Transition */}
+      <div
+        className={cn(
+          'sticky top-0 z-40 w-full transition-all duration-300 ease-in-out',
+          isScrolled
+            ? 'shadow-lg shadow-black/5 bg-background/95 backdrop-blur-md border-b border-border/80'
+            : 'shadow-xs bg-background/90 backdrop-blur-sm'
+        )}
+      >
         {/* Top Announcement Bar */}
-        <AnnouncementBar />
+        <div
+          className={cn(
+            'transition-all duration-300 ease-in-out overflow-hidden',
+            isScrolled ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-12 opacity-100'
+          )}
+        >
+          <AnnouncementBar />
+        </div>
 
         {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
         <Header

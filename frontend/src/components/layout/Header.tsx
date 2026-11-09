@@ -69,20 +69,24 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-accent/80 active:scale-95 transition-all text-foreground shrink-0"
+            className="group lg:hidden h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-accent/80 active:scale-90 transition-all duration-200 text-foreground shrink-0"
             onClick={onToggleMobileMenu}
             aria-label="Toggle Navigation Menu"
           >
-            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 rotate-90" />
+            ) : (
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />
+            )}
           </Button>
 
-          <Link to="/" aria-label="TYUSHOP Home" className="shrink-0 min-w-0 flex items-center">
+          <Link to="/" aria-label="TYUSHOP Home" className="shrink-0 min-w-0 flex items-center transition-transform duration-200 hover:scale-[1.02] active:scale-98">
             <Logo size="md" subtitle={t('Multi-Vendor', 'ផ្សារទំនើបអនឡាញ')} />
           </Link>
         </div>
 
         {/* Center: Search Bar (Desktop) */}
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4 xl:mx-6">
+        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4 xl:mx-6 group">
           <div className="relative w-full flex items-center">
             <Input
               type="text"
@@ -92,13 +96,13 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-24 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-primary shadow-inner"
+              className="pl-10 pr-24 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary shadow-inner transition-all duration-300"
             />
-            <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-200" />
             <Button
               type="submit"
               size="sm"
-              className="absolute right-1 rounded-full h-8 px-4 text-xs font-semibold"
+              className="absolute right-1 rounded-full h-8 px-4 text-xs font-semibold hover:shadow-md hover:scale-102 active:scale-95 transition-all duration-200"
             >
               {t('Search', 'ស្វែងរក')}
             </Button>
@@ -114,9 +118,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
+                className="group h-8 w-8 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
-                <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:translate-x-0.5 group-hover:scale-110 transition-transform duration-200" />
                 <span className="sr-only">{t('Track Delivery', 'តាមដានការដឹកជញ្ជូន')}</span>
               </Button>
             </Link>
@@ -126,11 +130,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-8 w-8 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
-                <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:scale-120 group-hover:fill-rose-500/20 transition-all duration-200" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none">
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
                     {favoritesCount}
                   </span>
                 )}
@@ -143,11 +147,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-8 w-8 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-95 transition-all text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
-                <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" />
+                <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary group-hover:-rotate-12 group-hover:scale-115 transition-transform duration-200" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-[9px] font-black text-primary-foreground flex items-center justify-center shadow-xs pointer-events-none">
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-[9px] font-black text-primary-foreground flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
                     {cartCount}
                   </span>
                 )}
@@ -163,10 +167,10 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
                 `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
               )}
-              className="relative h-8 w-8 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-95 transition-all flex items-center justify-center p-0"
+              className="group relative h-8 w-8 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 flex items-center justify-center p-0"
             >
-              <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500" />
-              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none">
+              <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500 group-hover:rotate-12 group-hover:scale-115 transition-transform duration-200" />
+              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
                 {loyaltyPoints}
               </span>
               <span className="sr-only">{t('Loyalty Points', 'ពិន្ទុសន្សំ')}</span>
@@ -174,7 +178,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
 
             {/* Col 2: Theme Mode Toggle */}
             <div className="flex items-center justify-center">
-              <ThemeToggle className="h-8 w-8 rounded-xl border-0 hover:bg-muted/80 active:scale-95" />
+              <ThemeToggle className="h-8 w-8 rounded-xl border-0 hover:bg-muted/80 active:scale-90 transition-all duration-200" />
             </div>
 
             {/* Col 3: Account / Profile Dropdown */}
@@ -184,9 +188,9 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 size="icon"
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
                 title={currentUser ? currentUser.name : t('Account', 'គណនី')}
-                className="h-8 w-8 rounded-xl hover:bg-primary/15 text-primary active:scale-95 transition-all p-0 flex items-center justify-center"
+                className="group h-8 w-8 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 p-0 flex items-center justify-center"
               >
-                <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-200">
                   <UserIcon className="w-3.5 h-3.5" />
                 </div>
               </Button>
@@ -197,7 +201,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                   className="fixed inset-0 z-40 bg-black/5"
                   onClick={() => setIsAccountOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in zoom-in-95">
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
                   <div className="px-3 py-2 border-b">
                     <p className="text-xs font-medium text-muted-foreground truncate">
                       {currentUser ? currentUser.email : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}
