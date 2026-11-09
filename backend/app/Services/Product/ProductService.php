@@ -346,7 +346,11 @@ class ProductService
             }
 
             if (! empty($updateData)) {
-                $product->update($updateData);
+                try {
+                    $product->update($updateData);
+                } catch (\Throwable $e) {
+                    throw new \InvalidArgumentException('Product update query failed: ' . $e->getMessage());
+                }
             }
 
             // Update attributes if provided
@@ -368,17 +372,20 @@ class ProductService
                 $this->syncProductVariants($product, $data['variants'], auth()->id());
             }
 
-            return $product->load([
-                'category.parent',
-                'categories',
-                'brandRecord',
-                'inventory',
-                'variants.attributeValues.attribute',
-                'variants.attributeValues.option',
-                'variants.inventory',
-                'attributeValues.attribute',
-                'attributeValues.selectedOption',
-            ]);
+            return $product;
+        });
+
+        return $product->load([
+            'category.parent',
+            'categories',
+            'brandRecord',
+            'inventory',
+            'variants.attributeValues.attribute',
+            'variants.attributeValues.option',
+            'variants.inventory',
+            'attributeValues.attribute',
+            'attributeValues.selectedOption',
+        ]);
         });
     }
 
