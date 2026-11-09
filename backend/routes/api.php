@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\AdminBannerController;
+use App\Http\Controllers\Api\V1\Admin\AdminMaintenanceController;
 use App\Http\Controllers\Api\V1\Admin\AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\ApiTokenController;
 use App\Http\Controllers\Api\V1\Admin\DeliveryPricingController;
@@ -134,8 +135,14 @@ Route::get('/admin/users', [EmailPasswordOtpController::class, 'indexUsers']);
 Route::post('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
 Route::put('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
 
+Route::post('/admin/seed-all', [AdminMaintenanceController::class, 'seedAll']);
+Route::post('/admin/database/seed', [AdminMaintenanceController::class, 'seedAll']);
+
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // Database Seeder Execution
+    Route::post('/seed-all', [AdminMaintenanceController::class, 'seedAll']);
+    Route::post('/database/seed', [AdminMaintenanceController::class, 'seedAll']);
     // Admin Orders & Sales Mutations
     Route::prefix('orders')->group(function () {
         Route::patch('/{id}/status', [AdminOrderController::class, 'updateStatus']);
