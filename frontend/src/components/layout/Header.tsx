@@ -109,28 +109,47 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </form>
 
-        {/* Right: Actions Cluster in Two Rows */}
+        {/* Right: Actions Cluster - Sleek, Responsive Single-Row Layout */}
         <div className="shrink-0 flex items-center">
-          <div className="grid grid-rows-2 grid-cols-3 gap-1 sm:gap-1.5 items-center justify-items-center">
-            {/* ROW 1: Delivery Tracking, Wishlist, Cart */}
-            {/* Col 1: GPS Delivery Tracker */}
-            <Link to="/track-order" title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}>
+          <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
+            {/* 1. Real-Time GPS Delivery Tracker (Hidden on compact mobile, shown on sm+) */}
+            <Link
+              to="/track-order"
+              title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}
+              className="hidden sm:inline-flex"
+            >
               <Button
                 variant="ghost"
                 size="icon"
-                className="group h-8 w-8 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
                 <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:translate-x-0.5 group-hover:scale-110 transition-transform duration-200" />
                 <span className="sr-only">{t('Track Delivery', 'តាមដានការដឹកជញ្ជូន')}</span>
               </Button>
             </Link>
 
-            {/* Col 2: Customer Wishlist / Favorites */}
+            {/* 2. Customer Loyalty Points Award (Hidden on mobile, shown on md+) */}
+            <Link
+              to="/cart"
+              title={t(
+                `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
+                `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
+              )}
+              className="hidden md:inline-flex group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 items-center justify-center p-0"
+            >
+              <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500 group-hover:rotate-12 group-hover:scale-115 transition-transform duration-200" />
+              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
+                {loyaltyPoints}
+              </span>
+              <span className="sr-only">{t('Loyalty Points', 'ពិន្ទុសន្សំ')}</span>
+            </Link>
+
+            {/* 3. Customer Wishlist / Favorites */}
             <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="group relative h-8 w-8 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
                 <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:scale-120 group-hover:fill-rose-500/20 transition-all duration-200" />
                 {favoritesCount > 0 && (
@@ -142,12 +161,12 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* Col 3: Shopping Cart */}
+            {/* 4. Shopping Cart */}
             <Link to="/cart" title={t('Shopping Cart', 'កន្ត្រកទំនិញ')}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="group relative h-8 w-8 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
               >
                 <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary group-hover:-rotate-12 group-hover:scale-115 transition-transform duration-200" />
                 {cartCount > 0 && (
@@ -159,46 +178,29 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* ROW 2: Loyalty Points, Dark/Light Theme, Account */}
-            {/* Col 1: Loyalty Points */}
-            <Link
-              to="/cart"
-              title={t(
-                `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
-                `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
-              )}
-              className="group relative h-8 w-8 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 flex items-center justify-center p-0"
-            >
-              <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500 group-hover:rotate-12 group-hover:scale-115 transition-transform duration-200" />
-              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
-                {loyaltyPoints}
-              </span>
-              <span className="sr-only">{t('Loyalty Points', 'ពិន្ទុសន្សំ')}</span>
-            </Link>
-
-            {/* Col 2: Theme Mode Toggle */}
+            {/* 5. Theme Mode Toggle */}
             <div className="flex items-center justify-center">
-              <ThemeToggle className="h-8 w-8 rounded-xl border-0 hover:bg-muted/80 active:scale-90 transition-all duration-200" />
+              <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border-0 hover:bg-muted/80 active:scale-90 transition-all duration-200" />
             </div>
 
-            {/* Col 3: Account / Profile Dropdown */}
+            {/* 6. Account / Profile Dropdown */}
             <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
                 title={currentUser ? currentUser.name : t('Account', 'គណនី')}
-                className="group h-8 w-8 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 p-0 flex items-center justify-center"
+                className="group h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 p-0 flex items-center justify-center"
               >
                 {currentUser?.avatar_url ? (
                   <img
                     src={currentUser.avatar_url}
                     alt={currentUser?.name || 'User'}
-                    className="w-6 h-6 rounded-lg object-cover ring-1 ring-primary/30 shrink-0 group-hover:scale-110 transition-all duration-200"
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover ring-1 ring-primary/30 shrink-0 group-hover:scale-110 transition-all duration-200"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-200">
-                    <UserIcon className="w-3.5 h-3.5" />
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-200">
+                    <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 )}
               </Button>

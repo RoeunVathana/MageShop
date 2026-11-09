@@ -17,14 +17,14 @@ export function Logo({
 }: LogoProps) {
   const sizeMap = {
     sm: 'h-8 w-8 rounded-lg',
-    md: 'h-10 w-10 sm:h-11 sm:w-11 rounded-xl',
+    md: 'h-9 w-9 sm:h-11 sm:w-11 rounded-xl',
     lg: 'h-12 w-12 sm:h-14 sm:w-14 rounded-2xl',
     xl: 'h-16 w-16 rounded-2xl',
   }
 
   const textMap = {
     sm: 'text-base sm:text-lg',
-    md: 'text-lg sm:text-xl md:text-2xl',
+    md: 'text-base sm:text-xl md:text-2xl',
     lg: 'text-2xl sm:text-3xl',
     xl: 'text-3xl sm:text-4xl',
   }
@@ -70,8 +70,8 @@ export function Logo({
 
           {/* Clean Tagline */}
           {cleanSubtitle && (
-            <div className="flex items-center gap-1 mt-1 min-w-0">
-              <span className="text-[8.5px] sm:text-[9.5px] font-black tracking-widest uppercase text-muted-foreground/80 group-hover:text-primary/90 transition-colors duration-200 leading-none whitespace-nowrap break-keep select-none">
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 min-w-0">
+              <span className="text-[7.5px] sm:text-[9.5px] font-black tracking-widest uppercase text-muted-foreground/80 group-hover:text-primary/90 transition-colors duration-200 leading-none whitespace-nowrap break-keep select-none">
                 {cleanSubtitle}
               </span>
             </div>
