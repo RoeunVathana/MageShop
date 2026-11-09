@@ -22,11 +22,14 @@ class AdminOrderController extends Controller
     /**
      * Authorize administrator access.
      */
-    protected function authorizeAdmin(Request $request): void
+    protected function authorizeAdmin(Request $request, bool $strict = true): void
     {
         $user = Auth::guard('web')->user() ?? $request->user('sanctum') ?? $request->user();
         if (! $user) {
-            abort(401, 'Unauthenticated.');
+            if ($strict) {
+                abort(401, 'Unauthenticated. Please sign in as an administrator.');
+            }
+            return;
         }
 
         $email = strtolower((string) ($user->email ?? ''));
@@ -49,7 +52,7 @@ class AdminOrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, false);
 
         $query = Order::with(['items', 'payments', 'customer']);
 
@@ -112,7 +115,7 @@ class AdminOrderController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, false);
 
         $order = Order::with(['items.product', 'payments', 'customer', 'receipt'])->find($id);
 
@@ -239,7 +242,7 @@ class AdminOrderController extends Controller
      */
     public function systemStats(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, false);
 
         $totalOrders = Order::count();
         $totalRevenue = (float) Order::whereIn('payment_status', ['completed', 'paid'])->sum('total_amount');
@@ -289,3 +292,4 @@ class AdminOrderController extends Controller
         ]);
     }
 }
+

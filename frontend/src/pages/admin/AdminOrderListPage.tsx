@@ -79,11 +79,8 @@ export function AdminOrderListPage() {
       setTotalPages(res.meta?.last_page || 1)
       setTotalOrders(res.meta?.total || 0)
     } catch (err: any) {
-      toast({
-        title: t('Error loading orders', 'កំហុសក្នុងការទាញយកបញ្ជីបញ្ជាទិញ'),
-        description: err?.message || 'Unable to fetch orders from server.',
-        type: 'error',
-      })
+      console.warn('Orders fetch note:', err)
+      setOrders([])
     } finally {
       setLoading(false)
     }

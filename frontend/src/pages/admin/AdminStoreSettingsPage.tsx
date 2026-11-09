@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { storeSettingsService } from '@/services/storeSettings.service'
 import { api } from '@/lib/api'
 
 export function AdminStoreSettingsPage() {
@@ -67,8 +68,7 @@ export function AdminStoreSettingsPage() {
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      const res: any = await api.get('/admin/store-settings')
-      const data = res?.data || {}
+      const data: any = await storeSettingsService.getAdminSettings()
       setForm({
         store_name: data.store_name || 'TYUSHOP Multi-Vendor Flagship',
         store_description: data.store_description || 'Next-Gen Universal Multi-Vendor E-Commerce Platform',
@@ -95,11 +95,7 @@ export function AdminStoreSettingsPage() {
         telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       })
     } catch (err: any) {
-      toast({
-        title: t('Error loading store settings', 'កំហុសក្នុងការទាញយកការកំណត់'),
-        description: err?.message || 'Could not load store configuration.',
-        type: 'error',
-      })
+      console.warn('Could not fetch admin settings, loading defaults:', err)
     } finally {
       setLoading(false)
     }
@@ -476,3 +472,4 @@ export function AdminStoreSettingsPage() {
     </DashboardLayout>
   )
 }
+

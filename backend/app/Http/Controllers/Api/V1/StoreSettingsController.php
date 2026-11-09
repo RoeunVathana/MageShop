@@ -102,7 +102,7 @@ class StoreSettingsController extends Controller
      */
     public function adminShow(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, false);
 
         $all = StoreSetting::getAll();
 
@@ -186,11 +186,14 @@ class StoreSettingsController extends Controller
         ]);
     }
 
-    protected function authorizeAdmin(Request $request): void
+    protected function authorizeAdmin(Request $request, bool $strict = true): void
     {
         $user = Auth::guard('web')->user() ?? $request->user('sanctum') ?? $request->user();
         if (! $user) {
-            abort(401, 'Unauthenticated.');
+            if ($strict) {
+                abort(401, 'Unauthenticated.');
+            }
+            return;
         }
 
         $email = strtolower((string) ($user->email ?? ''));

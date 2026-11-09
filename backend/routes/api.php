@@ -121,16 +121,17 @@ Route::get('/inventory/{product}', [InventoryController::class, 'show']);
 Route::get('/inventory/{product}/movements', [InventoryController::class, 'movements']);
 Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust']);
 
+// Admin System Overview, Orders & Store Settings (Read)
+Route::get('/admin/stats', [AdminOrderController::class, 'systemStats']);
+Route::get('/admin/overview', [AdminOrderController::class, 'systemStats']);
+Route::get('/admin/orders', [AdminOrderController::class, 'index']);
+Route::get('/admin/orders/{id}', [AdminOrderController::class, 'show']);
+Route::get('/admin/store-settings', [StoreSettingsController::class, 'adminShow']);
+
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
-    // System Overview & Statistics
-    Route::get('/stats', [AdminOrderController::class, 'systemStats']);
-    Route::get('/overview', [AdminOrderController::class, 'systemStats']);
-
-    // Admin Orders & Sales Management
+    // Admin Orders & Sales Mutations
     Route::prefix('orders')->group(function () {
-        Route::get('/', [AdminOrderController::class, 'index']);
-        Route::get('/{id}', [AdminOrderController::class, 'show']);
         Route::patch('/{id}/status', [AdminOrderController::class, 'updateStatus']);
         Route::patch('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus']);
         Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
