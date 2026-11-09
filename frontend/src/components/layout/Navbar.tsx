@@ -29,7 +29,7 @@ export function Navbar() {
     { label: t('Brands', 'ម៉ាកយីហោ'), path: '/brands' },
     { label: t('Track Live Delivery', 'តាមដានការដឹកជញ្ជូន GPS'), path: '/track-order', isHighlight: true },
     { label: t('About Us', 'អំពីយើង'), path: '/about' },
-    { label: t('Contact & Supporter', 'ទំនាក់ទំនងជំនួយ'), path: '/contact' },
+    { label: t('Contact & Support', 'ទំនាក់ទំនងជំនួយ'), path: '/contact' },
     { label: t('FAQ', 'សំណួរញឹកញាប់'), path: '/faq' },
   ]
 
@@ -97,7 +97,7 @@ export function Navbar() {
         </div>
 
         {/* Center: Primary Navigation Links with Floating Hover & Animated Indicator */}
-        <div className="flex flex-1 items-center gap-2 lg:gap-3 xl:gap-4 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+        <div className="flex flex-1 items-center gap-1.5 lg:gap-2.5 xl:gap-3 2xl:gap-4 overflow-x-auto no-scrollbar py-0.5 min-w-0">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path
             return (
