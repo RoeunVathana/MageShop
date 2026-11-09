@@ -505,20 +505,20 @@ export function ProductsPage() {
                 return (
                   <Card
                     key={p.id}
-                    className="group border hover:border-primary/50 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden"
+                    className="group border hover:border-primary/50 hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden rounded-2xl"
                   >
                     <div>
-                      {/* Product Media */}
-                      <Link to={`/products/${p.slug || p.id}`} className="block relative aspect-square bg-slate-50/80 dark:bg-slate-900/40 p-4 overflow-hidden flex items-center justify-center">
+                      {/* Product Media - Full edge-to-edge card image */}
+                      <Link to={`/products/${p.slug || p.id}`} className="block relative aspect-square w-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
                         {p.image_url ? (
                           <img
                             src={p.image_url}
                             alt={p.name}
-                            className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-muted/40">
                             <ShoppingBag className="w-12 h-12 opacity-30" />
                           </div>
                         )}

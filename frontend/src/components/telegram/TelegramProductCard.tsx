@@ -36,12 +36,12 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
       className="group relative bg-card rounded-2xl border border-border/80 overflow-hidden shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between active:scale-[0.99] cursor-pointer"
     >
       {/* Top Media & Badges */}
-      <div className="relative aspect-square w-full bg-muted/40 overflow-hidden flex items-center justify-center p-3">
+      <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
         ) : (

@@ -227,19 +227,19 @@ export function HomePage() {
               const isRewardEligible = p.selling_price <= 30
 
               return (
-                <Card key={p.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                <Card key={p.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between rounded-2xl border">
                   <div>
-                    <div className="relative aspect-square overflow-hidden bg-slate-50/80 dark:bg-slate-900/40 p-4 flex items-center justify-center">
-                      <Link to={`/products/${p.slug || p.id}`} className="w-full h-full flex items-center justify-center">
+                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+                      <Link to={`/products/${p.slug || p.id}`} className="w-full h-full block">
                         {p.image_url ? (
                           <img
                             src={p.image_url}
                             alt={p.name}
-                            className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-muted/40">
                             <ShoppingBag className="w-12 h-12 opacity-30" />
                           </div>
                         )}

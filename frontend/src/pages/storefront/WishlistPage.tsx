@@ -59,12 +59,12 @@ export function WishlistPage() {
           {favorites.map((item) => {
             const isFreeEligible = item.price <= 30
             return (
-              <Card key={item.id} className="overflow-hidden group hover:shadow-xl transition-all">
-                <div className="aspect-square relative bg-slate-50/80 dark:bg-slate-900/40 p-4 overflow-hidden flex items-center justify-center">
+              <Card key={item.id} className="overflow-hidden group hover:shadow-xl transition-all rounded-2xl border">
+                <div className="aspect-square w-full relative bg-slate-100 dark:bg-slate-900 overflow-hidden">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-full h-full object-contain max-h-full max-w-full group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                   {isFreeEligible && (
