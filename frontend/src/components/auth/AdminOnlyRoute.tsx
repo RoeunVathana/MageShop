@@ -23,6 +23,25 @@ export function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * Admin or Seller Guard:
+ * Allows access to users with Admin (SUPER_ADMIN, ADMIN) or Seller (SELLER, SELLER_STAFF) roles.
+ */
+export function AdminOrSellerRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const user = authService.getStoredUser()
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (!authService.canManageStore(user)) {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+/**
  * Authenticated Customer Guard:
  * Requires an active authenticated user session.
  */

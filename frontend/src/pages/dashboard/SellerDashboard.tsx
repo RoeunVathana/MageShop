@@ -6,7 +6,9 @@ import {
   PlusCircle,
   Clock,
   ArrowUpRight,
+  Tag,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +16,8 @@ import { Button } from '@/components/ui/button'
 
 const sellerNav: NavItem[] = [
   { label: 'Store Overview', href: '/dashboard/seller', icon: Store },
-  { label: 'Product Catalog', href: '/dashboard/seller/products', icon: Package, badge: '48 items' },
+  { label: 'Product Catalog', href: '/admin/products', icon: Package, badge: 'Catalog' },
+  { label: 'Discount Coupons', href: '/dashboard/seller/coupons', icon: Tag, badge: 'Promos' },
   { label: 'Orders & Fulfillment', href: '/dashboard/seller/orders', icon: Clock, badge: '6 pending' },
   { label: 'Revenue & Payouts', href: '/dashboard/seller/payouts', icon: DollarSign },
   { label: 'Analytics & Growth', href: '/dashboard/seller/analytics', icon: TrendingUp },
@@ -36,9 +39,18 @@ export function SellerDashboard() {
               Multi-Vendor Merchant ID: <strong className="text-foreground">VND-84920</strong> • Status: Verified Official
             </p>
           </div>
-          <Button size="sm" className="gap-1.5 rounded-lg text-xs font-semibold">
-            <PlusCircle className="w-3.5 h-3.5" /> Add New Listing
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to="/dashboard/seller/coupons">
+              <Button size="sm" variant="outline" className="gap-1.5 rounded-lg text-xs font-semibold border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Tag className="w-3.5 h-3.5" /> Manage Coupons
+              </Button>
+            </Link>
+            <Link to="/admin/products/create">
+              <Button size="sm" className="gap-1.5 rounded-lg text-xs font-semibold">
+                <PlusCircle className="w-3.5 h-3.5" /> Add New Listing
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}

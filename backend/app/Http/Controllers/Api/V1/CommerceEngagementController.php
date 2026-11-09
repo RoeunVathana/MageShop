@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -29,10 +30,16 @@ class CommerceEngagementController extends Controller
      */
     public function coupons(): JsonResponse
     {
-        $coupons = DB::table('coupons')
-            ->where('is_active', true)
-            ->orderBy('discount_value', 'desc')
-            ->get();
+        try {
+            $coupons = Coupon::active()
+                ->orderBy('discount_value', 'desc')
+                ->get();
+        } catch (\Throwable $e) {
+            $coupons = DB::table('coupons')
+                ->where('is_active', true)
+                ->orderBy('discount_value', 'desc')
+                ->get();
+        }
 
         $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
         $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);

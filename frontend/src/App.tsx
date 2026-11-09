@@ -6,7 +6,7 @@ import { ToastProvider } from '@/components/ui/toast'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
-import { AdminOnlyRoute, AuthenticatedRoute } from '@/components/auth/AdminOnlyRoute'
+import { AdminOnlyRoute, AuthenticatedRoute, AdminOrSellerRoute } from '@/components/auth/AdminOnlyRoute'
 
 // Storefront Pages
 import { HomePage } from '@/pages/storefront/HomePage'
@@ -60,6 +60,9 @@ import { AdminCompanyLocationPage } from '@/pages/admin/AdminCompanyLocationPage
 
 // Slide Banner Administration
 import { BannerListPage } from '@/pages/admin/BannerListPage'
+
+// Promotional Coupons & Discounts Administration
+import { CouponListPage } from '@/pages/admin/CouponListPage'
 
 // Team & User Directory Administration
 import { UserDirectoryPage } from '@/pages/admin/UserDirectoryPage'
@@ -120,19 +123,24 @@ export default function App() {
               {/* Customer Account Portal (Authenticated Users Only) */}
               <Route path="/dashboard/customer" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
 
-              {/* Strict Admin-Only System Dashboards (Staff/Seller/Others Cannot Access — Only Admin) */}
+              {/* System Dashboards */}
               <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
-              <Route path="/dashboard/seller" element={<AdminOnlyRoute><SellerDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/seller" element={<AdminOrSellerRoute><SellerDashboard /></AdminOrSellerRoute>} />
               <Route path="/dashboard/staff" element={<AdminOnlyRoute><StaffDashboard /></AdminOnlyRoute>} />
               <Route path="/dashboard/delivery" element={<AdminOnlyRoute><DeliveryDashboard /></AdminOnlyRoute>} />
               <Route path="/dashboard/warehouse" element={<AdminOnlyRoute><WarehouseDashboard /></AdminOnlyRoute>} />
 
-              {/* Product & Inventory Management (Admin Only) */}
-              <Route path="/admin/products" element={<AdminOnlyRoute><ProductListPage /></AdminOnlyRoute>} />
-              <Route path="/admin/products/create" element={<AdminOnlyRoute><ProductCreatePage /></AdminOnlyRoute>} />
-              <Route path="/admin/products/:id/edit" element={<AdminOnlyRoute><ProductEditPage /></AdminOnlyRoute>} />
+              {/* Product & Inventory Management (Admin & Seller Accessible) */}
+              <Route path="/admin/products" element={<AdminOrSellerRoute><ProductListPage /></AdminOrSellerRoute>} />
+              <Route path="/admin/products/create" element={<AdminOrSellerRoute><ProductCreatePage /></AdminOrSellerRoute>} />
+              <Route path="/admin/products/:id/edit" element={<AdminOrSellerRoute><ProductEditPage /></AdminOrSellerRoute>} />
+              <Route path="/dashboard/seller/products" element={<AdminOrSellerRoute><ProductListPage /></AdminOrSellerRoute>} />
               <Route path="/admin/inventory" element={<AdminOnlyRoute><InventoryListPage /></AdminOnlyRoute>} />
               <Route path="/admin/inventory/:productId/history" element={<AdminOnlyRoute><InventoryHistoryPage /></AdminOnlyRoute>} />
+
+              {/* Promotional Discount Coupons (Admin & Seller Accessible) */}
+              <Route path="/admin/coupons" element={<AdminOrSellerRoute><CouponListPage /></AdminOrSellerRoute>} />
+              <Route path="/dashboard/seller/coupons" element={<AdminOrSellerRoute><CouponListPage isSellerView /></AdminOrSellerRoute>} />
 
               {/* Universal Category & Attribute Management (Admin Only) */}
               <Route path="/admin/categories" element={<AdminOnlyRoute><CategoryListPage /></AdminOnlyRoute>} />

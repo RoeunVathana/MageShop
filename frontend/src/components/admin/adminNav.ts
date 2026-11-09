@@ -13,6 +13,7 @@ import {
   MapPin,
   Coins,
   Building2,
+  Tag,
 } from 'lucide-react'
 import type { NavItem } from '@/components/dashboard/DashboardLayout'
 
@@ -23,6 +24,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
   { label: 'Hero Slide Banners', href: '/admin/banners', icon: Sliders },
   { label: 'Products Catalog', href: '/admin/products', icon: Package },
+  { label: 'Discount Coupons & Promos', href: '/admin/coupons', icon: Tag, badge: 'Promo' },
   { label: 'Categories & Attributes', href: '/admin/categories', icon: FolderTree },
   { label: 'Brands & Trademarks', href: '/admin/brands', icon: Award },
   { label: 'Inventory & Stock', href: '/admin/inventory', icon: Boxes },

@@ -44,10 +44,11 @@ import { cn } from '@/lib/utils'
 import { useShopEngagement, type FreeRewardProduct } from '@/context/ShopEngagementContext'
 import { api } from '@/lib/api'
 import { authService } from '@/services/auth.service'
+import { couponService } from '@/services/coupon.service'
 import type { User as AuthUser } from '@/types/user.types'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 
-const PROMO_COUPONS = [
+const DEFAULT_COUPONS = [
   { code: 'WELCOME10', label: '10% OFF', type: 'percentage' as const, value: 10, min: 10 },
   { code: 'MEGA20', label: '20% OFF (≥$50)', type: 'percentage' as const, value: 20, min: 50 },
   { code: 'KHQR5', label: '$5 OFF', type: 'fixed' as const, value: 5, min: 15 },
@@ -200,6 +201,42 @@ export function CartPage() {
   const [couponInput, setCouponInput] = useState(appliedCoupon?.code || '')
   const [couponLoading, setCouponLoading] = useState(false)
   const [showFreeRewards, setShowFreeRewards] = useState(false)
+  const [promoCoupons, setPromoCoupons] = useState(DEFAULT_COUPONS)
+
+  // Real-time dynamic fetch of active coupons configured by Admin / Seller
+  useEffect(() => {
+    let isMounted = true
+    const fetchStoreCoupons = async () => {
+      try {
+        const live = await couponService.getActiveCoupons()
+        if (isMounted && Array.isArray(live) && live.length > 0) {
+          setPromoCoupons(
+            live.map((c) => {
+              const isPct = c.discount_type === 'percentage'
+              const valStr = isPct
+                ? `${Number(c.discount_value)}% OFF`
+                : `$${Number(c.discount_value).toFixed(2)} OFF`
+              const minVal = Number(c.min_order_amount || 0)
+              const label = minVal > 0 ? `${valStr} (≥$${minVal.toFixed(0)})` : valStr
+              return {
+                code: c.code,
+                label,
+                type: c.discount_type,
+                value: Number(c.discount_value),
+                min: minVal,
+              }
+            })
+          )
+        }
+      } catch {
+        // preserve fallback default coupons
+      }
+    }
+    fetchStoreCoupons()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Delivery Settings & Free Delivery Mode State
   const [deliverySettings, setDeliverySettings] = useState<DeliverySettingsData>({
@@ -501,7 +538,7 @@ export function CartPage() {
     }
     setCouponInput(code)
 
-    const found = PROMO_COUPONS.find((c) => c.code === code)
+    const found = promoCoupons.find((c) => c.code === code)
 
     // Check if cart is empty before trying to validate
     if (subtotal <= 0) {
@@ -1711,7 +1748,7 @@ export function CartPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
-                  {PROMO_COUPONS.map((c) => (
+                  {promoCoupons.map((c) => (
                     <button
                       key={c.code}
                       type="button"

@@ -57,6 +57,26 @@ export const authService = {
   },
 
   /**
+   * Check whether the user has SELLER or SELLER_STAFF role.
+   */
+  isSeller: (user?: User | null): boolean => {
+    const target = user !== undefined ? user : authService.getStoredUser()
+    if (!target) return false
+    const roles = (target as any).roles || []
+    const roleNames = roles.map((r: any) =>
+      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
+    )
+    return roleNames.includes('SELLER') || roleNames.includes('SELLER_STAFF')
+  },
+
+  /**
+   * Check whether user is an Admin OR Seller (can manage products, coupons, and store features).
+   */
+  canManageStore: (user?: User | null): boolean => {
+    return authService.isAdmin(user) || authService.isSeller(user)
+  },
+
+  /**
    * Persist authenticated user and token.
    */
   saveSession: (user: User, token?: string): void => {

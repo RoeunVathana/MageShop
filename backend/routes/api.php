@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CommerceEngagementController;
+use App\Http\Controllers\Api\V1\CouponController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
@@ -206,6 +207,21 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/coupons', [CommerceEngagementController::class, 'coupons']);
 Route::post('/coupons/validate', [CommerceEngagementController::class, 'validateCoupon'])
     ->middleware('throttle:coupons');
+
+// Coupon Management CRUD (Admin & Seller)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/coupons/manage', [CouponController::class, 'index']);
+    Route::get('/admin/coupons', [CouponController::class, 'index']);
+    Route::post('/coupons', [CouponController::class, 'store']);
+    Route::post('/admin/coupons', [CouponController::class, 'store']);
+    Route::get('/coupons/{id}', [CouponController::class, 'show']);
+    Route::match(['put', 'patch'], '/coupons/{id}', [CouponController::class, 'update']);
+    Route::match(['put', 'patch'], '/admin/coupons/{id}', [CouponController::class, 'update']);
+    Route::delete('/coupons/{id}', [CouponController::class, 'destroy']);
+    Route::delete('/admin/coupons/{id}', [CouponController::class, 'destroy']);
+    Route::patch('/coupons/{id}/toggle-active', [CouponController::class, 'toggleActive']);
+    Route::patch('/admin/coupons/{id}/toggle-active', [CouponController::class, 'toggleActive']);
+});
 Route::get('/loyalty/summary', [CommerceEngagementController::class, 'loyaltySummary']);
 Route::post('/loyalty/redeem-free-item', [CommerceEngagementController::class, 'redeemFreeItem'])
     ->middleware('throttle:checkout');
