@@ -78,7 +78,7 @@ export function SupportWidget() {
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-5 right-3 sm:right-5 z-50 flex flex-col items-end">
+    <div className="fixed bottom-20 md:bottom-5 right-3 sm:right-5 z-40 flex flex-col items-end">
       {isOpen && (
         <div className="mb-3 w-[calc(100vw-1.5rem)] max-w-96 rounded-2xl border bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
@@ -191,13 +191,14 @@ export function SupportWidget() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2.5 rounded-full bg-gradient-to-r from-primary via-indigo-600 to-purple-600 text-white px-4 py-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all cursor-pointer"
+        className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-primary via-indigo-600 to-purple-600 text-white p-2.5 sm:px-4 sm:py-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all cursor-pointer"
+        aria-label="24/7 Live Supporter"
       >
         <div className="relative">
           <MessageSquare className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-indigo-600" />
         </div>
-        <span className="text-xs font-bold tracking-wide">{t('24/7 Supporter', 'ជំនួយ 24/7')}</span>
+        <span className="text-xs font-bold tracking-wide hidden sm:inline">{t('24/7 Supporter', 'ជំនួយ 24/7')}</span>
         <Sparkles className="w-3.5 h-3.5 text-amber-300" />
       </button>
     </div>

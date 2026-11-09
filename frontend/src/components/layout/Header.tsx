@@ -82,7 +82,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </div>
 
         {/* Center: Search Bar (Desktop) */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-3xl mx-6">
+        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4 xl:mx-6">
           <div className="relative w-full flex items-center">
             <Input
               type="text"
@@ -106,7 +106,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </form>
 
         {/* Right: Actions (Loyalty Points, Track GPS, Wishlist, Cart, Account, Theme Toggle) */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Loyalty Points Pill */}
           <Link
             to="/cart"
@@ -268,15 +268,18 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </div>
       </div>
 
-      {/* Mobile Search input bar */}
-      <div className="md:hidden px-4 pb-3">
+      {/* Mobile/Tablet Search input bar */}
+      <div className="lg:hidden px-4 pb-3">
         <form onSubmit={handleSearch} className="relative w-full">
           <Input
             type="text"
-            placeholder="Search products..."
+            placeholder={t(
+              'Search across 50,000+ products...',
+              'ស្វែងរកផលិតផល ប្រភេទទំនិញ...'
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-16 h-9 rounded-full text-xs"
+            className="pl-9 pr-20 h-9 rounded-full text-xs"
           />
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Button
@@ -284,7 +287,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             size="sm"
             className="absolute right-1 top-0.5 rounded-full h-8 px-3 text-xs"
           >
-            Go
+            {t('Search', 'ស្វែងរក')}
           </Button>
         </form>
       </div>

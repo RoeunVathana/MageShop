@@ -983,25 +983,26 @@ export function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-10 space-y-6">
+    <div className="container mx-auto px-4 py-6 sm:py-10 space-y-6 pb-28 sm:pb-36">
       {/* Top Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5">
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-5">
+        <div className="space-y-1">
+          <div className="text-xs text-muted-foreground">
             <Link to="/" className="hover:text-primary transition-colors">
               {t('Home', 'ទំព័រដើម')}
             </Link>{' '}
             / <span className="text-foreground font-semibold">{t('Checkout & Payment', 'កន្ត្រកទិញទំនិញ និងការទូទាត់')}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-            {t('Shopping Cart & Secure Checkout', 'កន្ត្រកទិញទំនិញ និងការទូទាត់ប្រាក់')}
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-foreground">
+            <span className="inline-block">{t('Shopping Cart', 'កន្ត្រកទិញទំនិញ')}</span>{' '}
+            <span className="inline-block">{t('& Secure Checkout', 'និងការទូទាត់ប្រាក់')}</span>
           </h1>
         </div>
 
         {/* Compact Loyalty Points Pill & Free Gift Toggle */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="px-3.5 py-2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-            <Award className="w-4 h-4 text-amber-500" />
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="px-3.5 py-2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2 whitespace-nowrap shrink-0">
+            <Award className="w-4 h-4 text-amber-500 shrink-0" />
             <span>
               {loyaltyPoints} {t('Points', 'ពិន្ទុ')}
             </span>
@@ -1012,9 +1013,9 @@ export function CartPage() {
             size="sm"
             variant={showFreeRewards ? 'default' : 'outline'}
             onClick={() => setShowFreeRewards(!showFreeRewards)}
-            className="rounded-full text-xs gap-1.5"
+            className="rounded-full text-xs gap-1.5 whitespace-nowrap shrink-0"
           >
-            <Gift className="w-3.5 h-3.5 text-amber-500" />
+            <Gift className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             {t('100-Pt Free Gifts (≤$30)', 'ប្តូរ ១០០ ពិន្ទុយកទំនិញឥតគិតថ្លៃ')}
           </Button>
 
