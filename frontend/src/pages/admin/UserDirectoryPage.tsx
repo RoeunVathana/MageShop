@@ -127,10 +127,52 @@ const PERMISSION_OPTIONS = [
   { slug: 'staff.manage', label: 'Manage Staff Privileges', group: 'Admin' },
 ]
 
+const FALLBACK_MEMBERS: TeamMember[] = [
+  {
+    id: 1,
+    name: 'Sokha Chan',
+    email: 'sokha.chan@tyushop.blog',
+    phone: '+855 12 889 900',
+    role: 'DELIVERY_DRIVER',
+    roles: [{ id: 4, name: 'DELIVERY_DRIVER', slug: 'delivery_driver' }],
+    department: 'Logistics & Delivery',
+    status: 'active',
+    accessLevel: 'courier',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    joinedDate: 'Jan 15, 2026',
+  },
+  {
+    id: 2,
+    name: 'Dara Pich',
+    email: 'dara.pich@tyushop.blog',
+    phone: '+855 16 555 637',
+    role: 'STAFF',
+    roles: [{ id: 3, name: 'STAFF', slug: 'staff' }],
+    department: 'Operations & Fulfillment',
+    status: 'active',
+    accessLevel: 'staff',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    joinedDate: 'Feb 01, 2026',
+  },
+  {
+    id: 3,
+    name: 'Roeun Vathana',
+    email: 'vothanarern@gmail.com',
+    phone: '+855 16 555 637',
+    role: 'SUPER_ADMIN',
+    roles: [{ id: 1, name: 'SUPER_ADMIN', slug: 'super_admin' }, { id: 2, name: 'ADMIN', slug: 'admin' }],
+    department: 'Executive Governance',
+    status: 'active',
+    accessLevel: 'admin',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    joinedDate: 'Nov 12, 2025',
+  },
+]
+
 export function UserDirectoryPage() {
   const { toast } = useToast()
 
-  const [members, setMembers] = useState<TeamMember[]>([])
+  const [members, setMembers] = useState<TeamMember[]>(FALLBACK_MEMBERS)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments')
@@ -201,7 +243,9 @@ export function UserDirectoryPage() {
         }
       })
 
-      setMembers(mapped)
+      if (mapped.length > 0) {
+        setMembers(mapped)
+      }
     } catch (err: any) {
       console.warn('Could not load real users from backend:', err)
     } finally {

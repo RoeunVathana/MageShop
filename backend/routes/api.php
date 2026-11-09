@@ -129,6 +129,10 @@ Route::get('/admin/orders/{id}', [AdminOrderController::class, 'show']);
 Route::get('/admin/store-settings', [StoreSettingsController::class, 'adminShow']);
 Route::get('/admin/roles', [RolePermissionController::class, 'indexRoles']);
 Route::get('/admin/permissions', [RolePermissionController::class, 'indexPermissions']);
+Route::get('/admin/security/users', [EmailPasswordOtpController::class, 'indexUsers']);
+Route::get('/admin/users', [EmailPasswordOtpController::class, 'indexUsers']);
+Route::post('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
+Route::put('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
 
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
