@@ -208,6 +208,43 @@ class RoleSeeder extends Seeder
                     }
                 }
             }
+
+            // Seed initial demo seller applications if empty
+            if (Schema::hasTable('seller_applications') && \App\Models\SellerApplication::count() === 0) {
+                $sellerUser = User::where('email', 'seller@megacommerce.local')->first() ?? $masterAdmin;
+                if ($sellerUser) {
+                    \App\Models\SellerApplication::create([
+                        'user_id' => $sellerUser->id,
+                        'store_name' => 'Phnom Penh Tech & Gadgets',
+                        'slug' => 'phnom-penh-tech',
+                        'category' => 'Electronics',
+                        'description' => 'Official flagship retailer for premium laptops, smartphones, and accessories in Phnom Penh.',
+                        'phone' => '+855 16 555 637',
+                        'telegram_username' => 'pp_tech_kh',
+                        'city' => 'Phnom Penh',
+                        'address' => 'Building 28, St 214, Sangkat Boeung Raing, Daun Penh',
+                        'bank_name' => 'ABA Bank',
+                        'bakong_account_id' => '016555637@aba',
+                        'status' => 'approved',
+                        'approved_at' => now(),
+                    ]);
+
+                    \App\Models\SellerApplication::create([
+                        'user_id' => $sellerUser->id,
+                        'store_name' => 'Angkor Silk & Crafts Studio',
+                        'slug' => 'angkor-silk-crafts',
+                        'category' => 'Fashion & Artisan Crafts',
+                        'description' => 'Handmade authentic Khmer silk scarves, traditional textiles, and artisanal carvings from Siem Reap.',
+                        'phone' => '+855 92 123 456',
+                        'telegram_username' => 'angkor_artisan_kh',
+                        'city' => 'Siem Reap',
+                        'address' => 'Night Market Rd, Svay Dangkum, Siem Reap',
+                        'bank_name' => 'Canadia Bank',
+                        'bakong_account_id' => '092123456@cnb',
+                        'status' => 'pending',
+                    ]);
+                }
+            }
         } catch (\Throwable $e) {
             // Ignore during initial schema bootstrap
         }

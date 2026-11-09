@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReceiptController;
+use App\Http\Controllers\Api\V1\SellerController;
 use App\Http\Controllers\Api\V1\StoreSettingsController;
 use App\Http\Controllers\Api\V1\Telegram\TelegramAdminController;
 use App\Http\Controllers\Api\V1\Telegram\TelegramAiController;
@@ -323,3 +324,19 @@ Route::prefix('telegram')->group(function () {
         });
     });
 });
+
+// Seller Member Application & Vendor Storefront Management
+Route::prefix('sellers')->group(function () {
+    Route::post('/apply', [SellerController::class, 'apply']);
+    Route::get('/my-application', [SellerController::class, 'myApplication']);
+    Route::get('/stores', [SellerController::class, 'publicStores']);
+});
+
+// Admin Seller Member Governance & Approvals
+Route::prefix('admin/sellers')->group(function () {
+    Route::get('/', [SellerController::class, 'adminIndex']);
+    Route::post('/{id}/approve', [SellerController::class, 'adminApprove']);
+    Route::post('/{id}/reject', [SellerController::class, 'adminReject']);
+    Route::patch('/{id}/status', [SellerController::class, 'adminUpdateStatus']);
+});
+

@@ -34,6 +34,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Currency & Exchange Rate', labelKm: 'រូបិយប័ណ្ណ & អត្រាប្តូរប្រាក់', href: '/admin/currency', icon: Coins, badge: 'USD/KHR', badgeKm: 'USD/KHR' },
   { label: 'Company & Location', labelKm: 'ក្រុមហ៊ុន & ទីតាំងការិយាល័យ', href: '/admin/company', icon: Building2, badge: 'HQ', badgeKm: 'កណ្តាល' },
   { label: 'Telegram API & Security', labelKm: 'Telegram API & សុវត្ថិភាព OTP', href: '/admin/security', icon: Key },
+  { label: 'Seller Stores & Members', labelKm: 'អ្នកលក់ & សមាជិកហាង', href: '/admin/sellers', icon: Store, badge: 'Sellers', badgeKm: 'អ្នកលក់' },
   { label: 'User & Staff Directory', labelKm: 'បញ្ជីអ្នកប្រើប្រាស់ & បុគ្គលិក', href: '/dashboard/admin/users', icon: Users },
   { label: 'My Admin Profile', labelKm: 'ប្រវត្តិរូប Admin ខ្ញុំ', href: '/admin/profile', icon: UserCog, badge: 'Self', badgeKm: 'ផ្ទាល់ខ្លួន' },
   { label: 'System Diagnostics', labelKm: 'វិភាគ & ពិនិត្យប្រព័ន្ធ', href: '/diagnostics', icon: Server, badge: 'Live', badgeKm: 'ដំណើរការ' },

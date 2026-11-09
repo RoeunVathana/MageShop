@@ -45,6 +45,7 @@ frontend/dist-ssr/
 Thumbs.db
 .idea/
 .vscode/
+scratch/
 *.suo
 *.ntvs*
 *.njsproj

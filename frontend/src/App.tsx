@@ -79,6 +79,8 @@ import { AdminStoreSettingsPage } from '@/pages/admin/AdminStoreSettingsPage'
 
 // Team & User Directory Administration
 import { UserDirectoryPage } from '@/pages/admin/UserDirectoryPage'
+import { AdminSellersPage } from '@/pages/admin/AdminSellersPage'
+import { JoinSellerPage } from '@/pages/storefront/JoinSellerPage'
 
 // Telegram Mini App
 import { TelegramApp } from '@/pages/telegram/TelegramApp'
@@ -124,6 +126,9 @@ export default function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/faq" element={<FaqPage />} />
+                  <Route path="/sell" element={<JoinSellerPage />} />
+                  <Route path="/seller/register" element={<JoinSellerPage />} />
+                  <Route path="/seller/join" element={<JoinSellerPage />} />
                   <Route path="/diagnostics" element={<AdminOnlyRoute><DiagnosticsPage /></AdminOnlyRoute>} />
                 </Route>
 
@@ -204,6 +209,10 @@ export default function App() {
               <Route path="/dashboard/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
               <Route path="/dashboard/admin/vendors" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
               <Route path="/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
+
+              {/* Seller Member Governance & Applications (Admin Only) */}
+              <Route path="/admin/sellers" element={<AdminOnlyRoute><AdminSellersPage /></AdminOnlyRoute>} />
+              <Route path="/dashboard/admin/sellers" element={<AdminOnlyRoute><AdminSellersPage /></AdminOnlyRoute>} />
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
