@@ -2069,55 +2069,61 @@ export function CartPage() {
         </div>
       </div>
 
-      {/* LIVE BAKONG KHQR SCAN-TO-PAY MODAL */}
+      {/* LIVE BAKONG KHQR SCAN-TO-PAY MODAL - COMPACT & SEAMLESS SINGLE-SCREEN UX */}
       {qrModalData && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] my-auto">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-screen py-6 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-[370px] sm:max-w-[400px] w-full overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col my-auto animate-in zoom-in-95 duration-150">
             {/* Official Red KHQR Top Bar */}
-            <div className="bg-[#E1232E] text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-sm">
-              <div>
-                <div className="text-base sm:text-lg font-black tracking-wider flex items-center gap-2">
-                  <span>KHQR • BAKONG</span>
-                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">NBC</span>
+            <div className="bg-[#E1232E] text-white px-4 py-2.5 flex items-center justify-between shrink-0 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="bg-white text-[#E1232E] px-2 py-0.5 rounded font-black text-xs tracking-wider shadow-xs">
+                  KHQR
                 </div>
-                <div className="text-[11px] text-white/90">
-                  National Bank of Cambodia • Instant Scan Payment
+                <div className="text-left leading-tight">
+                  <div className="text-xs font-bold tracking-wide flex items-center gap-1.5">
+                    <span>{qrModalData.merchant_name}</span>
+                    <span className="text-[9.5px] bg-white/20 px-1.5 py-0.5 rounded font-bold uppercase">BAKONG</span>
+                  </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setQrModalData(null)}
-                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close QR Modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 sm:p-5 space-y-3 text-center overflow-y-auto">
-              {/* Merchant & Amount Header */}
+            <div className="p-4 sm:p-5 space-y-3 text-center">
+              {/* Merchant & Amount Hero */}
               <div className="space-y-0.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {qrModalData.merchant_name} ({qrModalData.merchant_account})
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   ${qrModalData.amount_usd.toFixed(2)}{' '}
-                  <span className="text-sm font-bold text-muted-foreground">USD</span>
+                  <span className="text-xs sm:text-sm font-bold text-muted-foreground">USD</span>
                 </div>
-                <div className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                  ≈ {qrModalData.amount_khr.toLocaleString()} ៛ (KHR)
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                  <span>≈ {qrModalData.amount_khr.toLocaleString()} ៛ (KHR)</span>
                 </div>
               </div>
 
-              {/* Scannable QR Code Frame - High-Res ecc=M Unobstructed Matrix */}
-              <div className="relative mx-auto w-48 h-48 sm:w-56 sm:h-56 rounded-2xl border-4 border-[#E1232E]/30 bg-white p-3 shadow-xl flex items-center justify-center">
+              {/* Scannable KHQR Code Frame - High Contrast & Unclipped */}
+              <div className="relative mx-auto w-44 h-44 sm:w-48 sm:h-48 rounded-2xl border-2 border-[#E1232E]/30 bg-white p-2.5 shadow-md flex items-center justify-center">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&margin=4&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&margin=2&data=${encodeURIComponent(
                     qrModalData.qr_string
                   )}`}
                   alt={`Bakong KHQR for Order ${qrModalData.order_number}`}
                   className="w-full h-full object-contain select-none"
                 />
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                <span>{t('Valid for:', 'មានសុពលភាព:')}</span>
+                <span className="font-mono font-bold">{formatCountdown(qrSecondsLeft)}</span>
               </div>
 
               {/* Quick Actions: Download to Photos + Copy Code */}
@@ -2127,7 +2133,7 @@ export function CartPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleDownloadQr}
-                  className="rounded-xl h-9 text-xs font-bold gap-1.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="rounded-xl h-8.5 text-xs font-bold gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   <Download className="w-3.5 h-3.5 text-[#E1232E]" />
                   <span>{t('Save QR Image', 'រក្សាទុករូប QR')}</span>
@@ -2137,75 +2143,33 @@ export function CartPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleCopyQrPayload}
-                  className="rounded-xl h-9 text-xs font-bold gap-1.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="rounded-xl h-8.5 text-xs font-bold gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   <Copy className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   <span>{t('Copy QR Code', 'ចម្លងកូដ QR')}</span>
                 </Button>
               </div>
 
-              {/* Mobile & Laptop Friendly Scan Guidance */}
-              <div className="rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 p-2.5 text-left text-[11px] space-y-1">
-                <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                  <span>💡</span>
-                  <span>{t('How to Scan & Pay', 'របៀបស្កេន និងទូទាត់ប្រាក់')}</span>
-                </div>
-                <p className="text-slate-700 dark:text-slate-300 leading-snug">
-                  📱 <strong>{t('On Mobile Phone:', 'លើទូរស័ព្ទ៖')}</strong>{' '}
-                  {t(
-                    'Click "Save QR Image" above ➜ Open ABA/Bakong ➜ Tap Scan ➜ Choose "Scan from Photo" (រូបថត).',
-                    'ចុច "រក្សាទុករូប QR" ខាងលើ ➜ បើកកម្មវិធី ABA ឬ Bakong ➜ ចុច Scan ➜ ជ្រើសរើស "ស្កេនពីរូបភាព"។'
-                  )}
-                </p>
-                <p className="text-slate-700 dark:text-slate-300 leading-snug">
-                  💻 <strong>{t('On Computer / Laptop:', 'លើកុំព្យូទ័រ៖')}</strong>{' '}
-                  {t(
-                    'Open ABA, Bakong, ACLEDA, or Wing on your phone and scan screen directly.',
-                    'បើកកម្មវិធីធនាគារ (ABA, Bakong, Wing) លើទូរស័ព្ទ ហើយចង្អុលស្កេនលើអេក្រង់។'
-                  )}
-                </p>
+              {/* Bank Apps Strip */}
+              <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5 flex-wrap">
+                <span>{t('Scan with', 'ស្កេនជាមួយ')}</span>
+                <span className="font-bold text-foreground">ABA</span>
+                <span>•</span>
+                <span className="font-bold text-foreground">Bakong</span>
+                <span>•</span>
+                <span className="font-bold text-foreground">Wing</span>
+                <span>•</span>
+                <span className="font-bold text-foreground">ACLEDA</span>
+                <span>{t('or any bank app', 'ឬគ្រប់ធនាគារ')}</span>
               </div>
 
-              {/* Order Reference & Countdown Timer */}
-              <div className="rounded-xl bg-muted/40 p-2.5 text-xs space-y-1 border">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('Order Number:', 'លេខបញ្ជាទិញ:')}</span>
-                  <span className="font-black text-foreground">#{qrModalData.order_number}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t('Receipt Email:', 'អ៊ីមែលទទួលវិក្កយបត្រ:')}</span>
-                  <span className="font-semibold text-foreground truncate max-w-[180px]">
-                    {qrModalData.customer_email}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    {t('QR Expires In:', 'ផុតកំណត់ក្នុងរយៈពេល:')}
-                  </span>
-                  <span className="font-mono font-bold text-amber-600">{formatCountdown(qrSecondsLeft)}</span>
-                </div>
-              </div>
-
-              {/* Supported Banks */}
-              <div className="flex flex-wrap items-center justify-center gap-1">
-                {['ABA PAY', 'ACLEDA Mobile', 'Bakong App', 'Wing Bank', 'Sathapana'].map((bank) => (
-                  <span
-                    key={bank}
-                    className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                  >
-                    {bank}
-                  </span>
-                ))}
-              </div>
-
-              {/* Confirm / Test False Buttons */}
-              <div className="space-y-2 pt-0.5">
+              {/* Primary Confirm Button */}
+              <div className="pt-1 space-y-2">
                 <Button
                   type="button"
                   disabled={verifyingQrPayment}
                   onClick={() => handleConfirmQrPayment(false)}
-                  className="w-full rounded-2xl h-11 font-black text-xs sm:text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25"
+                  className="w-full rounded-2xl h-11 font-black text-xs sm:text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all cursor-pointer"
                 >
                   {verifyingQrPayment ? (
                     <>
@@ -2216,43 +2180,39 @@ export function CartPage() {
                     <>
                       <CheckCircle2 className="w-4 h-4" />
                       {t(
-                        'I Have Scanned & Paid — Confirm Payment',
-                        'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់ប្រាក់'
+                        'I Have Scanned & Paid — Confirm',
+                        'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់'
                       )}
                     </>
                   )}
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
+                {/* Compact Order Ref & Actions */}
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                  <span className="truncate max-w-[210px]">
+                    {t('Order', 'បញ្ជាទិញ')}: <strong className="text-foreground">#{qrModalData.order_number}</strong>
+                  </span>
+                  <button
                     type="button"
-                    variant="outline"
-                    disabled={verifyingQrPayment}
-                    onClick={() => handleConfirmQrPayment(true)}
-                    className="rounded-xl h-9 text-[11px] font-bold gap-1 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{t('Payment Failed (False)', 'ការទូទាត់មិនជោគជ័យ (False)')}</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={verifyingQrPayment}
                     onClick={() => setQrModalData(null)}
-                    className="rounded-xl h-9 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+                    className="text-muted-foreground hover:text-foreground hover:underline transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5 mr-1" />
-                    <span>{t('Cancel / Close', 'បោះបង់ / បិទ')}</span>
-                  </Button>
+                    {t('Cancel Order', 'បោះបង់')}
+                  </button>
                 </div>
 
-                <p className="text-[10px] text-muted-foreground leading-tight">
-                  {t(
-                    'Confirming sends your payment receipt to your email and alerts the Telegram Admin immediately.',
-                    'ការបញ្ជាក់នឹងផ្ញើវិក្កយបត្រទៅអ៊ីមែលរបស់អ្នក និងផ្ញើរបាយការណ៍ទៅ Telegram Admin ភ្លាមៗ។'
-                  )}
-                </p>
+                {/* Subtle QA Simulate Failure (kept discreetly for testing without cluttering UI) */}
+                <div className="text-right px-1">
+                  <button
+                    type="button"
+                    disabled={verifyingQrPayment}
+                    onClick={() => handleConfirmQrPayment(true)}
+                    className="text-[9.5px] text-muted-foreground/35 hover:text-rose-500 transition-colors cursor-pointer"
+                    title="Simulate payment failure for testing"
+                  >
+                    {t('Simulate Failure (Test)', 'សាកល្បងបរាជ័យ (Test)')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
