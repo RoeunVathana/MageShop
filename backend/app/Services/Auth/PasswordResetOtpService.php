@@ -62,13 +62,20 @@ class PasswordResetOtpService
         // Apply dynamic SMTP settings from StoreSetting (configured in /admin/security) if present
         $this->applyDynamicMailSettings();
 
-        // Queue/dispatch recovery email
+        // Queue/dispatch recovery email via styled HTML template with plain-text fallback
         try {
-            Mail::raw("Your TYUSHOP password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
+            Mail::send('emails.otp', ['email' => $email, 'rawOtp' => $rawOtp], function ($m) use ($email) {
                 $m->to($email)->subject('TYUSHOP — 6-Digit Password Recovery OTP Code');
             });
         } catch (\Throwable $e) {
-            Log::warning("Failed to dispatch OTP email to [{$email}]: {$e->getMessage()}");
+            Log::warning("Failed to dispatch HTML OTP email to [{$email}]: {$e->getMessage()}, falling back to plain text");
+            try {
+                Mail::raw("Your TYUSHOP password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
+                    $m->to($email)->subject('TYUSHOP — 6-Digit Password Recovery OTP Code');
+                });
+            } catch (\Throwable $fallbackErr) {
+                Log::warning("Failed to dispatch fallback OTP email to [{$email}]: {$fallbackErr->getMessage()}");
+            }
         }
 
         // Also dispatch via Telegram Bot if user has a linked Telegram account
