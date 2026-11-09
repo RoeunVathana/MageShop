@@ -105,67 +105,88 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </form>
 
-        {/* Right: Actions (Loyalty Points, Track GPS, Wishlist, Cart, Account, Theme Toggle) */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Loyalty Points Pill (Desktop/Tablet) */}
-          <Link
-            to="/cart"
-            title="Earn +5 pts per buy! 100 pts = Free Item under $20-$30"
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold hover:bg-amber-500/25 transition-colors"
-          >
-            <Award className="h-3.5 w-3.5 text-amber-500" />
-            <span>{loyaltyPoints} {t('pts', 'ពិន្ទុ')}</span>
-          </Link>
+        {/* Right: Actions Cluster in Two Rows */}
+        <div className="shrink-0 flex items-center">
+          <div className="grid grid-rows-2 grid-cols-3 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-muted/40 dark:bg-slate-800/60 border border-border/50 shadow-sm backdrop-blur-sm">
+            {/* ROW 1: Delivery Tracking, Wishlist, Cart */}
+            {/* Col 1: GPS Delivery Tracker */}
+            <Link to="/track-order" title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-95 transition-all text-muted-foreground p-0"
+              >
+                <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                <span className="sr-only">{t('Track Delivery', 'តាមដានការដឹកជញ្ជូន')}</span>
+              </Button>
+            </Link>
 
-          {/* Live GPS Delivery Tracker Link (Desktop/Tablet; Mobile users have it in MobileBottomNav) */}
-          <Link to="/track-order" className="hidden md:flex">
-            <Button variant="ghost" size="icon" className="relative rounded-full" title="Real-Time GPS Delivery Tracker">
-              <Truck className="h-5 w-5 text-muted-foreground hover:text-emerald-500 transition-colors" />
-              <span className="sr-only">Track Delivery</span>
-            </Button>
-          </Link>
+            {/* Col 2: Customer Wishlist / Favorites */}
+            <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-rose-500/15 hover:text-rose-500 active:scale-95 transition-all text-muted-foreground p-0"
+              >
+                <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center shadow-sm pointer-events-none">
+                    {favoritesCount}
+                  </span>
+                )}
+                <span className="sr-only">{t('Wishlist', 'ពេញចិត្ត')}</span>
+              </Button>
+            </Link>
 
-          {/* Wishlist Link (Desktop/Tablet; Mobile users have it in MobileBottomNav) */}
-          <Link to="/wishlist" className="hidden md:flex">
-            <Button variant="ghost" size="icon" className="relative rounded-full" title="Customer Favorites">
-              <Heart className="h-5 w-5 text-muted-foreground hover:text-rose-500 transition-colors" />
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center">
-                {favoritesCount}
-              </span>
-              <span className="sr-only">Wishlist</span>
-            </Button>
-          </Link>
+            {/* Col 3: Shopping Cart */}
+            <Link to="/cart" title={t('Shopping Cart', 'កន្ត្រកទំនិញ')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-primary/15 hover:text-primary active:scale-95 transition-all text-muted-foreground p-0"
+              >
+                <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-[9px] font-black text-primary-foreground flex items-center justify-center shadow-sm pointer-events-none">
+                    {cartCount}
+                  </span>
+                )}
+                <span className="sr-only">{t('Cart', 'កន្ត្រក')}</span>
+              </Button>
+            </Link>
 
-          {/* Cart Link (Always visible with badge) */}
-          <Link to="/cart">
-            <Button variant="ghost" size="icon" className="relative rounded-full h-9 w-9 p-0" title="Shopping Cart">
-              <ShoppingCart className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                {cartCount}
-              </span>
-              <span className="sr-only">Shopping Cart</span>
-            </Button>
-          </Link>
-
-          {/* Theme Toggle */}
-          <ThemeToggle />
-
-          {/* Account Dropdown */}
-          <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAccountOpen(!isAccountOpen)}
-              className="flex items-center gap-1.5 sm:gap-2 rounded-full pl-2 pr-2.5 sm:pr-3 h-9"
+            {/* ROW 2: Loyalty Points, Dark/Light Theme, Account */}
+            {/* Col 1: Loyalty Points */}
+            <Link
+              to="/cart"
+              title={t(
+                `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
+                `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ (១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ)`
+              )}
+              className="h-7 min-w-7 sm:h-8 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] font-black flex items-center justify-center gap-0.5 active:scale-95 transition-all"
             >
-              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <UserIcon className="w-3.5 h-3.5" />
-              </div>
-              <span className="hidden lg:inline text-xs font-semibold max-w-[120px] truncate">
-                {currentUser ? currentUser.name : t('Account', 'គណនី')}
-              </span>
-              <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
-            </Button>
+              <Award className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500 shrink-0" />
+              <span className="leading-none">{loyaltyPoints}</span>
+            </Link>
+
+            {/* Col 2: Theme Mode Toggle */}
+            <div className="flex items-center justify-center">
+              <ThemeToggle className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border-0 hover:bg-muted active:scale-95" />
+            </div>
+
+            {/* Col 3: Account / Profile Dropdown */}
+            <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAccountOpen(!isAccountOpen)}
+                title={currentUser ? currentUser.name : t('Account', 'គណនី')}
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg hover:bg-primary/15 text-primary active:scale-95 transition-all p-0 flex items-center justify-center"
+              >
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <UserIcon className="w-3.5 h-3.5" />
+                </div>
+              </Button>
 
             {isAccountOpen && (
               <>
@@ -267,6 +288,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Mobile/iPad Search input bar */}
       <div className="lg:hidden px-3 sm:px-6 pb-2.5 sm:pb-3 max-w-4xl mx-auto w-full">
