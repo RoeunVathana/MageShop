@@ -27,6 +27,11 @@ return Application::configure(dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens([
+            'api/*',
+            'api/v1/*',
+            'sanctum/csrf-cookie',
+        ]);
         $middleware->append(SecurityHeadersMiddleware::class);
         $middleware->redirectGuestsTo(fn () => null);
     })
