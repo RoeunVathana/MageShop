@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\StoreSetting;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 class RoleSeeder extends Seeder
@@ -139,6 +141,38 @@ class RoleSeeder extends Seeder
         if ($customer) {
             $custPermSlugs = ['products.view', 'orders.view', 'delivery.tracking.view'];
             $customer->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn ($s) => isset($permModels[$s])))));
+        }
+
+        // Static Master Administrator Account: Vothanarern@gmail.com
+        try {
+            if (Schema::hasTable('users')) {
+                $masterAdmin = User::updateOrCreate(
+                    ['email' => 'vothanarern@gmail.com'],
+                    [
+                        'name' => 'Roeun Vathana',
+                        'password' => Hash::make('Nha@016555637'),
+                        'phone_number' => '016555637',
+                        'status' => 'active',
+                        'email_verified_at' => now(),
+                    ]
+                );
+
+                $superAdminRole = isset($roleModels['super_admin']) ? $roleModels['super_admin'] : Role::where('slug', 'super_admin')->first();
+                $adminRole = isset($roleModels['admin']) ? $roleModels['admin'] : Role::where('slug', 'admin')->first();
+
+                $rolesToAttach = [];
+                if ($superAdminRole) {
+                    $rolesToAttach[] = $superAdminRole->id;
+                }
+                if ($adminRole) {
+                    $rolesToAttach[] = $adminRole->id;
+                }
+                if (! empty($rolesToAttach)) {
+                    $masterAdmin->roles()->syncWithoutDetaching($rolesToAttach);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore during initial schema bootstrap
         }
 
         // Auto-sync production StoreSettings (SMTP Mail, Telegram Bot API, Bakong KHQR, and Brand Info)
