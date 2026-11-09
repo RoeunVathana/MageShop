@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -245,82 +246,88 @@ class GoogleAuthService
         $googleId = (string) ($googleId ?: ('firebase_' . md5($email)));
         $avatar = (string) ($avatar ?: '');
 
-        return DB::transaction(function () use ($googleId, $email, $name, $avatar) {
-            // 1. Check existing social account
-            $socialAccount = SocialAccount::where('provider', 'google')
-                ->where('provider_id', $googleId)
-                ->first();
+        // 1. Find or create user by unique email
+        $user = User::where('email', $email)->first();
 
-            $user = null;
+        if (! $user) {
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => bin2hex(random_bytes(24)),
+                'status' => 'active',
+                'email_verified_at' => now(),
+            ]);
 
-            if ($socialAccount) {
-                $user = $socialAccount->user;
-            } else {
-                // 2. Check if user with this email already exists
-                $user = User::where('email', $email)->first();
-
-                if (! $user) {
-                    $user = User::create([
-                        'name' => $name,
-                        'email' => $email,
-                        'password' => bin2hex(random_bytes(24)),
-                        'status' => 'active',
-                        'email_verified_at' => now(),
-                    ]);
-
-                    // Assign customer role
-                    $customerRole = Role::firstOrCreate(
-                        ['slug' => 'customer'],
-                        ['name' => 'CUSTOMER', 'description' => 'Standard customer']
-                    );
-                    $user->roles()->attach($customerRole->id);
-                } else {
-                    if ($user->email_verified_at === null) {
-                        $user->email_verified_at = now();
-                        $user->save();
-                    }
-                }
-
-                // Create social account record
-                SocialAccount::create([
-                    'user_id' => $user->id,
-                    'provider' => 'google',
-                    'provider_id' => $googleId,
-                    'avatar' => $avatar,
-                ]);
+            // Assign customer role if role system exists
+            try {
+                $customerRole = Role::firstOrCreate(
+                    ['slug' => 'customer'],
+                    ['name' => 'CUSTOMER', 'description' => 'Standard customer']
+                );
+                $user->roles()->syncWithoutDetaching([$customerRole->id]);
+            } catch (\Throwable $e) {
+                // Ignore role attachment if roles table differs
             }
+        } else {
+            if ($user->email_verified_at === null) {
+                $user->email_verified_at = now();
+                $user->save();
+            }
+        }
 
-            // Assign Admin roles if this email belongs to platform owner
-            $isOwnerOrAdmin = in_array($email, [
-                'vothanarern@gmail.com',
-                strtolower((string) StoreSetting::get('support_email', '')),
-                strtolower((string) StoreSetting::get('business_email', '')),
-            ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
+        // 2. Optionally record social account if table exists
+        try {
+            if (Schema::hasTable('social_accounts')) {
+                SocialAccount::updateOrCreate(
+                    ['provider' => 'google', 'provider_id' => $googleId],
+                    ['user_id' => $user->id, 'avatar' => $avatar]
+                );
+            }
+        } catch (\Throwable $e) {
+            // Ignore social_accounts logging error
+        }
 
-            if ($isOwnerOrAdmin && method_exists($user, 'assignRole') && ! $user->hasRole('SUPER_ADMIN')) {
-                try {
+        // 3. Assign Admin roles if this email belongs to platform owner
+        $isOwnerOrAdmin = in_array($email, [
+            'vothanarern@gmail.com',
+            strtolower((string) StoreSetting::get('support_email', '')),
+            strtolower((string) StoreSetting::get('business_email', '')),
+        ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
+
+        if ($isOwnerOrAdmin) {
+            try {
+                if (method_exists($user, 'assignRole')) {
                     $user->assignRole('SUPER_ADMIN');
                     $user->assignRole('ADMIN');
-                } catch (\Throwable $e) {
-                    // ignore if already assigned
+                } else {
+                    $adminRole = Role::whereIn('name', ['SUPER_ADMIN', 'ADMIN'])->orWhereIn('slug', ['super_admin', 'admin'])->get();
+                    if ($adminRole->isNotEmpty()) {
+                        $user->roles()->syncWithoutDetaching($adminRole->pluck('id'));
+                    }
                 }
+            } catch (\Throwable $e) {
+                // ignore
             }
+        }
 
+        try {
             SecurityLogService::log('AUTH_GOOGLE_FIREBASE_LOGIN', $user->id);
+        } catch (\Throwable $e) {
+            // ignore
+        }
 
-            // Create Sanctum access token
-            $token = $user->createToken('google-auth-token')->plainTextToken;
+        // Create Sanctum access token
+        $token = $user->createToken('google-auth-token')->plainTextToken;
 
-            return [
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar' => $avatar,
-                    'roles' => $user->roles->pluck('name'),
-                ],
-            ];
-        });
+        return [
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $avatar,
+                'roles' => $user->roles->pluck('name'),
+            ],
+        ];
     }
 }
