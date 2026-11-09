@@ -72,9 +72,9 @@ export function Footer() {
       </div>
 
       {/* Main Footer Links */}
-      <div className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-8">
+      <div className="container mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
         {/* Brand & Mission */}
-        <div className="md:col-span-2 space-y-4">
+        <div className="sm:col-span-2 lg:col-span-2 space-y-4">
           <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="md" subtitle={t('Flagship Enterprise Platform', 'ផ្សារទំនើបអនឡាញកម្ពុជា')} />
           </Link>

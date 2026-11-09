@@ -28,6 +28,7 @@ import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
+import { cn } from '@/lib/utils'
 import type { Product, ProductType } from '@/types/product.types'
 import type { Category } from '@/types/category.types'
 import type { Brand } from '@/types/brand.types'
@@ -60,6 +61,7 @@ export function ProductsPage() {
   const [minPriceInput, setMinPriceInput] = useState<string>(minPrice)
   const [maxPriceInput, setMaxPriceInput] = useState<string>(maxPrice)
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({})
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
   // Load category tree & brands on mount
   useEffect(() => {
@@ -183,6 +185,18 @@ export function ProductsPage() {
             </p>
           </div>
           <div className="inline-flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+              className="lg:hidden flex items-center gap-1.5 rounded-full text-xs font-semibold shadow-xs"
+            >
+              <Filter className="w-3.5 h-3.5 text-primary" />
+              <span>{isMobileFilterOpen ? t('Hide Filters', 'លាក់តម្រង') : t('Filter Products', 'តម្រងស្វែងរក')}</span>
+              {hasActiveFilters && (
+                <span className="w-2 h-2 rounded-full bg-primary" />
+              )}
+            </Button>
             <Badge variant="outline" className="text-xs py-1 px-3">
               {totalProducts} {t('Products Available', 'មុខទំនិញមានក្នុងស្តុក')}
             </Badge>
@@ -192,7 +206,7 @@ export function ProductsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
-        <aside className="space-y-6">
+        <aside className={cn('space-y-6', isMobileFilterOpen ? 'block' : 'hidden lg:block')}>
           <div className="p-5 border rounded-2xl bg-card space-y-6 shadow-sm">
             <div className="flex items-center justify-between border-b pb-3">
               <span className="text-sm font-bold flex items-center gap-2">

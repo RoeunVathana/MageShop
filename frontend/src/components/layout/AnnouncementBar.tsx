@@ -58,14 +58,14 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
-      <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
+    <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-1.5 sm:py-2 px-3 sm:px-4 border-b border-slate-800">
+      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* Left message */}
-        <div className="flex items-center gap-2 text-center md:text-left min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <span className="inline-flex items-center gap-1 bg-primary-600 text-white px-2 py-0.5 rounded-full font-medium text-[10px] shrink-0">
-            <Sparkles className="w-3 h-3" /> {t('TYUSHOP Sale', 'ប្រូម៉ូសិនពិសេស')}
+            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('TYUSHOP Sale', 'ប្រូម៉ូសិនពិសេស')}</span>
           </span>
-          <span className="truncate">
+          <span className="truncate text-[11px] sm:text-xs">
             {t(
               'TYUSHOP Multi-Vendor E-Commerce Platform • Fast Delivery & 100-Pt Free Rewards',
               'TYUSHOP ផ្សារទំនើបអនឡាញ • ដឹកជញ្ជូនរហ័ស និងសន្សំ ១០០ ពិន្ទុប្តូរទំនិញឥតគិតថ្លៃ'
@@ -74,16 +74,16 @@ export function AnnouncementBar() {
         </div>
 
         {/* Right utilities: Help, Language, Currency */}
-        <div className="flex items-center gap-3 sm:gap-4 text-slate-300 shrink-0 whitespace-nowrap">
+        <div className="flex items-center gap-2 sm:gap-3 text-slate-300 shrink-0 whitespace-nowrap">
           <a
             href="tel:016555637"
-            className="hidden lg:flex items-center gap-1 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="hidden xl:flex items-center gap-1 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap text-[11px]"
           >
             <Phone className="w-3 h-3 shrink-0" />
-            <span className="whitespace-nowrap">{t('Support: 016 555 637', 'ជំនួយអតិថិជន: 016 555 637')}</span>
+            <span className="whitespace-nowrap break-keep">{t('Support: 016 555 637', 'ជំនួយ: 016 555 637')}</span>
           </a>
 
-          <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 whitespace-nowrap">
             {/* Language Selector */}
             <div
               ref={langRef}
@@ -99,10 +99,10 @@ export function AnnouncementBar() {
                 }}
                 aria-expanded={langOpen}
                 aria-label="Select Language"
-                className="flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
               >
                 <Globe className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                <span className="font-semibold whitespace-nowrap">{language === 'KM' ? 'ខ្មែរ (KM)' : 'EN'}</span>
+                <span className="font-semibold whitespace-nowrap break-keep inline-block">{language === 'KM' ? 'ខ្មែរ (KM)' : 'EN'}</span>
                 <ChevronDown className={`w-3 h-3 opacity-70 transition-transform shrink-0 ${langOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -151,9 +151,9 @@ export function AnnouncementBar() {
                 }}
                 aria-expanded={currOpen}
                 aria-label="Select Currency"
-                className="flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
               >
-                <span className="font-semibold whitespace-nowrap">{currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}</span>
+                <span className="font-semibold whitespace-nowrap break-keep inline-block">{currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}</span>
                 <ChevronDown className={`w-3 h-3 opacity-70 transition-transform shrink-0 ${currOpen ? 'rotate-180' : ''}`} />
               </button>
 

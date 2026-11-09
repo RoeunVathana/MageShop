@@ -241,7 +241,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Full screen edge-to-edge fluid container layout across all pages */
+/* Responsive edge-to-edge fluid container layout across all devices & screen sizes */
 .container {
   width: 100% !important;
   max-width: 100% !important;
@@ -253,42 +253,59 @@ body {
 
 @media (min-width: 640px) {
   .container {
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
   }
 }
 
 @media (min-width: 1024px) {
   .container {
+    max-width: 1440px !important;
+    padding-left: 1.75rem !important;
+    padding-right: 1.75rem !important;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1600px !important;
     padding-left: 2rem !important;
     padding-right: 2rem !important;
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1920px) {
   .container {
+    max-width: 1720px !important;
     padding-left: 2.5rem !important;
     padding-right: 2.5rem !important;
   }
 }
 
-@media (min-width: 1536px) {
-  .container {
-    padding-left: 3.5rem !important;
-    padding-right: 3.5rem !important;
-  }
-}
-
 @media (max-width: 640px) {
   html {
-    font-size: 15.5px;
+    font-size: 15px;
   }
 }
 
 @media (min-width: 1280px) {
   html {
-    font-size: 17px;
+    font-size: 16.5px;
   }
+}
+
+/* Hide scrollbar across all browsers while retaining touch & trackpad scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Word break rules for bilingual text (Khmer & English) */
+.break-keep {
+  word-break: keep-all;
 }
 
 /* Smooth modern scrollbar */
