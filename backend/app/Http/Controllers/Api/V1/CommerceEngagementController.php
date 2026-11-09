@@ -514,28 +514,48 @@ class CommerceEngagementController extends Controller
 
     /**
      * Build EMVCo Bakong KHQR payload and metadata for QR scan checkout.
+     * Fully compliant with National Bank of Cambodia (NBC) KHQR EMVCo standards.
      */
     protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
     {
-        $merchantAccount = (string) StoreSetting::get('bakong_account_id', env('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'));
+        $merchantAccount = (string) StoreSetting::get('bakong_account_id', env('BAKONG_ACCOUNT_ID', 'vathana@abaa'));
         $merchantName = (string) StoreSetting::get('bakong_merchant_name', env('BAKONG_MERCHANT_NAME', 'TYUSHOP'));
         $merchantCity = (string) StoreSetting::get('company_city', env('BAKONG_MERCHANT_CITY', 'Phnom Penh'));
-        $amountFormatted = number_format($amountUsd, 2, '.', '');
+
+        // Amount formatting compliant with NBC Bakong EMVCo specification
+        $amountStr = (fmod($amountUsd, 1.0) === 0.0)
+            ? (string) ((int) round($amountUsd))
+            : number_format($amountUsd, 2, '.', '');
         $amountKhr = (int) round($amountUsd * 4100);
 
-        $tag29 = '00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount
-            .'01'.str_pad((string) strlen($merchantName), 2, '0', STR_PAD_LEFT).$merchantName;
+        // Tag 29: Individual Merchant Account Information
+        // Sub-tag 00: Bakong Account ID only (e.g., username@abaa or username@bakong)
+        $tag29Value = '00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount;
+        $tag29 = '29'.str_pad((string) strlen($tag29Value), 2, '0', STR_PAD_LEFT).$tag29Value;
 
-        $tag62 = '01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber;
+        // Tag 62: Additional Data Field (Sub-tag 01: Bill Number / Order Number)
+        $tag62Value = '01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber;
+        $tag62 = '62'.str_pad((string) strlen($tag62Value), 2, '0', STR_PAD_LEFT).$tag62Value;
 
-        $emvPayload = '000201010212'
-            .'29'.str_pad((string) strlen($tag29), 2, '0', STR_PAD_LEFT).$tag29
-            .'520459995303840'
-            .'54'.str_pad((string) strlen($amountFormatted), 2, '0', STR_PAD_LEFT).$amountFormatted
+        // Tag 99: Bakong National Scheme Timestamp (Strictly required for Dynamic QR 010212)
+        // Sub-tag 00: Creation Timestamp (13-digit Unix ms)
+        // Sub-tag 01: Expiration Timestamp (13-digit Unix ms, valid for 15 minutes)
+        $creationMs = (string) (time() * 1000);
+        $expirationMs = (string) ((time() + 900) * 1000);
+        $tag99Value = '0013'.$creationMs.'0113'.$expirationMs;
+        $tag99 = '99'.str_pad((string) strlen($tag99Value), 2, '0', STR_PAD_LEFT).$tag99Value;
+
+        $emvPayload = '000201'
+            .'010212'
+            .$tag29
+            .'52045999'
+            .'5303840'
+            .'54'.str_pad((string) strlen($amountStr), 2, '0', STR_PAD_LEFT).$amountStr
             .'5802KH'
             .'59'.str_pad((string) strlen($merchantName), 2, '0', STR_PAD_LEFT).$merchantName
             .'60'.str_pad((string) strlen($merchantCity), 2, '0', STR_PAD_LEFT).$merchantCity
-            .'62'.str_pad((string) strlen($tag62), 2, '0', STR_PAD_LEFT).$tag62
+            .$tag62
+            .$tag99
             .'6304';
 
         $crcHex = $this->calculateCrc16Ccitt($emvPayload);
@@ -551,7 +571,7 @@ class CommerceEngagementController extends Controller
             'amount_khr' => $amountKhr,
             'order_number' => $orderNumber,
             'transaction_reference' => $txnRef,
-            'expires_in_seconds' => 600,
+            'expires_in_seconds' => 900,
         ];
     }
 

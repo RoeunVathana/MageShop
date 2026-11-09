@@ -16,6 +16,7 @@ import {
   Sparkles,
   HelpCircle,
   Building,
+  QrCode,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -60,6 +61,9 @@ export function AdminStoreSettingsPage() {
     store_address: '',
     company_city: 'Phnom Penh',
     company_country: 'Cambodia',
+    // Bakong KHQR
+    bakong_account_id: 'vathana@abaa',
+    bakong_merchant_name: 'TYUSHOP',
     // Telegram
     telegram_bot_username: '',
     telegram_support_contact: '',
@@ -91,6 +95,8 @@ export function AdminStoreSettingsPage() {
         store_address: data.store_address || 'Preah Monivong Blvd, Sangkat Boeung Keng Kang 1, Khan Chamkarmon, Phnom Penh',
         company_city: data.company_city || 'Phnom Penh',
         company_country: data.company_country || 'Cambodia',
+        bakong_account_id: data.bakong_account_id || 'vathana@abaa',
+        bakong_merchant_name: data.bakong_merchant_name || 'TYUSHOP',
         telegram_bot_username: data.telegram_bot_username || 'MegaCommerceAiBot',
         telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       })
@@ -452,6 +458,76 @@ export function AdminStoreSettingsPage() {
                   onChange={(e) => setForm({ ...form, telegram_support_contact: e.target.value })}
                   className="rounded-xl h-10 text-xs font-semibold font-mono"
                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 5. National Bank of Cambodia Bakong KHQR Gateway Configuration */}
+        <Card className="rounded-3xl border shadow-sm border-rose-500/20 bg-gradient-to-r from-rose-50/30 via-card to-rose-50/10 dark:from-rose-950/20 dark:to-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md shadow-rose-600/20">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-black text-foreground flex items-center gap-2">
+                    <span>{t('Bakong KHQR Payment Gateway (EMVCo Official)', 'ច្រកទូទាត់ប្រាក់ Bakong KHQR ស្តង់ដារ EMVCo')}</span>
+                    <Badge className="bg-rose-600 text-white text-[9px] font-bold">NBC EMVCo</Badge>
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {t(
+                      'Configure your official Bakong Account ID to accept instant payments from ABA Mobile, ACLEDA, Wing, and all 50+ Bakong member banks.',
+                      'កំណត់គណនី Bakong ID ផ្លូវការរបស់អ្នកដើម្បីទទួលប្រាក់ផ្ទាល់ពី ABA, ACLEDA, Wing និងគ្រប់ធនាគារក្នុងប្រទេសកម្ពុជា។'
+                    )}
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                  <span>{t('Bakong Account ID (Merchant ID)', 'គណនី Bakong ID')}</span>
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-mono">e.g. yourname@abaa</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={form.bakong_account_id}
+                    onChange={(e) => setForm({ ...form, bakong_account_id: e.target.value })}
+                    placeholder="e.g. 016555637@abaa or yourname@aclb"
+                    className="rounded-xl h-10 text-xs font-bold font-mono pl-10"
+                  />
+                  <QrCode className="absolute left-3 top-3 h-4 w-4 text-rose-600" />
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {t(
+                    'Must include bank domain suffix: @abaa (ABA Bank), @aclb (ACLEDA), @wing (Wing Bank), @cani (Canadia), or @bakong (Bakong Wallet).',
+                    'ត្រូវមានកន្ទុយធនាគារត្រឹមត្រូវ៖ @abaa (ABA), @aclb (ACLEDA), @wing (Wing), @cani (Canadia), ឬ @bakong (Bakong Wallet)។'
+                  )}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">
+                  {t('Bakong Merchant Display Name', 'ឈ្មោះអាជីវកម្មបង្ហាញលើ QR')}
+                </label>
+                <Input
+                  type="text"
+                  value={form.bakong_merchant_name}
+                  onChange={(e) => setForm({ ...form, bakong_merchant_name: e.target.value })}
+                  placeholder="TYUSHOP"
+                  className="rounded-xl h-10 text-xs font-bold"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t(
+                    'The trading name customers see on their banking screen when scanning the KHQR.',
+                    'ឈ្មោះដែលអតិថិជនមើលឃើញលើអេក្រង់ធនាគាររបស់ពួកគេនៅពេលស្កេន KHQR។'
+                  )}
+                </p>
               </div>
             </div>
           </CardContent>

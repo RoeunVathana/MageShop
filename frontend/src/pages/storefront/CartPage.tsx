@@ -85,24 +85,38 @@ function generateBakongKhqrString(params: {
   amount: number
   orderNumber: string
 }): string {
-  const account = params.merchantAccount || 'roeun_vathana1@bkrt'
+  const account = params.merchantAccount || 'vathana@abaa'
   const name = params.merchantName || 'TYUSHOP'
   const city = params.merchantCity || 'Phnom Penh'
-  const amountStr = params.amount.toFixed(2)
+  const amountStr = params.amount % 1 === 0 ? String(Math.round(params.amount)) : params.amount.toFixed(2)
   const orderNum = params.orderNumber
 
-  const tag29 = `00${String(account.length).padStart(2, '0')}${account}01${String(name.length).padStart(2, '0')}${name}`
-  const tag62 = `01${String(orderNum.length).padStart(2, '0')}${orderNum}`
+  // Tag 29: Individual Merchant Account Info (Sub-tag 00: Account ID only)
+  const tag29Value = `00${String(account.length).padStart(2, '0')}${account}`
+  const tag29 = `29${String(tag29Value.length).padStart(2, '0')}${tag29Value}`
+
+  // Tag 62: Additional Data (Sub-tag 01: Order Number)
+  const tag62Value = `01${String(orderNum.length).padStart(2, '0')}${orderNum}`
+  const tag62 = `62${String(tag62Value.length).padStart(2, '0')}${tag62Value}`
+
+  // Tag 99: Bakong National Scheme Timestamp (Strictly required for Dynamic QR 010212)
+  const now = Date.now()
+  const expire = now + (15 * 60 * 1000)
+  const tag99Value = `0013${now}0113${expire}`
+  const tag99 = `99${String(tag99Value.length).padStart(2, '0')}${tag99Value}`
 
   const emv =
-    '000201010212' +
-    `29${String(tag29.length).padStart(2, '0')}${tag29}` +
-    '520459995303840' +
+    '000201' +
+    '010212' +
+    tag29 +
+    '52045999' +
+    '5303840' +
     `54${String(amountStr.length).padStart(2, '0')}${amountStr}` +
     '5802KH' +
     `59${String(name.length).padStart(2, '0')}${name}` +
     `60${String(city.length).padStart(2, '0')}${city}` +
-    `62${String(tag62.length).padStart(2, '0')}${tag62}` +
+    tag62 +
+    tag99 +
     '6304'
 
   const crc = calculateCrc16Ccitt(emv)
