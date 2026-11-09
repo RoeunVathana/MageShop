@@ -14,6 +14,7 @@ import {
   Shield,
   Award,
   Truck,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -109,14 +110,14 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </form>
 
-        {/* Right: Actions Cluster - Sleek, Responsive Single-Row Layout */}
+        {/* Right: Actions Cluster - Sleek, Responsive Single-Row Layout (No Wrapping) */}
         <div className="shrink-0 flex items-center">
-          <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
-            {/* 1. Real-Time GPS Delivery Tracker (Hidden on compact mobile, shown on sm+) */}
+          <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 lg:gap-2">
+            {/* 1. Real-Time GPS Delivery Tracker (Desktop only; on mobile it lists down in menu) */}
             <Link
               to="/track-order"
               title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}
-              className="hidden sm:inline-flex"
+              className="hidden lg:inline-flex"
             >
               <Button
                 variant="ghost"
@@ -128,14 +129,14 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* 2. Customer Loyalty Points Award (Hidden on mobile, shown on md+) */}
+            {/* 2. Customer Loyalty Points Award (Desktop only; on mobile it lists down in menu) */}
             <Link
               to="/cart"
               title={t(
                 `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
                 `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
               )}
-              className="hidden md:inline-flex group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 items-center justify-center p-0"
+              className="hidden lg:inline-flex group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 items-center justify-center p-0"
             >
               <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500 group-hover:rotate-12 group-hover:scale-115 transition-transform duration-200" />
               <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
@@ -144,8 +145,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               <span className="sr-only">{t('Loyalty Points', 'ពិន្ទុសន្សំ')}</span>
             </Link>
 
-            {/* 3. Customer Wishlist / Favorites */}
-            <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')}>
+            {/* 3. Customer Wishlist / Favorites (Desktop only; on mobile it lists down in menu or bottom bar) */}
+            <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')} className="hidden lg:inline-flex">
               <Button
                 variant="ghost"
                 size="icon"
@@ -161,7 +162,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* 4. Shopping Cart */}
+            {/* 4. Shopping Cart (Always visible for quick checkout) */}
             <Link to="/cart" title={t('Shopping Cart', 'កន្ត្រកទំនិញ')}>
               <Button
                 variant="ghost"
@@ -178,19 +179,18 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* 5. Theme Mode Toggle */}
-            <div className="flex items-center justify-center">
+            {/* 5. Theme Mode Toggle (Desktop only; on mobile inside list down) */}
+            <div className="hidden lg:flex items-center justify-center">
               <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border-0 hover:bg-muted/80 active:scale-90 transition-all duration-200" />
             </div>
 
-            {/* 6. Account / Profile Dropdown */}
+            {/* 6. Account & Quick Actions Menu ("List Down" Trigger on Mobile) */}
             <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
               <Button
                 variant="ghost"
-                size="icon"
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
-                title={currentUser ? currentUser.name : t('Account', 'គណនី')}
-                className="group h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 p-0 flex items-center justify-center"
+                title={currentUser ? currentUser.name : t('Account & Menu', 'គណនី & ម៉ឺនុយ')}
+                className="group h-8 sm:h-9 px-1.5 sm:px-2 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 flex items-center gap-1 shrink-0"
               >
                 {currentUser?.avatar_url ? (
                   <img
@@ -203,26 +203,147 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                     <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 )}
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ${isAccountOpen ? 'rotate-180' : ''}`} />
               </Button>
 
             {isAccountOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-black/5"
+                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
                   onClick={() => setIsAccountOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
-                  <div className="px-3 py-2 border-b">
-                    <p className="text-xs font-medium text-muted-foreground truncate">
-                      {currentUser ? currentUser.email : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}
-                    </p>
-                    <p className="text-sm font-semibold truncate">
-                      {currentUser
-                        ? isAdmin
-                          ? t('Administrator Account', 'គណនីអ្នកគ្រប់គ្រង (Admin)')
-                          : currentUser.name
-                        : t('Customer Account', 'គណនីអតិថិជន')}
-                    </p>
+                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                  {/* User Profile Header */}
+                  <div className="px-3 py-2.5 border-b flex items-center gap-2.5">
+                    {currentUser?.avatar_url ? (
+                      <img
+                        src={currentUser.avatar_url}
+                        alt=""
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-primary/20 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {currentUser
+                          ? isAdmin
+                            ? t('Admin: ', 'អ្នកគ្រប់គ្រង៖ ') + currentUser.name
+                            : currentUser.name
+                          : t('Welcome to TYUSHOP', 'សូមស្វាគមន៍មកកាន់ TYUSHOP')}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {currentUser ? currentUser.email : t('Customer / Guest Account', 'គណនីអតិថិជន')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mobile "List Down" Quick Actions Section */}
+                  <div className="py-1.5 space-y-0.5 border-b">
+                    {/* 1. Customer Loyalty Points */}
+                    <Link
+                      to="/cart"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-amber-500/10 text-foreground transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                          <Award className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-foreground leading-tight">
+                            {t('Loyalty Rewards', 'ពិន្ទុរង្វាន់')}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {t('Earn +5 pts per order', 'ទទួលបាន +៥ ពិន្ទុរាល់ពេលទិញ')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white font-mono font-black text-[10px] shadow-xs shrink-0">
+                        {loyaltyPoints} Pts
+                      </span>
+                    </Link>
+
+                    {/* 2. Real-Time GPS Delivery Tracker */}
+                    <Link
+                      to="/track-order"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-emerald-500/10 text-foreground transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                          <Truck className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-foreground leading-tight">
+                            {t('Track Live Delivery', 'តាមដានការដឹកជញ្ជូន GPS')}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {t('Real-Time Map & Status', 'ផែនទីផ្សាយផ្ទាល់ & ស្ថានភាព')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0">
+                        Live GPS
+                      </span>
+                    </Link>
+
+                    {/* 3. Customer Saved Wishlist */}
+                    <Link
+                      to="/wishlist"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-rose-500/10 text-foreground transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0">
+                          <Heart className="w-4 h-4" />
+                        </div>
+                        <span className="font-semibold text-xs text-foreground">
+                          {t('Saved Favorites', 'ទំនិញពេញចិត្ត')}
+                        </span>
+                      </div>
+                      {favoritesCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono font-bold text-[10px] shrink-0">
+                          {favoritesCount}
+                        </span>
+                      )}
+                    </Link>
+
+                    {/* 4. Shopping Cart */}
+                    <Link
+                      to="/cart"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-primary/10 text-foreground transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                          <ShoppingCart className="w-4 h-4" />
+                        </div>
+                        <span className="font-semibold text-xs text-foreground">
+                          {t('Shopping Cart', 'កន្ត្រកទំនិញ')}
+                        </span>
+                      </div>
+                      {cartCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-mono font-bold text-[10px] shrink-0">
+                          {cartCount}
+                        </span>
+                      )}
+                    </Link>
+
+                    {/* 5. Theme Appearance Switcher */}
+                    <div className="flex items-center justify-between px-3 py-2 text-xs rounded-xl hover:bg-muted/60 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-foreground flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="font-semibold text-xs text-foreground">
+                          {t('Theme Appearance', 'ពន្លឺ / ងងឹត')}
+                        </span>
+                      </div>
+                      <ThemeToggle />
+                    </div>
                   </div>
 
                   {!currentUser ? (
