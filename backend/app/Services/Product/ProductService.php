@@ -258,13 +258,12 @@ class ProductService
      */
     public function updateProduct(Product $product, array $data): Product
     {
-        return DB::transaction(function () use ($product, $data) {
-            if (isset($data['selling_price']) && (float) $data['selling_price'] < 0) {
-                throw new InvalidArgumentException('Selling price cannot be negative.');
-            }
-            if (isset($data['cost_price']) && (float) $data['cost_price'] < 0) {
-                throw new InvalidArgumentException('Cost price cannot be negative.');
-            }
+        if (isset($data['selling_price']) && (float) $data['selling_price'] < 0) {
+            throw new InvalidArgumentException('Selling price cannot be negative.');
+        }
+        if (isset($data['cost_price']) && (float) $data['cost_price'] < 0) {
+            throw new InvalidArgumentException('Cost price cannot be negative.');
+        }
 
             $updateData = [];
 
@@ -372,15 +371,12 @@ class ProductService
                 $product->categories()->sync($data['category_ids']);
             }
 
-            // Update variants if provided
-            if (isset($data['variants']) && is_array($data['variants'])) {
-                $this->syncProductVariants($product, $data['variants'], auth()->id());
-            }
+        // Update variants if provided
+        if (isset($data['variants']) && is_array($data['variants'])) {
+            $this->syncProductVariants($product, $data['variants'], auth()->id());
+        }
 
-            return $product;
-        });
-
-        // Fresh reload from database outside the transaction
+        // Fresh reload from database
         $fresh = Product::find($product->id);
         $resultProduct = $fresh ?: $product;
 
