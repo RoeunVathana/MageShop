@@ -122,6 +122,11 @@ export default function App() {
 
               {/* Customer Account Portal (Authenticated Users Only) */}
               <Route path="/dashboard/customer" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/dashboard/customer/orders" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/dashboard/customer/addresses" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/dashboard/customer/payments" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/account" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/orders" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
 
               {/* System Dashboards */}
               <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />

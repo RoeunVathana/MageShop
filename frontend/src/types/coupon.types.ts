@@ -51,3 +51,4 @@ export interface CouponMeta {
   active_count: number
   inactive_count: number
 }
+

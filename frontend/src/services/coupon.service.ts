@@ -104,3 +104,4 @@ export const couponService = {
     return api.post('/coupons/validate', { code, subtotal })
   },
 }
+
