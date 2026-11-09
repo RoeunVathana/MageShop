@@ -241,44 +241,60 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Responsive edge-to-edge fluid container layout across all devices & screen sizes */
+/* Centered responsive container layout with standard viewport max-widths */
 .container {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 @media (min-width: 640px) {
   .container {
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
+    max-width: 640px;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .container {
-    max-width: 1440px !important;
-    padding-left: 1.75rem !important;
-    padding-right: 1.75rem !important;
+    max-width: 1024px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 
 @media (min-width: 1440px) {
   .container {
-    max-width: 1600px !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
+    max-width: 1380px;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
   }
 }
 
-@media (min-width: 1920px) {
+@media (min-width: 1600px) {
   .container {
-    max-width: 1720px !important;
-    padding-left: 2.5rem !important;
-    padding-right: 2.5rem !important;
+    max-width: 1440px;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
   }
 }
 

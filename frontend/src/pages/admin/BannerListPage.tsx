@@ -778,13 +778,13 @@ export function BannerListPage() {
 
                       {/* Image URL & Upload */}
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>Cover Image URL</span>
+                        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                          <label className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                            <ImageIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate">Cover Image URL</span>
                           </label>
-                          <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors">
-                            <UploadCloud className="w-3.5 h-3.5" />
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors shrink-0 whitespace-nowrap">
+                            <UploadCloud className="w-3.5 h-3.5 shrink-0" />
                             <span>{uploadingImage ? 'Uploading...' : 'Upload Image to Cloud'}</span>
                             <input
                               type="file"
@@ -809,13 +809,13 @@ export function BannerListPage() {
 
                       {/* Video URL & Upload */}
                       <div className="space-y-1.5 pt-1">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <VideoIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>Background Video URL (Optional)</span>
+                        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                          <label className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                            <VideoIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate">Background Video URL (Optional)</span>
                           </label>
-                          <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors">
-                            <UploadCloud className="w-3.5 h-3.5" />
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors shrink-0 whitespace-nowrap">
+                            <UploadCloud className="w-3.5 h-3.5 shrink-0" />
                             <span>{uploadingVideo ? 'Uploading...' : 'Upload Video to Cloud'}</span>
                             <input
                               type="file"
