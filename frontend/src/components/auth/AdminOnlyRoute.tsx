@@ -42,6 +42,63 @@ export function AdminOrSellerRoute({ children }: { children: React.ReactNode }) 
 }
 
 /**
+ * Staff or Admin Guard:
+ * Allows access to users with Staff (STAFF, OPERATIONS_MANAGER) or Admin roles.
+ */
+export function StaffOrAdminRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const user = authService.getStoredUser()
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (!authService.isStaff(user)) {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+/**
+ * Delivery Courier or Admin Guard:
+ * Allows access to users with Delivery (DELIVERY_DRIVER, COURIER, DISPATCHER) or Admin roles.
+ */
+export function DeliveryOrAdminRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const user = authService.getStoredUser()
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (!authService.isDelivery(user)) {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+/**
+ * Warehouse Manager or Admin Guard:
+ * Allows access to users with Warehouse (WAREHOUSE_MANAGER, INVENTORY_MANAGER) or Admin roles.
+ */
+export function WarehouseOrAdminRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const user = authService.getStoredUser()
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (!authService.isWarehouse(user)) {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+/**
  * Authenticated Customer Guard:
  * Requires an active authenticated user session.
  */

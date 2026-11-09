@@ -6,7 +6,14 @@ import { ToastProvider } from '@/components/ui/toast'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
-import { AdminOnlyRoute, AuthenticatedRoute, AdminOrSellerRoute } from '@/components/auth/AdminOnlyRoute'
+import {
+  AdminOnlyRoute,
+  AuthenticatedRoute,
+  AdminOrSellerRoute,
+  StaffOrAdminRoute,
+  DeliveryOrAdminRoute,
+  WarehouseOrAdminRoute,
+} from '@/components/auth/AdminOnlyRoute'
 
 // Storefront Pages
 import { HomePage } from '@/pages/storefront/HomePage'
@@ -146,9 +153,9 @@ export default function App() {
               {/* System Dashboards */}
               <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
               <Route path="/dashboard/seller" element={<AdminOrSellerRoute><SellerDashboard /></AdminOrSellerRoute>} />
-              <Route path="/dashboard/staff" element={<AdminOnlyRoute><StaffDashboard /></AdminOnlyRoute>} />
-              <Route path="/dashboard/delivery" element={<AdminOnlyRoute><DeliveryDashboard /></AdminOnlyRoute>} />
-              <Route path="/dashboard/warehouse" element={<AdminOnlyRoute><WarehouseDashboard /></AdminOnlyRoute>} />
+              <Route path="/dashboard/staff" element={<StaffOrAdminRoute><StaffDashboard /></StaffOrAdminRoute>} />
+              <Route path="/dashboard/delivery" element={<DeliveryOrAdminRoute><DeliveryDashboard /></DeliveryOrAdminRoute>} />
+              <Route path="/dashboard/warehouse" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
 
               {/* Product & Inventory Management (Admin & Seller Accessible) */}
               <Route path="/admin/products" element={<AdminOrSellerRoute><ProductListPage /></AdminOrSellerRoute>} />

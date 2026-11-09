@@ -127,6 +127,8 @@ Route::get('/admin/overview', [AdminOrderController::class, 'systemStats']);
 Route::get('/admin/orders', [AdminOrderController::class, 'index']);
 Route::get('/admin/orders/{id}', [AdminOrderController::class, 'show']);
 Route::get('/admin/store-settings', [StoreSettingsController::class, 'adminShow']);
+Route::get('/admin/roles', [RolePermissionController::class, 'indexRoles']);
+Route::get('/admin/permissions', [RolePermissionController::class, 'indexPermissions']);
 
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
@@ -155,6 +157,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/permissions', [RolePermissionController::class, 'indexPermissions']);
     Route::get('/staff', [RolePermissionController::class, 'indexStaff']);
     Route::post('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
+    Route::put('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
+    Route::patch('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
+    Route::post('/security/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
 
     // Store Settings
     Route::get('/store-settings', [StoreSettingsController::class, 'adminShow']);

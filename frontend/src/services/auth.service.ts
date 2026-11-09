@@ -80,10 +80,75 @@ export const authService = {
   },
 
   /**
+   * Check whether the user has STAFF role or higher.
+   */
+  isStaff: (user?: User | null): boolean => {
+    if (authService.isAdmin(user)) return true
+    const target = user !== undefined ? user : authService.getStoredUser()
+    if (!target) return false
+    const roles = (target as any).roles || []
+    const roleNames = roles.map((r: any) =>
+      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
+    )
+    return roleNames.includes('STAFF') || roleNames.includes('OPERATIONS_MANAGER') || roleNames.includes('MANAGER')
+  },
+
+  /**
+   * Check whether the user has DELIVERY_DRIVER or courier role.
+   */
+  isDelivery: (user?: User | null): boolean => {
+    if (authService.isAdmin(user)) return true
+    const target = user !== undefined ? user : authService.getStoredUser()
+    if (!target) return false
+    const roles = (target as any).roles || []
+    const roleNames = roles.map((r: any) =>
+      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
+    )
+    return (
+      roleNames.includes('DELIVERY_DRIVER') ||
+      roleNames.includes('COURIER') ||
+      roleNames.includes('LOGISTICS_MANAGER') ||
+      roleNames.includes('DISPATCHER')
+    )
+  },
+
+  /**
+   * Check whether the user has WAREHOUSE or INVENTORY manager role.
+   */
+  isWarehouse: (user?: User | null): boolean => {
+    if (authService.isAdmin(user)) return true
+    const target = user !== undefined ? user : authService.getStoredUser()
+    if (!target) return false
+    const roles = (target as any).roles || []
+    const roleNames = roles.map((r: any) =>
+      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
+    )
+    return roleNames.includes('WAREHOUSE_MANAGER') || roleNames.includes('INVENTORY_MANAGER')
+  },
+
+  /**
    * Check whether user is an Admin OR Seller (can manage products, coupons, and store features).
    */
   canManageStore: (user?: User | null): boolean => {
     return authService.isAdmin(user) || authService.isSeller(user)
+  },
+
+  /**
+   * Assign or update roles for a user.
+   */
+  assignRoles: async (
+    userId: number | string,
+    payload: {
+      role?: string
+      roles?: string[]
+      role_slugs?: string[]
+      role_ids?: number[]
+      permissions?: string[]
+      permission_ids?: number[]
+    }
+  ): Promise<any> => {
+    const res = await api.post(`/admin/users/${userId}/roles`, payload)
+    return res
   },
 
   /**
