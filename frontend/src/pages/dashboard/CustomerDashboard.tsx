@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   ShoppingBag,
@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { authService } from '@/services/auth.service'
+import { Pagination } from '@/components/common/Pagination'
 import { api } from '@/lib/api'
 
 const customerNav: NavItem[] = [
@@ -43,6 +44,8 @@ export function CustomerDashboard() {
   const [liveOrders, setLiveOrders] = useState<any[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [copiedOrder, setCopiedOrder] = useState<string | null>(null)
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [ordersPerPage, setOrdersPerPage] = useState(5)
 
   // Determine active view based on URL pathname
   const pathname = location.pathname.toLowerCase()
@@ -77,8 +80,21 @@ export function CustomerDashboard() {
     setTimeout(() => setCopiedOrder(null), 2000)
   }
 
-  // Combined orders (live from database + localStorage recent orders)
-  const combinedOrders = liveOrders.length > 0 ? liveOrders : recentOrders
+  // Combined orders (live from database + localStorage recent orders), sorted DESC (newest first)
+  const combinedOrders = useMemo(() => {
+    const raw = liveOrders.length > 0 ? liveOrders : recentOrders
+    return [...raw].sort((a: any, b: any) => {
+      const timeA = new Date(a.created_at || a.date || 0).getTime() || (a.id ?? 0)
+      const timeB = new Date(b.created_at || b.date || 0).getTime() || (b.id ?? 0)
+      return timeB - timeA
+    })
+  }, [liveOrders, recentOrders])
+
+  const ordersTotalPages = Math.max(1, Math.ceil(combinedOrders.length / ordersPerPage))
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * ordersPerPage
+    return combinedOrders.slice(start, start + ordersPerPage)
+  }, [combinedOrders, ordersPage, ordersPerPage])
 
   return (
     <DashboardLayout
@@ -300,7 +316,7 @@ export function CustomerDashboard() {
                   </Link>
                 </div>
               ) : (
-                combinedOrders.map((ord: any, idx: number) => {
+                paginatedOrders.map((ord: any, idx: number) => {
                   const orderNum = ord.order_number || ord.orderNumber || ord.id || `ORD-2026-${9040 - idx}`
                   const status = ord.status || 'out_for_delivery'
                   const total = ord.total_amount ? `$${Number(ord.total_amount).toFixed(2)}` : ord.total || '$39.00'
@@ -364,6 +380,21 @@ export function CustomerDashboard() {
                 })
               )}
             </CardContent>
+
+            {/* Orders Pagination */}
+            <Pagination
+              currentPage={ordersPage}
+              totalPages={ordersTotalPages}
+              totalItems={combinedOrders.length}
+              perPage={ordersPerPage}
+              onPageChange={(p) => setOrdersPage(p)}
+              onPerPageChange={(newPerPage) => {
+                setOrdersPerPage(newPerPage)
+                setOrdersPage(1)
+              }}
+              perPageOptions={[5, 10, 20]}
+              itemName={t('orders', 'ការបញ្ជាទិញ')}
+            />
           </Card>
         )}
 

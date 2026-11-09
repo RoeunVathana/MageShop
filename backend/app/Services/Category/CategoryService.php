@@ -58,7 +58,15 @@ class CategoryService
 
         // Flat listing with parent relationship and product counts
         $query->with(['parent', 'attributes.options'])->withCount('products');
-        $query->orderBy('sort_order')->orderBy('name');
+
+        $sort = $filters['sort_by'] ?? 'created_at';
+        $direction = strtolower($filters['sort_dir'] ?? $filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        if (in_array($sort, ['id', 'name', 'created_at', 'sort_order', 'products_count'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
 
         if (! empty($filters['per_page'])) {
             $perPage = min((int) $filters['per_page'], 100);

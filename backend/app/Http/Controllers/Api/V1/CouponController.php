@@ -66,17 +66,32 @@ class CouponController extends Controller
             $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        $coupons = $query->orderBy('is_active', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        // Sorting: default to ID DESC (newest coupons first)
+        $sortBy = $request->input('sort_by', 'id');
+        $sortDir = strtolower($request->input('sort_direction', $request->input('sort_dir', 'desc'))) === 'asc' ? 'asc' : 'desc';
+
+        if (in_array($sortBy, ['id', 'created_at', 'code', 'discount_value', 'expires_at', 'is_active'])) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $perPage = min(100, max(5, (int) $request->input('per_page', 10)));
+        $coupons = $query->paginate($perPage);
+
+        $activeCount = Coupon::where('is_active', true)->count();
+        $inactiveCount = Coupon::where('is_active', false)->count();
 
         return response()->json([
             'status' => 'ok',
-            'data' => $coupons,
+            'data' => $coupons->items(),
             'meta' => [
-                'total' => $coupons->count(),
-                'active_count' => $coupons->where('is_active', true)->count(),
-                'inactive_count' => $coupons->where('is_active', false)->count(),
+                'total' => $coupons->total(),
+                'current_page' => $coupons->currentPage(),
+                'last_page' => $coupons->lastPage(),
+                'per_page' => $coupons->perPage(),
+                'active_count' => $activeCount,
+                'inactive_count' => $inactiveCount,
             ],
         ]);
     }

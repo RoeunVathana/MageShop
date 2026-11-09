@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { Pagination } from '@/components/common/Pagination'
 import { bannerService, type Banner, type CreateBannerPayload } from '@/services/banner.service'
 import { mediaService } from '@/services/media.service'
 
@@ -39,6 +40,12 @@ export function BannerListPage() {
   const [search, setSearch] = useState('')
   const [placementFilter, setPlacementFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(10)
+  const [sortBy, setSortBy] = useState('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   // Preview State
   const [previewBanner, setPreviewBanner] = useState<Banner | null>(null)
@@ -97,12 +104,23 @@ export function BannerListPage() {
     setLoading(true)
     try {
       const res = await bannerService.getAdminBanners({
-        search: search || undefined,
+        search: search.trim() || undefined,
         placement: placementFilter !== 'all' ? placementFilter : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
+        page: currentPage,
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_direction: sortDirection,
       })
       if (res.data) {
         setBanners(res.data)
+        if (res.meta) {
+          setTotalPages(res.meta.last_page)
+          setTotalCount(res.meta.total)
+        } else {
+          setTotalCount(res.data.length)
+          setTotalPages(Math.ceil(res.data.length / perPage) || 1)
+        }
         if (res.data.length > 0 && !previewBanner) {
           setPreviewBanner(res.data[0])
         }
@@ -120,7 +138,7 @@ export function BannerListPage() {
 
   useEffect(() => {
     fetchBanners()
-  }, [placementFilter, statusFilter])
+  }, [currentPage, perPage, placementFilter, statusFilter, sortBy, sortDirection])
 
   const openCreateModal = () => {
     setEditingBanner(null)
@@ -387,10 +405,30 @@ export function BannerListPage() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Sort Order Selector (Defaults to DESC / Newest First) */}
+            <select
+              value={`${sortBy}:${sortDirection}`}
+              onChange={(e) => {
+                const [sb, sd] = e.target.value.split(':')
+                setSortBy(sb)
+                setSortDirection(sd as any)
+                setCurrentPage(1)
+              }}
+              className="text-xs p-1.5 border rounded-lg bg-background text-foreground font-semibold"
+            >
+              <option value="id:desc">Newest First (DESC)</option>
+              <option value="id:asc">Oldest First (ASC)</option>
+              <option value="sort_order:asc">Display Order (Storefront)</option>
+              <option value="clicks_count:desc">Most Clicked (DESC)</option>
+            </select>
+
             <select
               value={placementFilter}
-              onChange={(e) => setPlacementFilter(e.target.value)}
+              onChange={(e) => {
+                setPlacementFilter(e.target.value)
+                setCurrentPage(1)
+              }}
               className="text-xs p-1.5 border rounded-lg bg-background text-foreground"
             >
               <option value="all">All Placements</option>
@@ -402,7 +440,10 @@ export function BannerListPage() {
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
               className="text-xs p-1.5 border rounded-lg bg-background text-foreground"
             >
               <option value="all">All Statuses</option>
@@ -587,6 +628,20 @@ export function BannerListPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              perPage={perPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPerPageChange={(newPerPage) => {
+                setPerPage(newPerPage)
+                setCurrentPage(1)
+              }}
+              itemName="slide banners"
+            />
           </CardContent>
         </Card>
 

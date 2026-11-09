@@ -33,13 +33,13 @@ class BrandService
             $query->where('status', $filters['status']);
         }
 
-        $sort = $filters['sort_by'] ?? 'sort_order';
-        $direction = strtolower($filters['sort_dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $sort = $filters['sort_by'] ?? 'created_at';
+        $direction = strtolower($filters['sort_dir'] ?? $filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-        if (in_array($sort, ['name', 'sort_order', 'created_at', 'products_count'])) {
+        if (in_array($sort, ['name', 'sort_order', 'created_at', 'id', 'products_count'])) {
             $query->orderBy($sort, $direction);
         } else {
-            $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc');
+            $query->orderBy('id', 'desc');
         }
 
         return $query->paginate($perPage);

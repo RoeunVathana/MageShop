@@ -34,6 +34,14 @@ class InventoryService
             });
         }
 
+        $sort = $filters['sort_by'] ?? 'id';
+        $direction = strtolower($filters['sort_dir'] ?? $filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        if (in_array($sort, ['id', 'name', 'created_at', 'sku', 'stock_quantity'])) {
+            $query->orderBy($sort, $direction);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
         return $query->paginate($perPage);
     }
 

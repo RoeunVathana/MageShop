@@ -60,5 +60,7 @@ export interface InventoryFilterParams {
   search?: string
   low_stock?: boolean | string
   status?: string
+  sort_by?: string
+  sort_direction?: string
 }
 

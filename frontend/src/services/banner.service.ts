@@ -69,8 +69,10 @@ export const bannerService = {
     status?: string
     page?: number
     per_page?: number
-  }): Promise<ApiResponse<Banner[]>> => {
-    return api.get<ApiResponse<Banner[]>>('/admin/banners', { params })
+    sort_by?: string
+    sort_direction?: string
+  }): Promise<ApiResponse<Banner[]> & { meta?: { total: number; current_page: number; last_page: number; per_page: number } }> => {
+    return api.get('/admin/banners', { params })
   },
 
   /**

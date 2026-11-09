@@ -32,6 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
+import { Pagination } from '@/components/common/Pagination'
 import { api } from '@/lib/api'
 
 export interface TeamMember {
@@ -170,6 +171,10 @@ export function UserDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [perPage, setPerPage] = useState<number>(10)
+  const [sortBy, setSortBy] = useState<string>('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   // Add Member Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -209,6 +214,26 @@ export function UserDirectoryPage() {
       return matchesSearch && matchesDepartment && matchesStatus
     })
   }, [members, searchQuery, selectedDepartment, selectedStatus])
+
+  // Sorted by DESC by default (Newest members first)
+  const sortedMembers = useMemo(() => {
+    const list = [...filteredMembers]
+    list.sort((a, b) => {
+      let valA: any = a[sortBy as keyof TeamMember] ?? a.id
+      let valB: any = b[sortBy as keyof TeamMember] ?? b.id
+      if (typeof valA === 'string') {
+        return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
+      }
+      return sortDirection === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA)
+    })
+    return list
+  }, [filteredMembers, sortBy, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sortedMembers.length / perPage))
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * perPage
+    return sortedMembers.slice(start, start + perPage)
+  }, [sortedMembers, currentPage, perPage])
 
   // Handle Add Member
   const handleAddMember = async (e: React.FormEvent) => {
@@ -438,14 +463,35 @@ export function UserDirectoryPage() {
                 )}
               </div>
 
-              {/* Department Dropdown Filter */}
-              <div className="flex items-center gap-2">
+              {/* Sort & Department Dropdown Filter */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Sort Selector (Defaults to DESC / Newest First) */}
+                <select
+                  value={`${sortBy}:${sortDirection}`}
+                  onChange={(e) => {
+                    const [sb, sd] = e.target.value.split(':')
+                    setSortBy(sb)
+                    setSortDirection(sd as any)
+                    setCurrentPage(1)
+                  }}
+                  className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                >
+                  <option value="id:desc">Newest First (DESC)</option>
+                  <option value="id:asc">Oldest First (ASC)</option>
+                  <option value="name:asc">Name (A - Z)</option>
+                  <option value="department:asc">Department</option>
+                  <option value="role:asc">Role</option>
+                </select>
+
                 <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                   <Building2 className="w-3.5 h-3.5 text-indigo-500" /> Dept:
                 </span>
                 <select
                   value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedDepartment(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
                   {DEPARTMENTS.map((dept) => (
@@ -503,7 +549,7 @@ export function UserDirectoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredMembers.length === 0 ? (
+                {sortedMembers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400 mb-3">
@@ -528,7 +574,7 @@ export function UserDirectoryPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredMembers.map((member) => (
+                  paginatedMembers.map((member) => (
                     <tr
                       key={member.id}
                       className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group"
@@ -647,6 +693,21 @@ export function UserDirectoryPage() {
               </tbody>
             </table>
           </div>
+
+          {/* User Directory Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedMembers.length}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            perPageOptions={[10, 20, 50]}
+            itemName="team members"
+          />
         </Card>
 
         {/* INTERACTIVE MODAL DIALOG TO ADD NEW MEMBERS */}

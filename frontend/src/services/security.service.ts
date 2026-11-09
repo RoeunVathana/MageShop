@@ -112,9 +112,10 @@ export interface UpdateTelegramSettingsPayload {
 
 export const securityService = {
   // API Token Management
-  getApiTokens: async (search?: string): Promise<ApiResponse<ApiToken[]>> => {
+  getApiTokens: async (params?: { search?: string; page?: number; per_page?: number } | string): Promise<ApiResponse<ApiToken[]>> => {
+    const queryParams = typeof params === 'string' ? { search: params } : params
     return api.get<ApiResponse<ApiToken[]>>('/admin/api-tokens', {
-      params: search ? { search } : undefined,
+      params: queryParams,
     })
   },
 

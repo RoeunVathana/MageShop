@@ -29,7 +29,7 @@ class AdminBannerController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        $query = Banner::query()->ordered();
+        $query = Banner::query();
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -51,6 +51,18 @@ class AdminBannerController extends Controller
             } elseif ($status === 'inactive') {
                 $query->where('is_active', false);
             }
+        }
+
+        // Sorting: default to ID DESC (newest banners first)
+        $sortBy = $request->input('sort_by', 'id');
+        $sortDir = strtolower($request->input('sort_direction', $request->input('sort_dir', 'desc'))) === 'asc' ? 'asc' : 'desc';
+
+        if ($sortBy === 'sort_order') {
+            $query->orderBy('sort_order', $sortDir)->orderBy('id', 'desc');
+        } elseif (in_array($sortBy, ['id', 'created_at', 'title', 'clicks_count', 'updated_at'])) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->orderBy('id', 'desc');
         }
 
         $perPage = min(100, max(5, (int) $request->input('per_page', 20)));

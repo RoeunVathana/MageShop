@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { inventoryService } from '@/services/inventory.service'
 import { productService } from '@/services/product.service'
+import { Pagination } from '@/components/common/Pagination'
 import { StockAdjustmentDialog } from '@/components/admin/StockAdjustmentDialog'
 import type { Product } from '@/types/product.types'
 
@@ -34,6 +35,9 @@ export function InventoryListPage() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
   const [totalCount, setTotalCount] = useState<number>(0)
+  const [perPage, setPerPage] = useState<number>(15)
+  const [sortBy, setSortBy] = useState<string>('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   // Stock Adjustment Dialog
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -44,9 +48,11 @@ export function InventoryListPage() {
     try {
       const res = await inventoryService.getInventory({
         page: currentPage,
-        per_page: 15,
+        per_page: perPage,
         search: search.trim() || undefined,
         low_stock: lowStockOnly ? 'true' : undefined,
+        sort_by: sortBy as any,
+        sort_direction: sortDirection,
       })
       if (res?.data && res.data.length > 0) {
         setItems(res.data)
@@ -63,8 +69,10 @@ export function InventoryListPage() {
     try {
       const prodRes = await productService.getProducts({
         page: currentPage,
-        per_page: 15,
+        per_page: perPage,
         search: search.trim() || undefined,
+        sort_by: sortBy as any,
+        sort_direction: sortDirection,
       })
       if (prodRes?.data) {
         setItems(prodRes.data)
@@ -87,7 +95,7 @@ export function InventoryListPage() {
 
   useEffect(() => {
     fetchInventory()
-  }, [currentPage, lowStockOnly])
+  }, [currentPage, perPage, lowStockOnly, sortBy, sortDirection])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -196,7 +204,25 @@ export function InventoryListPage() {
             />
           </form>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Sort Selector (Defaults to DESC / Newest First) */}
+            <select
+              value={`${sortBy}:${sortDirection}`}
+              onChange={(e) => {
+                const [sb, sd] = e.target.value.split(':')
+                setSortBy(sb)
+                setSortDirection(sd as any)
+                setCurrentPage(1)
+              }}
+              className="h-9 px-3 rounded-md border border-input bg-background text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="id:desc">Newest First (DESC)</option>
+              <option value="id:asc">Oldest First (ASC)</option>
+              <option value="stock_quantity:asc">Stock: Low to High</option>
+              <option value="stock_quantity:desc">Stock: High to Low</option>
+              <option value="name:asc">Item Name (A - Z)</option>
+            </select>
+
             <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-foreground select-none">
               <input
                 type="checkbox"
@@ -340,33 +366,19 @@ export function InventoryListPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="p-3 border-t bg-muted/20 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                Page {currentPage} of {totalPages} ({totalCount} total records)
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            perPageOptions={[10, 15, 25, 50]}
+            itemName="inventory records"
+          />
         </div>
       </div>
 

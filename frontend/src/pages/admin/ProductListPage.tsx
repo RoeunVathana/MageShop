@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
+import { Pagination } from '@/components/common/Pagination'
 import { StockAdjustmentDialog } from '@/components/admin/StockAdjustmentDialog'
 import { ProductPriceDialog } from '@/components/admin/ProductPriceDialog'
 import type { Product, ProductStatus } from '@/types/product.types'
@@ -43,6 +44,9 @@ export function ProductListPage() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
   const [totalCount, setTotalCount] = useState<number>(0)
+  const [perPage, setPerPage] = useState<number>(15)
+  const [sortBy, setSortBy] = useState<string>('created_at')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   // Quick Adjustment Dialog State
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null)
@@ -57,11 +61,13 @@ export function ProductListPage() {
     try {
       const res = await productService.getProducts({
         page: currentPage,
-        per_page: 15,
+        per_page: perPage,
         search: search.trim() || undefined,
         status: statusFilter,
         category_id: categoryFilter || undefined,
         product_type: (typeFilter as any) || undefined,
+        sort_by: sortBy as any,
+        sort_direction: sortDirection,
       })
       setProducts(res.data)
       if (res.meta) {
@@ -88,7 +94,7 @@ export function ProductListPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, statusFilter, categoryFilter, typeFilter])
+  }, [currentPage, perPage, statusFilter, categoryFilter, typeFilter, sortBy, sortDirection])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -256,6 +262,25 @@ export function ProductListPage() {
             <option value="simple">Simple</option>
             <option value="variable">Variable</option>
             <option value="digital">Digital</option>
+          </select>
+
+          {/* Sort By Selector (Defaults to DESC / Newest First) */}
+          <select
+            value={`${sortBy}:${sortDirection}`}
+            onChange={(e) => {
+              const [sb, sd] = e.target.value.split(':')
+              setSortBy(sb)
+              setSortDirection(sd as any)
+              setCurrentPage(1)
+            }}
+            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-semibold shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full md:w-44"
+          >
+            <option value="created_at:desc">Newest First (DESC)</option>
+            <option value="created_at:asc">Oldest First (ASC)</option>
+            <option value="selling_price:desc">Price: High to Low</option>
+            <option value="selling_price:asc">Price: Low to High</option>
+            <option value="stock_quantity:asc">Stock: Low to High</option>
+            <option value="name:asc">Name: A to Z</option>
           </select>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -520,33 +545,18 @@ export function ProductListPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="p-3 border-t bg-muted/20 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                Page {currentPage} of {totalPages} ({totalCount} total items)
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            itemName="products"
+          />
         </div>
       </div>
 

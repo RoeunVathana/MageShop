@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { Pagination } from '@/components/common/Pagination'
 import { couponService } from '@/services/coupon.service'
 import type { Coupon, CreateCouponPayload, UpdateCouponPayload } from '@/types/coupon.types'
 
@@ -55,6 +56,12 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'percentage' | 'fixed'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | '1' | '0'>('all')
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(1)
+  const [totalCount, setTotalCount] = useState<number>(0)
+  const [perPage, setPerPage] = useState<number>(10)
+  const [sortBy, setSortBy] = useState<string>('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   // Dialog State
@@ -91,12 +98,23 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
     setLoading(true)
     try {
       const res = await couponService.getCoupons({
-        search: search || undefined,
+        search: search.trim() || undefined,
         discount_type: typeFilter,
         is_active: statusFilter,
         seller_only: isSellerView,
+        page: currentPage,
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_direction: sortDirection,
       })
       setCoupons(res.data)
+      if (res.meta) {
+        setTotalPages(res.meta.last_page || 1)
+        setTotalCount(res.meta.total || res.data.length)
+      } else {
+        setTotalCount(res.data.length)
+        setTotalPages(Math.ceil(res.data.length / perPage) || 1)
+      }
     } catch (err: any) {
       toast({
         title: t('Error Loading Coupons', 'កំហុសក្នុងការទាញយកគូប៉ុង'),
@@ -110,10 +128,11 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
 
   useEffect(() => {
     fetchCoupons()
-  }, [typeFilter, statusFilter, isSellerView])
+  }, [currentPage, perPage, typeFilter, statusFilter, isSellerView, sortBy, sortDirection])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchCoupons()
   }
 
@@ -441,11 +460,32 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
                 </Button>
               </form>
 
-              <div className="flex items-center gap-2 overflow-x-auto">
+              <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+                {/* Sort Order Selector (Defaults to DESC / Newest First) */}
+                <select
+                  value={`${sortBy}:${sortDirection}`}
+                  onChange={(e) => {
+                    const [sb, sd] = e.target.value.split(':')
+                    setSortBy(sb)
+                    setSortDirection(sd as any)
+                    setCurrentPage(1)
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl text-xs bg-muted/40 border text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="id:desc">{t('Newest First (DESC)', 'ថ្មីបំផុតមុន (DESC)')}</option>
+                  <option value="id:asc">{t('Oldest First (ASC)', 'ចាស់បំផុតមុន (ASC)')}</option>
+                  <option value="discount_value:desc">{t('Highest Discount', 'បញ្ចុះតម្លៃខ្ពស់បំផុត')}</option>
+                  <option value="discount_value:asc">{t('Lowest Discount', 'បញ្ចុះតម្លៃទាបបំផុត')}</option>
+                  <option value="code:asc">{t('Code (A - Z)', 'តាមកូដ (A - Z)')}</option>
+                </select>
+
                 {/* Type Filter */}
                 <select
                   value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value as any)}
+                  onChange={(e) => {
+                    setTypeFilter(e.target.value as any)
+                    setCurrentPage(1)
+                  }}
                   className="px-2.5 py-1.5 rounded-xl text-xs bg-muted/40 border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="all">{t('All Types', 'គ្រប់ប្រភេទ')}</option>
@@ -456,7 +496,10 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
                 {/* Status Filter */}
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as any)
+                    setCurrentPage(1)
+                  }}
                   className="px-2.5 py-1.5 rounded-xl text-xs bg-muted/40 border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="all">{t('All Status', 'គ្រប់ស្ថានភាព')}</option>
@@ -677,6 +720,20 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
                 </table>
               </div>
             )}
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              perPage={perPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPerPageChange={(newPerPage) => {
+                setPerPage(newPerPage)
+                setCurrentPage(1)
+              }}
+              itemName={t('coupons', 'គូប៉ុង')}
+            />
           </CardContent>
         </Card>
       </div>

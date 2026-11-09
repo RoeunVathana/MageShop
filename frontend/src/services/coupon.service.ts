@@ -36,12 +36,21 @@ export const couponService = {
   /**
    * Fetch all coupons for Admin & Seller Management with filtering
    */
-  async getCoupons(params?: CouponFilterParams): Promise<{ data: Coupon[]; meta?: CouponMeta }> {
+  async getCoupons(params?: CouponFilterParams & {
+    page?: number
+    per_page?: number
+    sort_by?: string
+    sort_direction?: string
+  }): Promise<{ data: Coupon[]; meta?: CouponMeta }> {
     const query = new URLSearchParams()
     if (params?.search) query.append('search', params.search)
     if (params?.discount_type && params.discount_type !== 'all') query.append('discount_type', params.discount_type)
     if (params?.is_active && params.is_active !== 'all') query.append('is_active', params.is_active)
     if (params?.seller_only) query.append('seller_only', '1')
+    if (params?.page) query.append('page', String(params.page))
+    if (params?.per_page) query.append('per_page', String(params.per_page))
+    if (params?.sort_by) query.append('sort_by', params.sort_by)
+    if (params?.sort_direction) query.append('sort_direction', params.sort_direction)
 
     const qs = query.toString() ? `?${query.toString()}` : ''
     const res = await api.get<{ status: string; data: Coupon[]; meta?: CouponMeta }>(`/coupons/manage${qs}`)

@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { inventoryService } from '@/services/inventory.service'
 import { productService } from '@/services/product.service'
+import { Pagination } from '@/components/common/Pagination'
 import type { InventoryMovement } from '@/types/inventory.types'
 import type { Product } from '@/types/product.types'
 
@@ -33,6 +34,7 @@ export function InventoryHistoryPage() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
   const [totalCount, setTotalCount] = useState<number>(0)
+  const [perPage, setPerPage] = useState<number>(20)
 
   const fetchHistory = async () => {
     if (!productId) return
@@ -40,7 +42,7 @@ export function InventoryHistoryPage() {
     try {
       const [prodRes, moveRes] = await Promise.all([
         productService.getProduct(productId),
-        inventoryService.getMovements(productId, { page: currentPage, per_page: 20 }),
+        inventoryService.getMovements(productId, { page: currentPage, per_page: perPage }),
       ])
       setProduct(prodRes)
       setMovements(moveRes.data)
@@ -61,7 +63,7 @@ export function InventoryHistoryPage() {
 
   useEffect(() => {
     fetchHistory()
-  }, [productId, currentPage])
+  }, [productId, currentPage, perPage])
 
   const getMovementBadge = (type: string) => {
     const upper = type.toUpperCase()
@@ -293,33 +295,19 @@ export function InventoryHistoryPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="p-3 border-t bg-muted/20 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                Page {currentPage} of {totalPages} ({totalCount} total audit movements)
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="h-8 text-xs"
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 text-xs"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            perPageOptions={[10, 20, 50, 100]}
+            itemName="audit movements"
+          />
         </div>
       </div>
     </DashboardLayout>

@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { Pagination } from '@/components/common/Pagination'
 import {
   securityService,
   type ApiToken,
@@ -44,6 +45,10 @@ export function AdminSecurityPage() {
   const [tokens, setTokens] = useState<ApiToken[]>([])
   const [tokensLoading, setTokensLoading] = useState(false)
   const [tokenSearch, setTokenSearch] = useState('')
+  const [tokensPage, setTokensPage] = useState(1)
+  const [tokensTotalPages, setTokensTotalPages] = useState(1)
+  const [tokensTotalCount, setTokensTotalCount] = useState(0)
+  const [tokensPerPage, setTokensPerPage] = useState(10)
   const [isCreateTokenOpen, setIsCreateTokenOpen] = useState(false)
   const [newTokenName, setNewTokenName] = useState('')
   const [newTokenAbilities, setNewTokenAbilities] = useState<string[]>(['*'])
@@ -74,6 +79,10 @@ export function AdminSecurityPage() {
   const [users, setUsers] = useState<SecurityUser[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
   const [userSearch, setUserSearch] = useState('')
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersTotalPages, setUsersTotalPages] = useState(1)
+  const [usersTotalCount, setUsersTotalCount] = useState(0)
+  const [usersPerPage, setUsersPerPage] = useState(10)
   const [selectedUserForEmail, setSelectedUserForEmail] = useState<SecurityUser | null>(null)
   const [newEmailValue, setNewEmailValue] = useState('')
   const [savingEmail, setSavingEmail] = useState(false)
@@ -105,6 +114,10 @@ export function AdminSecurityPage() {
 
   const [sentOtps, setSentOtps] = useState<SentOtp[]>([])
   const [otpsLoading, setOtpsLoading] = useState(false)
+  const [otpsPage, setOtpsPage] = useState(1)
+  const [otpsTotalPages, setOtpsTotalPages] = useState(1)
+  const [otpsTotalCount, setOtpsTotalCount] = useState(0)
+  const [otpsPerPage, setOtpsPerPage] = useState(10)
   const [directOtpEmail, setDirectOtpEmail] = useState('')
   const [dispatchingDirectOtp, setDispatchingDirectOtp] = useState(false)
 
@@ -113,10 +126,23 @@ export function AdminSecurityPage() {
     setTokensLoading(true)
     try {
       const [tokensRes, tgRes] = await Promise.all([
-        securityService.getApiTokens(tokenSearch),
+        securityService.getApiTokens({
+          search: tokenSearch.trim() || undefined,
+          page: tokensPage,
+          per_page: tokensPerPage,
+        }),
         securityService.getTelegramSettings().catch(() => null),
       ])
-      if (tokensRes?.data) setTokens(tokensRes.data)
+      if (tokensRes?.data) {
+        setTokens(tokensRes.data)
+        if ((tokensRes as any)?.meta) {
+          setTokensTotalPages((tokensRes as any).meta.last_page)
+          setTokensTotalCount((tokensRes as any).meta.total)
+        } else {
+          setTokensTotalCount(tokensRes.data.length)
+          setTokensTotalPages(Math.ceil(tokensRes.data.length / tokensPerPage) || 1)
+        }
+      }
       if (tgRes?.data) {
         setTelegramSettings(tgRes.data)
         if (!testTelegramChatId && tgRes.data.telegram_admin_chat_id) {
@@ -193,8 +219,20 @@ export function AdminSecurityPage() {
   const fetchUsers = async () => {
     setUsersLoading(true)
     try {
-      const res = await securityService.getUsers({ search: userSearch })
-      if (res.data) setUsers(res.data)
+      const res = await securityService.getUsers({
+        search: userSearch.trim() || undefined,
+        page: usersPage,
+      })
+      if (res.data) {
+        setUsers(res.data)
+        if ((res as any)?.meta) {
+          setUsersTotalPages((res as any).meta.last_page)
+          setUsersTotalCount((res as any).meta.total)
+        } else {
+          setUsersTotalCount(res.data.length)
+          setUsersTotalPages(Math.ceil(res.data.length / usersPerPage) || 1)
+        }
+      }
     } catch (err: any) {
       toast({
         title: 'Error loading users',
@@ -213,10 +251,19 @@ export function AdminSecurityPage() {
     try {
       const [settingsRes, otpsRes] = await Promise.all([
         securityService.getEmailSettings(),
-        securityService.getSentOtps(),
+        securityService.getSentOtps({ page: otpsPage }),
       ])
       if (settingsRes.data) setEmailSettings(settingsRes.data)
-      if (otpsRes.data) setSentOtps(otpsRes.data)
+      if (otpsRes.data) {
+        setSentOtps(otpsRes.data)
+        if ((otpsRes as any)?.meta) {
+          setOtpsTotalPages((otpsRes as any).meta.last_page)
+          setOtpsTotalCount((otpsRes as any).meta.total)
+        } else {
+          setOtpsTotalCount(otpsRes.data.length)
+          setOtpsTotalPages(Math.ceil(otpsRes.data.length / otpsPerPage) || 1)
+        }
+      }
     } catch (err: any) {
       toast({
         title: 'Error loading email & OTP data',
@@ -233,7 +280,7 @@ export function AdminSecurityPage() {
     if (activeTab === 'tokens') fetchTokens()
     if (activeTab === 'users') fetchUsers()
     if (activeTab === 'email') fetchEmailData()
-  }, [activeTab])
+  }, [activeTab, tokensPage, tokensPerPage, usersPage, otpsPage])
 
   // Create Token Action
   const handleCreateToken = async (e: React.FormEvent) => {
@@ -956,6 +1003,20 @@ export function AdminSecurityPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* API Tokens Pagination */}
+                <Pagination
+                  currentPage={tokensPage}
+                  totalPages={tokensTotalPages}
+                  totalItems={tokensTotalCount}
+                  perPage={tokensPerPage}
+                  onPageChange={(p) => setTokensPage(p)}
+                  onPerPageChange={(newPerPage) => {
+                    setTokensPerPage(newPerPage)
+                    setTokensPage(1)
+                  }}
+                  itemName="API tokens"
+                />
               </CardContent>
             </Card>
           </div>
@@ -1109,6 +1170,20 @@ export function AdminSecurityPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Registered Users Pagination */}
+                <Pagination
+                  currentPage={usersPage}
+                  totalPages={usersTotalPages}
+                  totalItems={usersTotalCount}
+                  perPage={usersPerPage}
+                  onPageChange={(p) => setUsersPage(p)}
+                  onPerPageChange={(newPerPage) => {
+                    setUsersPerPage(newPerPage)
+                    setUsersPage(1)
+                  }}
+                  itemName="registered users"
+                />
               </CardContent>
             </Card>
           </div>
@@ -1384,6 +1459,20 @@ export function AdminSecurityPage() {
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Dispatched OTPs Pagination */}
+                    <Pagination
+                      currentPage={otpsPage}
+                      totalPages={otpsTotalPages}
+                      totalItems={otpsTotalCount}
+                      perPage={otpsPerPage}
+                      onPageChange={(p) => setOtpsPage(p)}
+                      onPerPageChange={(newPerPage) => {
+                        setOtpsPerPage(newPerPage)
+                        setOtpsPage(1)
+                      }}
+                      itemName="dispatched OTPs"
+                    />
                   </CardContent>
                 </Card>
               </div>

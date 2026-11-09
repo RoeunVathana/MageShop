@@ -50,5 +50,8 @@ export interface CouponMeta {
   total: number
   active_count: number
   inactive_count: number
+  current_page?: number
+  last_page?: number
+  per_page?: number
 }
 

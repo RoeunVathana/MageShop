@@ -25,6 +25,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { brandService } from '@/services/brand.service'
 import { mediaService } from '@/services/media.service'
+import { Pagination } from '@/components/common/Pagination'
 import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export function BrandListPage() {
@@ -33,6 +34,12 @@ export function BrandListPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(1)
+  const [totalCount, setTotalCount] = useState<number>(0)
+  const [perPage, setPerPage] = useState<number>(12)
+  const [sortBy, setSortBy] = useState<string>('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
@@ -58,9 +65,19 @@ export function BrandListPage() {
       const res = await brandService.getBrands({
         search: search.trim() || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
-        per_page: 100,
+        page: currentPage,
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_direction: sortDirection,
       })
       setBrands(res.data || [])
+      if (res.meta) {
+        setTotalPages(res.meta.last_page || 1)
+        setTotalCount(res.meta.total || (res.data?.length ?? 0))
+      } else {
+        setTotalPages(Math.ceil((res.data?.length ?? 0) / perPage) || 1)
+        setTotalCount(res.data?.length ?? 0)
+      }
     } catch (err: any) {
       toast({
         title: 'Error loading brands',
@@ -74,10 +91,11 @@ export function BrandListPage() {
 
   useEffect(() => {
     fetchBrands()
-  }, [statusFilter])
+  }, [currentPage, perPage, statusFilter, sortBy, sortDirection])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     fetchBrands()
   }
 
@@ -271,11 +289,32 @@ export function BrandListPage() {
             />
           </form>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {/* Sort Selector (Defaults to DESC / Newest First) */}
+            <select
+              value={`${sortBy}:${sortDirection}`}
+              onChange={(e) => {
+                const [sb, sd] = e.target.value.split(':')
+                setSortBy(sb)
+                setSortDirection(sd as any)
+                setCurrentPage(1)
+              }}
+              className="h-10 px-3 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-foreground"
+            >
+              <option value="id:desc">Newest First (DESC)</option>
+              <option value="id:asc">Oldest First (ASC)</option>
+              <option value="name:asc">Brand Name (A - Z)</option>
+              <option value="products_count:desc">Most Products</option>
+              <option value="sort_order:asc">Display Order</option>
+            </select>
+
             <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 p-1 bg-slate-50 dark:bg-slate-950">
               <button
                 type="button"
-                onClick={() => setStatusFilter('all')}
+                onClick={() => {
+                  setStatusFilter('all')
+                  setCurrentPage(1)
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'all'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
@@ -286,7 +325,10 @@ export function BrandListPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter('active')}
+                onClick={() => {
+                  setStatusFilter('active')
+                  setCurrentPage(1)
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'active'
                     ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
@@ -297,7 +339,10 @@ export function BrandListPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter('archived')}
+                onClick={() => {
+                  setStatusFilter('archived')
+                  setCurrentPage(1)
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'archived'
                     ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
@@ -461,6 +506,23 @@ export function BrandListPage() {
             })}
           </div>
         )}
+
+        {/* Brand Pagination Controls */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-card">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            perPageOptions={[12, 24, 48, 96]}
+            itemName="brands"
+          />
+        </div>
 
         {/* Modal: Create & Edit Brand */}
         {isModalOpen && (

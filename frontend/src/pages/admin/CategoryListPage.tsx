@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   FolderTree,
@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { categoryService } from '@/services/category.service'
+import { Pagination } from '@/components/common/Pagination'
 import type { Category } from '@/types/category.types'
 
 export function CategoryListPage() {
@@ -32,6 +33,10 @@ export function CategoryListPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
   const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({})
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [perPage, setPerPage] = useState<number>(10)
+  const [sortBy, setSortBy] = useState<string>('id')
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
 
   const fetchCategories = async () => {
     setLoading(true)
@@ -103,6 +108,30 @@ export function CategoryListPage() {
     )
     return matchesSelf || matchesChild
   })
+
+  // Sorted by DESC by default (Newest departments first)
+  const sortedCategories = useMemo(() => {
+    const list = [...filteredCategories]
+    list.sort((a, b) => {
+      let valA: any = a[sortBy as keyof Category] ?? a.id
+      let valB: any = b[sortBy as keyof Category] ?? b.id
+      if (sortBy === 'products_count') {
+        valA = a.products_count ?? 0
+        valB = b.products_count ?? 0
+      }
+      if (typeof valA === 'string') {
+        return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
+      }
+      return sortDirection === 'asc' ? valA - valB : valB - valA
+    })
+    return list
+  }, [filteredCategories, sortBy, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sortedCategories.length / perPage))
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * perPage
+    return sortedCategories.slice(start, start + perPage)
+  }, [sortedCategories, currentPage, perPage])
 
   return (
     <DashboardLayout
@@ -200,12 +229,33 @@ export function CategoryListPage() {
               type="text"
               placeholder="Search by department name or slug..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setCurrentPage(1)
+              }}
               className="pl-9 h-9 text-xs"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Sort By Selector (Defaults to DESC / Newest First) */}
+            <select
+              value={`${sortBy}:${sortDirection}`}
+              onChange={(e) => {
+                const [sb, sd] = e.target.value.split(':')
+                setSortBy(sb)
+                setSortDirection(sd as any)
+                setCurrentPage(1)
+              }}
+              className="h-9 px-3 rounded-md border border-input bg-background text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="id:desc">Newest First (DESC)</option>
+              <option value="id:asc">Oldest First (ASC)</option>
+              <option value="name:asc">Department Name (A - Z)</option>
+              <option value="products_count:desc">Most Products</option>
+              <option value="sort_order:asc">Display Order</option>
+            </select>
+
             <Button
               variant="outline"
               size="sm"
@@ -242,7 +292,7 @@ export function CategoryListPage() {
                       Loading universal category tree...
                     </td>
                   </tr>
-                ) : filteredCategories.length === 0 ? (
+                ) : sortedCategories.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       <FolderTree className="w-8 h-8 mx-auto mb-2 opacity-40" />
@@ -250,7 +300,7 @@ export function CategoryListPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCategories.map((cat) => {
+                  paginatedCategories.map((cat) => {
                     const hasChildren = Boolean(cat.children && cat.children.length > 0)
                     const isExpanded = Boolean(expandedIds[cat.id])
 
@@ -442,6 +492,21 @@ export function CategoryListPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Department Hierarchy Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedCategories.length}
+            perPage={perPage}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPerPageChange={(newPerPage) => {
+              setPerPage(newPerPage)
+              setCurrentPage(1)
+            }}
+            perPageOptions={[10, 20, 50]}
+            itemName="departments"
+          />
         </div>
       </div>
     </DashboardLayout>
