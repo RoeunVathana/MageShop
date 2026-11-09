@@ -20,6 +20,7 @@ import {
   Weight,
   Ruler,
   Check,
+  Gift,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -83,15 +84,21 @@ export function ProductDetailPage() {
     const itemTitle = selectedVariant
       ? `${product.name} (${selectedVariant.name})`
       : product.name
-    const itemPrice = selectedVariant ? selectedVariant.selling_price : product.selling_price
+    const basePrice = selectedVariant ? Number(selectedVariant.selling_price) : Number(product.selling_price)
+    const hasDiscount = Boolean(
+      product.discount_price &&
+      Number(product.discount_price) > 0 &&
+      Number(product.discount_price) < basePrice
+    )
+    const effItemPrice = hasDiscount ? Number(product.discount_price) : basePrice
 
     addToCart(
       {
         id: product.id,
         slug: product.slug || String(product.id),
         name: itemTitle,
-        price: itemPrice,
-        originalPrice: product.discount_price || undefined,
+        price: effItemPrice,
+        originalPrice: hasDiscount ? basePrice : undefined,
         image: activeImage || product.image_url || '',
         vendor: product.brand || 'TYUSHOP',
       },
@@ -108,12 +115,20 @@ export function ProductDetailPage() {
   const handleWishlist = () => {
     if (!product) return
     const liked = isFavorite(product.id)
+    const basePrice = Number(product.selling_price)
+    const hasDiscount = Boolean(
+      product.discount_price &&
+      Number(product.discount_price) > 0 &&
+      Number(product.discount_price) < basePrice
+    )
+    const effItemPrice = hasDiscount ? Number(product.discount_price) : basePrice
+
     toggleFavorite({
       id: product.id,
       slug: product.slug || String(product.id),
       name: product.name,
-      price: product.selling_price,
-      originalPrice: product.discount_price || undefined,
+      price: effItemPrice,
+      originalPrice: hasDiscount ? basePrice : undefined,
       image: activeImage || product.image_url || '',
       vendor: product.brand || 'TYUSHOP',
       category: product.category?.name || 'Universal',
@@ -256,24 +271,48 @@ export function ProductDetailPage() {
           </div>
 
           {/* Pricing Box */}
-          <div className="p-5 rounded-2xl bg-muted/40 border space-y-1">
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-black text-foreground">
-                {formatPrice(currentPrice)}
-              </span>
-              {product.discount_price && (
-                <span className="text-sm text-muted-foreground line-through">
-                  {formatPrice(product.discount_price)}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t(
-                'Official catalog pricing. All taxes included where applicable.',
-                'តម្លៃស្តង់ដារផ្លូវការ។ រួមបញ្ចូលពន្ធអាករតាមច្បាប់កំណត់។'
-              )}
-            </p>
-          </div>
+          {(() => {
+            const hasDiscount = Boolean(
+              product.discount_price &&
+              Number(product.discount_price) > 0 &&
+              Number(product.discount_price) < currentPrice
+            )
+            const effPrice = hasDiscount ? Number(product.discount_price) : currentPrice
+            const savings = hasDiscount ? currentPrice - effPrice : 0
+            const savingsPercent = hasDiscount && currentPrice > 0 ? Math.round((savings / currentPrice) * 100) : 0
+
+            return (
+              <div className="p-5 rounded-2xl bg-muted/40 border space-y-2">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="text-3xl font-black text-foreground">
+                    {formatPrice(effPrice)}
+                  </span>
+                  {hasDiscount && (
+                    <>
+                      <span className="text-base text-muted-foreground line-through font-mono">
+                        {formatPrice(currentPrice)}
+                      </span>
+                      <Badge className="bg-rose-500 text-white font-bold text-xs py-0.5 px-2">
+                        {savingsPercent}% OFF ({t('Save', 'ចំណេញ')} {formatPrice(savings)})
+                      </Badge>
+                    </>
+                  )}
+                  {effPrice <= 30 && (
+                    <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-600 gap-1 font-bold">
+                      <Gift className="w-3 h-3 text-amber-500" />
+                      {t('100 Pts Free Eligible', 'ប្តូរយកឥតគិតថ្លៃ (១០០ ពិន្ទុ)')}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    'Official catalog pricing. All taxes included where applicable.',
+                    'តម្លៃស្តង់ដារផ្លូវការ។ រួមបញ្ចូលពន្ធអាករតាមច្បាប់កំណត់។'
+                  )}
+                </p>
+              </div>
+            )
+          })()}
 
           {/* Variable Product Options Selector */}
           {product.variants && product.variants.length > 0 && (

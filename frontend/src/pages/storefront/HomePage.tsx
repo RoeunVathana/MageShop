@@ -224,7 +224,13 @@ export function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
             {featuredProducts.map((p) => {
               const liked = isFavorite(p.id)
-              const isRewardEligible = p.selling_price <= 30
+              const hasDiscount = Boolean(
+                p.discount_price &&
+                Number(p.discount_price) > 0 &&
+                Number(p.discount_price) < Number(p.selling_price)
+              )
+              const effPrice = hasDiscount ? Number(p.discount_price) : Number(p.selling_price)
+              const isRewardEligible = effPrice <= 30
 
               return (
                 <Card key={p.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between rounded-2xl border">
@@ -263,8 +269,8 @@ export function HomePage() {
                             id: p.id,
                             slug: p.slug || String(p.id),
                             name: p.name,
-                            price: p.selling_price,
-                            originalPrice: p.discount_price || undefined,
+                            price: effPrice,
+                            originalPrice: hasDiscount ? Number(p.selling_price) : undefined,
                             image: p.image_url || '',
                             vendor: p.brand || 'TYUSHOP',
                             category: p.category?.name || 'Universal',
@@ -300,9 +306,21 @@ export function HomePage() {
                       </Link>
 
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-lg font-black text-foreground">
-                          {formatPrice(p.selling_price)}
-                        </span>
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-lg font-black text-foreground">
+                            {formatPrice(effPrice)}
+                          </span>
+                          {hasDiscount && (
+                            <>
+                              <span className="text-xs text-muted-foreground line-through font-mono">
+                                {formatPrice(p.selling_price)}
+                              </span>
+                              <span className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded">
+                                -{Math.round((1 - effPrice / Number(p.selling_price)) * 100)}%
+                              </span>
+                            </>
+                          )}
+                        </div>
                         <span className="text-[11px] text-muted-foreground font-mono">
                           {p.stock_quantity > 0
                             ? `${p.stock_quantity} ${t('in stock', 'មានក្នុងស្តុក')}`
@@ -322,8 +340,8 @@ export function HomePage() {
                             id: p.id,
                             slug: p.slug || String(p.id),
                             name: p.name,
-                            price: p.selling_price,
-                            originalPrice: p.discount_price || undefined,
+                            price: effPrice,
+                            originalPrice: hasDiscount ? Number(p.selling_price) : undefined,
                             image: p.image_url || '',
                             vendor: p.brand || 'TYUSHOP',
                           },

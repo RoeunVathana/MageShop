@@ -115,10 +115,12 @@ export interface CreateProductPayload {
   name: string
   sku: string
   brand?: string
+  brand_id?: number | null
   product_type?: ProductType
   description?: string
   selling_price: number
   cost_price?: number
+  discount_price?: number | null
   currency?: string
   category_id?: number
   category_ids?: number[]
@@ -127,7 +129,13 @@ export interface CreateProductPayload {
   weight?: number
   dimensions?: Record<string, any>
   status?: ProductStatus
+  is_active?: boolean
+  is_featured?: boolean
+  is_new_arrival?: boolean
+  is_best_seller?: boolean
+  is_flash_sale?: boolean
   image_url?: string
+  gallery_urls?: string[]
   attributes?: Array<{
     attribute_id?: number
     code?: string
@@ -153,10 +161,12 @@ export interface UpdateProductPayload {
   name?: string
   sku?: string
   brand?: string
+  brand_id?: number | null
   product_type?: ProductType
   description?: string
   selling_price?: number
   cost_price?: number
+  discount_price?: number | null
   currency?: string
   category_id?: number
   category_ids?: number[]
@@ -164,7 +174,13 @@ export interface UpdateProductPayload {
   weight?: number
   dimensions?: Record<string, any>
   status?: ProductStatus
+  is_active?: boolean
+  is_featured?: boolean
+  is_new_arrival?: boolean
+  is_best_seller?: boolean
+  is_flash_sale?: boolean
   image_url?: string
+  gallery_urls?: string[]
   attributes?: Array<{
     attribute_id?: number
     code?: string

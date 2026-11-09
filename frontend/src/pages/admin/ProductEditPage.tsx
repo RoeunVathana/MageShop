@@ -46,6 +46,7 @@ const productEditSchema = z.object({
   product_type: z.enum(['simple', 'variable', 'digital', 'bundle']).default('simple'),
   description: z.string().optional(),
   selling_price: z.coerce.number().positive('Selling price must be greater than $0'),
+  discount_price: z.coerce.number().min(0, 'Discount price cannot be negative').optional().nullable(),
   cost_price: z.coerce.number().min(0, 'Cost price cannot be negative').optional(),
   category_id: z.coerce.number().optional(),
   low_stock_threshold: z.coerce.number().int().min(0, 'Threshold cannot be negative').default(5),
@@ -97,9 +98,14 @@ export function ProductEditPage() {
   const selectedCategoryId = watch('category_id')
   const selectedProductType = watch('product_type')
   const sellingPrice = watch('selling_price') || 0
+  const rawDiscountPrice = watch('discount_price')
+  const discountPrice = rawDiscountPrice !== undefined && rawDiscountPrice !== null && !isNaN(Number(rawDiscountPrice)) && Number(rawDiscountPrice) > 0 ? Number(rawDiscountPrice) : null
   const costPrice = watch('cost_price') || 0
-  const grossProfit = sellingPrice - costPrice
-  const marginPercent = sellingPrice > 0 ? ((grossProfit / sellingPrice) * 100).toFixed(1) : '0'
+
+  const hasDiscount = discountPrice !== null && discountPrice < sellingPrice
+  const customerEffectivePrice = hasDiscount ? discountPrice : sellingPrice
+  const grossProfit = customerEffectivePrice - costPrice
+  const marginPercent = customerEffectivePrice > 0 ? ((grossProfit / customerEffectivePrice) * 100).toFixed(1) : '0'
 
   useEffect(() => {
     if (!id) return
@@ -121,6 +127,7 @@ export function ProductEditPage() {
           product_type: (prod.product_type as any) || 'simple',
           description: prod.description || '',
           selling_price: prod.selling_price,
+          discount_price: prod.discount_price ?? undefined,
           cost_price: prod.cost_price ?? undefined,
           category_id: prod.category?.id,
           low_stock_threshold: prod.low_stock_threshold,
@@ -326,6 +333,7 @@ export function ProductEditPage() {
         product_type: data.product_type,
         description: data.description?.trim(),
         selling_price: Number(data.selling_price),
+        discount_price: data.discount_price !== undefined && data.discount_price !== null && Number(data.discount_price) > 0 ? Number(data.discount_price) : null,
         cost_price: data.cost_price ? Number(data.cost_price) : undefined,
         category_id: data.category_id ? Number(data.category_id) : undefined,
         low_stock_threshold: Number(data.low_stock_threshold || 5),
@@ -631,19 +639,31 @@ export function ProductEditPage() {
             </Card>
           )}
 
-          {/* Pricing & Profit Margin */}
+          {/* Pricing & Customer Economics */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                Base Pricing & Economics
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  Base Pricing & Customer Offers
+                </span>
+                {customerEffectivePrice <= 30 && customerEffectivePrice > 0 && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">
+                    <Sparkles className="w-3 h-3 mr-1 text-amber-500" />
+                    100-Pt Free Gift Eligible (≤$30)
+                  </Badge>
+                )}
               </CardTitle>
+              <CardDescription className="text-xs">
+                Manage the regular catalog price and promotional customer sale price.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">
-                    Selling Price (USD) <span className="text-destructive">*</span>
+                  <label className="font-semibold text-foreground text-xs flex items-center justify-between">
+                    <span>Selling Price (USD) <span className="text-destructive">*</span></span>
+                    <span className="text-[10px] text-muted-foreground font-normal">Regular</span>
                   </label>
                   <Input
                     type="number"
@@ -658,8 +678,29 @@ export function ProductEditPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">
-                    Cost Price / Unit COGS (USD)
+                  <label className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" /> Customer Sale Price (USD)
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-normal">Optional</span>
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Leave empty for regular price"
+                    {...register('discount_price')}
+                    className="h-9 text-xs font-mono font-bold border-emerald-500/30 focus-visible:border-emerald-500"
+                  />
+                  {errors.discount_price && (
+                    <p className="text-destructive text-[11px]">{errors.discount_price.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-foreground text-xs flex items-center justify-between">
+                    <span>Cost Price / COGS (USD)</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">Internal</span>
                   </label>
                   <Input
                     type="number"
@@ -674,26 +715,71 @@ export function ProductEditPage() {
                 </div>
               </div>
 
-              {sellingPrice > 0 && costPrice > 0 && (
-                <div className="p-3 bg-muted/40 rounded-lg border grid grid-cols-3 gap-2 text-center text-xs">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Gross Unit Profit</span>
-                    <span className="font-bold text-sm text-emerald-600">
-                      ${grossProfit.toFixed(2)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Gross Margin</span>
-                    <span className="font-bold text-sm text-purple-600">{marginPercent}%</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Markup</span>
-                    <span className="font-bold text-sm">
-                      {(((grossProfit / costPrice) * 100) || 0).toFixed(1)}%
-                    </span>
-                  </div>
+              {/* Quick Discount Shortcuts */}
+              {sellingPrice > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[11px] text-muted-foreground font-semibold">Discount Shortcuts:</span>
+                  {[5, 10, 15, 20, 25, 30, 50].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => {
+                        const calculated = Math.round(sellingPrice * (1 - pct / 100) * 100) / 100
+                        setValue('discount_price', calculated, { shouldDirty: true })
+                      }}
+                      className="px-2 py-0.5 rounded text-[11px] border bg-background hover:bg-muted font-bold transition-colors"
+                    >
+                      {pct}% OFF
+                    </button>
+                  ))}
+                  {discountPrice && (
+                    <button
+                      type="button"
+                      onClick={() => setValue('discount_price', null as any, { shouldDirty: true })}
+                      className="px-2 py-0.5 rounded text-[11px] text-destructive hover:bg-destructive/10 font-bold transition-colors ml-auto"
+                    >
+                      Remove Discount
+                    </button>
+                  )}
                 </div>
               )}
+
+              {/* Live Customer Preview & Profit Strip */}
+              <div className="p-3 bg-muted/40 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="text-muted-foreground block text-[11px]">Customer Sees on Storefront:</span>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                      ${customerEffectivePrice.toFixed(2)}
+                    </span>
+                    {hasDiscount && (
+                      <>
+                        <span className="text-xs text-muted-foreground line-through font-mono">
+                          ${sellingPrice.toFixed(2)}
+                        </span>
+                        <Badge className="bg-rose-500 text-white text-[10px] py-0 px-1.5 font-bold">
+                          Save ${(sellingPrice - (discountPrice as number)).toFixed(2)} ({Math.round(((sellingPrice - (discountPrice as number)) / sellingPrice) * 100)}% OFF)
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {costPrice > 0 && (
+                  <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l sm:pl-4 pt-2 sm:pt-0">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">Est. Profit</span>
+                      <span className={`font-mono font-bold text-xs ${grossProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        ${grossProfit.toFixed(2)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">Margin</span>
+                      <span className="font-mono font-bold text-xs text-purple-600">{marginPercent}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 

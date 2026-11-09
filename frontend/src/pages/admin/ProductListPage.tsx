@@ -27,7 +27,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { StockAdjustmentDialog } from '@/components/admin/StockAdjustmentDialog'
+import { ProductPriceDialog } from '@/components/admin/ProductPriceDialog'
 import type { Product, ProductStatus } from '@/types/product.types'
+import { DollarSign, Tag, Sparkles } from 'lucide-react'
 
 export function ProductListPage() {
   const { toast } = useToast()
@@ -45,6 +47,10 @@ export function ProductListPage() {
   // Quick Adjustment Dialog State
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null)
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState<boolean>(false)
+
+  // Quick Price & Discount Dialog State
+  const [pricingProduct, setPricingProduct] = useState<Product | null>(null)
+  const [isPriceDialogOpen, setIsPriceDialogOpen] = useState<boolean>(false)
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -380,8 +386,37 @@ export function ProductListPage() {
                             <span className="text-muted-foreground text-[11px]">Uncategorized</span>
                           )}
                         </td>
-                        <td className="p-3 font-bold text-foreground">
-                          ${Number(p.selling_price).toFixed(2)}
+                        <td className="p-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPricingProduct(p)
+                              setIsPriceDialogOpen(true)
+                            }}
+                            className="text-left group/price hover:opacity-80 transition-opacity cursor-pointer"
+                            title="Click to manage price, discounts, and customer offer"
+                          >
+                            {p.discount_price !== null && p.discount_price !== undefined && Number(p.discount_price) > 0 && Number(p.discount_price) < Number(p.selling_price) ? (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                                    ${Number(p.discount_price).toFixed(2)}
+                                  </span>
+                                  <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-[9px] py-0 px-1 font-bold">
+                                    -{Math.round((1 - Number(p.discount_price) / Number(p.selling_price)) * 100)}%
+                                  </Badge>
+                                </div>
+                                <div className="text-[11px] text-muted-foreground line-through font-mono">
+                                  ${Number(p.selling_price).toFixed(2)}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="font-bold text-foreground flex items-center gap-1">
+                                <span>${Number(p.selling_price).toFixed(2)}</span>
+                                <DollarSign className="w-3 h-3 text-muted-foreground opacity-0 group-hover/price:opacity-100 transition-opacity" />
+                              </div>
+                            )}
+                          </button>
                         </td>
                         <td className="p-3 text-muted-foreground font-mono">
                           {p.cost_price !== null && p.cost_price !== undefined ? (
@@ -422,6 +457,20 @@ export function ProductListPage() {
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Manage Price & Discounts Shortcut */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
+                              title="Manage Price & Customer Discounts"
+                              onClick={() => {
+                                setPricingProduct(p)
+                                setIsPriceDialogOpen(true)
+                              }}
+                            >
+                              <DollarSign className="w-3.5 h-3.5" />
+                            </Button>
+
                             {/* Stock Adjust Shortcut */}
                             <Button
                               variant="ghost"
@@ -510,6 +559,22 @@ export function ProductListPage() {
         }}
         product={adjustingProduct}
         onSuccess={() => {
+          fetchProducts()
+        }}
+      />
+
+      {/* Quick Price & Customer Promotion Dialog */}
+      <ProductPriceDialog
+        isOpen={isPriceDialogOpen}
+        onClose={() => {
+          setIsPriceDialogOpen(false)
+          setPricingProduct(null)
+        }}
+        product={pricingProduct}
+        onSuccess={(updated) => {
+          setProducts((prev) =>
+            prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+          )
           fetchProducts()
         }}
       />

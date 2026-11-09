@@ -614,16 +614,31 @@ export function ProductsPage() {
                           {p.name}
                         </Link>
 
-                        <div className="flex items-baseline gap-2 pt-1">
-                          <span className="text-lg font-black text-foreground">
-                            {formatPrice(p.selling_price)}
-                          </span>
-                          {p.discount_price && (
-                            <span className="text-xs text-muted-foreground line-through">
-                              {formatPrice(p.discount_price)}
-                            </span>
-                          )}
-                        </div>
+                        {(() => {
+                          const hasDiscount = Boolean(
+                            p.discount_price &&
+                            Number(p.discount_price) > 0 &&
+                            Number(p.discount_price) < Number(p.selling_price)
+                          )
+                          const effPrice = hasDiscount ? Number(p.discount_price) : Number(p.selling_price)
+                          return (
+                            <div className="flex items-baseline gap-2 pt-1 flex-wrap">
+                              <span className="text-lg font-black text-foreground">
+                                {formatPrice(effPrice)}
+                              </span>
+                              {hasDiscount && (
+                                <>
+                                  <span className="text-xs text-muted-foreground line-through font-mono">
+                                    {formatPrice(p.selling_price)}
+                                  </span>
+                                  <span className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded">
+                                    -{Math.round((1 - effPrice / Number(p.selling_price)) * 100)}%
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </CardContent>
                     </div>
 

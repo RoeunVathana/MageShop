@@ -68,6 +68,7 @@ interface ShopEngagementContextType {
   freeRewardItem: FreeRewardProduct | null
   setFreeRewardItem: (item: FreeRewardProduct | null) => void
   eligibleFreeProducts: FreeRewardProduct[]
+  refreshEligibleFreeProducts: () => Promise<void>
 
   // Discount Coupons
   appliedCoupon: AppliedCoupon | null
@@ -453,18 +454,20 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
   }, [recentOrders])
 
   // Fetch live eligible free reward products (<= $30) from backend
+  const refreshEligibleFreeProducts = async () => {
+    try {
+      const res = await api.get<any>(`/loyalty/summary?guest_points=${loyaltyPoints}`)
+      if (res?.data?.eligible_free_products?.length > 0) {
+        setEligibleFreeProducts(res.data.eligible_free_products)
+      }
+    } catch {
+      // Keep fallback eligible products
+    }
+  }
+
   useEffect(() => {
-    api
-      .get<any>(`/loyalty/summary?guest_points=${loyaltyPoints}`)
-      .then((res) => {
-        if (res?.data?.eligible_free_products?.length > 0) {
-          setEligibleFreeProducts(res.data.eligible_free_products)
-        }
-      })
-      .catch(() => {
-        // Keep fallback eligible products
-      })
-  }, [])
+    refreshEligibleFreeProducts()
+  }, [loyaltyPoints])
 
   const addToCart = (item: Omit<CartItem, 'quantity'>, qty = 1) => {
     setCartItems((prev) => {
@@ -545,6 +548,7 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         freeRewardItem,
         setFreeRewardItem,
         eligibleFreeProducts,
+        refreshEligibleFreeProducts,
         appliedCoupon,
         setAppliedCoupon,
         recentOrders,

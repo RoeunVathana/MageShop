@@ -34,14 +34,18 @@ class CommerceEngagementController extends Controller
             ->orderBy('discount_value', 'desc')
             ->get();
 
+        $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
+        $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
+        $pointsPerPurchase = (int) StoreSetting::get('loyalty_points_per_purchase', self::POINTS_PER_PURCHASE);
+
         return response()->json([
             'status' => 'ok',
             'data' => $coupons,
             'loyalty_rules' => [
-                'points_per_purchase' => self::POINTS_PER_PURCHASE,
-                'points_for_free_item' => self::POINTS_FOR_FREE_ITEM,
-                'free_item_max_price' => self::FREE_ITEM_MAX_PRICE,
-                'description' => 'Earn 5 points on every purchase! Collect 100 points to redeem any item priced under $20–$30 for FREE.',
+                'points_per_purchase' => $pointsPerPurchase,
+                'points_for_free_item' => $pointsForFreeItem,
+                'free_item_max_price' => $freeItemMaxPrice,
+                'description' => "Earn {$pointsPerPurchase} points on every purchase! Collect {$pointsForFreeItem} points to redeem any item priced up to \${$freeItemMaxPrice} for FREE.",
             ],
         ]);
     }
@@ -156,34 +160,43 @@ class CommerceEngagementController extends Controller
         $user = $request->user('sanctum');
         $points = $user ? (int) ($user->loyalty_points ?? 0) : (int) $request->query('guest_points', 0);
 
+        $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
+        $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
+        $pointsPerPurchase = (int) StoreSetting::get('loyalty_points_per_purchase', self::POINTS_PER_PURCHASE);
+
         $eligibleProducts = Product::query()
-            ->where(function ($q) {
-                $q->where('price', '<=', self::FREE_ITEM_MAX_PRICE)
-                    ->orWhere(function ($q2) {
-                        $q2->whereNotNull('discount_price')
-                            ->where('discount_price', '<=', self::FREE_ITEM_MAX_PRICE);
-                    });
+            ->where(function ($q) use ($freeItemMaxPrice) {
+                $q->where(function ($sub) use ($freeItemMaxPrice) {
+                    $sub->where('selling_price', '<=', $freeItemMaxPrice)
+                        ->orWhere('price', '<=', $freeItemMaxPrice);
+                })
+                ->orWhere(function ($q2) use ($freeItemMaxPrice) {
+                    $q2->whereNotNull('discount_price')
+                        ->where('discount_price', '<=', $freeItemMaxPrice);
+                });
             })
-            ->orderBy('price', 'asc')
+            ->where('status', '!=', 'archived')
+            ->orderBy('selling_price', 'asc')
             ->limit(24)
             ->get()
-            ->map(function (Product $p) {
-                $effectivePrice = ($p->discount_price !== null && (float) $p->discount_price > 0)
+            ->map(function (Product $p) use ($freeItemMaxPrice, $pointsForFreeItem) {
+                $basePrice = (float) ($p->selling_price ?? $p->price ?? 0);
+                $effectivePrice = ($p->discount_price !== null && (float) $p->discount_price > 0 && (float) $p->discount_price < $basePrice)
                     ? (float) $p->discount_price
-                    : (float) $p->price;
+                    : $basePrice;
 
                 return [
                     'id' => $p->id,
                     'name' => $p->name,
                     'slug' => $p->slug,
                     'sku' => $p->sku,
-                    'price' => (float) $p->price,
+                    'price' => $basePrice,
                     'discount_price' => $p->discount_price !== null ? (float) $p->discount_price : null,
                     'effective_price' => $effectivePrice,
                     'image_url' => $p->image_url,
-                    'stock_quantity' => (int) $p->stock_quantity,
-                    'points_cost' => self::POINTS_FOR_FREE_ITEM,
-                    'is_eligible_free' => $effectivePrice <= self::FREE_ITEM_MAX_PRICE,
+                    'stock_quantity' => (int) ($p->available_stock ?? $p->stock_quantity ?? 0),
+                    'points_cost' => $pointsForFreeItem,
+                    'is_eligible_free' => $effectivePrice <= $freeItemMaxPrice,
                 ];
             });
 
@@ -200,12 +213,12 @@ class CommerceEngagementController extends Controller
             'status' => 'ok',
             'data' => [
                 'loyalty_points' => $points,
-                'can_redeem_free_item' => $points >= self::POINTS_FOR_FREE_ITEM,
-                'points_needed_for_next_free_item' => max(0, self::POINTS_FOR_FREE_ITEM - ($points % self::POINTS_FOR_FREE_ITEM)),
+                'can_redeem_free_item' => $points >= $pointsForFreeItem,
+                'points_needed_for_next_free_item' => max(0, $pointsForFreeItem - ($points % $pointsForFreeItem)),
                 'rules' => [
-                    'points_per_purchase' => self::POINTS_PER_PURCHASE,
-                    'points_for_free_item' => self::POINTS_FOR_FREE_ITEM,
-                    'free_item_max_price' => self::FREE_ITEM_MAX_PRICE,
+                    'points_per_purchase' => $pointsPerPurchase,
+                    'points_for_free_item' => $pointsForFreeItem,
+                    'free_item_max_price' => $freeItemMaxPrice,
                 ],
                 'eligible_free_products' => $eligibleProducts,
                 'transactions' => $transactions,
@@ -272,7 +285,7 @@ class CommerceEngagementController extends Controller
             }
         }
 
-        // 2. Check 100-Point Free Item Redemption (must be <= $30.00)
+        // 2. Check Loyalty Free Item Redemption
         $pointsRedeemed = 0;
         $freeProduct = null;
         if (! empty($validated['redeem_free_product_id'])) {
@@ -284,25 +297,29 @@ class CommerceEngagementController extends Controller
                 ], 422);
             }
 
-            $effectivePrice = ($freeProduct->discount_price !== null && (float) $freeProduct->discount_price > 0)
+            $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
+            $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
+
+            $basePrice = (float) ($freeProduct->selling_price ?? $freeProduct->price ?? 0);
+            $effectivePrice = ($freeProduct->discount_price !== null && (float) $freeProduct->discount_price > 0 && (float) $freeProduct->discount_price < $basePrice)
                 ? (float) $freeProduct->discount_price
-                : (float) $freeProduct->price;
+                : $basePrice;
 
-            if ($effectivePrice > self::FREE_ITEM_MAX_PRICE) {
+            if ($effectivePrice > $freeItemMaxPrice) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => '100-Point Free Item redemption is only eligible for products priced under $20–$30 (max $30.00).',
+                    'message' => "Loyalty Free Item redemption is only eligible for products priced up to \${$freeItemMaxPrice}.",
                 ], 422);
             }
 
-            if ($availablePoints < self::POINTS_FOR_FREE_ITEM) {
+            if ($availablePoints < $pointsForFreeItem) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'You need at least 100 loyalty points to redeem a free item. Current points: '.$availablePoints,
+                    'message' => "You need at least {$pointsForFreeItem} loyalty points to redeem a free item. Current points: ".$availablePoints,
                 ], 422);
             }
 
-            $pointsRedeemed = self::POINTS_FOR_FREE_ITEM;
+            $pointsRedeemed = $pointsForFreeItem;
         }
 
         // 3. Dynamic Delivery Fee Calculation based on Admin StoreSettings

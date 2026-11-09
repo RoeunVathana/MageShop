@@ -46,6 +46,8 @@ class StoreSettingsController extends Controller
             'tax_id',
             'telegram_bot_username',
             'telegram_support_contact',
+            'loyalty_free_item_max_price',
+            'loyalty_points_for_free_item',
         ];
 
         $publicSettings = array_intersect_key($all, array_flip($publicKeys));
@@ -164,6 +166,8 @@ class StoreSettingsController extends Controller
             'google_client_id' => 'nullable|string|max:255',
             'google_client_secret' => 'nullable|string|max:255',
             'google_auth_enabled' => 'nullable|string|max:10',
+            'loyalty_free_item_max_price' => 'nullable|numeric|min:1|max:500',
+            'loyalty_points_for_free_item' => 'nullable|integer|min:1|max:1000',
         ]);
 
         foreach ($validated as $key => $value) {

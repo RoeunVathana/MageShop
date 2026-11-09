@@ -187,6 +187,7 @@ export function CartPage() {
     freeRewardItem,
     setFreeRewardItem,
     eligibleFreeProducts,
+    refreshEligibleFreeProducts,
     appliedCoupon,
     setAppliedCoupon,
     addRecentOrder,
@@ -241,6 +242,7 @@ export function CartPage() {
   const [selectedDeliveryMethodId, setSelectedDeliveryMethodId] = useState<string>('standard_express')
 
   useEffect(() => {
+    refreshEligibleFreeProducts?.()
     let mounted = true
     deliveryService
       .getSettings()
