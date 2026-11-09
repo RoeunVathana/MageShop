@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -127,6 +128,9 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone_number' => $user->phone_number,
+                    'avatar_url' => $user->avatar_url,
+                    'address' => $user->address,
+                    'loyalty_points' => $user->loyalty_points ?? 0,
                     'status' => $user->status,
                     'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->get(),
                 ],
@@ -228,11 +232,186 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone_number' => $user->phone_number,
+                    'avatar_url' => $user->avatar_url,
+                    'address' => $user->address,
+                    'loyalty_points' => $user->loyalty_points ?? 0,
                     'status' => $user->status,
                     'email_verified_at' => $user->email_verified_at,
                     'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->with('permissions:permissions.id,permissions.name,permissions.slug')->get(),
                 ],
             ],
+        ], 200);
+    }
+
+    /**
+     * Update the authenticated user's own profile (Available for ALL users, admin, sellers, customers).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'phone_number' => ['nullable', 'string', 'max:50', 'unique:users,phone_number,'.$user->id],
+            'avatar_url' => ['nullable', 'string', 'max:2048'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'current_password' => ['nullable', 'string', 'required_with:new_password'],
+            'new_password' => ['nullable', 'string', 'min:8'],
+        ]);
+
+        // If user wants to change their password
+        if (! empty($validated['new_password'])) {
+            if (empty($validated['current_password']) || ! Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Current password is incorrect.',
+                    'errors' => [
+                        'current_password' => ['The provided current password does not match your account password.'],
+                    ],
+                ], 422);
+            }
+
+            $user->password = Hash::make($validated['new_password']);
+        }
+
+        $user->name = trim($validated['name']);
+        $user->email = strtolower(trim($validated['email']));
+        if (array_key_exists('phone_number', $validated)) {
+            $user->phone_number = $validated['phone_number'] ? trim($validated['phone_number']) : null;
+        }
+        if (array_key_exists('avatar_url', $validated)) {
+            $user->avatar_url = $validated['avatar_url'] ? trim($validated['avatar_url']) : null;
+        }
+        if (array_key_exists('address', $validated)) {
+            $user->address = $validated['address'] ? trim($validated['address']) : null;
+        }
+
+        $user->save();
+
+        SecurityLogService::log('USER_SELF_PROFILE_UPDATED', $user->id, [
+            'name' => $user->name,
+            'email' => $user->email,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profile updated successfully.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'avatar_url' => $user->avatar_url,
+                    'address' => $user->address,
+                    'loyalty_points' => $user->loyalty_points ?? 0,
+                    'status' => $user->status,
+                    'email_verified_at' => $user->email_verified_at,
+                    'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->with('permissions:permissions.id,permissions.name,permissions.slug')->get(),
+                ],
+            ],
+        ], 200);
+    }
+
+    /**
+     * Upload an avatar image for the authenticated user.
+     */
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $request->validate([
+            'avatar' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp,gif', 'max:5120'], // 5MB max
+        ]);
+
+        $file = $request->file('avatar');
+        $ext = strtolower($file->getClientOriginalExtension() ?: ($file->guessExtension() ?? 'jpg'));
+        $filename = 'avatar_' . $user->id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $key = 'avatars/' . $filename;
+
+        $disk = config('filesystems.disks.s3.key') ? 's3' : config('filesystems.default', 'public');
+        $stream = fopen($file->getRealPath(), 'r');
+        Storage::disk($disk)->put($key, $stream);
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        $url = url("/api/v1/media/{$key}");
+        if ($disk === 's3') {
+            $url = Storage::disk('s3')->temporaryUrl($key, now()->addDays(7));
+        }
+
+        $user->avatar_url = $url;
+        $user->save();
+
+        SecurityLogService::log('USER_AVATAR_UPLOADED', $user->id, [
+            'avatar_url' => $url,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Avatar photo uploaded successfully.',
+            'data' => [
+                'avatar_url' => $url,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'avatar_url' => $user->avatar_url,
+                    'address' => $user->address,
+                    'loyalty_points' => $user->loyalty_points ?? 0,
+                    'status' => $user->status,
+                    'roles' => $user->roles()->select('roles.id', 'roles.name', 'roles.slug')->get(),
+                ],
+            ],
+        ], 200);
+    }
+
+    /**
+     * Change password for authenticated user.
+     */
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (! Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Current password is incorrect.',
+                'errors' => [
+                    'current_password' => ['The provided current password does not match.'],
+                ],
+            ], 422);
+        }
+
+        $user->password = Hash::make($validated['new_password']);
+        $user->save();
+
+        SecurityLogService::log('USER_PASSWORD_CHANGED', $user->id);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Password updated successfully.',
         ], 200);
     }
 

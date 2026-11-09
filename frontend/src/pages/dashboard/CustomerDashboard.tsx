@@ -32,6 +32,7 @@ import { api } from '@/lib/api'
 const customerNav: NavItem[] = [
   { label: 'Overview', href: '/dashboard/customer', icon: ShoppingBag },
   { label: 'My Orders', href: '/dashboard/customer/orders', icon: Package, badge: 'Track GPS' },
+  { label: 'Profile Settings', href: '/profile', icon: UserIcon, badge: 'Edit' },
   { label: 'Wishlist', href: '/wishlist', icon: Heart },
   { label: 'Saved Addresses', href: '/dashboard/customer/addresses', icon: MapPin },
   { label: 'Payment Methods', href: '/dashboard/customer/payments', icon: CreditCard },

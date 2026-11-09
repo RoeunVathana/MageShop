@@ -15,6 +15,16 @@ export interface RegisterPayload {
   phone_number?: string
 }
 
+export interface UpdateProfilePayload {
+  name: string
+  email: string
+  phone_number?: string | null
+  avatar_url?: string | null
+  address?: string | null
+  current_password?: string
+  new_password?: string
+}
+
 const AUTH_TOKEN_KEY = 'tyushop_auth_token'
 const AUTH_USER_KEY = 'tyushop_auth_user'
 
@@ -185,6 +195,39 @@ export const authService = {
    */
   getCurrentUser: async (): Promise<ApiResponse<{ user: User }>> => {
     return api.get<ApiResponse<{ user: User }>>('/auth/me')
+  },
+
+  /**
+   * Update the authenticated user's own profile (Admin, Seller, Staff, Customer).
+   */
+  updateProfile: async (payload: UpdateProfilePayload): Promise<ApiResponse<{ user: User }>> => {
+    const res = await api.put<ApiResponse<{ user: User }>>('/auth/profile', payload)
+    if (res?.data?.user) {
+      authService.saveSession(res.data.user)
+    }
+    return res
+  },
+
+  /**
+   * Upload an avatar picture for the authenticated user.
+   */
+  uploadAvatar: async (file: File): Promise<ApiResponse<{ avatar_url: string; user: User }>> => {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const res = await api.post<ApiResponse<{ avatar_url: string; user: User }>>('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    if (res?.data?.user) {
+      authService.saveSession(res.data.user)
+    }
+    return res
+  },
+
+  /**
+   * Update account password.
+   */
+  changePassword: async (payload: { current_password: string; new_password: string; new_password_confirmation: string }): Promise<ApiResponse<null>> => {
+    return api.put<ApiResponse<null>>('/auth/password', payload)
   },
 
   /**

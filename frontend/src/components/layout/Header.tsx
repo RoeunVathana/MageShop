@@ -190,9 +190,17 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 title={currentUser ? currentUser.name : t('Account', 'គណនី')}
                 className="group h-8 w-8 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 p-0 flex items-center justify-center"
               >
-                <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-200">
-                  <UserIcon className="w-3.5 h-3.5" />
-                </div>
+                {currentUser?.avatar_url ? (
+                  <img
+                    src={currentUser.avatar_url}
+                    alt={currentUser?.name || 'User'}
+                    className="w-6 h-6 rounded-lg object-cover ring-1 ring-primary/30 shrink-0 group-hover:scale-110 transition-all duration-200"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/30 transition-all duration-200">
+                    <UserIcon className="w-3.5 h-3.5" />
+                  </div>
+                )}
               </Button>
 
             {isAccountOpen && (
@@ -270,6 +278,15 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                           </Link>
                         </div>
                       )}
+
+                      <Link
+                        to={isAdmin ? '/admin/profile' : '/profile'}
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors font-semibold text-indigo-600 dark:text-indigo-400"
+                      >
+                        <UserIcon className="w-3.5 h-3.5" />
+                        <span>{isAdmin ? t('Admin Profile & Settings', 'ប្រវត្តិរូប Admin & ការកំណត់') : t('My Profile & Settings', 'ប្រវត្តិរូបរបស់ខ្ញុំ & ការកំណត់')}</span>
+                      </Link>
 
                       <Link
                         to="/dashboard/customer"

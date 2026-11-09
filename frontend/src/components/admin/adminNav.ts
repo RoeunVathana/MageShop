@@ -14,11 +14,13 @@ import {
   Coins,
   Building2,
   Tag,
+  UserCog,
 } from 'lucide-react'
 import type { NavItem } from '@/components/dashboard/DashboardLayout'
 
 export const adminNavItems: NavItem[] = [
   { label: 'Platform Overview', href: '/dashboard/admin', icon: Shield },
+  { label: 'My Admin Profile', href: '/admin/profile', icon: UserCog, badge: 'Self' },
   { label: 'Company & Location', href: '/admin/company', icon: Building2, badge: 'HQ' },
   { label: 'Currency & Exchange Rate', href: '/admin/currency', icon: Coins, badge: 'USD/KHR' },
   { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },

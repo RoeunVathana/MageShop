@@ -73,6 +73,9 @@ import { TelegramApp } from '@/pages/telegram/TelegramApp'
 // Diagnostics
 import { DiagnosticsPage } from '@/pages/DiagnosticsPage'
 
+// Self-Profile & Account Management (Admin & All Users)
+import { ProfilePage } from '@/pages/profile/ProfilePage'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -119,6 +122,12 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/verify-otp" element={<VerifyOtpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+              {/* User Profile & Account Settings (All Users & Admins) */}
+              <Route path="/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
+              <Route path="/admin/profile" element={<AdminOnlyRoute><ProfilePage /></AdminOnlyRoute>} />
+              <Route path="/dashboard/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
+              <Route path="/dashboard/customer/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
 
               {/* Customer Account Portal (Authenticated Users Only) */}
               <Route path="/dashboard/customer" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />

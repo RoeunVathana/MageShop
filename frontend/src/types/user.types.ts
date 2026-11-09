@@ -28,7 +28,10 @@ export interface User {
   name: string
   email: string
   phone_number?: string | null
+  avatar_url?: string | null
+  address?: string | null
   status: 'active' | 'suspended' | 'pending'
+  loyalty_points?: number
   email_verified_at?: string | null
   roles?: Role[]
   created_at?: string

@@ -59,16 +59,27 @@ Route::prefix('auth')->group(function () {
     Route::get('/google/callback', [AuthController::class, 'googleCallback']);
     Route::post('/google/firebase', [AuthController::class, 'googleFirebase']);
 
-    // Authenticated Session Endpoints
+    // Authenticated Session & Self-Profile Endpoints
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/avatar', [AuthController::class, 'uploadAvatar']);
+        Route::post('/profile/avatar', [AuthController::class, 'uploadAvatar']);
+        Route::put('/password', [AuthController::class, 'updatePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAllDevices']);
     });
 });
 
-// Backward-compatible alias for /user
-Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'me']);
+// Backward-compatible alias for /user & /user/profile
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::get('/user/profile', [AuthController::class, 'me']);
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/user/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/user/avatar', [AuthController::class, 'uploadAvatar']);
+});
 
 // Public Store Settings
 Route::get('/store-settings', [StoreSettingsController::class, 'show']);
