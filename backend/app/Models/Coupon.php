@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Coupon extends Model
 {
@@ -22,7 +21,6 @@ class Coupon extends Model
         'max_discount_amount',
         'is_active',
         'expires_at',
-        'created_by',
     ];
 
     protected $casts = [
@@ -47,14 +45,6 @@ class Coupon extends Model
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>=', now());
             });
-    }
-
-    /**
-     * Relationship to creator user (Admin or Seller).
-     */
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

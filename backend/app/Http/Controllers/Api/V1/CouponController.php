@@ -66,12 +66,6 @@ class CouponController extends Controller
             $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        // Optional filter: seller only sees own coupons if requested
-        $sellerOnly = filter_var($request->input('seller_only', false), FILTER_VALIDATE_BOOLEAN);
-        if ($sellerOnly && $user && Schema::hasColumn('coupons', 'created_by')) {
-            $query->where('created_by', $user->id);
-        }
-
         $coupons = $query->orderBy('is_active', 'desc')
             ->orderBy('id', 'desc')
             ->get();
@@ -135,10 +129,6 @@ class CouponController extends Controller
             'is_active' => isset($validated['is_active']) ? (bool) $validated['is_active'] : true,
             'expires_at' => ! empty($validated['expires_at']) ? $validated['expires_at'] : null,
         ];
-
-        if (Schema::hasColumn('coupons', 'created_by') && $user) {
-            $couponData['created_by'] = $user->id;
-        }
 
         $coupon = Coupon::create($couponData);
 
