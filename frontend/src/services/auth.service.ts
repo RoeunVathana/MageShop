@@ -97,7 +97,7 @@ export const authService = {
    * Check whether the user has DELIVERY_DRIVER or courier role.
    */
   isDelivery: (user?: User | null): boolean => {
-    if (authService.isAdmin(user)) return true
+    if (authService.isAdmin(user) || authService.isStaff(user)) return true
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
     const roles = (target as any).roles || []
@@ -108,7 +108,9 @@ export const authService = {
       roleNames.includes('DELIVERY_DRIVER') ||
       roleNames.includes('COURIER') ||
       roleNames.includes('LOGISTICS_MANAGER') ||
-      roleNames.includes('DISPATCHER')
+      roleNames.includes('DISPATCHER') ||
+      roleNames.includes('STAFF') ||
+      roleNames.includes('OPERATIONS_MANAGER')
     )
   },
 

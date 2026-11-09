@@ -273,9 +273,23 @@ export function DeliveryDashboard() {
     setLoading(true)
     try {
       const res = await api.get<any>('/delivery/orders')
-      if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-        setOrders(res.data)
-        setSelectedOrder(res.data[0])
+      const orderList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
+      if (orderList.length > 0) {
+        const normalized: DeliveryOrder[] = orderList.map((o: any) => ({
+          ...o,
+          total_amount: Number(o.total_amount || 0),
+          dest_lat: Number(o.dest_lat || 11.5564),
+          dest_lng: Number(o.dest_lng || 104.9282),
+          current_lat: Number(o.current_lat || 11.5510),
+          current_lng: Number(o.current_lng || 104.9315),
+          payment_method: o.payment_method || 'bakong_khqr',
+          payment_status: o.payment_status || 'pending',
+          driver_name: o.driver_name || 'TYUSHOP Express Courier',
+          driver_vehicle: o.driver_vehicle || 'Honda PCX Electric • PP 1AB-9988',
+          estimated_arrival: o.estimated_arrival || '15 mins',
+        }))
+        setOrders(normalized)
+        setSelectedOrder(normalized[0])
       }
     } catch {
       // Keep demo orders if backend is unreachable
@@ -1399,7 +1413,7 @@ export function DeliveryDashboard() {
                               )}
                               {isCod && (
                                 <Badge className="bg-amber-500 text-white text-[10px]">
-                                  COD (${order.total_amount.toFixed(2)})
+                                  COD (${Number(order.total_amount || 0).toFixed(2)})
                                 </Badge>
                               )}
                             </div>
@@ -1410,10 +1424,10 @@ export function DeliveryDashboard() {
 
                           <div className="text-right">
                             <span className="font-black text-sm text-slate-900 dark:text-slate-100">
-                              ${order.total_amount.toFixed(2)}
+                              ${Number(order.total_amount || 0).toFixed(2)}
                             </span>
                             <span className="block text-[10px] text-slate-400">
-                              {order.payment_method.toUpperCase()}
+                              {String(order.payment_method || 'KHQR').toUpperCase()}
                             </span>
                           </div>
                         </div>
@@ -1806,7 +1820,7 @@ export function DeliveryDashboard() {
                     </span>
                   ) : (
                     <span className="font-bold text-indigo-600">
-                      +${(deliverySettings.methods[0]?.price ?? 1.50).toFixed(2)}
+                      +${Number(deliverySettings.methods?.[0]?.price ?? 1.5).toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -1825,15 +1839,16 @@ export function DeliveryDashboard() {
                       ≈ {(
                         (deliverySettings.is_free_delivery
                           ? 50
-                          : 50 + (deliverySettings.methods[0]?.price ?? 1.5)) * 4100
+                          : 50 + Number(deliverySettings.methods?.[0]?.price ?? 1.5)) * 4100
                       ).toLocaleString()} ៛ (KHR)
                     </div>
                   </div>
                   <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
                     $
-                    {(deliverySettings.is_free_delivery
-                      ? 50
-                      : 50 + (deliverySettings.methods[0]?.price ?? 1.5)
+                    {Number(
+                      deliverySettings.is_free_delivery
+                        ? 50
+                        : 50 + Number(deliverySettings.methods?.[0]?.price ?? 1.5)
                     ).toFixed(2)}
                   </span>
                 </div>
