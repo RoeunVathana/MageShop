@@ -30,12 +30,12 @@ import { Pagination } from '@/components/common/Pagination'
 import { api } from '@/lib/api'
 
 const customerNav: NavItem[] = [
-  { label: 'Overview', href: '/dashboard/customer', icon: ShoppingBag },
-  { label: 'My Orders', href: '/dashboard/customer/orders', icon: Package, badge: 'Track GPS' },
-  { label: 'Profile Settings', href: '/profile', icon: UserIcon, badge: 'Edit' },
-  { label: 'Wishlist', href: '/wishlist', icon: Heart },
-  { label: 'Saved Addresses', href: '/dashboard/customer/addresses', icon: MapPin },
-  { label: 'Payment Methods', href: '/dashboard/customer/payments', icon: CreditCard },
+  { label: 'Overview', labelKm: 'ទិដ្ឋភាពទូទៅ', href: '/dashboard/customer', icon: ShoppingBag },
+  { label: 'My Orders', labelKm: 'ការបញ្ជាទិញរបស់ខ្ញុំ', href: '/dashboard/customer/orders', icon: Package, badge: 'Track GPS', badgeKm: 'តាមដាន GPS' },
+  { label: 'Profile Settings', labelKm: 'ការកំណត់ប្រវត្តិរូប', href: '/profile', icon: UserIcon, badge: 'Edit', badgeKm: 'កែប្រែ' },
+  { label: 'Wishlist', labelKm: 'ទំនិញដែលពេញចិត្ត', href: '/wishlist', icon: Heart },
+  { label: 'Saved Addresses', labelKm: 'អាសយដ្ឋានដែលបានរក្សាទុក', href: '/dashboard/customer/addresses', icon: MapPin },
+  { label: 'Payment Methods', labelKm: 'វិធីសាស្ត្រទូទាត់', href: '/dashboard/customer/payments', icon: CreditCard },
 ]
 
 export function CustomerDashboard() {
