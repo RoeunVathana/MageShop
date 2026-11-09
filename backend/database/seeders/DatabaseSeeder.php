@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     protected array $alwaysRun = [
         RoleSeeder::class,
+        BrandSeeder::class,
     ];
 
     /**
@@ -24,7 +25,6 @@ class DatabaseSeeder extends Seeder
     protected array $runOnce = [
         CommerceAndTelegramSeeder::class,
         UniversalCategorySeeder::class,
-        BrandSeeder::class,
         BannerSeeder::class,
     ];
 

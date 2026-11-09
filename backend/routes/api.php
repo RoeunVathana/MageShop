@@ -110,7 +110,7 @@ Route::get('/inventory/{product}/movements', [InventoryController::class, 'movem
 Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust']);
 
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Admin Category & Attribute Management
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update']);
