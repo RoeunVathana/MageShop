@@ -346,11 +346,9 @@ class ProductService
             }
 
             if (! empty($updateData)) {
-                try {
-                    $product->update($updateData);
-                } catch (\Throwable $e) {
-                    throw new \InvalidArgumentException('Product update query failed: ' . $e->getMessage());
-                }
+                $updateData['updated_at'] = now();
+                DB::table('products')->where('id', $product->id)->update($updateData);
+                $product->refresh();
             }
 
             // Update attributes if provided
@@ -374,6 +372,8 @@ class ProductService
 
             return $product;
         });
+
+        $product->refresh();
 
         return $product->load([
             'category.parent',
