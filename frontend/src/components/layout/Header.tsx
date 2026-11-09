@@ -87,7 +87,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </div>
 
         {/* Center: Search Bar (Desktop) */}
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4 xl:mx-6 group">
+        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 min-w-0 max-w-2xl mx-3 xl:mx-6 group">
           <div className="relative w-full flex items-center">
             <Input
               type="text"
@@ -110,19 +110,19 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
           </div>
         </form>
 
-        {/* Right: Actions Cluster - Sleek, Responsive Single-Row Layout (No Wrapping) */}
+        {/* Right: Actions Cluster - Guaranteed Single-Row Layout (No 2-Row Wrapping) */}
         <div className="shrink-0 flex items-center">
-          <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 lg:gap-2">
+          <div className="flex items-center flex-nowrap gap-1 sm:gap-1.5 lg:gap-2 shrink-0">
             {/* 1. Real-Time GPS Delivery Tracker (Desktop only; on mobile it lists down in menu) */}
             <Link
               to="/track-order"
               title={t('Real-Time GPS Delivery Tracker', 'តាមដានការដឹកជញ្ជូន GPS')}
-              className="hidden lg:inline-flex"
+              className="hidden lg:inline-flex shrink-0"
             >
               <Button
                 variant="ghost"
                 size="icon"
-                className="group h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-emerald-500/15 hover:text-emerald-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center shrink-0"
               >
                 <Truck className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:translate-x-0.5 group-hover:scale-110 transition-transform duration-200" />
                 <span className="sr-only">{t('Track Delivery', 'តាមដានការដឹកជញ្ជូន')}</span>
@@ -136,7 +136,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 `Loyalty Points: ${loyaltyPoints} pts. Earn +5 pts per buy! 100 pts = Free Item under $20-$30`,
                 `ពិន្ទុសន្សំ: ${loyaltyPoints} ពិន្ទុ`
               )}
-              className="hidden lg:inline-flex group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 items-center justify-center p-0"
+              className="hidden lg:inline-flex group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-amber-500/15 text-amber-500 active:scale-90 transition-all duration-200 items-center justify-center p-0 shrink-0"
             >
               <Award className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-500 group-hover:rotate-12 group-hover:scale-115 transition-transform duration-200" />
               <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-amber-500 text-[8.5px] font-black text-white flex items-center justify-center shadow-xs pointer-events-none animate-in zoom-in-75 duration-200">
@@ -146,11 +146,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             </Link>
 
             {/* 3. Customer Wishlist / Favorites (Desktop only; on mobile it lists down in menu or bottom bar) */}
-            <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')} className="hidden lg:inline-flex">
+            <Link to="/wishlist" title={t('Saved Favorites', 'ទំនិញពេញចិត្ត')} className="hidden lg:inline-flex shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-rose-500/15 hover:text-rose-500 active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center shrink-0"
               >
                 <Heart className="h-4 w-4 sm:h-4.5 sm:w-4.5 group-hover:scale-120 group-hover:fill-rose-500/20 transition-all duration-200" />
                 {favoritesCount > 0 && (
@@ -163,11 +163,11 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             </Link>
 
             {/* 4. Shopping Cart (Always visible for quick checkout) */}
-            <Link to="/cart" title={t('Shopping Cart', 'កន្ត្រកទំនិញ')}>
+            <Link to="/cart" title={t('Shopping Cart', 'កន្ត្រកទំនិញ')} className="shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center"
+                className="group relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl hover:bg-primary/15 hover:text-primary active:scale-90 transition-all duration-200 text-muted-foreground p-0 flex items-center justify-center shrink-0"
               >
                 <ShoppingCart className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary group-hover:-rotate-12 group-hover:scale-115 transition-transform duration-200" />
                 {cartCount > 0 && (
@@ -180,12 +180,12 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             </Link>
 
             {/* 5. Theme Mode Toggle (Desktop only; on mobile inside list down) */}
-            <div className="hidden lg:flex items-center justify-center">
+            <div className="hidden lg:flex items-center justify-center shrink-0">
               <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border-0 hover:bg-muted/80 active:scale-90 transition-all duration-200" />
             </div>
 
             {/* 6. Account & Quick Actions Menu ("List Down" Trigger on Mobile) */}
-            <div className={`relative ${isAccountOpen ? 'z-50' : ''}`}>
+            <div className={`relative shrink-0 ${isAccountOpen ? 'z-50' : ''}`}>
               <Button
                 variant="ghost"
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
