@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\AdminBannerController;
+use App\Http\Controllers\Api\V1\Admin\AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\ApiTokenController;
 use App\Http\Controllers\Api\V1\Admin\DeliveryPricingController;
 use App\Http\Controllers\Api\V1\Admin\EmailPasswordOtpController;
@@ -122,6 +123,18 @@ Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'
 
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // System Overview & Statistics
+    Route::get('/stats', [AdminOrderController::class, 'systemStats']);
+    Route::get('/overview', [AdminOrderController::class, 'systemStats']);
+
+    // Admin Orders & Sales Management
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [AdminOrderController::class, 'index']);
+        Route::get('/{id}', [AdminOrderController::class, 'show']);
+        Route::patch('/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::patch('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus']);
+        Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
+    });
     // Admin Category & Attribute Management
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update']);

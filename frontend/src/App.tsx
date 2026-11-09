@@ -64,6 +64,12 @@ import { BannerListPage } from '@/pages/admin/BannerListPage'
 // Promotional Coupons & Discounts Administration
 import { CouponListPage } from '@/pages/admin/CouponListPage'
 
+// Customer Orders & Sales Administration
+import { AdminOrderListPage } from '@/pages/admin/AdminOrderListPage'
+
+// Store & Loyalty System Administration
+import { AdminStoreSettingsPage } from '@/pages/admin/AdminStoreSettingsPage'
+
 // Team & User Directory Administration
 import { UserDirectoryPage } from '@/pages/admin/UserDirectoryPage'
 
@@ -164,9 +170,17 @@ export default function App() {
               {/* Brand Management (Admin Only) */}
               <Route path="/admin/brands" element={<AdminOnlyRoute><BrandListPage /></AdminOnlyRoute>} />
 
+              {/* Customer Orders & Transactions Management (Admin Only) */}
+              <Route path="/admin/orders" element={<AdminOnlyRoute><AdminOrderListPage /></AdminOnlyRoute>} />
+              <Route path="/dashboard/admin/orders" element={<AdminOnlyRoute><AdminOrderListPage /></AdminOnlyRoute>} />
+              <Route path="/dashboard/admin/disputes" element={<AdminOnlyRoute><AdminOrderListPage /></AdminOnlyRoute>} />
+
               {/* Currency & Exchange Rate Management (Admin Only) */}
               <Route path="/admin/currency" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
-              <Route path="/admin/settings" element={<AdminOnlyRoute><AdminCurrencyPage /></AdminOnlyRoute>} />
+
+              {/* Global Store & Loyalty System Settings (Admin Only) */}
+              <Route path="/admin/settings" element={<AdminOnlyRoute><AdminStoreSettingsPage /></AdminOnlyRoute>} />
+              <Route path="/admin/store-settings" element={<AdminOnlyRoute><AdminStoreSettingsPage /></AdminOnlyRoute>} />
 
               {/* Company Profile & Location Management (Admin Only) */}
               <Route path="/admin/company" element={<AdminOnlyRoute><AdminCompanyLocationPage /></AdminOnlyRoute>} />
@@ -181,6 +195,7 @@ export default function App() {
 
               {/* Team Members & User Directory (Admin Only) */}
               <Route path="/dashboard/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
+              <Route path="/dashboard/admin/vendors" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
               <Route path="/admin/users" element={<AdminOnlyRoute><UserDirectoryPage /></AdminOnlyRoute>} />
 
               {/* Default Fallback */}
