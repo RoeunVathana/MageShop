@@ -64,7 +64,25 @@ class AdminMaintenanceController extends Controller
             Artisan::call('db:seed', ['--force' => true]);
             $output[] = trim(Artisan::output());
 
-            // 3. Clear application caches so updated seeded data is immediately live
+            // 3. Guarantee all catalog products, categories, and brands are active & visible in storefront
+            if (Schema::hasTable('products')) {
+                DB::table('products')->update([
+                    'status' => 'active',
+                    'is_active' => true,
+                ]);
+            }
+            if (Schema::hasTable('categories')) {
+                DB::table('categories')->update([
+                    'is_active' => true,
+                ]);
+            }
+            if (Schema::hasTable('brands')) {
+                DB::table('brands')->update([
+                    'is_active' => true,
+                ]);
+            }
+
+            // 4. Clear application caches so updated seeded data is immediately live
             Artisan::call('optimize:clear');
             $output[] = trim(Artisan::output());
 

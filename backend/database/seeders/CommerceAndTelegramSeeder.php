@@ -281,7 +281,11 @@ class CommerceAndTelegramSeeder extends Seeder
         ];
 
         foreach ($productsData as $prod) {
-            Product::firstOrCreate(['sku' => $prod['sku']], $prod);
+            $p = Product::firstOrCreate(['sku' => $prod['sku']], $prod);
+            $p->update(array_merge($prod, [
+                'status' => 'active',
+                'is_active' => true,
+            ]));
         }
 
         // 4. Create an Admin / Staff user for Telegram Bot management testing

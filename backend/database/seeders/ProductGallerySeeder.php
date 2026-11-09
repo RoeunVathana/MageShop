@@ -43,26 +43,52 @@ class ProductGallerySeeder extends Seeder
                 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80',
                 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=1200&q=80',
             ],
+            'nike-air-zoom-alphafly-next-2' => [
+                'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=1200&q=80',
+            ],
+            'anker-powerline-iii-usbc-cable' => [
+                'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1609592807908-1e434850fa91?auto=format&fit=crop&w=1200&q=80',
+            ],
+            'jbl-go-3-portable-bluetooth-speaker' => [
+                'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=1200&q=80',
+            ],
+            'xiaomi-mi-wireless-silent-mouse' => [
+                'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=1200&q=80',
+            ],
+            'megabasics-stainless-travel-tumbler' => [
+                'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=1200&q=80',
+                'https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?auto=format&fit=crop&w=1200&q=80',
+            ],
         ];
 
         foreach ($galleryCatalog as $slug => $images) {
             $product = Product::where('slug', $slug)->first();
             if ($product) {
-                // If product doesn't have gallery_urls yet, or has fewer than 2 images
-                if (empty($product->gallery_urls) || count($product->gallery_urls) < 2) {
-                    $product->update([
-                        'gallery_urls' => $images,
-                        'image_url' => $images[0],
-                    ]);
-                }
+                $product->update([
+                    'gallery_urls' => $images,
+                    'image_url' => $images[0],
+                    'status' => 'active',
+                    'is_active' => true,
+                ]);
             }
         }
 
-        // Also for any remaining products in the catalog without a gallery, ensure gallery_urls has at least their cover
-        Product::whereNull('gallery_urls')
-            ->whereNotNull('image_url')
-            ->each(function (Product $p) {
-                $p->update(['gallery_urls' => [$p->image_url]]);
-            });
+        // Also ensure any other remaining products in the catalog are active and have gallery_urls
+        Product::all()->each(function (Product $p) {
+            $gallery = $p->gallery_urls;
+            if (empty($gallery) && !empty($p->image_url)) {
+                $gallery = [$p->image_url];
+            }
+            $p->update([
+                'status' => 'active',
+                'is_active' => true,
+                'gallery_urls' => $gallery,
+            ]);
+        });
     }
 }
