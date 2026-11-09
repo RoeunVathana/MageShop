@@ -68,17 +68,17 @@ export function DashboardLayout({
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-68 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0">
+      {/* Desktop Sticky Sidebar - Permanently pinned to viewport when scrolling page */}
+      <aside className="hidden lg:flex flex-col w-68 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="sm" subtitle="WORKSPACE" />
           </Link>
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
           <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Active Workspace
           </div>
@@ -93,8 +93,8 @@ export function DashboardLayout({
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
+        {/* Navigation Items - Self-scrolling if menu exceeds viewport height */}
+        <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -131,7 +131,7 @@ export function DashboardLayout({
         </nav>
 
         {/* Storefront return link & footer */}
-        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <Link to="/">
             <Button
               variant="outline"
