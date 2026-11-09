@@ -64,11 +64,10 @@ export function AnnouncementBar() {
         {/* Left message */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
           <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 shadow-xs">
-            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('HOT', 'ពិសេស')}</span>
+            <Sparkles className="w-3 h-3 shrink-0" /> <span className="whitespace-nowrap break-keep">{t('DEAL', 'ពិសេស')}</span>
           </span>
           <span className="truncate text-[11px] sm:text-xs text-slate-300 font-medium">
-            <span className="sm:hidden">{t('Delivery & Rewards', 'ដឹកជញ្ជូន & រង្វាន់')}</span>
-            <span className="hidden sm:inline">{t('Fast Delivery • 100-Pt Free Rewards • Nationwide', 'ដឹកជញ្ជូនរហ័ស • សន្សំ ១០០ ពិន្ទុប្តូររង្វាន់')}</span>
+            {t('Free Express Delivery & Rewards', 'ដឹកជញ្ជូនរហ័ស & ពិន្ទុរង្វាន់')}
           </span>
         </div>
 
@@ -105,7 +104,8 @@ export function AnnouncementBar() {
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-white border border-slate-700 shadow-xs transition-all cursor-pointer shrink-0 whitespace-nowrap text-xs font-bold"
               >
                 <span className="font-bold text-xs whitespace-nowrap break-keep">
-                  {currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}
+                  <span className="sm:hidden">{currency}</span>
+                  <span className="hidden sm:inline">{currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}</span>
                 </span>
                 <ChevronDown className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 shrink-0 ${currOpen ? 'rotate-180' : ''}`} />
               </button>

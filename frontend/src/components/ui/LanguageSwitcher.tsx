@@ -94,7 +94,14 @@ export function LanguageSwitcher({
 
         {/* Label: ខ្មែរ / English */}
         <span className="font-bold text-xs whitespace-nowrap break-keep">
-          {language === 'KM' ? 'ខ្មែរ' : 'English'}
+          {language === 'KM' ? (
+            'ខ្មែរ'
+          ) : (
+            <>
+              <span className="sm:hidden">EN</span>
+              <span className="hidden sm:inline">English</span>
+            </>
+          )}
         </span>
 
         {/* Down Chevron */}
