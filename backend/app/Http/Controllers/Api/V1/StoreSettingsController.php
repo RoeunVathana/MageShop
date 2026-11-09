@@ -50,9 +50,38 @@ class StoreSettingsController extends Controller
             'loyalty_points_for_free_item',
             'bakong_account_id',
             'bakong_merchant_name',
+            'google_client_id',
+            'google_auth_enabled',
+            'firebase_api_key',
+            'firebase_auth_domain',
+            'firebase_project_id',
+            'firebase_storage_bucket',
+            'firebase_messaging_sender_id',
+            'firebase_app_id',
+            'firebase_measurement_id',
         ];
 
         $publicSettings = array_intersect_key($all, array_flip($publicKeys));
+
+        // Intelligent Firebase Remote Config Defaults
+        if (empty($publicSettings['firebase_api_key'])) {
+            $publicSettings['firebase_api_key'] = env('FIREBASE_API_KEY', 'AIzaSyBKs2OYgjUWXCO3JV32jFNrdSM5BdyzIIA');
+        }
+        if (empty($publicSettings['firebase_auth_domain'])) {
+            $publicSettings['firebase_auth_domain'] = env('FIREBASE_AUTH_DOMAIN', 'tyushop-5aea2.firebaseapp.com');
+        }
+        if (empty($publicSettings['firebase_project_id'])) {
+            $publicSettings['firebase_project_id'] = env('FIREBASE_PROJECT_ID', 'tyushop-5aea2');
+        }
+        if (empty($publicSettings['firebase_app_id'])) {
+            $publicSettings['firebase_app_id'] = env('FIREBASE_APP_ID', '1:840016177617:web:ec27c8d050c3cb066798f0');
+        }
+
+        // Google OAuth status
+        $publicSettings['google_auth_enabled'] = $publicSettings['google_auth_enabled'] ?? 'false';
+        $publicSettings['google_is_ready'] = ! empty($publicSettings['google_client_id']) &&
+            $publicSettings['google_client_id'] !== 'your-google-client-id' &&
+            $publicSettings['google_client_id'] !== '1234567890-test.apps.googleusercontent.com';
 
         // Default Company Location & Details
         if (! isset($publicSettings['store_address']) || empty($publicSettings['store_address'])) {
@@ -168,6 +197,13 @@ class StoreSettingsController extends Controller
             'google_client_id' => 'nullable|string|max:255',
             'google_client_secret' => 'nullable|string|max:255',
             'google_auth_enabled' => 'nullable|string|max:10',
+            'firebase_api_key' => 'nullable|string|max:255',
+            'firebase_auth_domain' => 'nullable|string|max:255',
+            'firebase_project_id' => 'nullable|string|max:100',
+            'firebase_storage_bucket' => 'nullable|string|max:255',
+            'firebase_messaging_sender_id' => 'nullable|string|max:100',
+            'firebase_app_id' => 'nullable|string|max:255',
+            'firebase_measurement_id' => 'nullable|string|max:100',
             'loyalty_free_item_max_price' => 'nullable|numeric|min:1|max:500',
             'loyalty_points_for_free_item' => 'nullable|integer|min:1|max:1000',
             'bakong_account_id' => 'nullable|string|max:100',

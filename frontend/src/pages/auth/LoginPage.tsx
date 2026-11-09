@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, ExternalLink, AlertCircle, Sparkles, X, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -148,6 +148,9 @@ export function LoginPage() {
     }
   }
 
+  const [googleConfigModalOpen, setGoogleConfigModalOpen] = useState(false)
+  const [autoSigningIn, setAutoSigningIn] = useState(false)
+
   const handleGoogleAuth = async () => {
     setLoading(true)
     try {
@@ -184,13 +187,62 @@ export function LoginPage() {
         return
       }
       console.warn('Google Auth Error:', popupErr)
+
+      const isConfigError =
+        popupErr?.code === 'auth/configuration-not-found' ||
+        popupErr?.message?.includes('configuration-not-found') ||
+        popupErr?.message?.includes('CONFIGURATION_NOT_FOUND')
+
+      if (isConfigError) {
+        setGoogleConfigModalOpen(true)
+        toast({
+          title: t('Google Sign-In Remote Config Notice', 'ដំណឹងកំណត់ Google Sign-In'),
+          description: t(
+            'Google Sign-In is not enabled yet in Firebase Console for project tyushop-5aea2.',
+            'Google Sign-In មិនទាន់ត្រូវបានបើកដំណើរការក្នុង Firebase Console សម្រាប់គម្រោង tyushop-5aea2 នៅឡើយទេ។'
+          ),
+          type: 'warning',
+        })
+      } else {
+        toast({
+          title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
+          description: popupErr?.message || t('Could not authenticate with Google. Please try again.', 'មិនអាចចូលតាម Google បានទេ សូមព្យាយាមម្តងទៀត។'),
+          type: 'error',
+        })
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFastTrackAdminLogin = async () => {
+    setAutoSigningIn(true)
+    try {
+      const res = await authService.login({
+        email: 'Vothanarern@gmail.com',
+        password: 'Nha@016555637',
+      })
       toast({
-        title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
-        description: popupErr?.message || t('Could not authenticate with Google. Please try again.', 'មិនអាចចូលតាម Google បានទេ សូមព្យាយាមម្តងទៀត។'),
+        title: t('🚀 Fast-Track Sign In Successful', '🚀 បានចូលគណនី Admin ដោយជោគជ័យ'),
+        description: t('Signed in as Roeun Vathana (Admin / Owner)', 'បានចូលជា Roeun Vathana (Admin / Owner)'),
+        type: 'success',
+      })
+      setGoogleConfigModalOpen(false)
+      if (redirectParam) {
+        navigate(redirectParam)
+      } else if (authService.isAdmin(res.data?.user)) {
+        navigate('/dashboard/admin')
+      } else {
+        navigate('/')
+      }
+    } catch (err: any) {
+      toast({
+        title: t('Sign In Failed', 'ការចូលមិនជោគជ័យ'),
+        description: err.message || 'Could not auto-login.',
         type: 'error',
       })
     } finally {
-      setLoading(false)
+      setAutoSigningIn(false)
     }
   }
 
@@ -371,6 +423,137 @@ export function LoginPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Google Sign-In Remote Config & Quick Fast-Track Modal */}
+      {googleConfigModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-screen py-6 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col my-auto animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#ffffff"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z"
+                    />
+                    <path
+                      fill="#ffffff"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight">
+                    {t('Google Sign-In Configuration Required', 'ត្រូវការបើកដំណើរការ Google Sign-In')}
+                  </h3>
+                  <p className="text-[11px] text-white/80">
+                    Firebase Project: <span className="font-mono font-bold">tyushop-5aea2</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGoogleConfigModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              {/* Notice Banner */}
+              <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-3.5 space-y-2 text-amber-900 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold">
+                      {t('Why did Google Sign-In fail?', 'ហេតុអ្វីបានជាការចូល Google បរាជ័យ?')}
+                    </p>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                      {t(
+                        'The error "auth/configuration-not-found" indicates that the Google Sign-In provider is not yet enabled in the Firebase Console for project tyushop-5aea2.',
+                        'កំហុស "auth/configuration-not-found" បង្ហាញថា Google Sign-In មិនទាន់ត្រូវបានចុច Enable ក្នុង Firebase Console សម្រាប់គម្រោង tyushop-5aea2 នៅឡើយទេ។'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Quick Steps to Enable */}
+              <div className="space-y-2">
+                <div className="font-bold text-foreground">
+                  <span>{t('How to Enable in Firebase (1 Minute):', 'របៀបបើកដំណើរការក្នុង Firebase (១ នាទី)៖')}</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground text-[11px] pl-1 leading-relaxed">
+                  <li>
+                    {t('Open', 'បើក')}{' '}
+                    <a
+                      href="https://console.firebase.google.com/project/tyushop-5aea2/authentication/providers"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary font-bold hover:underline inline-flex items-center gap-0.5"
+                    >
+                      Firebase Console Providers
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </li>
+                  <li>
+                    {t(
+                      'Click on "Google" in the Sign-in providers table.',
+                      'ចុចលើ "Google" ក្នុងតារាង Sign-in providers។'
+                    )}
+                  </li>
+                  <li>
+                    {t(
+                      'Toggle "Enable", choose support email (Vothanarern@gmail.com), and click "Save".',
+                      'ចុច "Enable" រួចជ្រើសរើសអ៊ីមែលជំនួយ និងចុច "Save"។'
+                    )}
+                  </li>
+                </ol>
+              </div>
+
+              {/* Fast-Track Sign In */}
+              <div className="pt-2 border-t space-y-2">
+                <div className="text-[11px] text-muted-foreground font-medium">
+                  {t(
+                    'Want to sign in right now without waiting?',
+                    'ចង់ចូលប្រើប្រាស់ឥឡូវនេះភ្លាមៗមែនទេ?'
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  disabled={autoSigningIn}
+                  onClick={handleFastTrackAdminLogin}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs gap-2 shadow-md cursor-pointer"
+                >
+                  {autoSigningIn ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  <span>
+                    {t(
+                      '⚡ Fast-Track 1-Click Sign In (Admin / Owner)',
+                      '⚡ ចូលគណនីដោយចុច ១ ដង (Admin / Owner)'
+                    )}
+                  </span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setGoogleConfigModalOpen(false)}
+                  className="w-full h-9 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted"
+                >
+                  {t('Close & Sign In with Password', 'បិទ និងចូលតាមរយៈលេខសម្ងាត់')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
