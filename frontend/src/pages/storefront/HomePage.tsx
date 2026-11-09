@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { HeroBannerSlider } from '@/components/storefront/HeroBannerSlider'
+import { ProductCard } from '@/components/storefront/ProductCard'
 import { productService } from '@/services/product.service'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
@@ -221,151 +222,10 @@ export function HomePage() {
             <p className="text-xs text-muted-foreground">No active products available in catalog.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-            {featuredProducts.map((p) => {
-              const liked = isFavorite(p.id)
-              const hasDiscount = Boolean(
-                p.discount_price &&
-                Number(p.discount_price) > 0 &&
-                Number(p.discount_price) < Number(p.selling_price)
-              )
-              const effPrice = hasDiscount ? Number(p.discount_price) : Number(p.selling_price)
-              const isRewardEligible = effPrice <= 30
-
-              return (
-                <Card key={p.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between rounded-2xl border">
-                  <div>
-                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
-                      <Link to={`/products/${p.slug || p.id}`} className="w-full h-full block">
-                        {p.image_url ? (
-                          <img
-                            src={p.image_url}
-                            alt={p.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-muted/40">
-                            <ShoppingBag className="w-12 h-12 opacity-30" />
-                          </div>
-                        )}
-                      </Link>
-                      <div className="absolute top-2 left-2 flex flex-col gap-1">
-                        <Badge variant="secondary" className="text-[10px] bg-background/90 backdrop-blur font-medium">
-                          {p.category?.name || 'Universal'}
-                        </Badge>
-                        {isRewardEligible && (
-                          <Badge className="text-[10px] bg-amber-500 text-white border-0 font-bold gap-1">
-                            <Gift className="w-3 h-3" /> 100 Pts Free
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Customer Favorite / Like Heart Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toggleFavorite({
-                            id: p.id,
-                            slug: p.slug || String(p.id),
-                            name: p.name,
-                            price: effPrice,
-                            originalPrice: hasDiscount ? Number(p.selling_price) : undefined,
-                            image: p.image_url || '',
-                            vendor: p.brand || 'TYUSHOP',
-                            category: p.category?.name || 'Universal',
-                          })
-                          toast({
-                            title: liked ? 'Removed from Favorites' : 'Saved to Favorites ❤️',
-                            description: liked ? `${p.name} removed from your liked items.` : `${p.name} added to your favorite list!`,
-                            type: 'info',
-                          })
-                        }}
-                        aria-label="Toggle Favorite"
-                        className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all ${
-                          liked
-                            ? 'bg-rose-500 text-white scale-105'
-                            : 'bg-background/90 text-muted-foreground hover:text-rose-500 backdrop-blur'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-                      </button>
-                    </div>
-
-                    <CardContent className="p-4 space-y-2">
-                      {p.brand && (
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          {p.brand}
-                        </div>
-                      )}
-                      <Link
-                        to={`/products/${p.slug || p.id}`}
-                        className="font-semibold text-sm line-clamp-2 text-foreground group-hover:text-primary transition-colors block leading-snug"
-                      >
-                        {p.name}
-                      </Link>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-lg font-black text-foreground">
-                            {formatPrice(effPrice)}
-                          </span>
-                          {hasDiscount && (
-                            <>
-                              <span className="text-xs text-muted-foreground line-through font-mono">
-                                {formatPrice(p.selling_price)}
-                              </span>
-                              <span className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded">
-                                -{Math.round((1 - effPrice / Number(p.selling_price)) * 100)}%
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {p.stock_quantity > 0
-                            ? `${p.stock_quantity} ${t('in stock', 'មានក្នុងស្តុក')}`
-                            : t('Out of stock', 'អស់ពីស្តុក')}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </div>
-
-                  <div className="p-4 pt-0 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      disabled={p.stock_quantity <= 0}
-                      onClick={() => {
-                        addToCart(
-                          {
-                            id: p.id,
-                            slug: p.slug || String(p.id),
-                            name: p.name,
-                            price: effPrice,
-                            originalPrice: hasDiscount ? Number(p.selling_price) : undefined,
-                            image: p.image_url || '',
-                            vendor: p.brand || 'TYUSHOP',
-                          },
-                          1
-                        )
-                        toast({
-                          title: t('Added to Cart 🛒', 'បានដាក់ចូលកន្ត្រក 🛒'),
-                          description: `${p.name} (+5 Loyalty Points).`,
-                          type: 'success',
-                        })
-                      }}
-                      className="flex-1 text-xs gap-1.5 font-semibold"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" /> {t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}
-                    </Button>
-                    <Link to={`/products/${p.slug || p.id}`}>
-                      <Button size="sm" variant="outline" className="text-xs px-2.5" title="View Product Details">
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
-              )
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {featuredProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
           </div>
         )}
       </section>
