@@ -64,16 +64,16 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   return (
     <header className="relative z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Mobile Toggle & Brand Logo */}
+        {/* Left: Mobile/iPad Navigation Toggle & Brand Logo */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-9 w-9 p-0 shrink-0"
+            className="lg:hidden h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-accent/80 active:scale-95 transition-all text-foreground shrink-0"
             onClick={onToggleMobileMenu}
             aria-label="Toggle Navigation Menu"
           >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
           </Button>
 
           <Link to="/" aria-label="TYUSHOP Home" className="shrink-0 min-w-0 flex items-center">
@@ -268,24 +268,24 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         </div>
       </div>
 
-      {/* Mobile/Tablet Search input bar */}
-      <div className="lg:hidden px-4 pb-3">
-        <form onSubmit={handleSearch} className="relative w-full">
+      {/* Mobile/iPad Search input bar */}
+      <div className="lg:hidden px-3 sm:px-6 pb-2.5 sm:pb-3 max-w-4xl mx-auto w-full">
+        <form onSubmit={handleSearch} className="relative w-full flex items-center">
           <Input
             type="text"
             placeholder={t(
-              'Search across 50,000+ products...',
-              'ស្វែងរកផលិតផល ប្រភេទទំនិញ...'
+              'Search across 50,000+ products, categories, or vendors...',
+              'ស្វែងរកផលិតផល ប្រភេទទំនិញ ឬហាងលក់ទំនិញ...'
             )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-20 h-9 rounded-full text-xs"
+            className="pl-9 sm:pl-10 pr-20 sm:pr-24 h-9 sm:h-10 rounded-full text-xs sm:text-sm border-muted-foreground/20 focus-visible:ring-primary shadow-inner"
           />
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Search className="absolute left-3 sm:left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Button
             type="submit"
             size="sm"
-            className="absolute right-1 top-0.5 rounded-full h-8 px-3 text-xs"
+            className="absolute right-1 rounded-full h-7 sm:h-8 px-3 sm:px-4 text-xs font-semibold"
           >
             {t('Search', 'ស្វែងរក')}
           </Button>
