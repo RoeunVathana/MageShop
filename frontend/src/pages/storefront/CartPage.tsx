@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Download,
+  Copy,
   UserCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,59 @@ const DEFAULT_COUPONS = [
   { code: 'KHQR5', label: '$5 OFF', type: 'fixed' as const, value: 5, min: 15 },
   { code: 'VIP30', label: '30% OFF (≥$100)', type: 'percentage' as const, value: 30, min: 100 },
 ]
+
+/**
+ * Compute official CRC-16/CCITT-FALSE (Polynomial: 0x1021, Initial: 0xFFFF)
+ * for standard NBC Bakong KHQR EMVCo compliance.
+ */
+function calculateCrc16Ccitt(str: string): string {
+  let crc = 0xFFFF
+  for (let i = 0; i < str.length; i++) {
+    crc ^= (str.charCodeAt(i) << 8)
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) {
+        crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+      } else {
+        crc = (crc << 1) & 0xFFFF
+      }
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0')
+}
+
+/**
+ * Generate 100% compliant Bakong KHQR EMVCo string for ABA, Bakong, ACLEDA, Wing.
+ */
+function generateBakongKhqrString(params: {
+  merchantAccount: string
+  merchantName: string
+  merchantCity?: string
+  amount: number
+  orderNumber: string
+}): string {
+  const account = params.merchantAccount || 'roeun_vathana1@bkrt'
+  const name = params.merchantName || 'TYUSHOP'
+  const city = params.merchantCity || 'Phnom Penh'
+  const amountStr = params.amount.toFixed(2)
+  const orderNum = params.orderNumber
+
+  const tag29 = `00${String(account.length).padStart(2, '0')}${account}01${String(name.length).padStart(2, '0')}${name}`
+  const tag62 = `01${String(orderNum.length).padStart(2, '0')}${orderNum}`
+
+  const emv =
+    '000201010212' +
+    `29${String(tag29.length).padStart(2, '0')}${tag29}` +
+    '520459995303840' +
+    `54${String(amountStr.length).padStart(2, '0')}${amountStr}` +
+    '5802KH' +
+    `59${String(name.length).padStart(2, '0')}${name}` +
+    `60${String(city.length).padStart(2, '0')}${city}` +
+    `62${String(tag62.length).padStart(2, '0')}${tag62}` +
+    '6304'
+
+  const crc = calculateCrc16Ccitt(emv)
+  return emv + crc
+}
 
 const CAMBODIA_LOCATION_PRESETS = [
   {
@@ -526,6 +580,46 @@ export function CartPage() {
     return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`
   }
 
+  const handleDownloadQr = () => {
+    if (!qrModalData) return
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=M&margin=4&data=${encodeURIComponent(
+      qrModalData.qr_string
+    )}`
+    fetch(qrUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `KHQR-Payment-${qrModalData.order_number}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        toast({
+          title: t('📥 QR Image Saved to Photos!', '📥 បានរក្សាទុករូប QR!'),
+          description: t(
+            'Open ABA / Bakong / Wing and choose "Scan from Gallery" to pay.',
+            'សូមបើក ABA / Bakong / Wing រួចជ្រើសរើស "ស្កេនពីរូបភាព" ដើម្បីទូទាត់។'
+          ),
+          type: 'success',
+        })
+      })
+      .catch(() => {
+        window.open(qrUrl, '_blank')
+      })
+  }
+
+  const handleCopyQrPayload = () => {
+    if (!qrModalData) return
+    navigator.clipboard.writeText(qrModalData.qr_string)
+    toast({
+      title: t('📋 KHQR Code Copied!', '📋 បានចម្លងកូដ KHQR!'),
+      description: t('EMV data copied to clipboard.', 'កូដទិន្នន័យ EMV ត្រូវបានចម្លងទុក។'),
+      type: 'success',
+    })
+  }
+
   const handleApplyCoupon = async (codeToApply?: string) => {
     const code = (codeToApply ?? couponInput).trim().toUpperCase()
     if (!code) {
@@ -799,9 +893,12 @@ export function CartPage() {
           transaction_reference: txnRef,
           qr_string:
             qrInfo?.qr_string ||
-            `00020101021229220018roeun_vathana1@bkrt5204599953038405405${finalTotal.toFixed(
-              2
-            )}5802KH5907Tyushop6010Phnom Penh62190115${orderNum}6304ABCD`,
+            generateBakongKhqrString({
+              merchantAccount: qrInfo?.merchant_account || 'roeun_vathana1@bkrt',
+              merchantName: qrInfo?.merchant_name || 'TYUSHOP',
+              amount: finalTotal,
+              orderNumber: orderNum,
+            }),
           md5: qrInfo?.md5 || 'khqr_verified_md5_hash',
           merchant_account: qrInfo?.merchant_account || 'roeun_vathana1@bkrt',
           merchant_name: qrInfo?.merchant_name || 'Tyushop',
@@ -868,12 +965,15 @@ export function CartPage() {
           order_number: fallbackOrd,
           receipt_number: fallbackRec,
           transaction_reference: fallbackTxn,
-          qr_string: `00020101021229220018roeun_vathana1@bkrt5204599953038405405${finalTotal.toFixed(
-            2
-          )}5802KH5907Tyushop6010Phnom Penh62190115${fallbackOrd}6304ABCD`,
+          qr_string: generateBakongKhqrString({
+            merchantAccount: 'roeun_vathana1@bkrt',
+            merchantName: 'TYUSHOP',
+            amount: finalTotal,
+            orderNumber: fallbackOrd,
+          }),
           md5: 'khqr_live_hash',
           merchant_account: 'roeun_vathana1@bkrt',
-          merchant_name: 'Tyushop',
+          merchant_name: 'TYUSHOP',
           amount_usd: finalTotal,
           amount_khr: finalTotalKhr,
           customer_name: customerName,
@@ -1995,20 +2095,61 @@ export function CartPage() {
                 </div>
               </div>
 
-              {/* Scannable QR Code Frame */}
-              <div className="relative mx-auto w-44 h-44 sm:w-48 sm:h-48 rounded-2xl border-4 border-[#E1232E]/25 bg-white p-2.5 shadow-inner flex items-center justify-center">
+              {/* Scannable QR Code Frame - High-Res ecc=M Unobstructed Matrix */}
+              <div className="relative mx-auto w-48 h-48 sm:w-56 sm:h-56 rounded-2xl border-4 border-[#E1232E]/30 bg-white p-3 shadow-xl flex items-center justify-center">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&margin=4&data=${encodeURIComponent(
                     qrModalData.qr_string
                   )}`}
                   alt={`Bakong KHQR for Order ${qrModalData.order_number}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain select-none"
                 />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="px-2 py-0.5 rounded bg-[#E1232E] text-white font-black text-[10px] shadow">
-                    KHQR
-                  </span>
+              </div>
+
+              {/* Quick Actions: Download to Photos + Copy Code */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadQr}
+                  className="rounded-xl h-9 text-xs font-bold gap-1.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#E1232E]" />
+                  <span>{t('Save QR Image', 'រក្សាទុករូប QR')}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyQrPayload}
+                  className="rounded-xl h-9 text-xs font-bold gap-1.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <Copy className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>{t('Copy QR Code', 'ចម្លងកូដ QR')}</span>
+                </Button>
+              </div>
+
+              {/* Mobile & Laptop Friendly Scan Guidance */}
+              <div className="rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 p-2.5 text-left text-[11px] space-y-1">
+                <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <span>💡</span>
+                  <span>{t('How to Scan & Pay', 'របៀបស្កេន និងទូទាត់ប្រាក់')}</span>
                 </div>
+                <p className="text-slate-700 dark:text-slate-300 leading-snug">
+                  📱 <strong>{t('On Mobile Phone:', 'លើទូរស័ព្ទ៖')}</strong>{' '}
+                  {t(
+                    'Click "Save QR Image" above ➜ Open ABA/Bakong ➜ Tap Scan ➜ Choose "Scan from Photo" (រូបថត).',
+                    'ចុច "រក្សាទុករូប QR" ខាងលើ ➜ បើកកម្មវិធី ABA ឬ Bakong ➜ ចុច Scan ➜ ជ្រើសរើស "ស្កេនពីរូបភាព"។'
+                  )}
+                </p>
+                <p className="text-slate-700 dark:text-slate-300 leading-snug">
+                  💻 <strong>{t('On Computer / Laptop:', 'លើកុំព្យូទ័រ៖')}</strong>{' '}
+                  {t(
+                    'Open ABA, Bakong, ACLEDA, or Wing on your phone and scan screen directly.',
+                    'បើកកម្មវិធីធនាគារ (ABA, Bakong, Wing) លើទូរស័ព្ទ ហើយចង្អុលស្កេនលើអេក្រង់។'
+                  )}
+                </p>
               </div>
 
               {/* Order Reference & Countdown Timer */}

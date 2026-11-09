@@ -493,27 +493,53 @@ class CommerceEngagementController extends Controller
     }
 
     /**
+     * Compute CRC-16/CCITT-FALSE (polynomial 0x1021, init 0xFFFF) for EMVCo Bakong KHQR.
+     */
+    protected function calculateCrc16Ccitt(string $data): string
+    {
+        $crc = 0xFFFF;
+        $length = strlen($data);
+        for ($i = 0; $i < $length; $i++) {
+            $crc ^= (ord($data[$i]) << 8);
+            for ($j = 0; $j < 8; $j++) {
+                if (($crc & 0x8000) !== 0) {
+                    $crc = (($crc << 1) ^ 0x1021) & 0xFFFF;
+                } else {
+                    $crc = ($crc << 1) & 0xFFFF;
+                }
+            }
+        }
+        return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
+    }
+
+    /**
      * Build EMVCo Bakong KHQR payload and metadata for QR scan checkout.
      */
     protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
     {
-        $merchantAccount = (string) env('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt');
-        $merchantName = (string) env('BAKONG_MERCHANT_NAME', 'Tyushop');
-        $merchantCity = (string) env('BAKONG_MERCHANT_CITY', 'Phnom Penh');
+        $merchantAccount = (string) StoreSetting::get('bakong_account_id', env('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'));
+        $merchantName = (string) StoreSetting::get('bakong_merchant_name', env('BAKONG_MERCHANT_NAME', 'TYUSHOP'));
+        $merchantCity = (string) StoreSetting::get('company_city', env('BAKONG_MERCHANT_CITY', 'Phnom Penh'));
         $amountFormatted = number_format($amountUsd, 2, '.', '');
         $amountKhr = (int) round($amountUsd * 4100);
 
+        $tag29 = '00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount
+            .'01'.str_pad((string) strlen($merchantName), 2, '0', STR_PAD_LEFT).$merchantName;
+
+        $tag62 = '01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber;
+
         $emvPayload = '000201010212'
-            .'29'.str_pad((string) (strlen($merchantAccount) + 4), 2, '0', STR_PAD_LEFT).'00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount
+            .'29'.str_pad((string) strlen($tag29), 2, '0', STR_PAD_LEFT).$tag29
             .'520459995303840'
             .'54'.str_pad((string) strlen($amountFormatted), 2, '0', STR_PAD_LEFT).$amountFormatted
             .'5802KH'
             .'59'.str_pad((string) strlen($merchantName), 2, '0', STR_PAD_LEFT).$merchantName
             .'60'.str_pad((string) strlen($merchantCity), 2, '0', STR_PAD_LEFT).$merchantCity
-            .'62'.str_pad((string) (strlen($orderNumber) + 4), 2, '0', STR_PAD_LEFT).'01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber
+            .'62'.str_pad((string) strlen($tag62), 2, '0', STR_PAD_LEFT).$tag62
             .'6304';
-        $crcHex = strtoupper(substr(dechex(crc32($emvPayload)), 0, 4));
-        $fullQrString = $emvPayload.str_pad($crcHex, 4, '0', STR_PAD_LEFT);
+
+        $crcHex = $this->calculateCrc16Ccitt($emvPayload);
+        $fullQrString = $emvPayload.$crcHex;
 
         return [
             'qr_string' => $fullQrString,
