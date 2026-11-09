@@ -78,21 +78,23 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <div className="flex rounded-md overflow-hidden border">
             <button
               type="button"
-              onClick={() => setLanguage('EN')}
-              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
-                language === 'EN' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              onClick={() => setLanguage('KM')}
+              className={`flex-1 py-1.5 px-1.5 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                language === 'KM' ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-background text-muted-foreground'
               }`}
             >
-              EN
+              <img src="/flags/kh.svg" alt="Cambodia" className="w-4 h-3 rounded-[1px] object-cover shrink-0" />
+              <span>ខ្មែរ</span>
             </button>
             <button
               type="button"
-              onClick={() => setLanguage('KM')}
-              className={`flex-1 py-1 text-[11px] font-semibold transition-colors ${
-                language === 'KM' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'
+              onClick={() => setLanguage('EN')}
+              className={`flex-1 py-1.5 px-1.5 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                language === 'EN' ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-background text-muted-foreground'
               }`}
             >
-              ខ្មែរ
+              <img src="/flags/us.svg" alt="English" className="w-4 h-3 rounded-[1px] object-cover shrink-0" />
+              <span>EN</span>
             </button>
           </div>
           <div className="flex rounded-md overflow-hidden border">

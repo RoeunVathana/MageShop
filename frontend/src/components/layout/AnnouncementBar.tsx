@@ -1,8 +1,9 @@
-import { Sparkles, Phone, Globe, ChevronDown, Check } from 'lucide-react'
+import { Sparkles, Phone, ChevronDown, Check } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 
 export function AnnouncementBar() {
   const { language, setLanguage, currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
@@ -83,56 +84,9 @@ export function AnnouncementBar() {
             <span className="whitespace-nowrap break-keep">{t('Support: 016 555 637', 'ជំនួយ: 016 555 637')}</span>
           </a>
 
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0 whitespace-nowrap">
-            {/* Language Selector */}
-            <div
-              ref={langRef}
-              className="relative shrink-0"
-              onMouseEnter={() => setLangOpen(true)}
-              onMouseLeave={() => setLangOpen(false)}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  setLangOpen((prev) => !prev)
-                  setCurrOpen(false)
-                }}
-                aria-expanded={langOpen}
-                aria-label="Select Language"
-                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
-              >
-                <Globe className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                <span className="font-semibold whitespace-nowrap break-keep inline-block">{language === 'KM' ? 'ខ្មែរ (KM)' : 'EN'}</span>
-                <ChevronDown className={`w-3 h-3 opacity-70 transition-transform shrink-0 ${langOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {langOpen && (
-                <div className="absolute right-0 top-full pt-1 z-50 min-w-36">
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 text-slate-200 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectLanguage('EN')}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer whitespace-nowrap ${
-                        language === 'EN' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <span>English (EN)</span>
-                      {language === 'EN' && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectLanguage('KM')}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer whitespace-nowrap ${
-                        language === 'KM' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <span>Khmer (ខ្មែរ)</span>
-                      {language === 'KM' && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap">
+            {/* Language Selector Matching User Reference Design */}
+            <LanguageSwitcher variant="dark-pill" />
 
             <span className="text-slate-600 select-none">|</span>
 
@@ -147,14 +101,15 @@ export function AnnouncementBar() {
                 type="button"
                 onClick={() => {
                   setCurrOpen((prev) => !prev)
-                  setLangOpen(false)
                 }}
                 aria-expanded={currOpen}
                 aria-label="Select Currency"
-                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded hover:bg-slate-800 hover:text-white transition-colors cursor-pointer shrink-0 whitespace-nowrap text-[11px] sm:text-xs"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-white border border-slate-700 shadow-xs transition-all cursor-pointer shrink-0 whitespace-nowrap text-xs font-bold"
               >
-                <span className="font-semibold whitespace-nowrap break-keep inline-block">{currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}</span>
-                <ChevronDown className={`w-3 h-3 opacity-70 transition-transform shrink-0 ${currOpen ? 'rotate-180' : ''}`} />
+                <span className="font-bold text-xs whitespace-nowrap break-keep">
+                  {currency === 'KHR' ? 'KHR (៛)' : 'USD ($)'}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 shrink-0 ${currOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {currOpen && (

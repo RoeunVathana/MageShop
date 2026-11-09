@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const loginSchema = z.object({
@@ -160,14 +161,7 @@ export function LoginPage() {
     <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 relative bg-slate-50/60 dark:bg-slate-950/80 transition-colors">
       {/* Top Controls: Language Switcher + Theme Toggle */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setLanguage(language === 'EN' ? 'KM' : 'EN')}
-          className="px-2.5 py-1 rounded-xl text-xs font-bold border bg-card hover:bg-muted text-foreground transition-all cursor-pointer shadow-sm"
-          title={t('Switch Language to Khmer', 'ប្តូរជាភាសាអង់គ្លេស')}
-        >
-          {language === 'KM' ? '🇰🇭 KM' : '🇺🇸 EN'}
-        </button>
+        <LanguageSwitcher variant="pill" />
         <ThemeToggle />
       </div>
 
