@@ -386,7 +386,6 @@ class ProductService
             'attributeValues.attribute',
             'attributeValues.selectedOption',
         ]);
-        });
     }
 
     /**
