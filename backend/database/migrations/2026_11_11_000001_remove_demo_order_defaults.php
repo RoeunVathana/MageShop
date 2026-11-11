@@ -1,31 +1,24 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Railway uses PgBouncer in transaction pooling mode. Keep this schema
-     * cleanup outside Laravel's migration transaction so PostgreSQL can
-     * inspect and alter the existing orders table safely.
+     * This migration is intentionally a no-op.
+     *
+     * The order tracking columns were created nullable without synthetic
+     * defaults already. The original cleanup used repeated information_schema
+     * queries through Railway's PgBouncer connection and could leave the
+     * migration connection in PostgreSQL's aborted-transaction state. Keeping
+     * the migration as a no-op lets existing databases record it cleanly while
+     * avoiding a production startup failure.
      */
     public $withinTransaction = false;
 
     public function up(): void
     {
-        if (! Schema::hasTable('orders')) {
-            return;
-        }
-
-        if (DB::getDriverName() === 'pgsql') {
-            foreach (['driver_name', 'driver_phone', 'driver_vehicle', 'current_lat', 'current_lng', 'dest_lat', 'dest_lng', 'estimated_arrival'] as $column) {
-                if (Schema::hasColumn('orders', $column)) {
-                    DB::statement("ALTER TABLE orders ALTER COLUMN {$column} DROP DEFAULT");
-                }
-            }
-        }
+        // No schema change is required.
     }
 
     public function down(): void
