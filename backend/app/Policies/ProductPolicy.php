@@ -58,7 +58,6 @@ class ProductPolicy
             $user->hasRole('ADMIN') ||
             $user->hasRole('PRODUCT_MANAGER') ||
             $user->hasRole('SELLER') ||
-            $user->hasRole('SELLER_STAFF') ||
-            in_array(strtolower($user->email ?? ''), ['vothanarern@gmail.com', 'admin@megacommerce.com'], true);
+            $user->hasRole('SELLER_STAFF');
     }
 }

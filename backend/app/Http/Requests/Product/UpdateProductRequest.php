@@ -17,8 +17,7 @@ class UpdateProductRequest extends FormRequest
         }
 
         return $user->can('update', $product)
-            || $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF'])
-            || in_array(strtolower($user->email ?? ''), ['vothanarern@gmail.com', 'admin@megacommerce.com'], true);
+            || $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF']);
     }
 
     public function rules(): array

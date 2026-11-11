@@ -15,7 +15,22 @@ export const productService = {
     const response = await apiClient.get<PaginatedResponse<Product>>('/products', {
       params,
     })
-    return response.data
+    const payload: any = response.data
+
+    // Accept both Laravel paginator shapes used by deployed API versions:
+    // { data: Product[] } and { data: { data: Product[], meta: ... } }.
+    if (Array.isArray(payload?.data)) {
+      return payload as PaginatedResponse<Product>
+    }
+
+    if (Array.isArray(payload?.data?.data)) {
+      return payload.data as PaginatedResponse<Product>
+    }
+
+    return {
+      data: [],
+      meta: { current_page: 1, last_page: 1, per_page: 0, total: 0 },
+    }
   },
 
   /**

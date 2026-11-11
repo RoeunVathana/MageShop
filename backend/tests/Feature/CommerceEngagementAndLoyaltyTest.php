@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -127,7 +129,34 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
 
     public function test_realtime_delivery_gps_tracking_and_support_endpoints(): void
     {
-        $trackRes = $this->getJson('/api/v1/orders/track/ORD-DEMO-123');
+        $user = User::factory()->create();
+        $order = Order::create([
+            'order_number' => 'ORD-TEST-123',
+            'user_id' => $user->id,
+            'status' => 'pending',
+            'subtotal' => 10,
+            'shipping_fee' => 0,
+            'tax' => 0,
+            'total_amount' => 10,
+            'currency' => 'USD',
+            'payment_status' => 'paid',
+            'payment_method' => 'bakong_khqr',
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
+            'customer_phone' => '+855 12 000 000',
+            'delivery_address' => 'Phnom Penh, Cambodia',
+        ]);
+        OrderItem::create([
+            'order_id' => $order->id,
+            'product_name' => 'Test product',
+            'product_sku' => 'TEST-001',
+            'quantity' => 1,
+            'unit_price' => 10,
+            'total_price' => 10,
+        ]);
+        Sanctum::actingAs($user);
+
+        $trackRes = $this->getJson('/api/v1/orders/track/ORD-TEST-123');
         $trackRes->assertStatus(200)
             ->assertJsonStructure([
                 'status',
@@ -157,6 +186,8 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
 
     public function test_cash_on_hand_when_delivery_arrives_and_confirm_arrival_payment(): void
     {
+        $user = User::factory()->create(['loyalty_points' => 0]);
+        Sanctum::actingAs($user);
         $product = Product::first();
 
         $checkoutRes = $this->postJson('/api/v1/orders/checkout', [
@@ -176,8 +207,12 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
 
         $checkoutRes->assertStatus(201)
             ->assertJsonPath('data.payment_mode', 'cash_on_delivery')
-            ->assertJsonPath('data.amount_due_on_arrival', 40)
             ->assertJsonPath('data.points_earned', 5);
+        $this->assertEquals(
+            (float) $checkoutRes->json('data.order.total_amount'),
+            (float) $checkoutRes->json('data.amount_due_on_arrival')
+        );
+        $this->assertSame(0, (int) $user->fresh()->loyalty_points);
 
         $orderNumber = $checkoutRes->json('data.order.order_number');
         $this->assertNotEmpty($orderNumber);
@@ -187,5 +222,6 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
         $confirmRes->assertStatus(200)
             ->assertJsonPath('data.payment_status', 'paid')
             ->assertJsonPath('data.amount_due_on_arrival', 0);
+        $this->assertSame(5, (int) $user->fresh()->loyalty_points);
     }
 }

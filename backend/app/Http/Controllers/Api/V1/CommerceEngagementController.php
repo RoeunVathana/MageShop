@@ -165,7 +165,7 @@ class CommerceEngagementController extends Controller
     public function loyaltySummary(Request $request): JsonResponse
     {
         $user = $request->user('sanctum');
-        $points = $user ? (int) ($user->loyalty_points ?? 0) : (int) $request->query('guest_points', 0);
+        $points = $user ? (int) ($user->loyalty_points ?? 0) : 0;
 
         $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
         $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
@@ -241,13 +241,12 @@ class CommerceEngagementController extends Controller
     {
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['nullable', 'integer'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.price' => ['required', 'numeric', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'coupon_code' => ['nullable', 'string', 'max:40'],
             'redeem_free_product_id' => ['nullable', 'integer'],
-            'guest_points' => ['nullable', 'integer', 'min:0'],
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_email' => ['nullable', 'email', 'max:150'],
             'customer_phone' => ['required', 'string', 'max:40'],
@@ -257,16 +256,111 @@ class CommerceEngagementController extends Controller
             'payment_method' => ['nullable', 'string', 'max:40'],
             'initiate_qr' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
-            'shipping_fee' => ['nullable', 'numeric', 'min:0'],
             'delivery_method_id' => ['nullable', 'string', 'max:60'],
         ]);
 
-        $user = $request->user('sanctum');
-        $availablePoints = $user ? (int) $user->loyalty_points : (int) ($validated['guest_points'] ?? 0);
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required to place an order.');
+        }
 
+        $availablePoints = (int) ($user->loyalty_points ?? 0);
+
+        // Validate a loyalty reward before pricing the regular cart items.
+        $pointsRedeemed = 0;
+        $freeProduct = null;
+        if (! empty($validated['redeem_free_product_id'])) {
+            $freeProduct = Product::where('is_active', true)->find($validated['redeem_free_product_id']);
+            if (! $freeProduct) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Selected free reward product was not found.',
+                ], 422);
+            }
+
+            $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
+            $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
+            $basePrice = (float) ($freeProduct->selling_price ?? $freeProduct->price ?? 0);
+            $effectivePrice = ($freeProduct->discount_price !== null && (float) $freeProduct->discount_price > 0 && (float) $freeProduct->discount_price < $basePrice)
+                ? (float) $freeProduct->discount_price
+                : $basePrice;
+
+            if ($effectivePrice > $freeItemMaxPrice) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Loyalty Free Item redemption is only eligible for products priced up to \${$freeItemMaxPrice}.",
+                ], 422);
+            }
+
+            if ($availablePoints < $pointsForFreeItem) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "You need at least {$pointsForFreeItem} loyalty points to redeem a free item. Current points: ".$availablePoints,
+                ], 422);
+            }
+
+            $pointsRedeemed = $pointsForFreeItem;
+        }
+
+        $products = Product::with('inventory')
+            ->whereIn('id', collect($validated['items'])->pluck('product_id')->unique())
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('id');
+
+        $orderItems = [];
         $subtotal = 0.0;
+        $requestedQuantities = [];
         foreach ($validated['items'] as $item) {
-            $subtotal += round((float) $item['price'] * (int) $item['quantity'], 2);
+            $product = $products->get((int) $item['product_id']);
+
+            // The free reward is re-added below at $0.00 after the points check.
+            if ($freeProduct && (int) $item['product_id'] === (int) $freeProduct->id && (float) $item['price'] === 0.0) {
+                continue;
+            }
+
+            if (! $product) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'One or more selected products are no longer available.',
+                ], 422);
+            }
+
+            $basePrice = (float) ($product->selling_price ?? $product->price ?? 0);
+            $effectivePrice = ($product->discount_price !== null && (float) $product->discount_price > 0 && (float) $product->discount_price < $basePrice)
+                ? (float) $product->discount_price
+                : $basePrice;
+            $quantity = (int) $item['quantity'];
+            $requestedQuantities[$product->id] = ($requestedQuantities[$product->id] ?? 0) + $quantity;
+
+            $orderItems[] = [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku ?: 'SKU-'.$product->id,
+                'quantity' => $quantity,
+                'unit_price' => $effectivePrice,
+                'total_price' => round($effectivePrice * $quantity, 2),
+            ];
+            $subtotal += round($effectivePrice * $quantity, 2);
+        }
+
+        if ($freeProduct) {
+            $requestedQuantities[$freeProduct->id] = ($requestedQuantities[$freeProduct->id] ?? 0) + 1;
+        }
+
+        foreach ($requestedQuantities as $productId => $requestedQuantity) {
+            $product = $products->get((int) $productId) ?? $freeProduct;
+            if (! $product || $product->isDigital()) {
+                continue;
+            }
+
+            $availableStock = (int) $product->available_stock;
+            if ($requestedQuantity > $availableStock) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Insufficient stock for {$product->name}. Only {$availableStock} unit(s) are available.",
+                ], 422);
+            }
         }
 
         // 1. Apply Coupon Discount if provided
@@ -292,56 +386,33 @@ class CommerceEngagementController extends Controller
             }
         }
 
-        // 2. Check Loyalty Free Item Redemption
-        $pointsRedeemed = 0;
-        $freeProduct = null;
-        if (! empty($validated['redeem_free_product_id'])) {
-            $freeProduct = Product::find($validated['redeem_free_product_id']);
-            if (! $freeProduct) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Selected free reward product was not found.',
-                ], 422);
-            }
-
-            $freeItemMaxPrice = (float) StoreSetting::get('loyalty_free_item_max_price', self::FREE_ITEM_MAX_PRICE);
-            $pointsForFreeItem = (int) StoreSetting::get('loyalty_points_for_free_item', self::POINTS_FOR_FREE_ITEM);
-
-            $basePrice = (float) ($freeProduct->selling_price ?? $freeProduct->price ?? 0);
-            $effectivePrice = ($freeProduct->discount_price !== null && (float) $freeProduct->discount_price > 0 && (float) $freeProduct->discount_price < $basePrice)
-                ? (float) $freeProduct->discount_price
-                : $basePrice;
-
-            if ($effectivePrice > $freeItemMaxPrice) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Loyalty Free Item redemption is only eligible for products priced up to \${$freeItemMaxPrice}.",
-                ], 422);
-            }
-
-            if ($availablePoints < $pointsForFreeItem) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "You need at least {$pointsForFreeItem} loyalty points to redeem a free item. Current points: ".$availablePoints,
-                ], 422);
-            }
-
-            $pointsRedeemed = $pointsForFreeItem;
-        }
-
         // 3. Dynamic Delivery Fee Calculation based on Admin StoreSettings
         $isFreeDelivery = filter_var(StoreSetting::get('delivery_is_free', true), FILTER_VALIDATE_BOOLEAN);
         $freeDeliveryThreshold = (float) StoreSetting::get('delivery_free_threshold', 0.0);
 
         $shippingFee = 0.00;
         if (! $isFreeDelivery) {
-            if ($freeDeliveryThreshold > 0 && $subtotal >= $freeDeliveryThreshold) {
-                $shippingFee = 0.00;
-            } elseif (isset($validated['shipping_fee'])) {
-                $shippingFee = round((float) $validated['shipping_fee'], 2);
-            } else {
+            if ($freeDeliveryThreshold <= 0 || $subtotal < $freeDeliveryThreshold) {
                 $defaultFee = (float) StoreSetting::get('delivery_default_fee', 1.50);
-                $shippingFee = round($defaultFee, 2);
+                $rawDeliveryMethods = StoreSetting::get('delivery_methods');
+                $deliveryMethods = is_string($rawDeliveryMethods)
+                    ? json_decode($rawDeliveryMethods, true)
+                    : $rawDeliveryMethods;
+
+                if (is_array($deliveryMethods) && ! empty($validated['delivery_method_id'])) {
+                    foreach ($deliveryMethods as $method) {
+                        if (
+                            is_array($method)
+                            && (string) ($method['id'] ?? '') === (string) $validated['delivery_method_id']
+                            && filter_var($method['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                        ) {
+                            $defaultFee = (float) ($method['price'] ?? $defaultFee);
+                            break;
+                        }
+                    }
+                }
+
+                $shippingFee = round(max(0, $defaultFee), 2);
             }
         }
 
@@ -359,8 +430,8 @@ class CommerceEngagementController extends Controller
 
         $order = Order::create([
             'order_number' => $orderNumber,
-            'user_id' => $user ? $user->id : null,
-            'status' => 'shipped', // Immediately trackable on live GPS map
+            'user_id' => $user->id,
+            'status' => 'pending',
             'subtotal' => $subtotal,
             'discount' => $discount,
             'coupon_code' => $appliedCouponCode,
@@ -374,29 +445,26 @@ class CommerceEngagementController extends Controller
             'payment_status' => $paymentStatus,
             'payment_method' => $paymentMethod,
             'customer_name' => $validated['customer_name'],
-            'customer_email' => $validated['customer_email'] ?? (($user && $user->email) ? $user->email : 'customer@tyushop.blog'),
+            'customer_email' => $validated['customer_email'] ?? $user->email,
             'customer_phone' => $validated['customer_phone'],
             'delivery_address' => $validated['delivery_address'],
             'notes' => $validated['notes'] ?? null,
-            'driver_name' => 'Sokha Chan (TYUSHOP Express GPS Courier)',
-            'driver_phone' => '+855 12 889 900',
-            'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
-            'current_lat' => 11.5564000,
-            'current_lng' => 104.9282000,
-            'dest_lat' => ! empty($validated['dest_lat']) ? (float) $validated['dest_lat'] : 11.5680000,
-            'dest_lng' => ! empty($validated['dest_lng']) ? (float) $validated['dest_lng'] : 104.9185000,
-            'estimated_arrival' => '18 mins',
+            'dest_lat' => isset($validated['dest_lat']) ? (float) $validated['dest_lat'] : null,
+            'dest_lng' => isset($validated['dest_lng']) ? (float) $validated['dest_lng'] : null,
+            'current_lat' => null,
+            'current_lng' => null,
+            'estimated_arrival' => null,
         ]);
 
-        foreach ($validated['items'] as $item) {
+        foreach ($orderItems as $item) {
             OrderItem::create([
                 'order_id' => $order->id,
-                'product_id' => $item['product_id'] ?? null,
-                'product_name' => $item['name'],
-                'product_sku' => 'SKU-'.($item['product_id'] ?? 'ITEM'),
-                'quantity' => (int) $item['quantity'],
-                'unit_price' => (float) $item['price'],
-                'total_price' => round((float) $item['price'] * (int) $item['quantity'], 2),
+                'product_id' => $item['product_id'],
+                'product_name' => $item['product_name'],
+                'product_sku' => $item['product_sku'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'total_price' => $item['total_price'],
             ]);
         }
 
@@ -414,6 +482,7 @@ class CommerceEngagementController extends Controller
         }
 
         $txnRef = 'TXN-'.strtoupper(Str::random(10));
+        $qrPaymentData = $this->buildBakongKhqrPayload($order->order_number, $totalAmount, $txnRef);
         $payment = Payment::create([
             'order_id' => $order->id,
             'transaction_reference' => $txnRef,
@@ -422,10 +491,13 @@ class CommerceEngagementController extends Controller
             'currency' => 'USD',
             'status' => $isCashOnArrival ? 'pending_arrival' : ($initiateQr ? 'pending_qr' : 'completed'),
             'verified_at' => ($isCashOnArrival || $initiateQr) ? null : now(),
+            'khqr_string' => $initiateQr ? $qrPaymentData['qr_string'] : null,
+            'khqr_md5' => $initiateQr ? $qrPaymentData['md5'] : null,
         ]);
 
-        // Update user's loyalty points balance
-        $newPointsBalance = max(0, $availablePoints - $pointsRedeemed + $pointsEarned);
+        // Deduct redeemed points immediately, but award purchase points only after payment is final.
+        $pointsAwardedNow = $paymentStatus === 'paid';
+        $newPointsBalance = max(0, $availablePoints - $pointsRedeemed + ($pointsAwardedNow ? $pointsEarned : 0));
         if ($user) {
             $user->loyalty_points = $newPointsBalance;
             $user->save();
@@ -442,18 +514,18 @@ class CommerceEngagementController extends Controller
                 ]);
             }
 
-            DB::table('loyalty_transactions')->insert([
-                'user_id' => $user->id,
-                'order_id' => $order->id,
-                'type' => 'earned',
-                'points' => $pointsEarned,
-                'description' => "Earned +{$pointsEarned} points from Order #{$order->order_number}",
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            if ($pointsAwardedNow) {
+                DB::table('loyalty_transactions')->insert([
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'type' => 'earned',
+                    'points' => $pointsEarned,
+                    'description' => "Earned +{$pointsEarned} points from Order #{$order->order_number}",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
-
-        $qrPaymentData = $this->buildBakongKhqrPayload($order->order_number, $totalAmount, $txnRef);
         $receiptService = app(PaymentReceiptPdfService::class);
         $telegramNotified = false;
         $receipt = null;
@@ -472,7 +544,7 @@ class CommerceEngagementController extends Controller
             'message' => $initiateQr
                 ? "Bakong KHQR generated for Order #{$order->order_number}. Please scan QR code to complete payment."
                 : ($isCashOnArrival
-                    ? "Order #{$order->order_number} confirmed for Cash on Hand upon delivery! You earned +{$pointsEarned} Loyalty Points."
+                    ? "Order #{$order->order_number} confirmed for Cash on Hand upon delivery. Loyalty points will be awarded after handover."
                     : "Order #{$order->order_number} paid & confirmed! You earned +{$pointsEarned} Loyalty Points."),
             'data' => [
                 'order' => $order->load('items'),
@@ -518,9 +590,9 @@ class CommerceEngagementController extends Controller
      */
     protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
     {
-        $merchantAccount = (string) StoreSetting::get('bakong_account_id', env('BAKONG_ACCOUNT_ID', 'vathana@abaa'));
-        $merchantName = (string) StoreSetting::get('bakong_merchant_name', env('BAKONG_MERCHANT_NAME', 'TYUSHOP'));
-        $merchantCity = (string) StoreSetting::get('company_city', env('BAKONG_MERCHANT_CITY', 'Phnom Penh'));
+        $merchantAccount = (string) StoreSetting::get('bakong_account_id', config('bakong.account_id', ''));
+        $merchantName = (string) StoreSetting::get('bakong_merchant_name', config('bakong.merchant_name', 'TYUSHOP'));
+        $merchantCity = (string) StoreSetting::get('company_city', config('bakong.merchant_city', 'Phnom Penh'));
 
         // Amount formatting compliant with NBC Bakong EMVCo specification
         $amountStr = (fmod($amountUsd, 1.0) === 0.0)
@@ -582,14 +654,16 @@ class CommerceEngagementController extends Controller
     {
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
-            'guest_points' => ['nullable', 'integer', 'min:0'],
             'customer_name' => ['nullable', 'string', 'max:120'],
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'delivery_address' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $user = $request->user('sanctum');
-        $availablePoints = $user ? (int) $user->loyalty_points : (int) ($validated['guest_points'] ?? 0);
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required to redeem loyalty points.');
+        }
+        $availablePoints = (int) ($user->loyalty_points ?? 0);
 
         $product = Product::findOrFail($validated['product_id']);
         $effectivePrice = ($product->discount_price !== null && (float) $product->discount_price > 0)
@@ -613,8 +687,8 @@ class CommerceEngagementController extends Controller
         $orderNumber = 'RWD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $order = Order::create([
             'order_number' => $orderNumber,
-            'user_id' => $user ? $user->id : null,
-            'status' => 'shipped',
+            'user_id' => $user->id,
+            'status' => 'pending',
             'subtotal' => $effectivePrice,
             'discount' => $effectivePrice,
             'coupon_code' => '100PT-FREE-REWARD',
@@ -627,18 +701,15 @@ class CommerceEngagementController extends Controller
             'currency' => 'USD',
             'payment_status' => 'paid',
             'payment_method' => 'loyalty_points',
-            'customer_name' => $validated['customer_name'] ?? (($user && $user->name) ? $user->name : 'Valued Rewards Member'),
-            'customer_email' => ($user && $user->email) ? $user->email : 'member@tyushop.blog',
-            'customer_phone' => $validated['customer_phone'] ?? (($user && $user->phone_number) ? $user->phone_number : '+855 12 000 111'),
-            'delivery_address' => $validated['delivery_address'] ?? 'Phnom Penh, Cambodia',
-            'driver_name' => 'Sokha Chan (TYUSHOP Express GPS Courier)',
-            'driver_phone' => '+855 12 889 900',
-            'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
-            'current_lat' => 11.5590000,
-            'current_lng' => 104.9240000,
-            'dest_lat' => 11.5680000,
-            'dest_lng' => 104.9185000,
-            'estimated_arrival' => '15 mins',
+            'customer_name' => $validated['customer_name'] ?? $user->name,
+            'customer_email' => $user->email,
+            'customer_phone' => $validated['customer_phone'] ?? $user->phone_number,
+            'delivery_address' => $validated['delivery_address'] ?? $user->address,
+            'current_lat' => null,
+            'current_lng' => null,
+            'dest_lat' => null,
+            'dest_lng' => null,
+            'estimated_arrival' => null,
         ]);
 
         OrderItem::create([
@@ -682,111 +753,89 @@ class CommerceEngagementController extends Controller
     /**
      * Real-time GPS delivery location tracking endpoint.
      */
-    public function trackOrder(string $orderNumber): JsonResponse
+    public function trackOrder(Request $request, string $orderNumber): JsonResponse
     {
         $order = Order::with('items')
             ->where('order_number', $orderNumber)
             ->first();
 
         if (! $order) {
-            // Find recent or synthesize a live customer order matching customer checkout
-            $order = Order::firstOrCreate(
-                ['order_number' => $orderNumber],
-                [
-                    'status' => 'shipped',
-                    'subtotal' => 349.00,
-                    'discount' => 34.90,
-                    'shipping_fee' => 0.00,
-                    'tax' => 0.00,
-                    'total_amount' => 314.10,
-                    'currency' => 'USD',
-                    'payment_status' => 'paid',
-                    'payment_method' => 'bakong_khqr',
-                    'customer_name' => 'Dara Sok',
-                    'customer_email' => 'dara.sok@tyushop.blog',
-                    'customer_phone' => '+855 12 888 999',
-                    'delivery_address' => 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
-                    'dest_lat' => 11.5564000,
-                    'dest_lng' => 104.9282000,
-                    'current_lat' => 11.5510000,
-                    'current_lng' => 104.9315000,
-                    'driver_name' => 'Sokha Chan (TYUSHOP Express GPS Courier)',
-                    'driver_phone' => '+855 12 889 900',
-                    'driver_vehicle' => 'Honda PCX Electric • PP 1AB-9988',
-                    'estimated_arrival' => '12 mins',
-                ]
-            );
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found.',
+            ], 404);
         }
 
-        // Ensure destination address and coordinates match the live checkout target (BKK1)
-        if ($order && (empty($order->dest_lat) || strpos((string) $order->delivery_address, 'Street 240') !== false || empty($order->delivery_address))) {
-            $order->delivery_address = 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia';
-            $order->dest_lat = 11.5564000;
-            $order->dest_lng = 104.9282000;
-            if (empty($order->driver_name) || strpos((string) $order->driver_name, 'MegaExpress') !== false) {
-                $order->driver_name = 'Sokha Chan (TYUSHOP Express GPS Courier)';
-            }
-            $order->save();
-        }
+        $this->authorizeOrderAccess($request, $order);
 
-        $lat = $order ? (float) ($order->current_lat ?? 11.5510) : 11.5510;
-        $lng = $order ? (float) ($order->current_lng ?? 104.9315) : 104.9315;
-        $destLat = $order ? (float) ($order->dest_lat ?? 11.5564) : 11.5564;
-        $destLng = $order ? (float) ($order->dest_lng ?? 104.9282) : 104.9282;
-        $paymentStatus = $order ? ($order->payment_status ?? 'paid') : 'paid';
-        $paymentMethod = $order ? ($order->payment_method ?? 'bakong_khqr') : 'bakong_khqr';
-        $totalAmount = $order ? (float) $order->total_amount : 0.00;
-        $isCashOnArrival = $paymentStatus !== 'paid' && $totalAmount > 0;
+        $lat = (float) ($order->current_lat ?? $order->dest_lat ?? 0);
+        $lng = (float) ($order->current_lng ?? $order->dest_lng ?? 0);
+        $destLat = (float) ($order->dest_lat ?? 0);
+        $destLng = (float) ($order->dest_lng ?? 0);
+        $paymentStatus = $order->payment_status ?? 'unpaid';
+        $paymentMethod = $order->payment_method ?? 'bakong_khqr';
+        $totalAmount = (float) $order->total_amount;
+        $isCashOnArrival = in_array($paymentMethod, ['cash_on_delivery', 'cash_on_hand'], true)
+            && $paymentStatus !== 'paid'
+            && $totalAmount > 0;
         $amountDueOnArrival = $isCashOnArrival ? $totalAmount : 0.00;
 
         // Calculate real distance remaining (Haversine Formula)
-        $distanceRemainingKm = 1.2;
-        try {
+        $hasCoordinates = $order->current_lat !== null && $order->current_lng !== null
+            && $order->dest_lat !== null && $order->dest_lng !== null;
+        $distanceRemainingKm = null;
+        if ($hasCoordinates) {
+            try {
             $theta = $lng - $destLng;
             $dist = sin(deg2rad($lat)) * sin(deg2rad($destLat)) + cos(deg2rad($lat)) * cos(deg2rad($destLat)) * cos(deg2rad($theta));
             $dist = acos(max(-1, min(1, $dist)));
             $dist = rad2deg($dist) * 60 * 1.1515 * 1.609344;
             $distanceRemainingKm = max(0.1, round($dist, 2));
-        } catch (\Throwable $e) {
-            $distanceRemainingKm = 1.2;
+            } catch (\Throwable $e) {
+                $distanceRemainingKm = null;
+            }
         }
 
-        $estimatedMins = max(2, (int) round(($distanceRemainingKm / 28) * 60));
-        $etaString = ($order && $order->status === 'delivered') ? 'Delivered' : "{$estimatedMins} mins";
+        $estimatedMins = $distanceRemainingKm !== null
+            ? max(2, (int) round(($distanceRemainingKm / 28) * 60))
+            : null;
+        $etaString = $order->status === 'delivered'
+            ? 'Delivered'
+            : ($order->estimated_arrival ?: ($estimatedMins !== null ? "{$estimatedMins} mins" : null));
 
         return response()->json([
             'status' => 'ok',
             'data' => [
-                'order_number' => $order ? $order->order_number : $orderNumber,
-                'status' => $order ? $order->status : 'shipped',
+                'order_number' => $order->order_number,
+                'status' => $order->status,
                 'payment_status' => $paymentStatus,
                 'payment_method' => $paymentMethod,
                 'amount_due_on_arrival' => $amountDueOnArrival,
                 'total_amount' => $totalAmount,
-                'discount' => $order ? (float) $order->discount : 0.00,
-                'points_earned' => $order ? (int) ($order->points_earned ?? 5) : 5,
-                'points_redeemed' => $order ? (int) ($order->points_redeemed ?? 0) : 0,
-                'customer_name' => $order ? ($order->customer_name ?? 'Dara Sok') : 'Dara Sok',
-                'customer_phone' => $order ? ($order->customer_phone ?? '+855 12 888 999') : '+855 12 888 999',
-                'delivery_address' => $order ? ($order->delivery_address ?? 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia') : 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
+                'discount' => (float) ($order->discount ?? 0),
+                'points_earned' => (int) ($order->points_earned ?? 0),
+                'points_redeemed' => (int) ($order->points_redeemed ?? 0),
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'delivery_address' => $order->delivery_address,
                 'driver' => [
-                    'name' => ($order && $order->driver_name) ? $order->driver_name : 'Sokha Chan (TYUSHOP Express GPS Courier)',
-                    'phone' => ($order && $order->driver_phone) ? $order->driver_phone : '+855 12 889 900',
-                    'vehicle' => ($order && $order->driver_vehicle) ? $order->driver_vehicle : 'Honda PCX Electric • PP 1AB-9988',
+                    'name' => $order->driver_name,
+                    'phone' => $order->driver_phone,
+                    'vehicle' => $order->driver_vehicle,
                     'rating' => 4.95,
                     'verified' => true,
                 ],
                 'gps' => [
-                    'warehouse_lat' => 11.5449,
-                    'warehouse_lng' => 104.9350,
-                    'warehouse_name' => 'TYUSHOP Central Fulfillment Hub (Phnom Penh)',
+                    'warehouse_lat' => null,
+                    'warehouse_lng' => null,
+                    'warehouse_name' => null,
                     'current_lat' => $lat,
                     'current_lng' => $lng,
                     'dest_lat' => $destLat,
                     'dest_lng' => $destLng,
-                    'estimated_arrival' => ($order && $order->status === 'delivered') ? 'Delivered' : (($order && $order->estimated_arrival) ? $order->estimated_arrival : $etaString),
-                    'distance_remaining_km' => ($order && $order->status === 'delivered') ? 0.0 : $distanceRemainingKm,
-                    'speed_kmh' => ($order && $order->status === 'delivered') ? 0 : 32,
+                    'estimated_arrival' => $etaString,
+                    'distance_remaining_km' => $order->status === 'delivered' ? 0.0 : $distanceRemainingKm,
+                    'speed_kmh' => $order->status === 'delivered' ? 0 : null,
                     'updated_at' => now()->toIso8601String(),
                 ],
                 'checkpoints' => [
@@ -794,36 +843,37 @@ class CommerceEngagementController extends Controller
                         'title' => $isCashOnArrival
                             ? 'Order Confirmed • Cash on Hand Upon Arrival ($'.number_format($amountDueOnArrival, 2).')'
                             : 'Order Confirmed & Online Payment Verified',
-                        'location' => 'TYUSHOP Core Checkout (+5 Loyalty Pts Awarded)',
+                        'location' => 'TYUSHOP Checkout',
                         'time' => 'Completed',
                         'done' => true,
                     ],
                     [
-                        'title' => 'Quality Inspected & Dispatched from Warehouse',
-                        'location' => 'TYUSHOP Central Hub (Chamkarmon, Phnom Penh)',
-                        'time' => 'Completed',
-                        'done' => true,
+                        'title' => 'Warehouse Dispatch',
+                        'location' => $order->delivery_address,
+                        'time' => $order->status === 'pending' ? 'Waiting for dispatch' : 'Completed',
+                        'done' => $order->status !== 'pending',
+                        'active' => $order->status === 'pending',
                     ],
                     [
-                        'title' => 'Out for Delivery • Live GPS Telemetry Active',
-                        'location' => 'En Route via Preah Monivong Blvd → BKK1',
-                        'time' => ($order && $order->status === 'delivered') ? 'Delivered' : 'In Transit Now',
-                        'done' => true,
-                        'active' => ($order && $order->status !== 'delivered'),
+                        'title' => 'Out for Delivery • Live GPS Telemetry',
+                        'location' => $order->delivery_address,
+                        'time' => $order->status === 'pending' ? 'Not started' : ($order->status === 'delivered' ? 'Delivered' : 'In transit'),
+                        'done' => in_array($order->status, ['shipped', 'out_for_delivery', 'delivered'], true),
+                        'active' => in_array($order->status, ['shipped', 'out_for_delivery'], true),
                     ],
                     [
-                        'title' => ($order && $order->status === 'delivered')
+                        'title' => ($order->status === 'delivered')
                             ? 'Delivered to Doorstep (Handover Complete)'
                             : ($isCashOnArrival
                                 ? 'Arriving at Location • Pay Cash on Hand ($'.number_format($amountDueOnArrival, 2).') to Courier'
-                                : 'Arriving at Customer Doorstep (Paid Online $0 Due)'),
-                        'location' => ($order && $order->delivery_address) ? $order->delivery_address : 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
-                        'time' => ($order && $order->status === 'delivered') ? 'Completed' : "Est. {$estimatedMins} mins",
-                        'done' => ($order && $order->status === 'delivered'),
-                        'active' => ($order && $order->status === 'delivered'),
+                                : 'Arriving at Customer Doorstep'),
+                        'location' => $order->delivery_address,
+                        'time' => $order->status === 'delivered' ? 'Completed' : ($etaString ?: 'Awaiting ETA'),
+                        'done' => $order->status === 'delivered',
+                        'active' => $order->status !== 'delivered',
                     ],
                 ],
-                'items' => $order ? $order->items : [],
+                'items' => $order->items,
             ],
         ]);
     }
@@ -835,52 +885,146 @@ class CommerceEngagementController extends Controller
     {
         $order = Order::with('items')->where('order_number', $orderNumber)->first();
         if (! $order) {
-            $order = Order::with('items')->latest()->first();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found.',
+            ], 404);
         }
+
+        $this->authorizeOrderAccess($request, $order);
 
         $receipt = null;
         $payment = null;
         $telegramNotified = false;
 
-        if ($order) {
-            $isQrCheckoutConfirm = ($request->input('context') === 'qr_checkout') || ($order->payment_status === 'pending_qr');
+        $isQrCheckoutConfirm = ($request->input('context') === 'qr_checkout') || ($order->payment_status === 'pending_qr');
 
-            if (! empty($request->input('customer_email'))) {
-                $order->customer_email = (string) $request->input('customer_email');
-            }
-
-            $order->payment_status = 'paid';
-            if (! $isQrCheckoutConfirm) {
-                $order->status = 'delivered';
-            }
-            $order->save();
-
-            Payment::where('order_id', $order->id)->update([
-                'status' => 'completed',
-                'verified_at' => now(),
-            ]);
-
-            $payment = Payment::where('order_id', $order->id)->latest()->first();
-
-            // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
-            $receipt = app(PaymentReceiptPdfService::class)->generateAndSend($order, $payment);
-            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+        if (! $isQrCheckoutConfirm
+            && ! in_array($order->payment_method, ['cash_on_delivery', 'cash_on_hand'], true)
+        ) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only cash-on-delivery orders can be confirmed at handover.',
+            ], 422);
         }
+
+        $payment = Payment::where('order_id', $order->id)->latest()->first();
+        if ($isQrCheckoutConfirm) {
+            if (! $payment || ! $payment->khqr_md5) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This QR payment is missing verification data. Please create a new checkout.',
+                ], 422);
+            }
+
+            $apiToken = (string) config('bakong.api_token');
+            if (! filter_var(config('bakong.enabled', true), FILTER_VALIDATE_BOOLEAN) || $apiToken === '') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bakong verification is not configured on the server yet.',
+                ], 503);
+            }
+
+            try {
+                $verificationResponse = Http::timeout(12)
+                    ->withToken($apiToken)
+                    ->post(rtrim((string) config('bakong.api_url'), '/').'/v1/check_transaction_by_md5', [
+                        'md5' => $payment->khqr_md5,
+                    ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bakong verification is temporarily unavailable. Please try again.',
+                ], 503);
+            }
+
+            $verificationPayload = $verificationResponse->json();
+            $transaction = is_array($verificationPayload) ? ($verificationPayload['data'] ?? null) : null;
+            $expectedMerchant = strtolower((string) StoreSetting::get('bakong_account_id', config('bakong.account_id', '')));
+            $paidMerchant = strtolower((string) ($transaction['toAccountId'] ?? ''));
+            $amountMatches = is_array($transaction)
+                && abs((float) ($transaction['amount'] ?? -1) - (float) $order->total_amount) < 0.01;
+            $currencyMatches = is_array($transaction)
+                && strtoupper((string) ($transaction['currency'] ?? '')) === strtoupper((string) $order->currency);
+            $merchantMatches = $expectedMerchant !== '' && $paidMerchant !== '' && hash_equals($expectedMerchant, $paidMerchant);
+
+            if (! $verificationResponse->successful()
+                || (int) ($verificationPayload['responseCode'] ?? 1) !== 0
+                || ! $amountMatches
+                || ! $currencyMatches
+                || ! $merchantMatches
+            ) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bakong has not confirmed the exact payment for this order yet.',
+                ], 422);
+            }
+
+            $payment->gateway_payload = $verificationPayload;
+            $payment->transaction_reference = (string) ($transaction['hash'] ?? $payment->transaction_reference);
+            $payment->save();
+        }
+
+        if (! empty($request->input('customer_email'))) {
+            $order->customer_email = (string) $request->input('customer_email');
+        }
+
+        $order->payment_status = 'paid';
+        if (! $isQrCheckoutConfirm) {
+            $order->status = 'delivered';
+        }
+        $order->save();
+
+        Payment::where('order_id', $order->id)->update([
+            'status' => 'completed',
+            'verified_at' => now(),
+        ]);
+        $payment = Payment::where('order_id', $order->id)->latest()->first();
+
+        $newPointsBalance = null;
+        $customer = $order->user;
+        if ($customer) {
+            $earnedAlready = DB::table('loyalty_transactions')
+                ->where('order_id', $order->id)
+                ->where('type', 'earned')
+                ->exists();
+
+            if (! $earnedAlready) {
+                $pointsEarned = (int) ($order->points_earned ?? self::POINTS_PER_PURCHASE);
+                $customer->increment('loyalty_points', $pointsEarned);
+                DB::table('loyalty_transactions')->insert([
+                    'user_id' => $customer->id,
+                    'order_id' => $order->id,
+                    'type' => 'earned',
+                    'points' => $pointsEarned,
+                    'description' => "Earned +{$pointsEarned} points from Order #{$order->order_number}",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $newPointsBalance = (int) $customer->fresh()->loyalty_points;
+        }
+
+        // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
+        $receipt = app(PaymentReceiptPdfService::class)->generateAndSend($order, $payment);
+        $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
 
         return response()->json([
             'status' => 'ok',
             'message' => "Payment verified & confirmed for Order #{$orderNumber}! Receipt emailed to customer and report sent to Telegram Admin.",
             'data' => [
-                'order_number' => $order ? $order->order_number : $orderNumber,
+                'order_number' => $order->order_number,
                 'order' => $order,
-                'receipt_number' => $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd')),
-                'transaction_reference' => ($payment && $payment->transaction_reference) ? $payment->transaction_reference : 'TXN-VERIFIED',
-                'email_status' => $receipt ? $receipt->email_status : 'sent',
-                'email_sent_to' => $order ? $order->customer_email : null,
+                'receipt_number' => $receipt?->receipt_number,
+                'transaction_reference' => $payment?->transaction_reference,
+                'email_status' => $receipt?->email_status,
+                'email_sent_to' => $order->customer_email,
                 'telegram_admin_notified' => $telegramNotified,
                 'payment_status' => 'paid',
                 'amount_due_on_arrival' => 0.00,
-                'status' => $order ? $order->status : 'delivered',
+                'status' => $order->status,
+                'new_loyalty_points' => $newPointsBalance,
             ],
         ]);
     }
@@ -1118,6 +1262,8 @@ class CommerceEngagementController extends Controller
      */
     public function deliveryOrders(Request $request): JsonResponse
     {
+        $this->authorizeDeliveryStaff($request);
+
         $orders = Order::with('items')
             ->orderBy('id', 'desc')
             ->take(30)
@@ -1140,13 +1286,14 @@ class CommerceEngagementController extends Controller
      */
     public function updateDeliveryLocation(Request $request, string $orderNumber): JsonResponse
     {
+        $this->authorizeDeliveryStaff($request);
+
         $order = Order::where('order_number', $orderNumber)->first();
         if (! $order) {
-            $order = Order::latest()->first();
-        }
-
-        if (! $order) {
-            return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found.',
+            ], 404);
         }
 
         $validated = $request->validate([
@@ -1159,7 +1306,7 @@ class CommerceEngagementController extends Controller
             'driver_name' => ['nullable', 'string', 'max:120'],
             'driver_phone' => ['nullable', 'string', 'max:60'],
             'driver_vehicle' => ['nullable', 'string', 'max:120'],
-            'status' => ['nullable', 'string', 'max:40'],
+            'status' => ['nullable', 'in:pending,shipped,out_for_delivery,delivered,cancelled'],
         ]);
 
         foreach ($validated as $field => $val) {
@@ -1181,18 +1328,30 @@ class CommerceEngagementController extends Controller
      */
     public function updateDeliveryStatus(Request $request, string $orderNumber): JsonResponse
     {
+        $this->authorizeDeliveryStaff($request);
+
         $order = Order::where('order_number', $orderNumber)->first();
         if (! $order) {
-            $order = Order::latest()->first();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found.',
+            ], 404);
         }
 
-        if (! $order) {
-            return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
+        $validated = $request->validate([
+            'status' => ['required', 'in:pending,shipped,out_for_delivery,delivered,cancelled'],
+        ]);
+        $status = $validated['status'];
+
+        if ($status === 'delivered' && $order->payment_status === 'pending_qr') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Verify the online payment before marking this order delivered.',
+            ], 422);
         }
 
-        $status = $request->input('status', 'out_for_delivery');
         $order->status = $status;
-        if ($status === 'delivered') {
+        if ($status === 'delivered' && in_array($order->payment_method, ['cash_on_delivery', 'cash_on_hand'], true)) {
             $order->payment_status = 'paid';
             Payment::where('order_id', $order->id)->update([
                 'status' => 'completed',
@@ -1213,29 +1372,72 @@ class CommerceEngagementController extends Controller
      */
     public function broadcastDriverGps(Request $request): JsonResponse
     {
+        $this->authorizeDeliveryStaff($request);
+
         $validated = $request->validate([
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
-            'driver_name' => ['nullable', 'string'],
+            'order_number' => ['required', 'string', 'exists:orders,order_number'],
+            'driver_name' => ['nullable', 'string', 'max:120'],
         ]);
 
         $lat = (float) $validated['latitude'];
         $lng = (float) $validated['longitude'];
 
-        Order::whereIn('status', ['shipped', 'out_for_delivery'])
-            ->update([
-                'current_lat' => $lat,
-                'current_lng' => $lng,
-            ]);
+        $order = Order::where('order_number', $validated['order_number'])
+            ->whereIn('status', ['shipped', 'out_for_delivery'])
+            ->first();
+        if (! $order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'The selected order is not currently in delivery.',
+            ], 422);
+        }
+
+        $order->current_lat = $lat;
+        $order->current_lng = $lng;
+        if (! empty($validated['driver_name'])) {
+            $order->driver_name = $validated['driver_name'];
+        }
+        $order->save();
 
         return response()->json([
             'status' => 'ok',
-            'message' => "Live GPS coordinates ({$lat}, {$lng}) broadcast to all active delivery routes.",
+            'message' => "Live GPS coordinates ({$lat}, {$lng}) broadcast for Order #{$order->order_number}.",
             'data' => [
                 'current_lat' => $lat,
                 'current_lng' => $lng,
+                'order_number' => $order->order_number,
                 'broadcast_at' => now()->toIso8601String(),
             ],
         ]);
+    }
+
+    protected function authorizeOrderAccess(Request $request, Order $order): void
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required to access this order.');
+        }
+
+        $isStaff = method_exists($user, 'hasAnyRole')
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'DELIVERY']);
+        if (! $isStaff && ((int) $order->user_id !== (int) $user->id)) {
+            abort(403, 'You do not have access to this order.');
+        }
+    }
+
+    protected function authorizeDeliveryStaff(Request $request): void
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required for delivery operations.');
+        }
+
+        $allowed = method_exists($user, 'hasAnyRole')
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'DELIVERY']);
+        if (! $allowed) {
+            abort(403, 'Delivery staff privileges are required for this operation.');
+        }
     }
 }

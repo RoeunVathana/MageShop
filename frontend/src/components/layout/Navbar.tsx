@@ -43,10 +43,10 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="relative z-20 hidden lg:block border-b bg-card/90 backdrop-blur-xs transition-colors duration-300">
+    <nav className="relative z-[100] hidden overflow-visible border-b bg-background transition-colors duration-300">
       <div className="container mx-auto px-4 flex items-center justify-between gap-4">
         {/* Left: Animated Categories Dropdown Menu */}
-        <div className={`relative shrink-0 ${isCategoryOpen ? 'z-50' : ''}`}>
+        <div className={`relative shrink-0 ${isCategoryOpen ? 'z-[110]' : ''}`}>
           <button
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -63,34 +63,40 @@ export function Navbar() {
           {isCategoryOpen && (
             <>
               <div
-                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-2xs transition-opacity duration-200"
+                className="fixed inset-0 z-[90] bg-slate-950/25 transition-opacity duration-200"
                 onClick={() => setIsCategoryOpen(false)}
               />
-              <div className="absolute left-0 top-full w-72 rounded-b-2xl border bg-card/98 backdrop-blur-md p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out">
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b mb-1.5 flex items-center justify-between">
+              <div
+                className="isolate absolute left-0 top-full z-[120] w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-b-2xl border border-border bg-white p-2 text-card-foreground shadow-[0_18px_45px_rgba(15,23,42,0.22)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out dark:bg-slate-900"
+                style={{ backgroundColor: 'hsl(var(--background))', opacity: 1, mixBlendMode: 'normal' }}
+              >
+                <div className="flex items-center justify-between border-b px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   <span>{t('Department Catalog', 'បញ្ជីប្រភេទទំនិញ')}</span>
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
                 </div>
-                {featuredCategories.map((cat, idx) => {
-                  const Icon = cat.icon
-                  return (
-                    <Link
-                      key={cat.slug}
-                      to={`/categories`}
-                      onClick={() => setIsCategoryOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-primary/10 active:scale-98 group transition-all duration-200 text-xs"
-                      style={{ animationDelay: `${idx * 40}ms` }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/20 text-muted-foreground group-hover:text-primary transition-all duration-200 group-hover:scale-110 shadow-2xs">
-                          <Icon className="w-4 h-4 transition-transform duration-200" />
+                <div className="max-h-[min(28rem,calc(100vh-8rem))] overflow-y-auto py-1 no-scrollbar">
+                  {featuredCategories.map((cat, idx) => {
+                    const Icon = cat.icon
+                    return (
+                      <Link
+                        key={cat.slug}
+                        to={`/categories`}
+                        onClick={() => setIsCategoryOpen(false)}
+                        title={`${cat.name} · ${cat.count}`}
+                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12px] leading-5 transition-all duration-200 hover:bg-primary/10 active:scale-[.98]"
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                          <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/20 text-muted-foreground group-hover:text-primary transition-all duration-200 group-hover:scale-110 shadow-2xs">
+                            <Icon className="w-4 h-4 transition-transform duration-200" />
+                          </div>
+                          <span className="min-w-0 truncate font-medium text-foreground transition-colors group-hover:text-primary">{cat.name}</span>
                         </div>
-                        <span className="font-medium text-foreground group-hover:text-primary transition-colors">{cat.name}</span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground font-mono transition-colors">{cat.count}</span>
-                    </Link>
-                  )
-                })}
+                        <span className="shrink-0 text-[0.7rem] font-mono text-muted-foreground transition-colors group-hover:text-foreground">{cat.count}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
             </>
           )}

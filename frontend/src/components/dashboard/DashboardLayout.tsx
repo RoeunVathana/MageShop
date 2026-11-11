@@ -83,24 +83,24 @@ export function DashboardLayout({
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       {/* Desktop Sticky Sidebar - Permanently pinned to viewport when scrolling page */}
-      <aside className="hidden lg:flex flex-col w-68 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="sm" subtitle="WORKSPACE" />
           </Link>
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
+        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
           <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className={cn('text-sm font-bold', roleColor)}>{roleTitle}</span>
+          <div className="flex items-center gap-2 mt-1 min-w-0">
+            <span className={cn('text-xs font-bold truncate min-w-0', roleColor)} title={roleTitle}>{roleTitle}</span>
             <Badge
               variant="outline"
-              className="text-[10px] rounded-lg border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1"
+              className="shrink-0 text-[9px] rounded-md border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1 px-1.5 py-0.5"
             >
               <ShieldCheck className="w-3 h-3" /> {t('Verified', 'បានផ្ទៀងផ្ទាត់')}
             </Badge>
@@ -108,7 +108,7 @@ export function DashboardLayout({
         </div>
 
         {/* Navigation Items - Self-scrolling if menu exceeds viewport height */}
-        <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto overscroll-contain">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -119,20 +119,20 @@ export function DashboardLayout({
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all',
+                  'flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-medium transition-all',
                   isActive
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4 shrink-0" />
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{displayLabel}</span>
                 </div>
                 {displayBadge && (
                   <span
                     className={cn(
-                      'text-[10px] px-2 py-0.5 rounded-lg font-bold',
+                      'text-[9px] px-1.5 py-0.5 rounded-md font-bold',
                       isActive
                         ? 'bg-white/20 text-white'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -147,12 +147,12 @@ export function DashboardLayout({
         </nav>
 
         {/* Storefront return link & footer */}
-        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <Link to="/">
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-xs gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="w-full text-[11px] gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <Home className="w-3.5 h-3.5" /> {t('Return to Storefront', 'ត្រឡប់ទៅហាង')}
             </Button>
@@ -246,7 +246,7 @@ export function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        <header className="h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 lg:px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

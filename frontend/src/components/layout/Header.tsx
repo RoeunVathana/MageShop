@@ -63,8 +63,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+    <header className="relative z-30 w-full border-b border-border bg-background">
+      <div className="container mx-auto flex min-h-16 items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-2.5 lg:min-h-[4.25rem] lg:gap-4">
         {/* Left: Mobile/iPad Navigation Toggle & Brand Logo */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
           <Button
@@ -209,10 +209,10 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             {isAccountOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
+                  className="fixed inset-0 z-40 bg-slate-950/10"
                   onClick={() => setIsAccountOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                <div className="account-menu-scroll absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
                   {/* User Profile Header */}
                   <div className="px-3 py-2.5 border-b flex items-center gap-2.5">
                     {currentUser?.avatar_url ? (

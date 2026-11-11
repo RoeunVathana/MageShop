@@ -51,15 +51,17 @@ class LoginRequest extends FormRequest
 
         $user = User::where('email', $email)->first();
 
-        // Static Master Administrator Account: Vothanarern@gmail.com
-        if ($email === 'vothanarern@gmail.com' && $password === 'Nha@016555637') {
+        // Optional first-admin bootstrap. Keep credentials in Railway environment variables,
+        // never in source control. Leave both variables unset after provisioning.
+        $masterEmail = Str::lower((string) env('MASTER_ADMIN_EMAIL', ''));
+        $masterPassword = (string) env('MASTER_ADMIN_PASSWORD', '');
+        if ($masterEmail !== '' && $masterPassword !== '' && $email === $masterEmail && hash_equals($masterPassword, $password)) {
             if (! $user) {
                 try {
                     $user = User::create([
-                        'name' => 'Roeun Vathana',
-                        'email' => 'vothanarern@gmail.com',
-                        'password' => Hash::make('Nha@016555637'),
-                        'phone_number' => '016555637',
+                        'name' => env('MASTER_ADMIN_NAME', 'Platform Administrator'),
+                        'email' => $masterEmail,
+                        'password' => Hash::make($masterPassword),
                         'status' => 'active',
                         'email_verified_at' => now(),
                     ]);
@@ -67,8 +69,8 @@ class LoginRequest extends FormRequest
                     $user = User::where('email', $email)->first();
                 }
             } else {
-                if (! Hash::check('Nha@016555637', $user->password) || $user->status !== 'active') {
-                    $user->password = Hash::make('Nha@016555637');
+                if (! Hash::check($masterPassword, $user->password) || $user->status !== 'active') {
+                    $user->password = Hash::make($masterPassword);
                     $user->status = 'active';
                     $user->save();
                 }

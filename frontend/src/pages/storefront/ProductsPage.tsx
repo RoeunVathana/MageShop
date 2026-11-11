@@ -8,6 +8,7 @@ import {
   Search,
   RotateCcw,
   Package,
+  AlertCircle,
   Layers,
   Sparkles,
   ChevronRight,
@@ -43,6 +44,8 @@ export function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [totalPages, setTotalPages] = useState<number>(1)
 
@@ -88,6 +91,7 @@ export function ProductsPage() {
   // Sync products when search params change
   useEffect(() => {
     setLoading(true)
+    setLoadError(null)
 
     const params: any = {
       page: currentPage,
@@ -114,11 +118,19 @@ export function ProductsPage() {
       .catch((err) => {
         console.error('Failed to load products', err)
         setProducts([])
+        setTotalProducts(0)
+        setTotalPages(1)
+        setLoadError(
+          t(
+            'We could not load the catalog. Please try again.',
+            'មិនអាចទាញយកកាតាឡុកទំនិញបានទេ។ សូមសាកល្បងម្ដងទៀត។'
+          )
+        )
       })
       .finally(() => {
         setLoading(false)
       })
-  }, [searchParams])
+  }, [searchParams, reloadKey])
 
   const updateParam = (key: string, value: string | null) => {
     const nextParams = new URLSearchParams(searchParams)
@@ -168,9 +180,9 @@ export function ProductsPage() {
   )
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="container mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
       {/* Page Title & Breadcrumb */}
-      <div className="border-b pb-6">
+      <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/10 via-card to-card px-5 py-6 shadow-sm sm:px-7">
         <div className="text-xs text-muted-foreground mb-2">
           <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link> /{' '}
           <span className="text-foreground font-medium">{t('Products Catalog', 'កាតាឡុកផលិតផល')}</span>
@@ -207,7 +219,7 @@ export function ProductsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
-        <aside className={cn('space-y-6', isMobileFilterOpen ? 'block' : 'hidden lg:block')}>
+        <aside className={cn('space-y-6 lg:sticky lg:top-24 lg:self-start', isMobileFilterOpen ? 'block' : 'hidden lg:block')}>
           <div className="p-5 border rounded-2xl bg-card space-y-6 shadow-sm">
             <div className="flex items-center justify-between border-b pb-3">
               <span className="text-sm font-bold flex items-center gap-2">
@@ -441,7 +453,7 @@ export function ProductsPage() {
         {/* Catalog Main Panel */}
         <main className="lg:col-span-3 space-y-6">
           {/* Controls bar: Results Count & Sort Dropdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-2xl bg-card shadow-sm text-xs">
+          <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-card/80 p-4 text-xs shadow-sm backdrop-blur-sm sm:flex-row sm:items-center dark:border-slate-800/80">
             <div className="text-muted-foreground">
               {t('Showing', 'កំពុងបង្ហាញ')} <span className="font-bold text-foreground">{products.length}</span> {t('of', 'នៃ')}{' '}
               <span className="font-bold text-foreground">{totalProducts}</span> {t('items', 'មុខទំនិញ')}
@@ -475,6 +487,18 @@ export function ProductsPage() {
               <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
               <p className="text-sm font-semibold">{t('Loading marketplace products...', 'កំពុងទាញយកទិន្នន័យផលិតផល...')}</p>
             </div>
+          ) : loadError ? (
+            <div className="p-12 sm:p-16 text-center border border-rose-200 dark:border-rose-900/60 rounded-3xl bg-rose-50/60 dark:bg-rose-950/20">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <h3 className="font-bold text-base">{t('Catalog temporarily unavailable', 'កាតាឡុកមិនអាចប្រើបានបណ្ដោះអាសន្ន')}</h3>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">{loadError}</p>
+              <Button size="sm" variant="outline" onClick={() => setReloadKey((key) => key + 1)} className="mt-5 rounded-xl text-xs font-semibold">
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                {t('Retry loading catalog', 'សាកល្បងទាញយកម្ដងទៀត')}
+              </Button>
+            </div>
           ) : products.length === 0 ? (
             <div className="p-16 text-center border-2 border-dashed rounded-2xl bg-muted/20">
               <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
@@ -497,7 +521,7 @@ export function ProductsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

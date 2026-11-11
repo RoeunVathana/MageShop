@@ -10,8 +10,7 @@ class StoreBrandRequest extends FormRequest
     {
         $user = $this->user('sanctum') ?: $this->user();
 
-        return $user && ($user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'STAFF', 'SELLER'])
-            || in_array(strtolower($user->email ?? ''), ['vothanarern@gmail.com', 'admin@megacommerce.com'], true));
+        return $user && $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'STAFF', 'SELLER']);
     }
 
     public function rules(): array

@@ -288,12 +288,26 @@ class CommerceAndTelegramSeeder extends Seeder
             ]));
         }
 
+        // Demo users, orders, courier telemetry, and payment records are opt-in only.
+        // Production deploys should seed catalog/configuration without fake customer activity.
+        if (! filter_var(env('SEED_DEMO_DATA', false), FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $demoAdminEmail = strtolower(trim((string) env('DEMO_ADMIN_EMAIL', '')));
+        $demoAdminPassword = (string) env('DEMO_ADMIN_PASSWORD', '');
+        $demoCustomerEmail = strtolower(trim((string) env('DEMO_CUSTOMER_EMAIL', '')));
+        $demoCustomerPassword = (string) env('DEMO_CUSTOMER_PASSWORD', '');
+        if ($demoAdminEmail === '' || $demoAdminPassword === '' || $demoCustomerEmail === '' || $demoCustomerPassword === '') {
+            throw new \RuntimeException('SEED_DEMO_DATA=true requires DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, DEMO_CUSTOMER_EMAIL, and DEMO_CUSTOMER_PASSWORD.');
+        }
+
         // 4. Create an Admin / Staff user for Telegram Bot management testing
         $adminUser = User::firstOrCreate(
-            ['email' => 'admin.tele@megacommerce.local'],
+            ['email' => $demoAdminEmail],
             [
                 'name' => 'MegaCommerce Store Manager',
-                'password' => Hash::make('AdminPass2026!'),
+                'password' => Hash::make($demoAdminPassword),
                 'status' => 'active',
                 'phone_number' => '+85512999001',
             ]
@@ -302,10 +316,10 @@ class CommerceAndTelegramSeeder extends Seeder
 
         // Customer user
         $customerUser = User::firstOrCreate(
-            ['email' => 'customer.tele@megacommerce.local'],
+            ['email' => $demoCustomerEmail],
             [
                 'name' => 'Sopheap Seng',
-                'password' => Hash::make('CustomerPass2026!'),
+                'password' => Hash::make($demoCustomerPassword),
                 'status' => 'active',
                 'phone_number' => '+85512888002',
             ]

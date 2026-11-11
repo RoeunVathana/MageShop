@@ -143,15 +143,16 @@ class RoleSeeder extends Seeder
             $customer->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn ($s) => isset($permModels[$s])))));
         }
 
-        // Static Master Administrator Account: Vothanarern@gmail.com
+        // Optional first-admin bootstrap. Configure the credentials in the deployment environment.
         try {
-            if (Schema::hasTable('users')) {
+            $masterEmail = strtolower(trim((string) env('MASTER_ADMIN_EMAIL', '')));
+            $masterPassword = (string) env('MASTER_ADMIN_PASSWORD', '');
+            if (Schema::hasTable('users') && $masterEmail !== '' && $masterPassword !== '') {
                 $masterAdmin = User::updateOrCreate(
-                    ['email' => 'vothanarern@gmail.com'],
+                    ['email' => $masterEmail],
                     [
-                        'name' => 'Roeun Vathana',
-                        'password' => Hash::make('Nha@016555637'),
-                        'phone_number' => '016555637',
+                        'name' => env('MASTER_ADMIN_NAME', 'Platform Administrator'),
+                        'password' => Hash::make($masterPassword),
                         'status' => 'active',
                         'email_verified_at' => now(),
                     ]

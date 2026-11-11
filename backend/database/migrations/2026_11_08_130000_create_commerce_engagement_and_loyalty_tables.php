@@ -37,28 +37,28 @@ return new class extends Migration
                     $table->unsignedBigInteger('free_reward_product_id')->nullable()->after('points_redeemed');
                 }
                 if (! Schema::hasColumn('orders', 'driver_name')) {
-                    $table->string('driver_name')->nullable()->default('Sokha Chan (MegaExpress)')->after('notes');
+                    $table->string('driver_name')->nullable()->after('notes');
                 }
                 if (! Schema::hasColumn('orders', 'driver_phone')) {
-                    $table->string('driver_phone')->nullable()->default('+855 12 889 900')->after('driver_name');
+                    $table->string('driver_phone')->nullable()->after('driver_name');
                 }
                 if (! Schema::hasColumn('orders', 'driver_vehicle')) {
-                    $table->string('driver_vehicle')->nullable()->default('Honda PCX • PP 1AB-9988')->after('driver_phone');
+                    $table->string('driver_vehicle')->nullable()->after('driver_phone');
                 }
                 if (! Schema::hasColumn('orders', 'current_lat')) {
-                    $table->decimal('current_lat', 10, 7)->nullable()->default(11.5564000)->after('driver_vehicle');
+                    $table->decimal('current_lat', 10, 7)->nullable()->after('driver_vehicle');
                 }
                 if (! Schema::hasColumn('orders', 'current_lng')) {
-                    $table->decimal('current_lng', 10, 7)->nullable()->default(104.9282000)->after('current_lat');
+                    $table->decimal('current_lng', 10, 7)->nullable()->after('current_lat');
                 }
                 if (! Schema::hasColumn('orders', 'dest_lat')) {
-                    $table->decimal('dest_lat', 10, 7)->nullable()->default(11.5680000)->after('current_lng');
+                    $table->decimal('dest_lat', 10, 7)->nullable()->after('current_lng');
                 }
                 if (! Schema::hasColumn('orders', 'dest_lng')) {
-                    $table->decimal('dest_lng', 10, 7)->nullable()->default(104.9185000)->after('dest_lat');
+                    $table->decimal('dest_lng', 10, 7)->nullable()->after('dest_lat');
                 }
                 if (! Schema::hasColumn('orders', 'estimated_arrival')) {
-                    $table->string('estimated_arrival')->nullable()->default('15-20 mins')->after('dest_lng');
+                    $table->string('estimated_arrival')->nullable()->after('dest_lng');
                 }
             });
         }

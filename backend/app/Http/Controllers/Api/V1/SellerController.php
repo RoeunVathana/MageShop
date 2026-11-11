@@ -263,14 +263,9 @@ class SellerController extends Controller
             abort(401, 'Unauthenticated. Administrator session required.');
         }
 
-        $email = strtolower((string) ($user->email ?? ''));
-        $isOwner = in_array($email, ['vothanarern@gmail.com'], true) ||
-                   str_ends_with($email, '@megacommerce.local') ||
-                   str_contains($email, 'admin');
-
         $hasRole = method_exists($user, 'hasRole') && ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'));
 
-        if (! ($hasRole || $isOwner)) {
+        if (! $hasRole) {
             abort(403, 'Unauthorized. Super administrator privileges required.');
         }
     }

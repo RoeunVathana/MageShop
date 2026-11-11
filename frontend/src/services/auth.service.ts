@@ -49,16 +49,11 @@ export const authService = {
   },
 
   /**
-   * Strict Admin-Only check: returns true ONLY for SUPER_ADMIN or ADMIN,
-   * or platform owner accounts.
+   * Strict Admin-Only check based on server-issued roles.
    */
   isAdmin: (user?: User | null): boolean => {
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const email = String(target?.email || '').toLowerCase().trim()
-    if (email === 'vothanarern@gmail.com' || email.includes('admin') || email.endsWith('@megacommerce.local')) {
-      return true
-    }
     const roles = (target as any).roles || []
     const roleNames = roles.map((r: any) =>
       typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()

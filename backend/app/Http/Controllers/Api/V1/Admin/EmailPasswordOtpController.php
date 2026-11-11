@@ -26,7 +26,11 @@ class EmailPasswordOtpController extends Controller
     protected function authorizeAdmin(Request $request): void
     {
         $user = $request->user('sanctum') ?? $request->user();
-        if ($user && ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
+        if (! $user) {
+            abort(401, 'Unauthenticated. Administrator credentials and security privileges required.');
+        }
+
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
             abort(403, 'Unauthorized. Administrator credentials and security privileges required.');
         }
     }

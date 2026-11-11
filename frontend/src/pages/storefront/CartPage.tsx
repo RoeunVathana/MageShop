@@ -14,7 +14,6 @@ import {
   Truck,
   Sparkles,
   QrCode,
-  CreditCard,
   Banknote,
   MapPin,
   Phone,
@@ -55,73 +54,6 @@ const DEFAULT_COUPONS = [
   { code: 'KHQR5', label: '$5 OFF', type: 'fixed' as const, value: 5, min: 15 },
   { code: 'VIP30', label: '30% OFF (≥$100)', type: 'percentage' as const, value: 30, min: 100 },
 ]
-
-/**
- * Compute official CRC-16/CCITT-FALSE (Polynomial: 0x1021, Initial: 0xFFFF)
- * for standard NBC Bakong KHQR EMVCo compliance.
- */
-function calculateCrc16Ccitt(str: string): string {
-  let crc = 0xFFFF
-  for (let i = 0; i < str.length; i++) {
-    crc ^= (str.charCodeAt(i) << 8)
-    for (let j = 0; j < 8; j++) {
-      if ((crc & 0x8000) !== 0) {
-        crc = ((crc << 1) ^ 0x1021) & 0xFFFF
-      } else {
-        crc = (crc << 1) & 0xFFFF
-      }
-    }
-  }
-  return crc.toString(16).toUpperCase().padStart(4, '0')
-}
-
-/**
- * Generate 100% compliant Bakong KHQR EMVCo string for ABA, Bakong, ACLEDA, Wing.
- */
-function generateBakongKhqrString(params: {
-  merchantAccount: string
-  merchantName: string
-  merchantCity?: string
-  amount: number
-  orderNumber: string
-}): string {
-  const account = params.merchantAccount || 'vathana@abaa'
-  const name = params.merchantName || 'TYUSHOP'
-  const city = params.merchantCity || 'Phnom Penh'
-  const amountStr = params.amount % 1 === 0 ? String(Math.round(params.amount)) : params.amount.toFixed(2)
-  const orderNum = params.orderNumber
-
-  // Tag 29: Individual Merchant Account Info (Sub-tag 00: Account ID only)
-  const tag29Value = `00${String(account.length).padStart(2, '0')}${account}`
-  const tag29 = `29${String(tag29Value.length).padStart(2, '0')}${tag29Value}`
-
-  // Tag 62: Additional Data (Sub-tag 01: Order Number)
-  const tag62Value = `01${String(orderNum.length).padStart(2, '0')}${orderNum}`
-  const tag62 = `62${String(tag62Value.length).padStart(2, '0')}${tag62Value}`
-
-  // Tag 99: Bakong National Scheme Timestamp (Strictly required for Dynamic QR 010212)
-  const now = Date.now()
-  const expire = now + (15 * 60 * 1000)
-  const tag99Value = `0013${now}0113${expire}`
-  const tag99 = `99${String(tag99Value.length).padStart(2, '0')}${tag99Value}`
-
-  const emv =
-    '000201' +
-    '010212' +
-    tag29 +
-    '52045999' +
-    '5303840' +
-    `54${String(amountStr.length).padStart(2, '0')}${amountStr}` +
-    '5802KH' +
-    `59${String(name.length).padStart(2, '0')}${name}` +
-    `60${String(city.length).padStart(2, '0')}${city}` +
-    tag62 +
-    tag99 +
-    '6304'
-
-  const crc = calculateCrc16Ccitt(emv)
-  return emv + crc
-}
 
 const CAMBODIA_LOCATION_PRESETS = [
   {
@@ -246,13 +178,11 @@ export function CartPage() {
   const {
     cartItems,
     subtotal,
-    addToCart,
     updateCartQty,
     removeFromCart,
     clearCart,
     loyaltyPoints,
     setLoyaltyPoints,
-    claimDemo100Points,
     freeRewardItem,
     setFreeRewardItem,
     eligibleFreeProducts,
@@ -367,43 +297,15 @@ export function CartPage() {
   }, [])
 
   // Checkout Form State
-  const [customerName, setCustomerName] = useState('Dara Sok')
-  const [customerEmail, setCustomerEmail] = useState('Vothanarern@gmail.com')
-  const [customerPhone, setCustomerPhone] = useState('016 555 637')
-  const [deliveryAddress, setDeliveryAddress] = useState('BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia')
-  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number } | null>({
-    lat: 11.5564,
-    lng: 104.9282,
-  })
+  const [customerName, setCustomerName] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [isLocating, setIsLocating] = useState(false)
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'card' | 'cash_on_delivery'>('bakong_khqr')
-  const [cardNumber, setCardNumber] = useState('4408 4422 0881 9148')
-  const [cardExpiry, setCardExpiry] = useState('08/29')
-  const [cardCvc, setCardCvc] = useState('888')
+  const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'cash_on_delivery'>('bakong_khqr')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
-
-  // Format Card Number in groups of 4 digits (e.g. 4408 4422 0881 9148)
-  const handleCardNumberChange = (raw: string) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 19)
-    const formatted = digits.match(/.{1,4}/g)?.join(' ') || ''
-    setCardNumber(formatted)
-  }
-
-  // Format Card Expiry (MM/YY)
-  const handleCardExpiryChange = (raw: string) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 4)
-    if (digits.length >= 3) {
-      setCardExpiry(`${digits.slice(0, 2)}/${digits.slice(2)}`)
-    } else {
-      setCardExpiry(digits)
-    }
-  }
-
-  // Format Card CVC (3-4 digits)
-  const handleCardCvcChange = (raw: string) => {
-    setCardCvc(raw.replace(/\D/g, '').slice(0, 4))
-  }
 
   // Real-time GPS Geolocation Detector
   const handleDetectCurrentLocation = () => {
@@ -738,7 +640,7 @@ export function CartPage() {
     if (loyaltyPoints < 100) {
       toast({
         title: '100 Loyalty Points Required',
-        description: `You have ${loyaltyPoints} pts. Click "+100 Test Pts" to unlock free items now!`,
+        description: `You have ${loyaltyPoints} pts. Earn points through completed purchases to unlock free items.`,
         type: 'info',
       })
       return
@@ -786,12 +688,6 @@ export function CartPage() {
   const finalTotal = Math.max(0, Number((subtotal - discountAmount + effectiveShippingFee).toFixed(2)))
   const finalTotalKhr = Math.round((finalTotal * (usdToKhrRate || 4100)) / 100) * 100
   const pointsEarnedThisOrder = cartItems.length > 0 ? 5 : 0
-  const pointsRedeemedThisOrder = freeRewardItem ? 100 : 0
-  const projectedPointsAfterOrder = Math.max(
-    0,
-    loyaltyPoints - pointsRedeemedThisOrder + pointsEarnedThisOrder
-  )
-
   const buildOrderItemsSnapshot = () => {
     const list = cartItems.map((i) => ({
       product_id: i.id,
@@ -828,30 +724,17 @@ export function CartPage() {
     }
 
     if (cartItems.length === 0 && !freeRewardItem) {
-      addToCart({
-        id: 2,
-        slug: 'sony-wh-1000xm5-wireless-headphones',
-        name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
-        price: 349.0,
-        originalPrice: 398.0,
-        image:
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
-        vendor: 'TYUSHOP Official',
-      })
       toast({
-        title: t('🛒 Sample Item Added ($349.00)', '🛒 បានដាក់ទំនិញសាកល្បង ($349.00)'),
-        description: t(
-          'Please click Checkout again to open the Bakong KHQR Popup.',
-          'សូមចុចទូទាត់ប្រាក់ម្តងទៀត ដើម្បីបើកផ្ទាំង QR Popup។'
-        ),
-        type: 'info',
+        title: t('Your cart is empty', 'កន្ត្រកទំនិញរបស់អ្នកទទេ'),
+        description: t('Add a product before starting checkout.', 'សូមបន្ថែមទំនិញមុនពេលចាប់ផ្ដើមទូទាត់ប្រាក់។'),
+        type: 'error',
       })
       return
     }
 
     setCheckoutLoading(true)
     const isKhqrFlow = paymentMethod === 'bakong_khqr' && finalTotal > 0
-    const apiPaymentMethod = paymentMethod === 'cash_on_delivery' ? 'cash_on_delivery' : 'bakong_khqr'
+    const apiPaymentMethod = paymentMethod
     const snapshotItems = buildOrderItemsSnapshot()
 
     try {
@@ -874,48 +757,45 @@ export function CartPage() {
               ],
         coupon_code: appliedCoupon?.code || null,
         redeem_free_product_id: freeRewardItem?.id || null,
-        guest_points: loyaltyPoints,
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: customerPhone,
         delivery_address: deliveryAddress,
-        dest_lat: customerCoords?.lat ?? 11.5564,
-        dest_lng: customerCoords?.lng ?? 104.9282,
+        dest_lat: customerCoords?.lat ?? null,
+        dest_lng: customerCoords?.lng ?? null,
         payment_method: apiPaymentMethod,
         initiate_qr: isKhqrFlow,
-        shipping_fee: effectiveShippingFee,
         delivery_method_id: selectedDeliveryMethod?.id || null,
       }
 
       const res = await api.post<any>('/orders/checkout', payload)
-      const orderNum =
-        res?.data?.order?.order_number ||
-        `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-KHQR`
-      const receiptNum =
-        res?.data?.receipt_number ||
-        `REC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-881`
-      const txnRef = res?.data?.transaction_reference || `TXN-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
+      const orderNum = res?.data?.order?.order_number
+      const receiptNum = res?.data?.receipt_number
+      const txnRef = res?.data?.transaction_reference
+      if (!orderNum || !receiptNum || !txnRef) {
+        throw new Error('The server returned an incomplete order confirmation. Please try again.')
+      }
       const qrInfo = res?.data?.qr_payment
 
-      setLoyaltyPoints(res?.data?.new_loyalty_points ?? projectedPointsAfterOrder)
+      if (typeof res?.data?.new_loyalty_points === 'number') {
+        setLoyaltyPoints(res.data.new_loyalty_points)
+      }
 
       if (isKhqrFlow) {
+        if (!qrInfo?.qr_string || !qrInfo?.md5) {
+          throw new Error('Payment QR is not available yet. Please try again.')
+        }
+
         // Step 1: Open Live Scannable Bakong KHQR Payment Modal
         setQrModalData({
           order_number: orderNum,
           receipt_number: receiptNum,
           transaction_reference: txnRef,
           qr_string:
-            qrInfo?.qr_string ||
-            generateBakongKhqrString({
-              merchantAccount: qrInfo?.merchant_account || 'roeun_vathana1@bkrt',
-              merchantName: qrInfo?.merchant_name || 'TYUSHOP',
-              amount: finalTotal,
-              orderNumber: orderNum,
-            }),
-          md5: qrInfo?.md5 || 'khqr_verified_md5_hash',
-          merchant_account: qrInfo?.merchant_account || 'roeun_vathana1@bkrt',
-          merchant_name: qrInfo?.merchant_name || 'Tyushop',
+            qrInfo.qr_string,
+          md5: qrInfo.md5,
+          merchant_account: qrInfo.merchant_account,
+          merchant_name: qrInfo.merchant_name,
           amount_usd: finalTotal,
           amount_khr: finalTotalKhr,
           customer_name: customerName,
@@ -943,8 +823,8 @@ export function CartPage() {
           order_number: orderNum,
           receipt_number: receiptNum,
           transaction_reference: txnRef,
-          payment_method: paymentMethod === 'card' ? 'VISA / MASTERCARD' : 'CASH ON DELIVERY (COD)',
-          payment_status: paymentMethod === 'card' ? 'PAID & VERIFIED' : 'CONFIRMED (PAY ON ARRIVAL)',
+          payment_method: 'CASH ON DELIVERY (COD)',
+          payment_status: 'CONFIRMED (PAY ON ARRIVAL)',
           amount_usd: finalTotal,
           amount_khr: finalTotalKhr,
           discount: discountAmount,
@@ -953,9 +833,9 @@ export function CartPage() {
           customer_email: customerEmail,
           customer_phone: customerPhone,
           delivery_address: deliveryAddress,
-          email_report_sent: true,
-          telegram_admin_notified: true,
-          paid_at: new Date().toLocaleString(),
+          email_report_sent: res?.data?.email_status === 'sent',
+          telegram_admin_notified: Boolean(res?.data?.telegram_admin_notified),
+          paid_at: res?.data?.order?.paid_at || '',
           items: snapshotItems,
         })
         toast({
@@ -964,64 +844,12 @@ export function CartPage() {
           type: 'success',
         })
       }
-    } catch {
-      const fallbackOrd = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(
-        1000 + Math.random() * 9000
-      )}`
-      const fallbackRec = `REC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(
-        100 + Math.random() * 900
-      )}`
-      const fallbackTxn = `TXN-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
-      setLoyaltyPoints(projectedPointsAfterOrder)
-
-      if (isKhqrFlow) {
-        setQrModalData({
-          order_number: fallbackOrd,
-          receipt_number: fallbackRec,
-          transaction_reference: fallbackTxn,
-          qr_string: generateBakongKhqrString({
-            merchantAccount: 'roeun_vathana1@bkrt',
-            merchantName: 'TYUSHOP',
-            amount: finalTotal,
-            orderNumber: fallbackOrd,
-          }),
-          md5: 'khqr_live_hash',
-          merchant_account: 'roeun_vathana1@bkrt',
-          merchant_name: 'TYUSHOP',
-          amount_usd: finalTotal,
-          amount_khr: finalTotalKhr,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          delivery_address: deliveryAddress,
-          payment_method: 'Bakong KHQR',
-          points_earned: pointsEarnedThisOrder,
-          discount: discountAmount,
-          items: snapshotItems,
-        })
-      } else {
-        addRecentOrder(fallbackOrd)
-        clearCart()
-        setPaymentSuccessData({
-          order_number: fallbackOrd,
-          receipt_number: fallbackRec,
-          transaction_reference: fallbackTxn,
-          payment_method: paymentMethod === 'card' ? 'VISA / MASTERCARD' : 'CASH ON DELIVERY (COD)',
-          payment_status: paymentMethod === 'card' ? 'PAID & VERIFIED' : 'CONFIRMED (PAY ON ARRIVAL)',
-          amount_usd: finalTotal,
-          amount_khr: finalTotalKhr,
-          discount: discountAmount,
-          points_earned: pointsEarnedThisOrder,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          delivery_address: deliveryAddress,
-          email_report_sent: true,
-          telegram_admin_notified: true,
-          paid_at: new Date().toLocaleString(),
-          items: snapshotItems,
-        })
-      }
+    } catch (error) {
+      toast({
+        title: t('Checkout could not be completed', 'មិនអាចបញ្ចប់ការទូទាត់ប្រាក់បានទេ'),
+        description: error instanceof Error ? error.message : t('Please check your details and try again.', 'សូមពិនិត្យព័ត៌មានរបស់អ្នក ហើយសាកល្បងម្ដងទៀត។'),
+        type: 'error',
+      })
     } finally {
       setCheckoutLoading(false)
     }
@@ -1098,37 +926,27 @@ export function CartPage() {
         ),
         type: 'success',
       })
-    } catch {
-      // In offline / fallback test mode
-      addRecentOrder(qrModalData.order_number)
-      clearCart()
-      setPaymentSuccessData({
+    } catch (error) {
+      setPaymentFailedData({
         order_number: qrModalData.order_number,
-        receipt_number: qrModalData.receipt_number,
-        transaction_reference: qrModalData.transaction_reference,
-        payment_method: 'BAKONG KHQR (INSTANT SCAN)',
-        payment_status: 'PAID & VERIFIED',
         amount_usd: qrModalData.amount_usd,
         amount_khr: qrModalData.amount_khr,
-        discount: qrModalData.discount,
-        points_earned: qrModalData.points_earned,
-        customer_name: qrModalData.customer_name,
-        customer_email: qrModalData.customer_email,
-        customer_phone: qrModalData.customer_phone,
-        delivery_address: qrModalData.delivery_address,
-        email_report_sent: true,
-        telegram_admin_notified: true,
-        paid_at: new Date().toLocaleString(),
-        items: qrModalData.items,
+        error_message: error instanceof Error
+          ? error.message
+          : 'Payment verification failed. Your order remains unpaid.',
+        error_message_km: 'ការផ្ទៀងផ្ទាត់ការទូទាត់បានបរាជ័យ។ ការបញ្ជាទិញរបស់អ្នកនៅមិនទាន់បានបង់ប្រាក់នៅឡើយទេ។',
+        payment_method: 'Bakong KHQR',
+        timestamp: new Date().toLocaleTimeString(),
+        qrDataToRetry: qrModalData,
       })
       setQrModalData(null)
       toast({
-        title: t('✅ Payment Successful!', '✅ ការទូទាត់ប្រាក់ជោគជ័យ!'),
+        title: t('Payment verification failed', 'ការផ្ទៀងផ្ទាត់ការទូទាត់បានបរាជ័យ'),
         description: t(
-          `Receipt emailed to ${qrModalData.customer_email} & Telegram Admin notified!`,
-          `វិក្កយបត្រត្រូវបានផ្ញើទៅកាន់អ៊ីមែល និង Telegram Admin រួចរាល់!`
+          'The order was not marked as paid. Please retry after confirming the bank transaction.',
+          'ការបញ្ជាទិញមិនត្រូវបានសម្គាល់ថាបានបង់ប្រាក់ទេ។ សូមសាកល្បងម្ដងទៀតបន្ទាប់ពីពិនិត្យប្រតិបត្តិការធនាគារ។'
         ),
-        type: 'success',
+        type: 'error',
       })
     } finally {
       setVerifyingQrPayment(false)
@@ -1172,25 +990,6 @@ export function CartPage() {
             {t('100-Pt Free Gifts (≤$30)', 'ប្តូរ ១០០ ពិន្ទុយកទំនិញឥតគិតថ្លៃ')}
           </Button>
 
-          {loyaltyPoints < 100 && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                claimDemo100Points()
-                setShowFreeRewards(true)
-                toast({
-                  title: '🎁 +100 Points Unlocked!',
-                  description: 'Choose any free reward item below!',
-                  type: 'success',
-                })
-              }}
-              className="rounded-full text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-            >
-              <Sparkles className="w-3.5 h-3.5 mr-1" /> +100 Test Pts
-            </Button>
-          )}
         </div>
       </div>
 
@@ -1297,8 +1096,8 @@ export function CartPage() {
                     </h3>
                     <p className="text-xs text-muted-foreground">
                       {t(
-                        'Explore our catalog or add a sample product below to preview our instant Bakong KHQR & Cash on Delivery checkout.',
-                        'ស្វែងរកទំនិញក្នុងហាង ឬដាក់ទំនិញសាកល្បងខាងក្រោមដើម្បីតេស្តការទូទាត់ប្រាក់។'
+                        'Explore the catalog and add a real product before starting checkout.',
+                        'សូមស្វែងរកទំនិញក្នុងហាង ហើយបន្ថែមទំនិញពិតមុនពេលទូទាត់ប្រាក់។'
                       )}
                     </p>
                   </div>
@@ -1308,28 +1107,6 @@ export function CartPage() {
                         {t('Browse Products', 'មើលទំនិញទាំងអស់')} <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </Link>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        addToCart(
-                          {
-                            id: 2,
-                            slug: 'sony-wh-1000xm5-wireless-headphones',
-                            name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
-                            price: 349.0,
-                            originalPrice: 398.0,
-                            image:
-                              'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
-                            vendor: 'TYUSHOP Official',
-                          },
-                          1
-                        )
-                      }
-                      className="rounded-full text-xs"
-                    >
-                      + {t('Add Sample Item ($349)', 'ដាក់ទំនិញសាកល្បង ($349)')}
-                    </Button>
                   </div>
                 </div>
               ) : (
@@ -1700,8 +1477,8 @@ export function CartPage() {
             </div>
 
             <CardContent className="p-5 space-y-5">
-              {/* Clean 3-Tab Payment Method Selector */}
-              <div className="grid grid-cols-3 gap-2.5">
+              {/* Supported payment methods */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('bakong_khqr')}
@@ -1721,27 +1498,6 @@ export function CartPage() {
                   </div>
                   <span className="font-bold text-xs">Bakong KHQR</span>
                   <span className="text-[10px] text-muted-foreground">Scan QR Code</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`relative p-3 rounded-2xl border text-center flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    paymentMethod === 'card'
-                      ? 'border-primary bg-primary/10 text-foreground ring-2 ring-primary/30 shadow-sm'
-                      : 'bg-background hover:bg-muted/50 text-muted-foreground'
-                  }`}
-                >
-                  {paymentMethod === 'card' && (
-                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5" />
-                    </span>
-                  )}
-                  <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <span className="font-bold text-xs">{t('Bank Card', 'កាតធនាគារ')}</span>
-                  <span className="text-[10px] text-muted-foreground">Visa • Master</span>
                 </button>
 
                 <button
@@ -1767,55 +1523,6 @@ export function CartPage() {
               </div>
 
 
-
-              {paymentMethod === 'card' && (
-                <div className="rounded-2xl border p-4 bg-muted/20 space-y-3 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span>{t('Credit / Debit Card Details', 'ព័ត៌មានកាតធនាគារ')}</span>
-                    <span className="text-primary font-semibold flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5" />
-                      VISA • MASTERCARD
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      value={cardNumber}
-                      onChange={(e) => handleCardNumberChange(e.target.value)}
-                      placeholder="4408 4422 0881 9148"
-                      maxLength={23}
-                      className="w-full pl-3 pr-10 py-2.5 text-xs font-mono tracking-wider rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                      <CreditCard className="w-4 h-4 opacity-50" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-exp"
-                      value={cardExpiry}
-                      onChange={(e) => handleCardExpiryChange(e.target.value)}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
-                    />
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="cc-csc"
-                      value={cardCvc}
-                      onChange={(e) => handleCardCvcChange(e.target.value)}
-                      placeholder="CVC"
-                      maxLength={4}
-                      className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center"
-                    />
-                  </div>
-                </div>
-              )}
 
               {paymentMethod === 'cash_on_delivery' && (
                 <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-center gap-3.5 animate-in fade-in duration-200">

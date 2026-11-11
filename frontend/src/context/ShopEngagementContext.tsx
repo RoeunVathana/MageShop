@@ -64,7 +64,6 @@ interface ShopEngagementContextType {
   loyaltyPoints: number
   setLoyaltyPoints: React.Dispatch<React.SetStateAction<number>>
   addLoyaltyPoints: (pts: number) => void
-  claimDemo100Points: () => void
   freeRewardItem: FreeRewardProduct | null
   setFreeRewardItem: (item: FreeRewardProduct | null) => void
   eligibleFreeProducts: FreeRewardProduct[]
@@ -96,61 +95,6 @@ interface ShopEngagementContextType {
   khrToUsd: (khrAmount: number) => number
   refreshCurrencySettings: () => Promise<void>
 }
-
-const DEFAULT_CART: CartItem[] = [
-  {
-    id: 2,
-    slug: 'sony-wh-1000xm5-wireless-headphones',
-    name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
-    price: 349.0,
-    originalPrice: 398.0,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
-    vendor: 'Sony Sound Hub',
-  },
-  {
-    id: 8,
-    slug: 'jbl-go-3-portable-bluetooth-speaker',
-    name: 'JBL GO 3 Portable Waterproof Bluetooth Speaker',
-    price: 24.99,
-    originalPrice: 29.0,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=400&q=80',
-    vendor: 'JBL Official Store',
-  },
-]
-
-const DEFAULT_FAVORITES: FavoriteItem[] = [
-  {
-    id: 2,
-    slug: 'sony-wh-1000xm5-wireless-headphones',
-    name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
-    price: 349.0,
-    originalPrice: 398.0,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
-    vendor: 'Sony Sound Hub',
-    category: 'Audio & Headphones',
-  },
-  {
-    id: 4,
-    slug: 'apple-watch-ultra-2-titanium',
-    name: 'Apple Watch Ultra 2 GPS + Cellular Titanium Case',
-    price: 799.0,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
-    vendor: 'Official Apple Store',
-    category: 'Wearables',
-  },
-  {
-    id: 7,
-    slug: 'anker-powerline-iii-usbc-cable',
-    name: 'Anker PowerLine III USB-C Fast Charging Cable (100W)',
-    price: 14.5,
-    originalPrice: 18.0,
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=400&q=80',
-    vendor: 'Anker Official',
-    category: 'Accessories (100-Pt Free Eligible)',
-  },
-]
 
 const FALLBACK_FREE_PRODUCTS: FreeRewardProduct[] = [
   {
@@ -204,28 +148,28 @@ const ShopEngagementContext = createContext<ShopEngagementContextType | undefine
 export function ShopEngagementProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('megacommerce_cart')
-      return saved ? JSON.parse(saved) : DEFAULT_CART
+      const saved = localStorage.getItem('megacommerce_cart_v2')
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return DEFAULT_CART
+      return []
     }
   })
 
   const [favorites, setFavorites] = useState<FavoriteItem[]>(() => {
     try {
-      const saved = localStorage.getItem('megacommerce_favorites')
-      return saved ? JSON.parse(saved) : DEFAULT_FAVORITES
+      const saved = localStorage.getItem('megacommerce_favorites_v2')
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return DEFAULT_FAVORITES
+      return []
     }
   })
 
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem('megacommerce_loyalty_points')
-      return saved !== null ? Number(saved) : 95 // Start at 95 pts so 1 order (+5 pts) hits 100 pts!
+      const saved = localStorage.getItem('megacommerce_loyalty_points_v2')
+      return saved !== null ? Number(saved) : 0
     } catch {
-      return 95
+      return 0
     }
   })
 
@@ -234,10 +178,10 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
   const [recentOrders, setRecentOrders] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('megacommerce_recent_orders')
-      return saved ? JSON.parse(saved) : ['ORD-20261108-KHQR1']
+      const saved = localStorage.getItem('megacommerce_recent_orders_v2')
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return ['ORD-20261108-KHQR1']
+      return []
     }
   })
 
@@ -438,25 +382,25 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
   }
 
   useEffect(() => {
-    localStorage.setItem('megacommerce_cart', JSON.stringify(cartItems))
+    localStorage.setItem('megacommerce_cart_v2', JSON.stringify(cartItems))
   }, [cartItems])
 
   useEffect(() => {
-    localStorage.setItem('megacommerce_favorites', JSON.stringify(favorites))
+    localStorage.setItem('megacommerce_favorites_v2', JSON.stringify(favorites))
   }, [favorites])
 
   useEffect(() => {
-    localStorage.setItem('megacommerce_loyalty_points', String(loyaltyPoints))
+    localStorage.setItem('megacommerce_loyalty_points_v2', String(loyaltyPoints))
   }, [loyaltyPoints])
 
   useEffect(() => {
-    localStorage.setItem('megacommerce_recent_orders', JSON.stringify(recentOrders))
+    localStorage.setItem('megacommerce_recent_orders_v2', JSON.stringify(recentOrders))
   }, [recentOrders])
 
   // Fetch live eligible free reward products (<= $30) from backend
   const refreshEligibleFreeProducts = async () => {
     try {
-      const res = await api.get<any>(`/loyalty/summary?guest_points=${loyaltyPoints}`)
+      const res = await api.get<any>('/loyalty/summary')
       if (res?.data?.eligible_free_products?.length > 0) {
         setEligibleFreeProducts(res.data.eligible_free_products)
       }
@@ -516,10 +460,6 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     setLoyaltyPoints((prev) => Math.max(0, prev + pts))
   }
 
-  const claimDemo100Points = () => {
-    setLoyaltyPoints((prev) => (prev < 100 ? 105 : prev + 25))
-  }
-
   const addRecentOrder = (orderNum: string) => {
     setRecentOrders((prev) => [orderNum, ...prev.filter((o) => o !== orderNum)].slice(0, 8))
   }
@@ -544,7 +484,6 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         loyaltyPoints,
         setLoyaltyPoints,
         addLoyaltyPoints,
-        claimDemo100Points,
         freeRewardItem,
         setFreeRewardItem,
         eligibleFreeProducts,

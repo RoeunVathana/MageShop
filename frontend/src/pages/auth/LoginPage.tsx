@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, ExternalLink, AlertCircle, Sparkles, X, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, ExternalLink, AlertCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -149,7 +149,6 @@ export function LoginPage() {
   }
 
   const [googleConfigModalOpen, setGoogleConfigModalOpen] = useState(false)
-  const [autoSigningIn, setAutoSigningIn] = useState(false)
 
   const handleGoogleAuth = async () => {
     setLoading(true)
@@ -212,37 +211,6 @@ export function LoginPage() {
       }
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleFastTrackAdminLogin = async () => {
-    setAutoSigningIn(true)
-    try {
-      const res = await authService.login({
-        email: 'Vothanarern@gmail.com',
-        password: 'Nha@016555637',
-      })
-      toast({
-        title: t('🚀 Fast-Track Sign In Successful', '🚀 បានចូលគណនី Admin ដោយជោគជ័យ'),
-        description: t('Signed in as Roeun Vathana (Admin / Owner)', 'បានចូលជា Roeun Vathana (Admin / Owner)'),
-        type: 'success',
-      })
-      setGoogleConfigModalOpen(false)
-      if (redirectParam) {
-        navigate(redirectParam)
-      } else if (authService.isAdmin(res.data?.user)) {
-        navigate('/dashboard/admin')
-      } else {
-        navigate('/')
-      }
-    } catch (err: any) {
-      toast({
-        title: t('Sign In Failed', 'ការចូលមិនជោគជ័យ'),
-        description: err.message || 'Could not auto-login.',
-        type: 'error',
-      })
-    } finally {
-      setAutoSigningIn(false)
     }
   }
 
@@ -514,33 +482,7 @@ export function LoginPage() {
                 </ol>
               </div>
 
-              {/* Fast-Track Sign In */}
-              <div className="pt-2 border-t space-y-2">
-                <div className="text-[11px] text-muted-foreground font-medium">
-                  {t(
-                    'Want to sign in right now without waiting?',
-                    'ចង់ចូលប្រើប្រាស់ឥឡូវនេះភ្លាមៗមែនទេ?'
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  disabled={autoSigningIn}
-                  onClick={handleFastTrackAdminLogin}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs gap-2 shadow-md cursor-pointer"
-                >
-                  {autoSigningIn ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                  <span>
-                    {t(
-                      '⚡ Fast-Track 1-Click Sign In (Admin / Owner)',
-                      '⚡ ចូលគណនីដោយចុច ១ ដង (Admin / Owner)'
-                    )}
-                  </span>
-                </Button>
-
+              <div className="pt-2 border-t">
                 <Button
                   type="button"
                   variant="ghost"

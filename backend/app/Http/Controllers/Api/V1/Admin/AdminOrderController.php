@@ -10,7 +10,6 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\StoreSetting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,17 +31,7 @@ class AdminOrderController extends Controller
             return;
         }
 
-        $email = strtolower((string) ($user->email ?? ''));
-        $supportEmail = strtolower((string) StoreSetting::get('support_email', ''));
-        $businessEmail = strtolower((string) StoreSetting::get('business_email', ''));
-
-        $isOwnerOrSupport = in_array($email, [
-            'vothanarern@gmail.com',
-            $supportEmail,
-            $businessEmail,
-        ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
-
-        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF') || $isOwnerOrSupport)) {
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             abort(403, 'Unauthorized. Administrative orders management privileges required.');
         }
     }
@@ -52,7 +41,7 @@ class AdminOrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request, false);
+        $this->authorizeAdmin($request);
 
         $query = Order::with(['items', 'payments', 'customer']);
 
@@ -115,7 +104,7 @@ class AdminOrderController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $this->authorizeAdmin($request, false);
+        $this->authorizeAdmin($request);
 
         $order = Order::with(['items.product', 'payments', 'customer', 'receipt'])->find($id);
 
@@ -242,7 +231,7 @@ class AdminOrderController extends Controller
      */
     public function systemStats(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request, false);
+        $this->authorizeAdmin($request);
 
         $totalOrders = Order::count();
         $totalRevenue = (float) Order::whereIn('payment_status', ['completed', 'paid'])->sum('total_amount');

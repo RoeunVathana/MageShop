@@ -26,10 +26,10 @@ export function StorefrontLayout() {
       {/* Pinned Top Navigation Bar with Smooth Scroll Glassmorphism Transition */}
       <div
         className={cn(
-          'sticky top-0 z-40 w-full transition-all duration-300 ease-in-out',
+          'sticky top-0 z-40 isolate w-full overflow-visible border-b border-border bg-background transition-shadow duration-300 ease-in-out',
           isScrolled
-            ? 'shadow-lg shadow-black/5 bg-background/95 backdrop-blur-md border-b border-border/80'
-            : 'shadow-xs bg-background/90 backdrop-blur-sm'
+            ? 'shadow-lg shadow-slate-950/10'
+            : 'shadow-sm'
         )}
       >
         {/* Top Announcement Bar */}

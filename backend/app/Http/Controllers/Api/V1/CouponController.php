@@ -21,11 +21,6 @@ class CouponController extends Controller
             return false;
         }
 
-        $email = strtolower($user->email ?? '');
-        if (in_array($email, ['vothanarern@gmail.com', 'admin@megacommerce.com'], true)) {
-            return true;
-        }
-
         return $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF'])
             || $user->hasPermission('coupons.manage');
     }

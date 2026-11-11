@@ -33,6 +33,13 @@ class ReceiptController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Order not found.'], 404);
         }
 
+        $user = $request->user('sanctum') ?? $request->user();
+        $isStaff = $user && method_exists($user, 'hasAnyRole')
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'DELIVERY']);
+        if (! $user || (! $isStaff && (int) $order->user_id !== (int) $user->id)) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized.'], 403);
+        }
+
         $receipt = $this->pdfService->getOrCreateReceipt($order);
         $format = $request->query('format', 'pdf');
 

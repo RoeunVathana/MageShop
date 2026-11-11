@@ -133,7 +133,7 @@ class StoreSettingsController extends Controller
      */
     public function adminShow(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request, false);
+        $this->authorizeAdmin($request);
 
         $all = StoreSetting::getAll();
 
@@ -236,26 +236,7 @@ class StoreSettingsController extends Controller
             return;
         }
 
-        $email = strtolower((string) ($user->email ?? ''));
-        $supportEmail = strtolower((string) StoreSetting::get('support_email', ''));
-        $businessEmail = strtolower((string) StoreSetting::get('business_email', ''));
-
-        $isOwnerOrSupport = in_array($email, [
-            'vothanarern@gmail.com',
-            $supportEmail,
-            $businessEmail,
-        ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
-
-        if ($isOwnerOrSupport && method_exists($user, 'assignRole') && ! $user->hasRole('SUPER_ADMIN')) {
-            try {
-                $user->assignRole('SUPER_ADMIN');
-                $user->assignRole('ADMIN');
-            } catch (\Throwable $e) {
-                // Ignore if roles table is locked or role assignment already exists
-            }
-        }
-
-        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF') || $isOwnerOrSupport)) {
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             abort(403, 'Unauthorized. Administrative permissions required.');
         }
     }

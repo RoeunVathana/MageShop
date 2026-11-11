@@ -75,109 +75,6 @@ const CAMBODIA_LOCATION_PRESETS = [
   { label: 'Sihanoukville (Otres)', zone: 'Sihanoukville', address: 'Marina Road, Otres Beach, Sihanoukville, Cambodia', lat: 10.6015, lng: 103.5512 },
 ]
 
-const DEMO_ORDERS: DeliveryOrder[] = [
-  {
-    id: 101,
-    order_number: 'ORD-20261108-8948',
-    customer_name: 'Dara Sok',
-    customer_phone: '+855 12 888 999',
-    customer_email: 'dara.sok@tyushop.blog',
-    delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
-    dest_lat: 11.5564,
-    dest_lng: 104.9282,
-    current_lat: 11.5510,
-    current_lng: 104.9315,
-    status: 'shipped',
-    payment_status: 'paid',
-    payment_method: 'bakong_khqr',
-    total_amount: 314.1,
-    driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
-    driver_phone: '+855 12 889 900',
-    driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
-    estimated_arrival: '12 mins',
-  },
-  {
-    id: 100,
-    order_number: 'ORD-2026-9041',
-    customer_name: 'Dara Sok',
-    customer_phone: '+855 12 888 999',
-    customer_email: 'dara.sok@tyushop.blog',
-    delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
-    dest_lat: 11.5564,
-    dest_lng: 104.9282,
-    current_lat: 11.5510,
-    current_lng: 104.9315,
-    status: 'shipped',
-    payment_status: 'paid',
-    payment_method: 'bakong_khqr',
-    total_amount: 3299.0,
-    driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
-    driver_phone: '+855 12 889 900',
-    driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
-    estimated_arrival: '12 mins',
-  },
-  {
-    id: 102,
-    order_number: 'ORD-20261108-8812',
-    customer_name: 'Sophea Keo',
-    customer_phone: '+855 12 888 999',
-    customer_email: 'sophea.keo@gmail.com',
-    delivery_address: 'Street 315, Boeung Kak 1, Toul Kork, Phnom Penh, Cambodia',
-    dest_lat: 11.5732,
-    dest_lng: 104.8978,
-    current_lat: 11.5620,
-    current_lng: 104.9120,
-    status: 'shipped',
-    payment_status: 'cash_on_delivery',
-    payment_method: 'cash_on_delivery',
-    total_amount: 89.5,
-    driver_name: 'Vannak Lim (TYUSHOP Express Courier)',
-    driver_phone: '+855 12 777 666',
-    driver_vehicle: 'Honda Click 160 • PP 1CD-4422',
-    estimated_arrival: '18 mins',
-  },
-  {
-    id: 103,
-    order_number: 'ORD-20261108-7734',
-    customer_name: 'Chanthy Men',
-    customer_phone: '+855 98 123 456',
-    customer_email: 'chanthy@tyushop.blog',
-    delivery_address: 'Preah Sisowath Quay, Daun Penh, Phnom Penh, Cambodia',
-    dest_lat: 11.5694,
-    dest_lng: 104.9312,
-    current_lat: 11.5650,
-    current_lng: 104.9320,
-    status: 'shipped',
-    payment_status: 'paid',
-    payment_method: 'bakong_khqr',
-    total_amount: 145.0,
-    driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
-    driver_phone: '+855 12 889 900',
-    driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
-    estimated_arrival: '6 mins',
-  },
-  {
-    id: 104,
-    order_number: 'ORD-20261108-6621',
-    customer_name: 'Rithy Seng',
-    customer_phone: '+855 77 900 111',
-    customer_email: 'rithy.seng@gmail.com',
-    delivery_address: 'Street 1003, Phnom Penh Thmey, Sen Sok, Phnom Penh, Cambodia',
-    dest_lat: 11.5956,
-    dest_lng: 104.8779,
-    current_lat: 11.5780,
-    current_lng: 104.8950,
-    status: 'delivered',
-    payment_status: 'paid',
-    payment_method: 'bakong_khqr',
-    total_amount: 219.0,
-    driver_name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
-    driver_phone: '+855 12 889 900',
-    driver_vehicle: 'Honda PCX Electric • PP 1AB-9988',
-    estimated_arrival: 'Delivered',
-  },
-]
-
 const deliveryNav: NavItem[] = [
   { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
   { label: 'Fleet Route Dispatch', href: '/dashboard/delivery', icon: Truck },
@@ -248,8 +145,9 @@ export function DeliveryDashboard() {
   const [savingMethod, setSavingMethod] = useState(false)
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null)
 
-  const [orders, setOrders] = useState<DeliveryOrder[]>(DEMO_ORDERS)
-  const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder>(DEMO_ORDERS[0])
+  const [orders, setOrders] = useState<DeliveryOrder[]>([])
+  const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder | null>(null)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_transit' | 'delivered' | 'cod'>('all')
   const [zoneFilter, setZoneFilter] = useState<string>('all')
@@ -260,17 +158,18 @@ export function DeliveryDashboard() {
   // Location Management Modal State
   const [editingOrder, setEditingOrder] = useState<DeliveryOrder | null>(null)
   const [editAddress, setEditAddress] = useState('')
-  const [editDestLat, setEditDestLat] = useState<number>(11.5564)
-  const [editDestLng, setEditDestLng] = useState<number>(104.9282)
-  const [editDriverLat, setEditDriverLat] = useState<number>(11.5510)
-  const [editDriverLng, setEditDriverLng] = useState<number>(104.9315)
-  const [editEta, setEditEta] = useState('12 mins')
-  const [editStatus, setEditStatus] = useState('shipped')
+  const [editDestLat, setEditDestLat] = useState<number>(0)
+  const [editDestLng, setEditDestLng] = useState<number>(0)
+  const [editDriverLat, setEditDriverLat] = useState<number>(0)
+  const [editDriverLng, setEditDriverLng] = useState<number>(0)
+  const [editEta, setEditEta] = useState('')
+  const [editStatus, setEditStatus] = useState('pending')
   const [savingLocation, setSavingLocation] = useState(false)
 
   // Fetch live orders from backend API
   const fetchDeliveryOrders = async () => {
     setLoading(true)
+    setOrdersError(null)
     try {
       const res = await api.get<any>('/delivery/orders')
       const orderList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
@@ -278,21 +177,26 @@ export function DeliveryDashboard() {
         const normalized: DeliveryOrder[] = orderList.map((o: any) => ({
           ...o,
           total_amount: Number(o.total_amount || 0),
-          dest_lat: Number(o.dest_lat || 11.5564),
-          dest_lng: Number(o.dest_lng || 104.9282),
-          current_lat: Number(o.current_lat || 11.5510),
-          current_lng: Number(o.current_lng || 104.9315),
+          dest_lat: o.dest_lat === null || o.dest_lat === undefined ? undefined : Number(o.dest_lat),
+          dest_lng: o.dest_lng === null || o.dest_lng === undefined ? undefined : Number(o.dest_lng),
+          current_lat: o.current_lat === null || o.current_lat === undefined ? undefined : Number(o.current_lat),
+          current_lng: o.current_lng === null || o.current_lng === undefined ? undefined : Number(o.current_lng),
           payment_method: o.payment_method || 'bakong_khqr',
           payment_status: o.payment_status || 'pending',
-          driver_name: o.driver_name || 'TYUSHOP Express Courier',
-          driver_vehicle: o.driver_vehicle || 'Honda PCX Electric • PP 1AB-9988',
-          estimated_arrival: o.estimated_arrival || '15 mins',
+          driver_name: o.driver_name || undefined,
+          driver_vehicle: o.driver_vehicle || undefined,
+          estimated_arrival: o.estimated_arrival || undefined,
         }))
         setOrders(normalized)
         setSelectedOrder(normalized[0])
+      } else {
+        setOrders([])
+        setSelectedOrder(null)
       }
     } catch {
-      // Keep demo orders if backend is unreachable
+      setOrders([])
+      setSelectedOrder(null)
+      setOrdersError('Unable to load live delivery orders. Check staff access and try again.')
     } finally {
       setLoading(false)
     }
@@ -620,11 +524,11 @@ export function DeliveryDashboard() {
   const openLocationModal = (order: DeliveryOrder) => {
     setEditingOrder(order)
     setEditAddress(order.delivery_address)
-    setEditDestLat(Number(order.dest_lat || 11.5564))
-    setEditDestLng(Number(order.dest_lng || 104.9282))
-    setEditDriverLat(Number(order.current_lat || 11.5510))
-    setEditDriverLng(Number(order.current_lng || 104.9315))
-    setEditEta(order.estimated_arrival || '15 mins')
+    setEditDestLat(Number(order.dest_lat ?? 0))
+    setEditDestLng(Number(order.dest_lng ?? 0))
+    setEditDriverLat(Number(order.current_lat ?? 0))
+    setEditDriverLng(Number(order.current_lng ?? 0))
+    setEditEta(order.estimated_arrival || '')
     setEditStatus(order.status)
   }
 
@@ -655,7 +559,7 @@ export function DeliveryDashboard() {
       setOrders((prev) =>
         prev.map((o) => (o.order_number === editingOrder.order_number ? updated : o))
       )
-      if (selectedOrder.order_number === editingOrder.order_number) {
+      if (selectedOrder?.order_number === editingOrder.order_number) {
         setSelectedOrder(updated)
       }
 
@@ -665,30 +569,12 @@ export function DeliveryDashboard() {
         type: 'success',
       })
       setEditingOrder(null)
-    } catch {
-      // Local optimistic update
-      const updated = {
-        ...editingOrder,
-        delivery_address: editAddress,
-        dest_lat: editDestLat,
-        dest_lng: editDestLng,
-        current_lat: editDriverLat,
-        current_lng: editDriverLng,
-        estimated_arrival: editEta,
-        status: editStatus,
-      }
-      setOrders((prev) =>
-        prev.map((o) => (o.order_number === editingOrder.order_number ? updated : o))
-      )
-      if (selectedOrder.order_number === editingOrder.order_number) {
-        setSelectedOrder(updated)
-      }
+    } catch (error) {
       toast({
-        title: `📍 Location Updated (Optimistic)`,
-        description: `New Target: ${editDestLat.toFixed(4)}° N, ${editDestLng.toFixed(4)}° E`,
-        type: 'success',
+        title: 'Location update failed',
+        description: error instanceof Error ? error.message : 'The server did not save the delivery location.',
+        type: 'error',
       })
-      setEditingOrder(null)
     } finally {
       setSavingLocation(false)
     }
@@ -696,6 +582,11 @@ export function DeliveryDashboard() {
 
   // One-click live GPS broadcasting from driver's device
   const handleBroadcastDeviceGps = () => {
+    if (!selectedOrder) {
+      toast({ title: 'No delivery order selected', description: 'Select a live order before broadcasting GPS.', type: 'error' })
+      return
+    }
+
     if (!navigator.geolocation) {
       toast({
         title: 'Geolocation Not Available',
@@ -719,24 +610,29 @@ export function DeliveryDashboard() {
           await api.post('/delivery/broadcast-gps', {
             latitude,
             longitude,
+            order_number: selectedOrder.order_number,
             driver_name: selectedOrder.driver_name || 'TYUSHOP Express Driver',
           })
-        } catch {
-          // Ignore if offline
+        } catch (error) {
+          setBroadcastingGps(false)
+          toast({
+            title: 'GPS broadcast failed',
+            description: error instanceof Error ? error.message : 'The server did not save the courier location.',
+            type: 'error',
+          })
+          return
         }
 
-        setOrders((prev) =>
-          prev.map((o) => ({
-            ...o,
-            current_lat: latitude,
-            current_lng: longitude,
-          }))
-        )
-        setSelectedOrder((prev) => ({
+        setOrders((prev) => prev.map((o) => (
+          o.order_number === selectedOrder.order_number
+            ? { ...o, current_lat: latitude, current_lng: longitude }
+            : o
+        )))
+        setSelectedOrder((prev) => prev ? {
           ...prev,
           current_lat: latitude,
           current_lng: longitude,
-        }))
+        } : prev)
 
         setBroadcastingGps(false)
         toast({
@@ -763,13 +659,18 @@ export function DeliveryDashboard() {
       await api.post(`/delivery/orders/${encodeURIComponent(order.order_number)}/status`, {
         status: 'delivered',
       })
-    } catch {
-      // Local fallback
+    } catch (error) {
+      toast({
+        title: 'Could not mark order delivered',
+        description: error instanceof Error ? error.message : 'The server did not confirm delivery.',
+        type: 'error',
+      })
+      return
     }
 
     const updated = { ...order, status: 'delivered', payment_status: 'paid' }
     setOrders((prev) => prev.map((o) => (o.order_number === order.order_number ? updated : o)))
-    if (selectedOrder.order_number === order.order_number) {
+    if (selectedOrder?.order_number === order.order_number) {
       setSelectedOrder(updated)
     }
     toast({
@@ -779,49 +680,9 @@ export function DeliveryDashboard() {
     })
   }
 
-  // Step driver 25% closer along route to customer destination
-  const handleStepDriverCloser = async (order: DeliveryOrder) => {
-    const curLat = Number(order.current_lat ?? 11.5510)
-    const curLng = Number(order.current_lng ?? 104.9315)
-    const dLat = Number(order.dest_lat ?? 11.5564)
-    const dLng = Number(order.dest_lng ?? 104.9282)
-
-    const nextLat = Number((curLat + (dLat - curLat) * 0.25).toFixed(5))
-    const nextLng = Number((curLng + (dLng - curLng) * 0.25).toFixed(5))
-    const distRemaining = Math.max(0.1, Math.hypot(dLat - nextLat, dLng - nextLng) * 111).toFixed(1)
-    const nextEta = Math.max(2, Math.round(Number(distRemaining) * 3)) + ' mins'
-
-    try {
-      await api.patch(`/delivery/orders/${encodeURIComponent(order.order_number)}/location`, {
-        current_lat: nextLat,
-        current_lng: nextLng,
-        estimated_arrival: nextEta,
-      })
-    } catch {
-      // Offline fallback
-    }
-
-    const updated = {
-      ...order,
-      current_lat: nextLat,
-      current_lng: nextLng,
-      estimated_arrival: nextEta,
-    }
-    setOrders((prev) => prev.map((o) => (o.order_number === order.order_number ? updated : o)))
-    if (selectedOrder.order_number === order.order_number) {
-      setSelectedOrder(updated)
-    }
-
-    toast({
-      title: '🚚 Courier Stepped Forward (+250m)!',
-      description: `New Driver Coordinates: ${nextLat}° N, ${nextLng}° E • ETA ~${nextEta} (Synced to Customer Live Track)`,
-      type: 'info',
-    })
-  }
-
   // Continuous GPS Telemetry Streaming & Driver Progression Loop
   useEffect(() => {
-    if (!isContinuousDelivering) return
+    if (!isContinuousDelivering || !selectedOrder) return
 
     let watchId: number | null = null
 
@@ -837,10 +698,12 @@ export function DeliveryDashboard() {
             await api.post('/delivery/broadcast-gps', {
               latitude,
               longitude,
+              order_number: selectedOrder.order_number,
               driver_name: selectedOrder.driver_name || 'TYUSHOP Express Driver',
             })
           } catch {
-            // Ignore offline
+            // The next GPS update will retry the server sync.
+            return
           }
           setOrders((prev) =>
             prev.map((o) =>
@@ -849,62 +712,23 @@ export function DeliveryDashboard() {
                 : o
             )
           )
-          setSelectedOrder((prev) => ({
+          setSelectedOrder((prev) => prev ? {
             ...prev,
             current_lat: latitude,
             current_lng: longitude,
-          }))
+          } : prev)
         },
         () => {},
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 1000 }
       )
     }
 
-    // Auto-advance simulation loop for testing active delivering
-    const interval = setInterval(() => {
-      setSelectedOrder((current) => {
-        if (current.status === 'delivered') return current
-        const curLat = Number(current.current_lat ?? 11.5510)
-        const curLng = Number(current.current_lng ?? 104.9315)
-        const dLat = Number(current.dest_lat ?? 11.5564)
-        const dLng = Number(current.dest_lng ?? 104.9282)
-
-        const dist = Math.hypot(dLat - curLat, dLng - curLng) * 111
-        if (dist <= 0.08) {
-          handleMarkDelivered(current)
-          return { ...current, status: 'delivered', estimated_arrival: 'Delivered' }
-        }
-
-        const nextLat = Number((curLat + (dLat - curLat) * 0.12).toFixed(5))
-        const nextLng = Number((curLng + (dLng - curLng) * 0.12).toFixed(5))
-        const nextDist = Math.max(0.1, Math.hypot(dLat - nextLat, dLng - nextLng) * 111).toFixed(1)
-        const nextEta = Math.max(2, Math.round(Number(nextDist) * 3)) + ' mins'
-
-        api.patch(`/delivery/orders/${encodeURIComponent(current.order_number)}/location`, {
-          current_lat: nextLat,
-          current_lng: nextLng,
-          estimated_arrival: nextEta,
-        }).catch(() => {})
-
-        const updated = {
-          ...current,
-          current_lat: nextLat,
-          current_lng: nextLng,
-          estimated_arrival: nextEta,
-        }
-
-        setOrders((prev) => prev.map((o) => (o.order_number === current.order_number ? updated : o)))
-        return updated
-      })
-    }, 3800)
-
     return () => {
       if (watchId !== null && typeof window !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId)
       }
-      clearInterval(interval)
     }
-  }, [isContinuousDelivering, selectedOrder.order_number])
+  }, [isContinuousDelivering, selectedOrder?.order_number])
 
   // Filtered Orders List
   const filteredOrders = orders.filter((o) => {
@@ -934,15 +758,17 @@ export function DeliveryDashboard() {
   })
 
   // Dynamic OpenStreetMap Bounding Box for Selected Order
-  const destLat = Number(selectedOrder?.dest_lat || 11.5564)
-  const destLng = Number(selectedOrder?.dest_lng || 104.9282)
-  const driverLat = Number(selectedOrder?.current_lat || 11.5510)
-  const driverLng = Number(selectedOrder?.current_lng || 104.9315)
+  const destLat = Number(selectedOrder?.dest_lat ?? 0)
+  const destLng = Number(selectedOrder?.dest_lng ?? 0)
+  const driverLat = Number(selectedOrder?.current_lat ?? destLat)
+  const driverLng = Number(selectedOrder?.current_lng ?? destLng)
   const minLng = (Math.min(destLng, driverLng) - 0.02).toFixed(4)
   const maxLng = (Math.max(destLng, driverLng) + 0.02).toFixed(4)
   const minLat = (Math.min(destLat, driverLat) - 0.02).toFixed(4)
   const maxLat = (Math.max(destLat, driverLat) + 0.02).toFixed(4)
-  const mapEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${destLat}%2C${destLng}`
+  const mapEmbedUrl = destLat !== 0 && destLng !== 0
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${destLat}%2C${destLng}`
+    : ''
 
   return (
     <DashboardLayout
@@ -973,6 +799,7 @@ export function DeliveryDashboard() {
               type="button"
               size="sm"
               onClick={() => setIsContinuousDelivering((prev) => !prev)}
+              disabled={!selectedOrder}
               className={`rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all ${
                 isContinuousDelivering
                   ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
@@ -988,7 +815,7 @@ export function DeliveryDashboard() {
               variant="outline"
               size="sm"
               onClick={handleBroadcastDeviceGps}
-              disabled={broadcastingGps}
+              disabled={broadcastingGps || !selectedOrder}
               className="rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm"
             >
               {broadcastingGps ? (
@@ -1067,6 +894,7 @@ export function DeliveryDashboard() {
         </div>
 
         {activeTab === 'location' ? (
+          selectedOrder ? (
           <>
             {/* 4 Stat Cards with Percentage Indicators */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1095,7 +923,7 @@ export function DeliveryDashboard() {
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Completed Today</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                    {orders.filter((o) => o.status === 'delivered').length + 18}
+                    {orders.filter((o) => o.status === 'delivered').length}
                   </span>
                   <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                     <TrendingUp className="w-3 h-3" /> +24.8%
@@ -1113,7 +941,12 @@ export function DeliveryDashboard() {
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Route Distance</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-slate-900 dark:text-slate-50">38.6 km</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
+                    {orders.reduce((sum, order) => {
+                      if (order.current_lat == null || order.current_lng == null || order.dest_lat == null || order.dest_lng == null) return sum
+                      return sum + Math.hypot(order.dest_lat - order.current_lat, order.dest_lng - order.current_lng) * 111
+                    }, 0).toFixed(1)} km
+                  </span>
                   <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                     <TrendingUp className="w-3 h-3" /> +8.4%
                   </span>
@@ -1130,7 +963,11 @@ export function DeliveryDashboard() {
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">On-Time Dispatch</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">96.8%</span>
+                  <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                    {orders.length > 0
+                      ? `${Math.round((orders.filter((o) => o.status === 'delivered').length / orders.length) * 100)}%`
+                      : '—'}
+                  </span>
                   <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                     <TrendingUp className="w-3 h-3" /> +3.2%
                   </span>
@@ -1241,7 +1078,7 @@ export function DeliveryDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className="bg-indigo-600 text-white text-[10px]">
-                    ETA ~{selectedOrder.estimated_arrival || '12 mins'}
+                    ETA ~{selectedOrder.estimated_arrival || '—'}
                   </Badge>
                   <Button
                     size="sm"
@@ -1256,11 +1093,17 @@ export function DeliveryDashboard() {
 
               {/* Dynamic OpenStreetMap Embed */}
               <div className="relative h-80 sm:h-96 w-full bg-slate-950">
-                <iframe
-                  title="Staff Fleet Location Live Map"
-                  src={mapEmbedUrl}
-                  className="w-full h-full border-0 opacity-85 contrast-110"
-                />
+                {mapEmbedUrl ? (
+                  <iframe
+                    title="Staff Fleet Location Live Map"
+                    src={mapEmbedUrl}
+                    className="w-full h-full border-0 opacity-85 contrast-110"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
+                    Customer GPS coordinates are not available yet.
+                  </div>
+                )}
 
                 {/* Destination Pin Overlay */}
                 <div className="absolute top-4 left-4 right-4 pointer-events-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1307,7 +1150,7 @@ export function DeliveryDashboard() {
                     <span>Origin: TYUSHOP Central Hub (Phnom Penh)</span>
                   </div>
                   <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold shadow-md">
-                    Courier Speed: 34 km/h
+                    Courier GPS: {selectedOrder.current_lat == null || selectedOrder.current_lng == null ? 'Waiting' : 'Connected'}
                   </div>
                 </div>
               </div>
@@ -1322,7 +1165,7 @@ export function DeliveryDashboard() {
                     </Badge>
                   </div>
                   <p className="text-slate-500 mt-0.5">
-                    Assigned Courier: <strong>{selectedOrder.driver_name || 'TYUSHOP Express Courier'}</strong> ({selectedOrder.driver_vehicle})
+                    Assigned Courier: <strong>{selectedOrder.driver_name || 'Unassigned'}</strong>{selectedOrder.driver_vehicle ? ` (${selectedOrder.driver_vehicle})` : ''}
                   </p>
                 </div>
 
@@ -1334,14 +1177,6 @@ export function DeliveryDashboard() {
                   </a>
                   {selectedOrder.status !== 'delivered' && (
                     <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleStepDriverCloser(selectedOrder)}
-                        className="rounded-xl h-8 text-xs font-bold gap-1.5 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-sm"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Drive Closer (+250m)
-                      </Button>
                       <Button
                         size="sm"
                         onClick={() => setIsContinuousDelivering((prev) => !prev)}
@@ -1443,7 +1278,9 @@ export function DeliveryDashboard() {
                         {/* Coordinates & Actions Bar */}
                         <div className="flex items-center justify-between text-[11px] pt-1">
                           <span className="font-mono text-slate-400">
-                            GPS: {Number(order.dest_lat || 11.5564).toFixed(4)}° N, {Number(order.dest_lng || 104.9282).toFixed(4)}° E
+                            GPS: {order.dest_lat == null || order.dest_lng == null
+                              ? 'Unavailable'
+                              : `${Number(order.dest_lat).toFixed(4)}° N, ${Number(order.dest_lng).toFixed(4)}° E`}
                           </span>
 
                           <div className="flex items-center gap-1.5">
@@ -1469,7 +1306,19 @@ export function DeliveryDashboard() {
             </div>
           </div>
         </div>
-          </>
+           </>
+          ) : (
+            <Card className="rounded-3xl border-dashed border-2 p-10 text-center">
+              <Package className="mx-auto mb-3 h-10 w-10 text-slate-400" />
+              <h2 className="font-black text-lg text-slate-900 dark:text-slate-100">No live delivery orders</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                {ordersError || 'Orders will appear here after a customer places an order and your staff account can access the delivery queue.'}
+              </p>
+              <Button type="button" variant="outline" onClick={fetchDeliveryOrders} className="mt-5 rounded-xl">
+                <RefreshCw className="mr-2 h-4 w-4" /> Retry
+              </Button>
+            </Card>
+          )
         ) : (
           /* DELIVERY PRICING & FREE DELIVERY MANAGEMENT TAB */
           <div className="space-y-6">
@@ -1783,7 +1632,7 @@ export function DeliveryDashboard() {
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Live simulation of how your delivery fee rules render for customers on the Cart & Checkout page.
+                    Preview of how the saved delivery fee rules render for customers on the Cart & Checkout page.
                   </p>
                 </div>
                 <Badge

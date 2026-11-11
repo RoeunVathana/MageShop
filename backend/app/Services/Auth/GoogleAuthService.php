@@ -8,6 +8,7 @@ use App\Models\StoreSetting;
 use App\Models\User;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -170,22 +171,6 @@ class GoogleAuthService
                 ]);
             }
 
-            // Assign Admin roles if this email belongs to platform owner
-            $isOwnerOrAdmin = in_array($email, [
-                'vothanarern@gmail.com',
-                strtolower((string) StoreSetting::get('support_email', '')),
-                strtolower((string) StoreSetting::get('business_email', '')),
-            ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
-
-            if ($isOwnerOrAdmin && method_exists($user, 'assignRole') && ! $user->hasRole('SUPER_ADMIN')) {
-                try {
-                    $user->assignRole('SUPER_ADMIN');
-                    $user->assignRole('ADMIN');
-                } catch (\Throwable $e) {
-                    // ignore if already assigned
-                }
-            }
-
             // Create Sanctum access token
             $token = $user->createToken('google-auth-token')->plainTextToken;
 
@@ -212,27 +197,48 @@ class GoogleAuthService
         ?string $googleId,
         ?string $idToken
     ): array {
-        // If an idToken is provided, extract verified payload claims
-        if (! empty($idToken)) {
-            $parts = explode('.', $idToken);
-            if (count($parts) === 3) {
-                $payloadJson = base64_decode(str_pad(strtr($parts[1], '-_', '+/'), strlen($parts[1]) % 4, '=', STR_PAD_RIGHT));
-                $payload = json_decode($payloadJson, true);
-                if (is_array($payload)) {
-                    if (! empty($payload['email'])) {
-                        $email = strtolower((string) $payload['email']);
-                    }
-                    if (! empty($payload['name']) && empty($name)) {
-                        $name = (string) $payload['name'];
-                    }
-                    if (! empty($payload['picture']) && empty($avatar)) {
-                        $avatar = (string) $payload['picture'];
-                    }
-                    if (! empty($payload['sub']) && empty($googleId)) {
-                        $googleId = (string) $payload['sub'];
-                    }
-                }
-            }
+        if (empty($idToken)) {
+            throw ValidationException::withMessages([
+                'id_token' => ['A Firebase ID token is required.'],
+            ]);
+        }
+
+        // Validate the token with Firebase instead of trusting client-supplied email/uid fields.
+        $firebaseApiKey = (string) (env('FIREBASE_API_KEY') ?: StoreSetting::get('firebase_api_key', ''));
+        if ($firebaseApiKey === '') {
+            throw ValidationException::withMessages([
+                'id_token' => ['Firebase authentication is not configured on the server.'],
+            ]);
+        }
+
+        try {
+            $lookup = Http::timeout(10)->post(
+                'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key='.urlencode($firebaseApiKey),
+                ['idToken' => $idToken]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Firebase token verification request failed: '.$e->getMessage());
+            throw ValidationException::withMessages([
+                'id_token' => ['Firebase authentication could not be verified right now.'],
+            ]);
+        }
+
+        $firebaseUser = $lookup->json('users.0');
+        if (! $lookup->successful() || ! is_array($firebaseUser) || empty($firebaseUser['localId'])) {
+            throw ValidationException::withMessages([
+                'id_token' => ['Firebase authentication token is invalid or expired.'],
+            ]);
+        }
+
+        $email = $firebaseUser['email'] ?? $email;
+        $name = $firebaseUser['displayName'] ?? $name;
+        $avatar = $firebaseUser['photoUrl'] ?? $avatar;
+        $googleId = $firebaseUser['localId'];
+
+        if (($firebaseUser['emailVerified'] ?? false) !== true) {
+            throw ValidationException::withMessages([
+                'email' => ['Your Google email is unverified. Please verify it with Google first.'],
+            ]);
         }
 
         if (empty($email)) {
@@ -285,29 +291,6 @@ class GoogleAuthService
             }
         } catch (\Throwable $e) {
             // Ignore social_accounts logging error
-        }
-
-        // 3. Assign Admin roles if this email belongs to platform owner
-        $isOwnerOrAdmin = in_array($email, [
-            'vothanarern@gmail.com',
-            strtolower((string) StoreSetting::get('support_email', '')),
-            strtolower((string) StoreSetting::get('business_email', '')),
-        ], true) || str_ends_with($email, '@megacommerce.local') || str_contains($email, 'admin');
-
-        if ($isOwnerOrAdmin) {
-            try {
-                if (method_exists($user, 'assignRole')) {
-                    $user->assignRole('SUPER_ADMIN');
-                    $user->assignRole('ADMIN');
-                } else {
-                    $adminRole = Role::whereIn('name', ['SUPER_ADMIN', 'ADMIN'])->orWhereIn('slug', ['super_admin', 'admin'])->get();
-                    if ($adminRole->isNotEmpty()) {
-                        $user->roles()->syncWithoutDetaching($adminRole->pluck('id'));
-                    }
-                }
-            } catch (\Throwable $e) {
-                // ignore
-            }
         }
 
         try {

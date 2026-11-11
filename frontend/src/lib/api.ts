@@ -27,7 +27,9 @@ const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  // Railway cold starts and database-backed catalog queries can take a few seconds.
+  // Give the user a chance to receive the real response before showing an error state.
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

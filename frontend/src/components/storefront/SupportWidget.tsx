@@ -123,7 +123,7 @@ export function SupportWidget() {
               <Tag className="w-3 h-3" /> Discount Codes
             </button>
             <Link
-              to={`/track-order/${recentOrders[0] || 'ORD-20261108-KHQR1'}`}
+              to={recentOrders[0] ? `/track-order/${recentOrders[0]}` : '/track-order'}
               onClick={() => setIsOpen(false)}
               className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 flex items-center gap-1 transition-colors"
             >

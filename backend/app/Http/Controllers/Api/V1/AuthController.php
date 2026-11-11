@@ -543,7 +543,7 @@ class AuthController extends Controller
     public function googleFirebase(Request $request, GoogleAuthService $googleService): JsonResponse
     {
         $validated = $request->validate([
-            'id_token' => ['nullable', 'string'],
+            'id_token' => ['required', 'string', 'min:20'],
             'email' => ['nullable', 'string'],
             'name' => ['nullable', 'string', 'max:255'],
             'avatar' => ['nullable', 'string', 'max:2048'],

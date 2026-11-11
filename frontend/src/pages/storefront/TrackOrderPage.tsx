@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Award,
   Search,
-  Sparkles,
   Compass,
   CreditCard,
 } from 'lucide-react'
@@ -28,90 +27,45 @@ export function TrackOrderPage() {
   const { orderNumber: routeOrderNum } = useParams<{ orderNumber?: string }>()
   const { recentOrders, loyaltyPoints, t, formatPrice } = useShopEngagement()
 
-  const [orderInput, setOrderInput] = useState(routeOrderNum || recentOrders[0] || 'ORD-20261108-KHQR1')
-  const [activeOrderNum, setActiveOrderNum] = useState(routeOrderNum || recentOrders[0] || 'ORD-20261108-KHQR1')
+  const [orderInput, setOrderInput] = useState(routeOrderNum || recentOrders[0] || '')
+  const [activeOrderNum, setActiveOrderNum] = useState(routeOrderNum || recentOrders[0] || '')
   const [tracking, setTracking] = useState<any>(null)
+  const [trackingError, setTrackingError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [confirmingPayment, setConfirmingPayment] = useState(false)
 
-  // Live GPS animation progress (0% warehouse -> 100% customer doorstep)
-  const [routeProgress, setRouteProgress] = useState(64)
-  const [isLiveMoving, setIsLiveMoving] = useState(true)
+  // Route progress is derived from the courier coordinates returned by the API.
+  const [routeProgress, setRouteProgress] = useState(0)
 
   const fetchTracking = async (ordNum: string) => {
+    if (!ordNum) return
     setLoading(true)
+    setTrackingError(null)
     try {
       const res = await api.get<any>(`/orders/track/${encodeURIComponent(ordNum)}`)
       if (res?.data) {
         setTracking(res.data)
+      } else {
+        setTracking(null)
+        setTrackingError('Order tracking data is unavailable.')
       }
-    } catch {
-      // Fallback live tracking telemetry if offline
-      setTracking({
-        order_number: ordNum,
-        status: 'shipped',
-        payment_status: 'paid',
-        total_amount: 349.0,
-        discount: 34.9,
-        points_earned: 5,
-        points_redeemed: 0,
-        customer_name: 'Dara Sok',
-        customer_phone: '+855 12 888 999',
-        delivery_address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',
-        driver: {
-          name: 'Sokha Chan (TYUSHOP Express GPS Courier)',
-          phone: '+855 12 889 900',
-          vehicle: 'Honda PCX Electric • PP 1AB-9988',
-          rating: 4.95,
-        },
-        gps: {
-          warehouse_lat: 11.5449,
-          warehouse_lng: 104.935,
-          warehouse_name: 'TYUSHOP Central Hub (Phnom Penh)',
-          current_lat: 11.5510,
-          current_lng: 104.9315,
-          dest_lat: 11.5564,
-          dest_lng: 104.9282,
-          estimated_arrival: '12 mins',
-          distance_remaining_km: 1.2,
-          speed_kmh: 34,
-        },
-        checkpoints: [
-          {
-            title: 'Order Confirmed & Payment Verified',
-            location: 'TYUSHOP Core Checkout (+5 Loyalty Pts Awarded)',
-            time: 'Completed',
-            done: true,
-          },
-          {
-            title: 'Quality Inspected & Dispatched from Warehouse',
-            location: 'TYUSHOP Central Hub (Phnom Penh)',
-            time: 'Completed',
-            done: true,
-          },
-          {
-            title: 'Out for Delivery • Live GPS Telemetry Active',
-            location: 'En Route via Preah Monivong Blvd → BKK1',
-            time: 'Live Now',
-            done: true,
-            active: true,
-          },
-          {
-            title: 'Arriving at Customer Doorstep',
-            location: 'Phnom Penh, Cambodia',
-            time: 'Est. 12 mins',
-            done: false,
-          },
-        ],
-      })
+    } catch (error) {
+      setTracking(null)
+      setTrackingError(error instanceof Error ? error.message : 'Unable to load order tracking.')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    if (!activeOrderNum) {
+      setTracking(null)
+      setTrackingError(null)
+      return
+    }
+
     fetchTracking(activeOrderNum)
-    // Live Telemetry Polling: automatically syncs courier location when driver is delivering
+    // Refresh the real courier coordinates returned by the backend.
     const interval = setInterval(() => {
       fetchTracking(activeOrderNum)
     }, 3500)
@@ -122,10 +76,16 @@ export function TrackOrderPage() {
     setConfirmingPayment(true)
     try {
       await api.post<any>(`/orders/track/${encodeURIComponent(activeOrderNum)}/confirm-payment`, {})
-    } catch {
-      // Allow local confirmation fallback for demo/offline mode
-    } finally {
-      setIsLiveMoving(false)
+    } catch (error) {
+      toast({
+        title: t('Delivery confirmation failed', 'ការបញ្ជាក់ការដឹកជញ្ជូនបានបរាជ័យ'),
+        description: error instanceof Error ? error.message : t('The server did not confirm this handover.', 'ម៉ាស៊ីនមេមិនបានបញ្ជាក់ការប្រគល់ទំនិញនេះទេ។'),
+        type: 'error',
+      })
+      setConfirmingPayment(false)
+      return
+    }
+
       setRouteProgress(100)
       setTracking((prev: any) =>
         prev
@@ -149,29 +109,23 @@ export function TrackOrderPage() {
         type: 'success',
       })
       setConfirmingPayment(false)
-    }
   }
 
-  // Real-time GPS telemetry tick every 2.5 seconds when live movement is enabled
-  useEffect(() => {
-    if (!isLiveMoving) return
-    const timer = setInterval(() => {
-      setRouteProgress((prev) => (prev >= 96 ? 35 : prev + 2))
-    }, 2500)
-    return () => clearInterval(timer)
-  }, [isLiveMoving])
-
-  // Interpolate live GPS coordinates from progress
-  const whLat = Number(tracking?.gps?.warehouse_lat ?? 11.5449)
-  const whLng = Number(tracking?.gps?.warehouse_lng ?? 104.935)
-  const dstLat = Number(tracking?.gps?.dest_lat ?? 11.5564)
-  const dstLng = Number(tracking?.gps?.dest_lng ?? 104.9282)
-  const backendDriverLat = tracking?.gps?.current_lat ? Number(tracking.gps.current_lat) : null
-  const backendDriverLng = tracking?.gps?.current_lng ? Number(tracking.gps.current_lng) : null
+  const whLat = Number(tracking?.gps?.warehouse_lat ?? 0)
+  const whLng = Number(tracking?.gps?.warehouse_lng ?? 0)
+  const dstLat = Number(tracking?.gps?.dest_lat ?? 0)
+  const dstLng = Number(tracking?.gps?.dest_lng ?? 0)
+  const backendDriverLat = tracking?.gps?.current_lat !== null && tracking?.gps?.current_lat !== undefined
+    ? Number(tracking.gps.current_lat)
+    : null
+  const backendDriverLng = tracking?.gps?.current_lng !== null && tracking?.gps?.current_lng !== undefined
+    ? Number(tracking.gps.current_lng)
+    : null
+  const hasMapCoordinates = dstLat !== 0 && dstLng !== 0
 
   // If driver updated their real GPS position in backend, calculate distance and routeProgress from driver's location
   useEffect(() => {
-    if (backendDriverLat && backendDriverLng && tracking?.status !== 'delivered') {
+    if (backendDriverLat !== null && backendDriverLng !== null && tracking?.status !== 'delivered') {
       const totalDist = Math.hypot(dstLat - whLat, dstLng - whLng)
       const currentDist = Math.hypot(dstLat - backendDriverLat, dstLng - backendDriverLng)
       if (totalDist > 0) {
@@ -181,47 +135,79 @@ export function TrackOrderPage() {
     }
   }, [backendDriverLat, backendDriverLng, dstLat, dstLng, whLat, whLng, tracking?.status])
 
-  const liveLat = (backendDriverLat && !isLiveMoving)
-    ? backendDriverLat.toFixed(5)
-    : (whLat + ((dstLat - whLat) * routeProgress) / 100).toFixed(5)
-  const liveLng = (backendDriverLng && !isLiveMoving)
-    ? backendDriverLng.toFixed(5)
-    : (whLng + ((dstLng - whLng) * routeProgress) / 100).toFixed(5)
+  useEffect(() => {
+    if (tracking?.status === 'delivered') setRouteProgress(100)
+  }, [tracking?.status])
 
-  const remainingKm = tracking?.gps?.distance_remaining_km ?? Math.max(0.2, ((100 - routeProgress) * 0.045)).toFixed(1)
-  const etaMins = tracking?.gps?.estimated_arrival && !tracking.gps.estimated_arrival.includes('Delivered')
-    ? tracking.gps.estimated_arrival.replace(' mins', '')
-    : Math.max(2, Math.round((100 - routeProgress) * 0.28))
+  const liveLat = backendDriverLat !== null ? backendDriverLat.toFixed(5) : (dstLat ? dstLat.toFixed(5) : '—')
+  const liveLng = backendDriverLng !== null ? backendDriverLng.toFixed(5) : (dstLng ? dstLng.toFixed(5) : '—')
+
+  const remainingKm = tracking?.gps?.distance_remaining_km ?? '—'
+  const etaMins = tracking?.gps?.estimated_arrival || '—'
 
   const minLng = (Math.min(dstLng, whLng) - 0.03).toFixed(4)
   const maxLng = (Math.max(dstLng, whLng) + 0.03).toFixed(4)
   const minLat = (Math.min(dstLat, whLat) - 0.03).toFixed(4)
   const maxLat = (Math.max(dstLat, whLat) + 0.03).toFixed(4)
-  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${dstLat}%2C${dstLng}`
+  const osmEmbedUrl = hasMapCoordinates
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${dstLat}%2C${dstLng}`
+    : ''
 
-  const handleStepCourierForward = async () => {
-    const nextProgress = Math.min(98, routeProgress + 10)
-    setRouteProgress(nextProgress)
-    const nextLat = Number((whLat + ((dstLat - whLat) * nextProgress) / 100).toFixed(5))
-    const nextLng = Number((whLng + ((dstLng - whLng) * nextProgress) / 100).toFixed(5))
-    const nextRemaining = Math.max(0.1, ((100 - nextProgress) * 0.045)).toFixed(1)
-    const nextEta = Math.max(1, Math.round((100 - nextProgress) * 0.25)) + ' mins'
+  if (!tracking) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-10 space-y-6">
+        <div>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            {t('Home', 'ទំព័រដើម')}
+          </Link>
+          <h1 className="mt-3 text-3xl font-black tracking-tight">
+            {t('Track your delivery', 'តាមដានការដឹកជញ្ជូនរបស់អ្នក')}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+            {t('Enter a real order number to view the latest delivery status and courier location.', 'បញ្ចូលលេខការបញ្ជាទិញពិត ដើម្បីមើលស្ថានភាពដឹកជញ្ជូន និងទីតាំងអ្នកដឹកជញ្ជូនចុងក្រោយ។')}
+          </p>
+        </div>
 
-    try {
-      await api.patch(`/delivery/orders/${encodeURIComponent(activeOrderNum)}/location`, {
-        current_lat: nextLat,
-        current_lng: nextLng,
-        estimated_arrival: nextEta,
-      })
-    } catch {
-      // Local fallback
-    }
+        <Card className="rounded-3xl border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-xl">
+          <CardContent className="p-6 sm:p-8">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (orderInput.trim()) setActiveOrderNum(orderInput.trim())
+              }}
+              className="flex flex-col gap-3 sm:flex-row"
+            >
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={orderInput}
+                  onChange={(e) => setOrderInput(e.target.value)}
+                  placeholder={t('Order number, e.g. ORD-20261109-ABC12', 'លេខការបញ្ជាទិញ ឧ. ORD-20261109-ABC12')}
+                  className="h-11 w-full rounded-xl border bg-background pl-10 pr-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <Button type="submit" className="h-11 rounded-xl px-6 font-bold" disabled={loading || !orderInput.trim()}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                {t('Track order', 'ស្វែងរកការបញ្ជាទិញ')}
+              </Button>
+            </form>
 
-    toast({
-      title: '🚚 Courier Stepped Forward Along Route!',
-      description: `New Driver Position: ${nextLat}° N, ${nextLng}° E • Progress: ${nextProgress}% • ETA ~${nextEta}`,
-      type: 'info',
-    })
+            <div className="mt-6 rounded-2xl border border-dashed bg-background/70 p-5 text-center">
+              {loading ? (
+                <p className="text-sm font-semibold text-muted-foreground">{t('Loading tracking details…', 'កំពុងទាញយកព័ត៌មានដឹកជញ្ជូន…')}</p>
+              ) : (
+                <>
+                  <Package className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm font-semibold">{trackingError || t('No order selected yet', 'មិនទាន់បានជ្រើសរើសការបញ្ជាទិញទេ')}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('Your tracking details will appear here after a valid order number is found.', 'ព័ត៌មានតាមដាននឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីរកឃើញលេខការបញ្ជាទិញត្រឹមត្រូវ។')}</p>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -314,30 +300,34 @@ export function TrackOrderPage() {
                 <span className="text-slate-200">{t('Order #', 'លេខកូដ #')}{tracking?.order_number || activeOrderNum}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
-                  {t('Speed', 'ល្បឿន')}: 34 km/h
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
+                   {t('Speed', 'ល្បឿន')}: {tracking?.gps?.speed_kmh ?? '—'} km/h
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold">
-                  {remainingKm} {t('km remaining • ETA ~', 'គ.ម នៅសល់ • មកដល់ក្នុងរង្វង់ ~')}{etaMins} {t('mins', 'នាទី')}
+                  {remainingKm === '—'
+                    ? t('Distance and ETA unavailable', 'មិនមានចម្ងាយ និងពេលវេលាមកដល់')
+                    : `${remainingKm} ${t('km remaining • ETA', 'គ.ម នៅសល់ • មកដល់ក្នុង')} ${etaMins}`}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setIsLiveMoving(!isLiveMoving)}
-                  className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium cursor-pointer"
-                >
-                  {isLiveMoving ? `⏸ ${t('Pause GPS Sim', 'ផ្អាក GPS')}` : `▶ ${t('Resume GPS Sim', 'បន្ត GPS')}`}
-                </button>
+                <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[11px] font-medium">
+                  {t('Live API refresh', 'ធ្វើបច្ចុប្បន្នភាពពី API')}
+                </span>
               </div>
             </div>
 
             {/* Interactive Map Viewport + Animated Courier Overlay */}
             <div className="relative h-80 sm:h-96 w-full bg-slate-950 overflow-hidden">
               {/* Dynamic OpenStreetMap Embed Centered on Customer Delivery Destination */}
-              <iframe
-                title="TYUSHOP Real-Time Delivery GPS Map"
-                src={osmEmbedUrl}
-                className="w-full h-full border-0 opacity-85 contrast-110"
-              />
+              {hasMapCoordinates ? (
+                <iframe
+                  title="TYUSHOP Real-Time Delivery GPS Map"
+                  src={osmEmbedUrl}
+                  className="w-full h-full border-0 opacity-85 contrast-110"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
+                  {t('Customer GPS coordinates are not available yet.', 'មិនទាន់មានកូអរដោនេ GPS របស់អតិថិជនទេ។')}
+                </div>
+              )}
 
               {/* Animated Route Vector & Live Courier Pin Overlay */}
               <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
@@ -355,7 +345,7 @@ export function TrackOrderPage() {
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-300 max-w-xs truncate font-medium">
-                        {tracking?.delivery_address || 'BKK1, Street 310, Phnom Penh, Cambodia'}
+                         {tracking?.delivery_address || t('Delivery address unavailable', 'មិនមានអាសយដ្ឋានដឹកជញ្ជូន')}
                       </div>
                     </div>
                   </div>
@@ -364,7 +354,7 @@ export function TrackOrderPage() {
                     <div className="text-[10px] uppercase text-amber-300 font-bold">{t('Loyalty Reward', 'រង្វាន់ពិន្ទុ')}</div>
                     <div className="font-bold flex items-center gap-1">
                       <Award className="w-3.5 h-3.5 text-amber-400" />
-                      +{tracking?.points_earned ?? 5} {t('Points Earned!', 'ពិន្ទុទទួលបាន!')}
+                       +{tracking?.points_earned ?? 0} {t('Points Earned!', 'ពិន្ទុទទួលបាន!')}
                     </div>
                   </div>
                 </div>
@@ -412,28 +402,20 @@ export function TrackOrderPage() {
                 </div>
                 <div>
                   <div className="text-sm font-bold flex items-center gap-2">
-                    {tracking?.driver?.name || 'Sokha Chan (TYUSHOP Express GPS Courier)'}
+                    {tracking?.driver?.name || t('Courier assignment pending', 'កំពុងរង់ចាំការកំណត់អ្នកដឹកជញ្ជូន')}
                     <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
                       {t('★ 4.95 Verified Courier', '★ 4.95 អ្នកដឹកជញ្ជូនផ្លូវការ')}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t('Vehicle:', 'យានយន្ត៖')} {tracking?.driver?.vehicle || 'Honda PCX Electric • PP 1AB-9988'} • {t('Phone:', 'ទូរស័ព្ទ៖')}{' '}
-                    <span className="font-semibold text-foreground">{tracking?.driver?.phone || '+855 12 889 900'}</span>
+                     {t('Vehicle:', 'យានយន្ត៖')} {tracking?.driver?.vehicle || '—'} • {t('Phone:', 'ទូរស័ព្ទ៖')}{' '}
+                     <span className="font-semibold text-foreground">{tracking?.driver?.phone || '—'}</span>
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleStepCourierForward}
-                  className="rounded-xl text-xs gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-primary" /> {t('Step Courier Forward', 'រំកិលអ្នកដឹកទៅមុខ')}
-                </Button>
-                <a href={`tel:${tracking?.driver?.phone || '+85512889900'}`}>
+                <a href={tracking?.driver?.phone ? `tel:${tracking.driver.phone}` : undefined}>
                   <Button size="sm" className="rounded-xl text-xs gap-1.5 font-bold">
                     <Phone className="w-3.5 h-3.5" /> {t('Call Driver', 'ហៅទូរស័ព្ទ')}
                   </Button>
@@ -549,12 +531,12 @@ export function TrackOrderPage() {
                       : t('💵 Confirm Cash Paid on Arrival at Location', '💵 បញ្ជាក់ថាបានបង់ប្រាក់សុទ្ធជូនអ្នកដឹក')}
                   </Button>
                 </div>
-              ) : (
+              ) : tracking?.payment_status === 'paid' ? (
                 <div className="space-y-2">
                   <p className="text-muted-foreground leading-relaxed">
                     {t(
-                      'Payment is 100% Settled ($0.00 to pay courier on arrival). Want to test Cash-on-Arrival handover? Or confirm delivery arrival below:',
-                      'ការទូទាត់បានរួចរាល់ ១០០% (មិនបាច់បង់ប្រាក់បន្ថែមទេ)។ ចុចខាងក្រោមដើម្បីបញ្ជាក់ការទទួលទំនិញ៖'
+                      'Payment is settled ($0.00 to pay courier on arrival). Confirm delivery after the courier reaches your location:',
+                      'ការទូទាត់បានរួចរាល់ (មិនបាច់បង់ប្រាក់បន្ថែមទេ)។ សូមបញ្ជាក់ការទទួលទំនិញបន្ទាប់ពីអ្នកដឹកជញ្ជូនមកដល់៖'
                     )}
                   </p>
                   {routeProgress < 100 && (
@@ -568,6 +550,13 @@ export function TrackOrderPage() {
                     >
                       {t('✓ Mark Delivery Arrived at My Location', '✓ បញ្ជាក់ថាទំនិញបានមកដល់ទីតាំងខ្ញុំហើយ')}
                     </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-800 dark:text-amber-200">
+                  {t(
+                    'Payment is still awaiting verification. We will show delivery actions after the payment provider confirms it.',
+                    'ការទូទាត់កំពុងរង់ចាំការផ្ទៀងផ្ទាត់។ សកម្មភាពដឹកជញ្ជូននឹងបង្ហាញបន្ទាប់ពីអ្នកផ្តល់សេវាទូទាត់បញ្ជាក់។'
                   )}
                 </div>
               )}
@@ -588,7 +577,7 @@ export function TrackOrderPage() {
               </div>
               <p className="text-muted-foreground leading-relaxed">
                 {t('This order earned', 'ការបញ្ជាទិញនេះទទួលបាន')}{' '}
-                <strong>+{tracking?.points_earned ?? 5} {t('Loyalty Points', 'ពិន្ទុ')}</strong>!{' '}
+                <strong>+{tracking?.points_earned ?? 0} {t('Loyalty Points', 'ពិន្ទុ')}</strong>!{' '}
                 {t('Your total balance is', 'ពិន្ទុសរុបរបស់អ្នកគឺ')}{' '}
                 <strong className="text-foreground">{loyaltyPoints} {t('Points', 'ពិន្ទុ')}</strong>.{' '}
                 {t(

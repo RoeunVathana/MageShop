@@ -25,12 +25,7 @@ class RolePermissionController extends Controller
             return;
         }
 
-        $email = strtolower((string) ($user->email ?? ''));
-        $isOwner = in_array($email, ['vothanarern@gmail.com'], true) ||
-                   str_ends_with($email, '@megacommerce.local') ||
-                   str_contains($email, 'admin');
-
-        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $isOwner)) {
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
             abort(403, 'Unauthorized. Administrator role management privileges required.');
         }
     }
@@ -65,7 +60,7 @@ class RolePermissionController extends Controller
      */
     public function indexRoles(Request $request): JsonResponse
     {
-        $this->authorizeRoleAdmin($request, false);
+        $this->authorizeRoleAdmin($request);
         $this->ensureDefaultRoles();
 
         $roles = Role::with('permissions')->get();
@@ -81,7 +76,7 @@ class RolePermissionController extends Controller
      */
     public function indexPermissions(Request $request): JsonResponse
     {
-        $this->authorizeRoleAdmin($request, false);
+        $this->authorizeRoleAdmin($request);
 
         $permissions = Permission::all()->groupBy('group');
 
@@ -96,7 +91,7 @@ class RolePermissionController extends Controller
      */
     public function indexStaff(Request $request): JsonResponse
     {
-        $this->authorizeRoleAdmin($request, false);
+        $this->authorizeRoleAdmin($request);
 
         $staffUsers = User::whereHas('roles', function ($q) {
             $q->whereNotIn('slug', ['customer']);

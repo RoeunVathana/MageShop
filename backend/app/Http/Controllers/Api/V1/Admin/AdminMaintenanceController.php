@@ -24,12 +24,7 @@ class AdminMaintenanceController extends Controller
             abort(401, 'Unauthenticated. Administrator session required.');
         }
 
-        $email = strtolower((string) ($user->email ?? ''));
-        $isOwner = in_array($email, ['vothanarern@gmail.com'], true) ||
-                   str_ends_with($email, '@megacommerce.local') ||
-                   str_contains($email, 'admin');
-
-        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $isOwner)) {
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN'))) {
             abort(403, 'Unauthorized. Super administrator privileges required.');
         }
     }
@@ -41,8 +36,15 @@ class AdminMaintenanceController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        if (! filter_var(env('ALLOW_REMOTE_SEEDING', false), FILTER_VALIDATE_BOOLEAN)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Remote seeding is disabled. Enable ALLOW_REMOTE_SEEDING only for a controlled maintenance window.',
+            ], 403);
+        }
+
         // Allow resetting seeder_runs history so all runOnce seeders execute
-        $resetHistory = $request->boolean('reset_history', true);
+        $resetHistory = $request->boolean('reset_history', false);
         if ($resetHistory && Schema::hasTable('seeder_runs')) {
             DB::table('seeder_runs')->truncate();
         }
@@ -118,8 +120,7 @@ class AdminMaintenanceController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Remote database seeding failed: ' . $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'message' => 'Remote database seeding failed. Check the server logs for details.',
             ], 500);
         }
     }

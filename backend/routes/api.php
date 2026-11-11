@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\CategoryAttributeController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CommerceEngagementController;
 use App\Http\Controllers\Api\V1\CouponController;
+use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
@@ -82,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/avatar', [AuthController::class, 'uploadAvatar']);
+    Route::get('/orders', [CustomerOrderController::class, 'index']);
 });
 
 // Public Store Settings
@@ -121,26 +123,18 @@ Route::delete('/products/{product}', [ProductController::class, 'destroy'])->mid
 Route::get('/inventory', [InventoryController::class, 'index']);
 Route::get('/inventory/{product}', [InventoryController::class, 'show']);
 Route::get('/inventory/{product}/movements', [InventoryController::class, 'movements']);
-Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust']);
-
-// Admin System Overview, Orders & Store Settings (Read)
-Route::get('/admin/stats', [AdminOrderController::class, 'systemStats']);
-Route::get('/admin/overview', [AdminOrderController::class, 'systemStats']);
-Route::get('/admin/orders', [AdminOrderController::class, 'index']);
-Route::get('/admin/orders/{id}', [AdminOrderController::class, 'show']);
-Route::get('/admin/store-settings', [StoreSettingsController::class, 'adminShow']);
-Route::get('/admin/roles', [RolePermissionController::class, 'indexRoles']);
-Route::get('/admin/permissions', [RolePermissionController::class, 'indexPermissions']);
-Route::get('/admin/security/users', [EmailPasswordOtpController::class, 'indexUsers']);
-Route::get('/admin/users', [EmailPasswordOtpController::class, 'indexUsers']);
-Route::post('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
-Route::put('/admin/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
-
-Route::post('/admin/seed-all', [AdminMaintenanceController::class, 'seedAll']);
-Route::post('/admin/database/seed', [AdminMaintenanceController::class, 'seedAll']);
+Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])
+    ->middleware('auth:sanctum');
 
 // Admin Management (Roles, Permissions, Staff, Store Settings, Banners, API Tokens, Security)
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // Admin System Overview & Orders (read operations still require an authenticated admin)
+    Route::get('/stats', [AdminOrderController::class, 'systemStats']);
+    Route::get('/overview', [AdminOrderController::class, 'systemStats']);
+    Route::get('/orders', [AdminOrderController::class, 'index']);
+    Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
+    Route::get('/users', [EmailPasswordOtpController::class, 'indexUsers']);
+
     // Database Seeder Execution
     Route::post('/seed-all', [AdminMaintenanceController::class, 'seedAll']);
     Route::post('/database/seed', [AdminMaintenanceController::class, 'seedAll']);
@@ -239,7 +233,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
 });
 
 // Orders & Branded PDF Receipts
-Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show']);
+Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show'])
+    ->middleware('auth:sanctum');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/orders/{order}/resend-receipt', [ReceiptController::class, 'resend']);
     Route::post('/admin/dns/porkbun-configure', [CommerceEngagementController::class, 'configurePorkbunDns']);
@@ -266,22 +261,19 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::get('/loyalty/summary', [CommerceEngagementController::class, 'loyaltySummary']);
 Route::post('/loyalty/redeem-free-item', [CommerceEngagementController::class, 'redeemFreeItem'])
-    ->middleware('throttle:checkout');
+    ->middleware(['auth:sanctum', 'throttle:checkout']);
 Route::post('/orders/checkout', [CommerceEngagementController::class, 'checkout'])
-    ->middleware('throttle:checkout');
+    ->middleware(['auth:sanctum', 'throttle:checkout']);
 Route::get('/orders/track/{orderNumber}', [CommerceEngagementController::class, 'trackOrder'])
-    ->middleware('throttle:tracking');
+    ->middleware(['auth:sanctum', 'throttle:tracking']);
 Route::post('/orders/track/{orderNumber}/confirm-payment', [CommerceEngagementController::class, 'confirmArrivalPayment'])
-    ->middleware('throttle:checkout');
+    ->middleware(['auth:sanctum', 'throttle:checkout']);
 
 // Staff & Delivery Fleet Dispatch & Location Management
 Route::prefix('delivery')->group(function () {
     Route::get('/settings', [DeliveryPricingController::class, 'getSettings']);
-    Route::post('/settings', [DeliveryPricingController::class, 'updateSettings']);
-    Route::post('/toggle-free', [DeliveryPricingController::class, 'toggleFreeDelivery']);
-    Route::post('/methods', [DeliveryPricingController::class, 'addMethod']);
-    Route::patch('/methods/{id}', [DeliveryPricingController::class, 'updateMethod']);
-    Route::delete('/methods/{id}', [DeliveryPricingController::class, 'deleteMethod']);
+});
+Route::prefix('delivery')->middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [CommerceEngagementController::class, 'deliveryOrders']);
     Route::patch('/orders/{orderNumber}/location', [CommerceEngagementController::class, 'updateDeliveryLocation']);
     Route::post('/orders/{orderNumber}/status', [CommerceEngagementController::class, 'updateDeliveryStatus']);
@@ -333,7 +325,7 @@ Route::prefix('sellers')->group(function () {
 });
 
 // Admin Seller Member Governance & Approvals
-Route::prefix('admin/sellers')->group(function () {
+Route::prefix('admin/sellers')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [SellerController::class, 'adminIndex']);
     Route::post('/{id}/approve', [SellerController::class, 'adminApprove']);
     Route::post('/{id}/reject', [SellerController::class, 'adminReject']);

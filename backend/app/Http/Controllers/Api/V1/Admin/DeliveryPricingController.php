@@ -297,7 +297,11 @@ class DeliveryPricingController extends Controller
     protected function authorizeAdmin(Request $request): void
     {
         $user = $request->user('sanctum') ?? $request->user();
-        if ($user && ! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF') || $user->hasRole('DELIVERY'))) {
+        if (! $user) {
+            abort(401, 'Unauthenticated. Delivery pricing management requires an authenticated staff member.');
+        }
+
+        if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF') || $user->hasRole('DELIVERY'))) {
             abort(403, 'Unauthorized. Delivery pricing management requires admin or staff privileges.');
         }
     }

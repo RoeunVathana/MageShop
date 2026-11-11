@@ -40,7 +40,7 @@ const customerNav: NavItem[] = [
 
 export function CustomerDashboard() {
   const location = useLocation()
-  const { recentOrders, loyaltyPoints, t, formatPrice } = useShopEngagement()
+  const { loyaltyPoints, t } = useShopEngagement()
   const currentUser = authService.getStoredUser()
   const [liveOrders, setLiveOrders] = useState<any[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
@@ -60,11 +60,11 @@ export function CustomerDashboard() {
       setLoadingOrders(true)
       try {
         const res = await api.get<any>('/orders')
-        if (isMounted && res?.data?.data && Array.isArray(res.data.data)) {
-          setLiveOrders(res.data.data)
+        if (isMounted && Array.isArray(res?.data)) {
+          setLiveOrders(res.data)
         }
       } catch {
-        // fallback to recentOrders from local engagement context
+        if (isMounted) setLiveOrders([])
       } finally {
         if (isMounted) setLoadingOrders(false)
       }
@@ -81,15 +81,14 @@ export function CustomerDashboard() {
     setTimeout(() => setCopiedOrder(null), 2000)
   }
 
-  // Combined orders (live from database + localStorage recent orders), sorted DESC (newest first)
+  // Orders are always sourced from the authenticated account, never demo/local fallback data.
   const combinedOrders = useMemo(() => {
-    const raw = liveOrders.length > 0 ? liveOrders : recentOrders
-    return [...raw].sort((a: any, b: any) => {
+    return [...liveOrders].sort((a: any, b: any) => {
       const timeA = new Date(a.created_at || a.date || 0).getTime() || (a.id ?? 0)
       const timeB = new Date(b.created_at || b.date || 0).getTime() || (b.id ?? 0)
       return timeB - timeA
     })
-  }, [liveOrders, recentOrders])
+  }, [liveOrders])
 
   const ordersTotalPages = Math.max(1, Math.ceil(combinedOrders.length / ordersPerPage))
   const paginatedOrders = useMemo(() => {
@@ -134,7 +133,7 @@ export function CustomerDashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link to="/track">
+            <Link to="/track-order">
               <Button size="sm" variant="outline" className="gap-1.5 rounded-xl text-xs h-9">
                 <Truck className="w-3.5 h-3.5 text-primary" />
                 <span>{t('Live GPS Delivery', 'តាមដាន GPS ផ្ទាល់')}</span>
@@ -211,7 +210,7 @@ export function CustomerDashboard() {
                     <p className="text-[11px] font-medium text-muted-foreground">
                       {t('Total Orders', 'ការបញ្ជាទិញសរុប')}
                     </p>
-                    <p className="text-2xl font-black mt-0.5">{combinedOrders.length || 2}</p>
+                    <p className="text-2xl font-black mt-0.5">{combinedOrders.length}</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
                     <ShoppingBag className="w-5 h-5" />
@@ -317,11 +316,14 @@ export function CustomerDashboard() {
                   </Link>
                 </div>
               ) : (
-                paginatedOrders.map((ord: any, idx: number) => {
-                  const orderNum = ord.order_number || ord.orderNumber || ord.id || `ORD-2026-${9040 - idx}`
-                  const status = ord.status || 'out_for_delivery'
-                  const total = ord.total_amount ? `$${Number(ord.total_amount).toFixed(2)}` : ord.total || '$39.00'
-                  const date = ord.created_at ? new Date(ord.created_at).toLocaleDateString() : ord.date || 'Nov 8, 2026'
+                paginatedOrders.map((ord: any) => {
+                  const orderNum = ord.order_number || ord.orderNumber || ord.id
+                  const status = String(ord.status || 'pending').toLowerCase()
+                  const total = ord.total_amount !== null && ord.total_amount !== undefined
+                    ? `$${Number(ord.total_amount).toFixed(2)}`
+                    : '—'
+                  const date = ord.created_at ? new Date(ord.created_at).toLocaleDateString() : '—'
+                  const isDelivered = status === 'delivered'
 
                   return (
                     <div
@@ -352,15 +354,15 @@ export function CustomerDashboard() {
                                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                             }`}
                           >
-                            {status === 'delivered'
+                            {isDelivered
                               ? t('Delivered', 'បានដឹកជញ្ជូនដល់')
-                              : t('Out for Delivery', 'កំពុងដឹកជញ្ជូន')}
+                              : t(status.replaceAll('_', ' '), status.replaceAll('_', ' '))}
                           </Badge>
                         </div>
                         <p className="text-muted-foreground">
                           {ord.items?.length
                             ? `${ord.items.length} item(s) • ${ord.items.map((i: any) => i.product_name || i.name).filter(Boolean).slice(0, 2).join(', ')}`
-                            : ord.items || 'Standard Express Order • Phnom Penh Hub'}
+                            : t('Order items unavailable', 'មិនមានព័ត៌មានមុខទំនិញ')}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
                           {t('Ordered on:', 'កាលបរិច្ឆេទ៖')} {date}
@@ -369,7 +371,7 @@ export function CustomerDashboard() {
 
                       <div className="flex items-center gap-3">
                         <span className="font-black text-base text-foreground">{total}</span>
-                        <Link to={`/track/${encodeURIComponent(orderNum)}`}>
+                        <Link to={`/track-order/${encodeURIComponent(orderNum)}`}>
                           <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
                             <Truck className="w-3.5 h-3.5" />
                             <span>{t('Track GPS', 'តាមដាន GPS')}</span>
