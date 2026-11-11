@@ -46,6 +46,7 @@ export interface Product {
   name: string
   brand?: string | null
   brand_id?: number | null
+  seller_id?: number | null
   brand_record?: {
     id: number
     name: string

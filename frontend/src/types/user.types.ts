@@ -5,6 +5,13 @@ export type UserRole =
   | 'SELLER'
   | 'CUSTOMER'
   | 'DELIVERY_DRIVER'
+  | 'SELLER_STAFF'
+  | 'ORDER_MANAGER'
+  | 'CUSTOMER_SUPPORT'
+  | 'LOGISTICS_MANAGER'
+  | 'DISPATCHER'
+  | 'WAREHOUSE_MANAGER'
+  | 'INVENTORY_MANAGER'
 
 export interface Role {
   id: number

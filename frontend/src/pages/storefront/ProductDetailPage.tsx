@@ -31,6 +31,7 @@ import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import type { Product, ProductVariantItem } from '@/types/product.types'
+import { SeoHead, SITE_URL } from '@/components/seo/SeoHead'
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -242,9 +243,35 @@ export function ProductDetailPage() {
   const currentStock = selectedVariant ? selectedVariant.stock_quantity : product.stock_quantity
   const isOutOfStock = currentStock <= 0
   const isLowStock = !isOutOfStock && currentStock <= product.low_stock_threshold
+  const productDescription = product.description?.trim() || `Buy ${product.name} from TYUSHOP Cambodia with secure checkout and delivery tracking.`
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: productDescription,
+    sku: product.sku,
+    image: allImages.length ? allImages : [`${SITE_URL}/logo.png`],
+    ...(product.brand ? { brand: { '@type': 'Brand', name: product.brand } } : {}),
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/products/${product.slug}`,
+      priceCurrency: product.currency || 'USD',
+      price: Number(product.discount_price || product.selling_price || product.price || 0).toFixed(2),
+      availability: product.available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: 'TYUSHOP', url: SITE_URL },
+    },
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-10">
+      <SeoHead
+        title={`${product.name} | TYUSHOP Cambodia`}
+        description={productDescription}
+        path={`/products/${product.slug}`}
+        image={displayImage || `${SITE_URL}/logo.png`}
+        type="product"
+        jsonLd={productJsonLd}
+      />
       {/* Breadcrumb Navigation */}
       <div className="text-xs text-muted-foreground flex items-center flex-wrap gap-1.5 border-b pb-4">
         <Link to="/" className="hover:underline">{t('Home', 'ទំព័រដើម')}</Link>

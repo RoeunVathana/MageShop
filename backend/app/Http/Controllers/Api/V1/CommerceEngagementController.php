@@ -765,7 +765,6 @@ class CommerceEngagementController extends Controller
                 'message' => 'Order not found.',
             ], 404);
         }
-
         $this->authorizeOrderAccess($request, $order);
 
         $lat = (float) ($order->current_lat ?? $order->dest_lat ?? 0);
@@ -890,7 +889,6 @@ class CommerceEngagementController extends Controller
                 'message' => 'Order not found.',
             ], 404);
         }
-
         $this->authorizeOrderAccess($request, $order);
 
         $receipt = null;
@@ -1264,10 +1262,16 @@ class CommerceEngagementController extends Controller
     {
         $this->authorizeDeliveryStaff($request);
 
-        $orders = Order::with('items')
+        $user = $request->user('sanctum') ?? $request->user();
+        $ordersQuery = Order::with(['items', 'driver:id,name,email,phone_number'])
             ->orderBy('id', 'desc')
-            ->take(30)
-            ->get();
+            ->take(30);
+
+        if ($user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
+            $ordersQuery->where('driver_id', $user->id);
+        }
+
+        $orders = $ordersQuery->get();
 
         return response()->json([
             'status' => 'ok',
@@ -1295,6 +1299,7 @@ class CommerceEngagementController extends Controller
                 'message' => 'Order not found.',
             ], 404);
         }
+        $this->authorizeDeliveryOrder($request, $order);
 
         $validated = $request->validate([
             'delivery_address' => ['nullable', 'string', 'max:500'],
@@ -1337,6 +1342,7 @@ class CommerceEngagementController extends Controller
                 'message' => 'Order not found.',
             ], 404);
         }
+        $this->authorizeDeliveryOrder($request, $order);
 
         $validated = $request->validate([
             'status' => ['required', 'in:pending,shipped,out_for_delivery,delivered,cancelled'],
@@ -1349,7 +1355,6 @@ class CommerceEngagementController extends Controller
                 'message' => 'Verify the online payment before marking this order delivered.',
             ], 422);
         }
-
         $order->status = $status;
         if ($status === 'delivered' && in_array($order->payment_method, ['cash_on_delivery', 'cash_on_hand'], true)) {
             $order->payment_status = 'paid';
@@ -1393,6 +1398,7 @@ class CommerceEngagementController extends Controller
                 'message' => 'The selected order is not currently in delivery.',
             ], 422);
         }
+        $this->authorizeDeliveryOrder($request, $order);
 
         $order->current_lat = $lat;
         $order->current_lng = $lng;
@@ -1421,8 +1427,10 @@ class CommerceEngagementController extends Controller
         }
 
         $isStaff = method_exists($user, 'hasAnyRole')
-            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'DELIVERY']);
-        if (! $isStaff && ((int) $order->user_id !== (int) $user->id)) {
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'CUSTOMER_SUPPORT', 'LOGISTICS_MANAGER', 'DISPATCHER']);
+        $isAssignedDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER'])
+            && (int) $order->driver_id === (int) $user->id;
+        if (! $isStaff && ! $isAssignedDriver && ((int) $order->user_id !== (int) $user->id)) {
             abort(403, 'You do not have access to this order.');
         }
     }
@@ -1435,9 +1443,23 @@ class CommerceEngagementController extends Controller
         }
 
         $allowed = method_exists($user, 'hasAnyRole')
-            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'DELIVERY']);
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY_DRIVER', 'COURIER']);
         if (! $allowed) {
             abort(403, 'Delivery staff privileges are required for this operation.');
+        }
+    }
+
+    protected function authorizeDeliveryOrder(Request $request, Order $order): void
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required for delivery operations.');
+        }
+
+        $isDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER']);
+        $isSupervisor = $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
+        if ($isDriver && ! $isSupervisor && (int) $order->driver_id !== (int) $user->id) {
+            abort(403, 'This order is not assigned to your delivery route.');
         }
     }
 }

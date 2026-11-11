@@ -40,11 +40,16 @@ class ProductPolicy
      */
     public function update(User $user, Product $product): bool
     {
-        return $user->hasPermission('products.update') ||
-            $user->hasRole('SUPER_ADMIN') ||
-            $user->hasRole('ADMIN') ||
-            $user->hasRole('PRODUCT_MANAGER') ||
-            $user->hasRole('SELLER');
+        if ($user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'])) {
+            return true;
+        }
+
+        if ($user->hasRole(['SELLER', 'SELLER_STAFF'])) {
+            return (int) $product->seller_id === (int) $user->id;
+        }
+
+        return $user->hasPermission('products.update') &&
+            ! $user->hasRole('CUSTOMER');
     }
 
     /**
@@ -52,12 +57,14 @@ class ProductPolicy
      */
     public function delete(User $user, Product $product): bool
     {
-        return $user->hasPermission('products.archive') ||
-            $user->hasPermission('products.delete') ||
-            $user->hasRole('SUPER_ADMIN') ||
-            $user->hasRole('ADMIN') ||
-            $user->hasRole('PRODUCT_MANAGER') ||
-            $user->hasRole('SELLER') ||
-            $user->hasRole('SELLER_STAFF');
+        if ($user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER'])) {
+            return true;
+        }
+
+        if ($user->hasRole(['SELLER', 'SELLER_STAFF'])) {
+            return (int) $product->seller_id === (int) $user->id;
+        }
+
+        return $user->hasPermission('products.delete') || $user->hasPermission('products.archive');
     }
 }

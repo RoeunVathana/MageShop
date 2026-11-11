@@ -19,6 +19,7 @@ class Product extends Model
     protected $fillable = [
         'category_id',
         'brand_id',
+        'seller_id',
         'name',
         'brand',
         'slug',
@@ -85,6 +86,11 @@ class Product extends Model
     public function brandRecord(): BelongsTo
     {
         return $this->belongsTo(Brand::class, 'brand_id');
+    }
+
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
     /**

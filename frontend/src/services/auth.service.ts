@@ -85,7 +85,15 @@ export const authService = {
     const roleNames = roles.map((r: any) =>
       typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
     )
-    return roleNames.includes('STAFF') || roleNames.includes('OPERATIONS_MANAGER') || roleNames.includes('MANAGER')
+    return roleNames.some((role: string) => [
+      'STAFF',
+      'OPERATIONS_MANAGER',
+      'MANAGER',
+      'ORDER_MANAGER',
+      'CUSTOMER_SUPPORT',
+      'LOGISTICS_MANAGER',
+      'DISPATCHER',
+    ].includes(role))
   },
 
   /**

@@ -27,7 +27,12 @@ class ProductController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $perPage = min((int) $request->query('per_page', 15), 100);
-        $products = $this->productService->listProducts($request->query(), $perPage);
+        $filters = $request->query();
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($user && $user->hasRole(['SELLER', 'SELLER_STAFF']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
+            $filters['seller_id'] = $user->id;
+        }
+        $products = $this->productService->listProducts($filters, $perPage);
 
         return ProductResource::collection($products);
     }

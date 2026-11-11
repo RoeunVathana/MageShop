@@ -33,6 +33,7 @@ import { productService } from '@/services/product.service'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
 import type { Product } from '@/types/product.types'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 const quickDepartments = [
   { name: 'Electronics & Computers', nameKm: 'គ្រឿងអេឡិចត្រូនិក និងកុំព្យូទ័រ', slug: 'electronics-computers', icon: Laptop, color: 'text-blue-500' },
@@ -65,6 +66,11 @@ export function HomePage() {
 
   return (
     <div className="space-y-12 pb-16">
+      <SeoHead
+        title="TYUSHOP | Cambodia Online Marketplace"
+        description="Shop authentic electronics, fashion, beauty, home goods and groceries in Cambodia. Pay with Bakong KHQR or cash on delivery and track your order with live GPS delivery."
+        path="/"
+      />
       {/* Dynamic Slide Banner Carousel (Managed via Admin Console) */}
       <HeroBannerSlider />
 

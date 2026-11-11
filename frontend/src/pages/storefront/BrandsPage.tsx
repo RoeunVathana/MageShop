@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { brandService } from '@/services/brand.service'
 import type { Brand } from '@/types/brand.types'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 // Rich visual showcase covers and aesthetic metadata for each brand
 const BRAND_VISUAL_PRESETS: Record<
@@ -222,6 +223,11 @@ export function BrandsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      <SeoHead
+        title="Brands | TYUSHOP Cambodia"
+        description="Discover trusted electronics, fashion, beauty and lifestyle brands available from TYUSHOP marketplace sellers in Cambodia."
+        path="/brands"
+      />
       {/* Breadcrumbs */}
       <div className="text-xs text-muted-foreground">
         <Link to="/" className="hover:underline hover:text-foreground">

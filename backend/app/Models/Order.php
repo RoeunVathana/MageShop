@@ -15,6 +15,7 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'user_id',
+        'driver_id',
         'status',
         'subtotal',
         'discount',
@@ -59,6 +60,11 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'driver_id');
     }
 
     public function items(): HasMany

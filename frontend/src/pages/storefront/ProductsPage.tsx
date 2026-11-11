@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils'
 import type { Product, ProductType } from '@/types/product.types'
 import type { Category } from '@/types/category.types'
 import type { Brand } from '@/types/brand.types'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -181,6 +182,11 @@ export function ProductsPage() {
 
   return (
     <div className="container mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
+      <SeoHead
+        title="All Products | TYUSHOP Cambodia"
+        description="Browse and search TYUSHOP's Cambodia marketplace for electronics, mobile phones, fashion, home, beauty and everyday products."
+        path="/products"
+      />
       {/* Page Title & Breadcrumb */}
       <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/10 via-card to-card px-5 py-6 shadow-sm sm:px-7">
         <div className="text-xs text-muted-foreground mb-2">

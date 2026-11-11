@@ -75,6 +75,11 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'user_id');
     }
 
+    public function assignedOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'driver_id');
+    }
+
     /**
      * Linked social accounts (e.g. Google OAuth).
      */

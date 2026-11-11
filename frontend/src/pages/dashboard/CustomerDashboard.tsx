@@ -24,6 +24,7 @@ import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { authService } from '@/services/auth.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -41,6 +42,7 @@ const customerNav: NavItem[] = [
 export function CustomerDashboard() {
   const location = useLocation()
   const { loyaltyPoints, t } = useShopEngagement()
+  const { toast } = useToast()
   const currentUser = authService.getStoredUser()
   const [liveOrders, setLiveOrders] = useState<any[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
@@ -79,6 +81,21 @@ export function CustomerDashboard() {
     navigator.clipboard.writeText(orderNum)
     setCopiedOrder(orderNum)
     setTimeout(() => setCopiedOrder(null), 2000)
+  }
+
+  const handleCancelOrder = async (orderNum: string) => {
+    if (!window.confirm(`Cancel order #${orderNum}?`)) return
+    try {
+      await api.post(`/orders/${encodeURIComponent(orderNum)}/cancel`)
+      setLiveOrders((previous) => previous.map((order) =>
+        (order.order_number || order.orderNumber || order.id) === orderNum
+          ? { ...order, status: 'cancelled' }
+          : order
+      ))
+      toast({ title: 'Order cancelled', description: `Order #${orderNum} was cancelled successfully.`, type: 'success' })
+    } catch (error: any) {
+      toast({ title: 'Cancellation failed', description: error?.message || 'The order could not be cancelled.', type: 'error' })
+    }
   }
 
   // Orders are always sourced from the authenticated account, never demo/local fallback data.
@@ -369,8 +386,13 @@ export function CustomerDashboard() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap justify-end">
                         <span className="font-black text-base text-foreground">{total}</span>
+                        {(status === 'pending' || status === 'confirmed') && (
+                          <Button size="sm" variant="ghost" onClick={() => handleCancelOrder(String(orderNum))} className="h-8 text-xs rounded-xl text-rose-600 hover:bg-rose-50">
+                            Cancel
+                          </Button>
+                        )}
                         <Link to={`/track-order/${encodeURIComponent(orderNum)}`}>
                           <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
                             <Truck className="w-3.5 h-3.5" />

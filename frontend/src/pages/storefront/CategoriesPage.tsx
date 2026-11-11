@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/button'
 import { categoryService } from '@/services/category.service'
 import type { Category } from '@/types/category.types'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 const iconMap: Record<string, React.ElementType> = {
   Laptop,
@@ -140,6 +141,11 @@ export function CategoriesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      <SeoHead
+        title="Shop by Category | TYUSHOP Cambodia"
+        description="Explore TYUSHOP categories for electronics, phones, fashion, beauty, home and lifestyle products available in Cambodia."
+        path="/categories"
+      />
       {/* Header & Breadcrumb */}
       <div className="border-b pb-6">
         <div className="text-xs text-muted-foreground mb-2">

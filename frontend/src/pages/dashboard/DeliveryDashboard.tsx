@@ -40,6 +40,8 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { api } from '@/lib/api'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
+import { authService } from '@/services/auth.service'
+import { staffService, type StaffDriver } from '@/services/staff.service'
 
 export interface DeliveryOrder {
   id: number
@@ -57,6 +59,7 @@ export interface DeliveryOrder {
   payment_method: string
   total_amount: number
   driver_name?: string
+  driver_id?: number | null
   driver_phone?: string
   driver_vehicle?: string
   estimated_arrival?: string
@@ -84,6 +87,10 @@ const deliveryNav: NavItem[] = [
 
 export function DeliveryDashboard() {
   const { toast } = useToast()
+  const currentUser = authService.getStoredUser()
+  const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
+  const canManagePricing = authService.isAdmin(currentUser)
+  const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
@@ -146,6 +153,8 @@ export function DeliveryDashboard() {
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null)
 
   const [orders, setOrders] = useState<DeliveryOrder[]>([])
+  const [drivers, setDrivers] = useState<StaffDriver[]>([])
+  const [assigningDriver, setAssigningDriver] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<DeliveryOrder | null>(null)
   const [ordersError, setOrdersError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -184,6 +193,7 @@ export function DeliveryDashboard() {
           payment_method: o.payment_method || 'bakong_khqr',
           payment_status: o.payment_status || 'pending',
           driver_name: o.driver_name || undefined,
+          driver_id: o.driver_id === null || o.driver_id === undefined ? null : Number(o.driver_id),
           driver_vehicle: o.driver_vehicle || undefined,
           estimated_arrival: o.estimated_arrival || undefined,
         }))
@@ -221,8 +231,41 @@ export function DeliveryDashboard() {
 
   useEffect(() => {
     fetchDeliveryOrders()
-    fetchDeliverySettings()
-  }, [])
+    if (canManagePricing) fetchDeliverySettings()
+    if (canDispatch) {
+      staffService.getDrivers().then((response) => setDrivers(response.data || [])).catch(() => setDrivers([]))
+    }
+  }, [canDispatch, canManagePricing])
+
+  useEffect(() => {
+    if (!canManagePricing && activeTab === 'pricing') setActiveTab('location')
+  }, [activeTab, canManagePricing])
+
+  const handleAssignDriver = async (driverId: string) => {
+    if (!selectedOrder || !canDispatch) return
+    setAssigningDriver(true)
+    try {
+      const selectedDriver = driverId ? drivers.find((driver) => driver.id === Number(driverId)) : null
+      const response = await staffService.assignDriver(selectedOrder.order_number, driverId ? Number(driverId) : null)
+      const updated = {
+        ...selectedOrder,
+        driver_id: selectedDriver?.id || null,
+        driver_name: selectedDriver?.name,
+        driver_phone: selectedDriver?.phone_number || undefined,
+      }
+      setOrders((previous) => previous.map((order) => order.order_number === updated.order_number ? { ...order, ...updated } : order))
+      setSelectedOrder(updated)
+      toast({
+        title: 'Driver assignment saved',
+        description: response?.message || (selectedDriver ? `${selectedDriver.name} is assigned to this order.` : 'The order is now unassigned.'),
+        type: 'success',
+      })
+    } catch (error: any) {
+      toast({ title: 'Driver assignment failed', description: error?.message || 'The server did not save this assignment.', type: 'error' })
+    } finally {
+      setAssigningDriver(false)
+    }
+  }
 
   // Toggle Free Delivery on/off globally
   const handleToggleFreeDelivery = async () => {
@@ -243,16 +286,11 @@ export function DeliveryDashboard() {
           : 'Customers will pay based on selected delivery rates at checkout.',
         type: 'success',
       })
-    } catch {
-      // Optimistic update fallback
-      setDeliverySettings((prev) => ({
-        ...prev,
-        is_free_delivery: nextState,
-      }))
+    } catch (error: any) {
       toast({
-        title: nextState ? 'Free Delivery Activated (Local)' : 'Paid Delivery Activated (Local)',
-        description: 'Storefront checkout delivery pricing updated.',
-        type: 'info',
+        title: 'Delivery setting update failed',
+        description: error?.message || 'The server did not save the delivery setting.',
+        type: 'error',
       })
     } finally {
       setTogglingFree(false)
@@ -283,16 +321,11 @@ export function DeliveryDashboard() {
         description: `Free Threshold: $${Number(thresholdInput).toFixed(2)} • Default Fee: $${Number(defaultFeeInput).toFixed(2)}`,
         type: 'success',
       })
-    } catch {
-      setDeliverySettings((prev) => ({
-        ...prev,
-        free_delivery_threshold: Number(thresholdInput),
-        default_delivery_fee: Number(defaultFeeInput),
-      }))
+    } catch (error: any) {
       toast({
-        title: 'Settings Saved (Optimistic)',
-        description: 'New threshold applied.',
-        type: 'info',
+        title: 'Delivery settings save failed',
+        description: error?.message || 'The server did not save the new threshold.',
+        type: 'error',
       })
     } finally {
       setSavingSettings(false)
@@ -412,50 +445,12 @@ export function DeliveryDashboard() {
         })
       }
       setMethodModalOpen(false)
-    } catch {
-      // Fallback
-      if (editingMethod) {
-        setDeliverySettings((prev) => ({
-          ...prev,
-          methods: prev.methods.map((m) =>
-            m.id === editingMethod.id
-              ? {
-                  ...m,
-                  name: formName.trim(),
-                  name_km: formNameKm.trim() || formName.trim(),
-                  price: Number(formPrice),
-                  estimated_time: formTime.trim(),
-                  estimated_time_km: formTimeKm.trim(),
-                  is_default: formIsDefault,
-                  is_active: formIsActive,
-                }
-              : formIsDefault
-              ? { ...m, is_default: false }
-              : m
-          ),
-        }))
-      } else {
-        const newM: DeliveryMethod = {
-          id: 'del_' + Date.now().toString(36),
-          name: formName.trim(),
-          name_km: formNameKm.trim() || formName.trim(),
-          price: Number(formPrice),
-          estimated_time: formTime.trim(),
-          estimated_time_km: formTimeKm.trim(),
-          is_default: formIsDefault,
-          is_active: formIsActive,
-        }
-        setDeliverySettings((prev) => ({
-          ...prev,
-          methods: [...prev.methods, newM],
-        }))
-      }
+    } catch (error: any) {
       toast({
-        title: 'Delivery Method Saved (Local)',
-        description: 'New rate updated in session.',
-        type: 'info',
+        title: 'Delivery method save failed',
+        description: error?.message || 'The server did not save this delivery method.',
+        type: 'error',
       })
-      setMethodModalOpen(false)
     } finally {
       setSavingMethod(false)
     }
@@ -483,15 +478,11 @@ export function DeliveryDashboard() {
         description: 'Delivery method removed successfully.',
         type: 'success',
       })
-    } catch {
-      setDeliverySettings((prev) => ({
-        ...prev,
-        methods: prev.methods.filter((m) => m.id !== id),
-      }))
+    } catch (error: any) {
       toast({
-        title: 'Method Removed (Local)',
-        description: 'Method deleted from list.',
-        type: 'info',
+        title: 'Delivery method delete failed',
+        description: error?.message || 'The server did not delete this delivery method.',
+        type: 'error',
       })
     } finally {
       setDeletingMethodId(null)
@@ -512,11 +503,12 @@ export function DeliveryDashboard() {
         description: nextActive ? 'Customers can now select this rate.' : 'Rate hidden from customer checkout.',
         type: 'info',
       })
-    } catch {
-      setDeliverySettings((prev) => ({
-        ...prev,
-        methods: prev.methods.map((item) => (item.id === m.id ? { ...item, is_active: nextActive } : item)),
-      }))
+    } catch (error: any) {
+      toast({
+        title: 'Delivery method update failed',
+        description: error?.message || 'The server did not update this delivery method.',
+        type: 'error',
+      })
     }
   }
 
@@ -837,7 +829,7 @@ export function DeliveryDashboard() {
               size="sm"
               onClick={() => {
                 fetchDeliveryOrders()
-                fetchDeliverySettings()
+                if (canManagePricing) fetchDeliverySettings()
               }}
               disabled={loading || loadingSettings}
               className="rounded-xl h-9 text-xs gap-1.5"
@@ -863,7 +855,7 @@ export function DeliveryDashboard() {
               <MapPin className="w-4 h-4" />
               <span>Fleet & Live Location (គ្រប់គ្រងទីតាំង & ការដឹក)</span>
             </button>
-            <button
+            {canManagePricing && <button
               type="button"
               onClick={() => setActiveTab('pricing')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -883,7 +875,7 @@ export function DeliveryDashboard() {
               >
                 {deliverySettings.is_free_delivery ? 'FREE ON (ឥតគិតថ្លៃ)' : 'PAID ACTIVE'}
               </Badge>
-            </button>
+            </button>}
           </div>
 
           <div className="text-xs text-slate-500 font-medium px-2 hidden sm:block">
@@ -1167,6 +1159,21 @@ export function DeliveryDashboard() {
                   <p className="text-slate-500 mt-0.5">
                     Assigned Courier: <strong>{selectedOrder.driver_name || 'Unassigned'}</strong>{selectedOrder.driver_vehicle ? ` (${selectedOrder.driver_vehicle})` : ''}
                   </p>
+                  {canDispatch && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <label htmlFor="driver-assignment" className="text-[11px] text-slate-500">Assign driver</label>
+                      <select
+                        id="driver-assignment"
+                        value={selectedOrder.driver_id ? String(selectedOrder.driver_id) : ''}
+                        onChange={(event) => handleAssignDriver(event.target.value)}
+                        disabled={assigningDriver}
+                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-[11px] dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <option value="">Unassigned</option>
+                        {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.name} ({driver.assigned_orders_count})</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

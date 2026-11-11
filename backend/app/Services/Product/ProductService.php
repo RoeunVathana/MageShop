@@ -10,6 +10,7 @@ use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Models\ProductVariant;
+use App\Models\User;
 use App\Models\VariantAttributeValue;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,10 @@ class ProductService
             'attributeValues.attribute',
             'attributeValues.selectedOption',
         ]);
+
+        if (isset($filters['seller_id']) && is_numeric($filters['seller_id'])) {
+            $query->where('seller_id', (int) $filters['seller_id']);
+        }
 
         // Search by name, SKU, brand, or description
         if (! empty($filters['search'])) {
@@ -165,9 +170,18 @@ class ProductService
                 }
             }
 
+            $sellerId = null;
+            if ($userId) {
+                $creator = User::with('roles')->find($userId);
+                if ($creator && $creator->hasRole(['SELLER', 'SELLER_STAFF'])) {
+                    $sellerId = $creator->id;
+                }
+            }
+
             $product = Product::create([
                 'category_id' => $categoryId,
                 'brand_id' => $brandId,
+                'seller_id' => $sellerId,
                 'name' => trim($data['name']),
                 'brand' => ! empty($data['brand']) ? trim($data['brand']) : null,
                 'slug' => $slug,

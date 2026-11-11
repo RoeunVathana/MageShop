@@ -10,6 +10,9 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /track-order
 
 # Explicitly allow AI Search Assistants for Generative Engine Discovery
 User-agent: Googlebot

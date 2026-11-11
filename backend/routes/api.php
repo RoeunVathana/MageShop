@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\OperationsController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReceiptController;
 use App\Http\Controllers\Api\V1\SellerController;
@@ -84,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/avatar', [AuthController::class, 'uploadAvatar']);
     Route::get('/orders', [CustomerOrderController::class, 'index']);
+    Route::post('/orders/{orderNumber}/cancel', [CustomerOrderController::class, 'cancel']);
 });
 
 // Public Store Settings
@@ -278,6 +280,14 @@ Route::prefix('delivery')->middleware('auth:sanctum')->group(function () {
     Route::patch('/orders/{orderNumber}/location', [CommerceEngagementController::class, 'updateDeliveryLocation']);
     Route::post('/orders/{orderNumber}/status', [CommerceEngagementController::class, 'updateDeliveryStatus']);
     Route::post('/broadcast-gps', [CommerceEngagementController::class, 'broadcastDriverGps']);
+});
+
+// Staff operations, driver assignment, and seller merchant reporting.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/operations/overview', [OperationsController::class, 'staffOverview']);
+    Route::get('/operations/drivers', [OperationsController::class, 'drivers']);
+    Route::post('/operations/orders/{orderNumber}/assign-driver', [OperationsController::class, 'assignDriver']);
+    Route::get('/seller/dashboard', [OperationsController::class, 'sellerDashboard']);
 });
 Route::get('/wishlist', [CommerceEngagementController::class, 'wishlist']);
 Route::post('/wishlist/toggle', [CommerceEngagementController::class, 'toggleWishlist']);

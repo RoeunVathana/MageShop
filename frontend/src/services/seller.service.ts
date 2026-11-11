@@ -1,5 +1,4 @@
 import { api } from '@/lib/api'
-import type { ApiResponse } from '@/types/api.types'
 
 export interface SellerApplicationData {
   id: number
@@ -63,7 +62,41 @@ export interface AdminSellersResponse {
   }
 }
 
+export interface SellerDashboardData {
+  application: SellerApplicationData | null
+  store: {
+    name?: string | null
+    slug?: string | null
+    status: string
+  }
+  stats: {
+    gross_revenue: number
+    pending_orders: number
+    active_listings: number
+    total_listings: number
+    payout_balance: number
+  }
+  orders: Array<{
+    id: number
+    order_number: string
+    status: string
+    total_amount: number | string
+    created_at?: string
+    customer?: { id: number; name: string; email: string }
+    items?: Array<{
+      product_name: string
+      quantity: number
+      total_price: number | string
+      product?: { name: string; image_url?: string | null }
+    }>
+  }>
+}
+
 export const sellerService = {
+  async getDashboard(): Promise<{ data: SellerDashboardData }> {
+    return api.get('/seller/dashboard')
+  },
+
   /**
    * Submit seller application
    */

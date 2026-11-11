@@ -18,6 +18,7 @@ class ProductResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'brand_id' => $this->brand_id,
+            'seller_id' => $this->seller_id,
             'brand' => $this->brand ?? ($hasBrand ? $this->brandRecord->name : null),
             'brand_record' => $hasBrand ? [
                 'id' => $this->brandRecord->id,

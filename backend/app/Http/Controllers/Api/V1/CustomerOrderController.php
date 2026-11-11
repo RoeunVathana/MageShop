@@ -34,4 +34,27 @@ class CustomerOrderController extends Controller
             ],
         ]);
     }
+
+    public function cancel(Request $request, string $orderNumber): JsonResponse
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        $order = Order::where('order_number', $orderNumber)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if (! in_array($order->status, ['pending', 'confirmed'], true)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This order has already entered fulfillment and can no longer be cancelled here.',
+            ], 422);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Order #{$order->order_number} was cancelled.",
+            'data' => $order->fresh()->load('items'),
+        ]);
+    }
 }
