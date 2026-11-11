@@ -6,6 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Railway uses PgBouncer in transaction pooling mode. Keep this schema
+     * cleanup outside Laravel's migration transaction so PostgreSQL can
+     * inspect and alter the existing orders table safely.
+     */
+    public $withinTransaction = false;
+
     public function up(): void
     {
         if (! Schema::hasTable('orders')) {
