@@ -62,20 +62,37 @@ class PasswordResetOtpService
         // Apply dynamic SMTP settings from StoreSetting (configured in /admin/security) if present
         $this->applyDynamicMailSettings();
 
-        // Queue/dispatch recovery email via styled HTML template with plain-text fallback
+        // Dispatch recovery email via the configured mail transport with a plain-text fallback.
+        // A successful API response must mean that the mail transport accepted the message;
+        // otherwise the frontend must not send the user to a verification screen with no code.
+        $mailSent = false;
         try {
             Mail::send('emails.otp', ['email' => $email, 'rawOtp' => $rawOtp], function ($m) use ($email) {
                 $m->to($email)->subject('TYUSHOP — 6-Digit Password Recovery OTP Code');
             });
+            $mailSent = true;
         } catch (\Throwable $e) {
-            Log::warning("Failed to dispatch HTML OTP email to [{$email}]: {$e->getMessage()}, falling back to plain text");
+            Log::warning("Failed to dispatch HTML OTP email to [{$email}]: {$e->getMessage()}, falling back to plain text", [
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+            ]);
             try {
                 Mail::raw("Your TYUSHOP password recovery verification code is: {$rawOtp}\n\nThis 6-digit OTP code expires in 5 minutes. Enter it on the Verify OTP screen to reset your password.\n\nIf you did not request this, please ignore this message.", function ($m) use ($email) {
                     $m->to($email)->subject('TYUSHOP — 6-Digit Password Recovery OTP Code');
                 });
+                $mailSent = true;
             } catch (\Throwable $fallbackErr) {
-                Log::warning("Failed to dispatch fallback OTP email to [{$email}]: {$fallbackErr->getMessage()}");
+                Log::error("Failed to dispatch fallback OTP email to [{$email}]: {$fallbackErr->getMessage()}", [
+                    'mailer' => config('mail.default'),
+                    'host' => config('mail.mailers.smtp.host'),
+                ]);
             }
+        }
+
+        if (! $mailSent) {
+            // Do not leave a code active when it could not be delivered.
+            PasswordResetOtp::whereKey($record->id)->update(['is_used' => true]);
+            throw new \RuntimeException('Email delivery is temporarily unavailable. Please try again later.');
         }
 
         // Also dispatch via Telegram Bot if user has a linked Telegram account
@@ -98,12 +115,13 @@ class PasswordResetOtpService
     /**
      * Apply dynamic SMTP settings stored in `store_settings` table by Admin Security Console.
      */
-    protected function applyDynamicMailSettings(): void
+    public function applyDynamicMailSettings(): void
     {
         try {
             $host = StoreSetting::get('mail_host');
             if (! empty($host)) {
-                Config::set('mail.default', StoreSetting::get('mail_mailer', config('mail.default', 'smtp')));
+                $mailer = StoreSetting::get('mail_mailer', config('mail.default', 'smtp'));
+                Config::set('mail.default', $mailer === 'resend' ? 'smtp' : $mailer);
                 Config::set('mail.mailers.smtp.host', $host);
                 Config::set('mail.mailers.smtp.port', (int) StoreSetting::get('mail_port', 587));
                 Config::set('mail.mailers.smtp.username', StoreSetting::get('mail_username'));

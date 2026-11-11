@@ -1205,7 +1205,9 @@ export function AdminSecurityPage() {
                       {emailSettingsLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-500" />}
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      Configure outbound mail provider credentials for password recovery OTPs and order invoices.
+                      Configure outbound mail for OTPs and order invoices. For Resend, use SMTP with host
+                      <code className="mx-1 rounded bg-muted px-1">smtp.resend.com</code>, username
+                      <code className="mx-1 rounded bg-muted px-1">resend</code>, and your Resend API key as the password.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1219,7 +1221,6 @@ export function AdminSecurityPage() {
                             className="w-full p-2 border rounded-md bg-background text-foreground"
                           >
                             <option value="smtp">SMTP (Recommended)</option>
-                            <option value="resend">Resend API</option>
                             <option value="sendmail">Sendmail</option>
                             <option value="log">Log (Testing)</option>
                           </select>

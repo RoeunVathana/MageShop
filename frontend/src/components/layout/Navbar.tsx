@@ -43,7 +43,7 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="relative z-[100] hidden overflow-visible border-b bg-background transition-colors duration-300">
+    <nav className="relative z-[100] hidden overflow-visible border-b bg-background transition-colors duration-300 lg:block">
       <div className="container mx-auto px-4 flex items-center justify-between gap-4">
         {/* Left: Animated Categories Dropdown Menu */}
         <div className={`relative shrink-0 ${isCategoryOpen ? 'z-[110]' : ''}`}>

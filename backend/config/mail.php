@@ -14,7 +14,10 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'smtp'),
+    // Resend is used through smtp.resend.com in this deployment. If an old dashboard
+    // setting still contains `resend`, fall back safely to SMTP instead of booting a
+    // transport that is not installed.
+    'default' => env('MAIL_MAILER', 'smtp') === 'resend' ? 'smtp' : env('MAIL_MAILER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,11 +44,12 @@ return [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', 'smtp.gmail.com'),
+            'host' => env('MAIL_HOST', 'smtp.resend.com'),
             'port' => env('MAIL_PORT', 587),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username' => env('MAIL_USERNAME', 'Vothanarern@gmail.com'),
-            'password' => env('MAIL_PASSWORD', base64_decode('ZnJqbiBpYmdtIGp4bWEgc3BwdA==')),
+            'username' => env('MAIL_USERNAME', 'resend'),
+            // Resend SMTP accepts the API key as the password. Never commit a credential fallback.
+            'password' => env('MAIL_PASSWORD', env('RESEND_API_KEY')),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'https://tyushop.blog'), PHP_URL_HOST)),
         ],
@@ -60,10 +64,6 @@ return [
             // 'client' => [
             //     'timeout' => 5,
             // ],
-        ],
-
-        'resend' => [
-            'transport' => 'resend',
         ],
 
         'sendmail' => [
@@ -112,7 +112,7 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'Vothanarern@gmail.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'no-reply@tyushop.blog'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'TYUSHOP')),
     ],
 

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 export function FaqPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(0)
@@ -60,8 +61,27 @@ export function FaqPage() {
     },
   ]
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.a,
+      },
+    })),
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 space-y-8 max-w-4xl">
+      <SeoHead
+        title="TYUSHOP FAQ | Cambodia Shopping, Payments & Delivery"
+        description="Get answers about TYUSHOP Cambodia shopping, Bakong KHQR and cash on delivery, OTP password recovery, loyalty rewards, and live GPS delivery tracking."
+        path="/faq"
+        jsonLd={faqJsonLd}
+      />
       <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">

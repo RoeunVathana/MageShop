@@ -404,10 +404,13 @@ class EmailPasswordOtpController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $configuredMailer = StoreSetting::get('mail_mailer', config('mail.default', 'smtp'));
+        $mailMailer = $configuredMailer === 'resend' ? 'smtp' : $configuredMailer;
+
         return response()->json([
             'status' => 'success',
             'data' => [
-                'mail_mailer' => StoreSetting::get('mail_mailer', config('mail.default', 'smtp')),
+                'mail_mailer' => $mailMailer,
                 'mail_host' => StoreSetting::get('mail_host', config('mail.mailers.smtp.host', 'smtp.resend.com')),
                 'mail_port' => (int) StoreSetting::get('mail_port', config('mail.mailers.smtp.port', 587)),
                 'mail_username' => StoreSetting::get('mail_username', config('mail.mailers.smtp.username', 'resend')),
@@ -427,7 +430,9 @@ class EmailPasswordOtpController extends Controller
         $this->authorizeAdmin($request);
 
         $validated = $request->validate([
-            'mail_mailer' => ['nullable', 'string', 'in:smtp,sendmail,mailgun,ses,postmark,resend,log'],
+            // Resend is configured through its SMTP endpoint in this deployment.
+            // The native Resend transport is not installed, so accepting it here would create a false-success setting.
+            'mail_mailer' => ['nullable', 'string', 'in:smtp,sendmail,mailgun,ses,postmark,log'],
             'mail_host' => ['nullable', 'string', 'max:255'],
             'mail_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'mail_username' => ['nullable', 'string', 'max:255'],
@@ -471,7 +476,7 @@ class EmailPasswordOtpController extends Controller
     /**
      * Send live test OTP email to verify SMTP deliverability.
      */
-    public function sendTestEmailOtp(Request $request): JsonResponse
+    public function sendTestEmailOtp(Request $request, PasswordResetOtpService $otpService): JsonResponse
     {
         $this->authorizeAdmin($request);
 
@@ -481,6 +486,9 @@ class EmailPasswordOtpController extends Controller
 
         $testEmail = $validated['test_email'];
         $testOtp = (string) random_int(100000, 999999);
+
+        // Use the same database-backed settings as password-recovery OTP delivery.
+        $otpService->applyDynamicMailSettings();
 
         try {
             Mail::raw("TYUSHOP SMTP Live Verification Test\n\nYour test OTP verification code is: {$testOtp}\n\nTimestamp: ".now()->toIso8601String()."\n\nIf you received this message, your mail configuration is operational.", function ($m) use ($testEmail) {
