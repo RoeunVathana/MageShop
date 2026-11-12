@@ -28,6 +28,10 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectParam = searchParams.get('redirect')
+  const postGoogleLoginPath =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/'
   const { toast } = useToast()
   const { t, language, setLanguage } = useShopEngagement()
 
@@ -39,7 +43,7 @@ export function LoginPage() {
     getIdToken: () => Promise<string>
   }) => {
     const idToken = await fbUser.getIdToken()
-    const res = await authService.loginWithFirebase({
+    await authService.loginWithFirebase({
       id_token: idToken,
       email: fbUser.email,
       name: fbUser.displayName,
@@ -53,13 +57,9 @@ export function LoginPage() {
       type: 'success',
     })
 
-    if (redirectParam) {
-      navigate(redirectParam)
-    } else if (authService.isAdmin(res.data?.user)) {
-      navigate('/dashboard/admin')
-    } else {
-      navigate('/')
-    }
+    // Google sign-in returns customers and administrators to the storefront.
+    // Keep an explicitly requested internal destination such as `/cart`.
+    navigate(postGoogleLoginPath, { replace: true })
   }
 
   // Process incoming Google OAuth Callback tokens or errors
@@ -108,13 +108,7 @@ export function LoginPage() {
             type: 'success',
           })
 
-          if (redirectParam) {
-            navigate(redirectParam)
-          } else if (authService.isAdmin(freshUser)) {
-            navigate('/dashboard/admin')
-          } else {
-            navigate('/')
-          }
+          navigate(postGoogleLoginPath, { replace: true })
         })
         .catch(() => {
           if (parsedUser) {
@@ -123,13 +117,7 @@ export function LoginPage() {
               description: t('Signed in with Google!', 'បានចូលតាម Google!'),
               type: 'success',
             })
-            if (redirectParam) {
-              navigate(redirectParam)
-            } else if (authService.isAdmin(parsedUser)) {
-              navigate('/dashboard/admin')
-            } else {
-              navigate('/')
-            }
+            navigate(postGoogleLoginPath, { replace: true })
           }
         })
         .finally(() => {
