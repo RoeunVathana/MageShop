@@ -16,6 +16,8 @@ use Illuminate\Database\Query\Grammars\PostgresGrammar as BasePostgresGrammar;
  */
 class PostgresGrammar extends BasePostgresGrammar
 {
+    private const BOOLEAN_EXPRESSION = '(case when cast(? as text) in (\'1\', \'true\', \'t\', \'yes\', \'on\') then true else false end)';
+
     /**
      * Compile a basic where clause without comparing boolean columns to ints.
      *
@@ -25,8 +27,7 @@ class PostgresGrammar extends BasePostgresGrammar
     {
         if (is_bool($where['value'])) {
             return $this->wrap($where['column'])
-                .' '.$where['operator'].' (case when cast(? as text) in ('
-                ."'1', 'true', 't', 'yes', 'on') then true else false end)";
+                .' '.$where['operator'].' '.self::BOOLEAN_EXPRESSION;
         }
 
         return parent::whereBasic($query, $where);

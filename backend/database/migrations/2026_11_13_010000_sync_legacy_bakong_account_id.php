@@ -32,7 +32,9 @@ return new class extends Migration
             ->orderByDesc('id')
             ->first();
 
-        if ($defaultAdminAccount && in_array(strtolower(trim((string) $defaultAdminAccount->account_id)), $legacyAccountIds, true)) {
+        $defaultAccountId = strtolower(trim((string) ($defaultAdminAccount->account_id ?? '')));
+
+        if ($defaultAdminAccount && in_array($defaultAccountId, $legacyAccountIds, true)) {
             DB::table('merchant_payment_accounts')
                 ->where('id', $defaultAdminAccount->id)
                 ->update([
@@ -44,7 +46,7 @@ return new class extends Migration
         if (Schema::hasTable('store_settings')) {
             DB::table('store_settings')
                 ->where('setting_key', 'bakong_account_id')
-                ->whereIn(DB::raw('LOWER(TRIM(setting_value))'), $legacyAccountIds)
+                ->whereRaw('LOWER(TRIM(setting_value)) = ?', [$legacyAccountIds[0]])
                 ->update([
                     'setting_value' => $configuredAccountId,
                     'updated_at' => $now,
