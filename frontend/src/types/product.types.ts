@@ -101,6 +101,7 @@ export interface Product {
 export interface ProductFilterParams {
   page?: number
   per_page?: number
+  view?: 'card' | 'full'
   search?: string
   category_id?: number | string
   brand?: string

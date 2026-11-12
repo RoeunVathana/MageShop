@@ -99,6 +99,7 @@ export function ProductsPage() {
     const params: any = {
       page: currentPage,
       per_page: 12,
+      view: 'card',
       status: 'active',
     }
 

@@ -37,41 +37,49 @@ class ProductService
         // attributes, and every secondary category here made one request fan
         // out into a large number of queries and a very large JSON response.
         // Product details are loaded by show() when a user opens one product.
-        $query = Product::query()
-            ->select([
-                'id',
-                'category_id',
-                'brand_id',
-                'seller_id',
-                'name',
-                'brand',
-                'slug',
-                'sku',
-                'product_type',
-                'selling_price',
+        $isCardView = ($filters['view'] ?? null) === 'card';
+        $columns = [
+            'id',
+            'category_id',
+            'brand_id',
+            'seller_id',
+            'name',
+            'brand',
+            'slug',
+            'sku',
+            'product_type',
+            'selling_price',
+            'currency',
+            'price',
+            'discount_price',
+            'status',
+            'is_active',
+            'is_featured',
+            'is_new_arrival',
+            'is_best_seller',
+            'is_flash_sale',
+            'rating',
+            'reviews_count',
+            'stock_quantity',
+            'low_stock_threshold',
+            'image_url',
+            'created_at',
+            'updated_at',
+        ];
+
+        if (! $isCardView) {
+            $columns = array_merge($columns, [
                 'cost_price',
-                'currency',
-                'price',
-                'discount_price',
-                'status',
-                'is_active',
-                'is_featured',
-                'is_new_arrival',
-                'is_best_seller',
-                'is_flash_sale',
-                'rating',
-                'reviews_count',
-                'stock_quantity',
-                'low_stock_threshold',
-                'image_url',
                 'description',
                 'weight',
                 'dimensions',
                 'specifications',
                 'gallery_urls',
-                'created_at',
-                'updated_at',
-            ])
+            ]);
+        }
+
+        $query = Product::query()
+            ->select($columns)
             ->with([
                 'category:id,name,slug,parent_id',
                 'category.parent:id,name',
@@ -195,7 +203,7 @@ class ProductService
             $query->orderByDesc('id');
         }
 
-        return $this->rememberRedis($cacheKey, 30, fn () => $query->paginate($perPage));
+        return $this->rememberRedis($cacheKey, 60, fn () => $query->paginate($perPage));
     }
 
     /**

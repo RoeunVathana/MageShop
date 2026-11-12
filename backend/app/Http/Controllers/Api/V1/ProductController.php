@@ -54,7 +54,7 @@ class ProductController extends Controller
         // catalog response while Railway wakes or the database is busy. Never
         // cache authenticated admin/seller results.
         if (! $user) {
-            $response->headers->set('Cache-Control', 'public, max-age=20, stale-while-revalidate=60');
+            $response->headers->set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
         }
 
         return $response;

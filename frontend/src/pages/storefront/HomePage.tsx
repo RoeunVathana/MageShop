@@ -59,6 +59,7 @@ export function HomePage() {
       .getProducts({
         page: featuredPage,
         per_page: 8,
+        view: 'card',
         status: 'active',
         sort_by: 'created_at',
         sort_direction: 'desc',
