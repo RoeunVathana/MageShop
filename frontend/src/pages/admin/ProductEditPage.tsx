@@ -500,9 +500,9 @@ export function ProductEditPage() {
         roleColor="text-purple-500"
         navItems={adminNavItems}
       >
-        <div className="p-12 text-center text-muted-foreground">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-          Loading product specifications & attributes...
+        <div className="flex min-h-[calc(100vh-7rem)] w-full flex-col items-center justify-center p-12 text-center text-muted-foreground">
+          <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+          <span className="mt-2">Loading product specifications & attributes...</span>
         </div>
       </DashboardLayout>
     )
