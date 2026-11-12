@@ -22,14 +22,28 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
+const GOOGLE_AUTH_REQUEST_TIMEOUT_MS = 20000
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), timeoutMs)
+    }),
+  ])
+}
+
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectParam = searchParams.get('redirect')
-  const postGoogleLoginPath =
+  const hasSafeRedirect = Boolean(
     redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+  )
+  const postGoogleLoginPath: string =
+    hasSafeRedirect && redirectParam
       ? redirectParam
       : '/'
   const { toast } = useToast()
@@ -43,13 +57,17 @@ export function LoginPage() {
     getIdToken: () => Promise<string>
   }) => {
     const idToken = await fbUser.getIdToken()
-    await authService.loginWithFirebase({
-      id_token: idToken,
-      email: fbUser.email,
-      name: fbUser.displayName,
-      avatar: fbUser.photoURL,
-      uid: fbUser.uid,
-    })
+    await withTimeout(
+      authService.loginWithFirebase({
+        id_token: idToken,
+        email: fbUser.email,
+        name: fbUser.displayName,
+        avatar: fbUser.photoURL,
+        uid: fbUser.uid,
+      }),
+      GOOGLE_AUTH_REQUEST_TIMEOUT_MS,
+      t('Google sign-in timed out. Please try again.', 'ការចូលតាម Google ចំណាយពេលយូរពេក។ សូមព្យាយាមម្តងទៀត។')
+    )
 
     toast({
       title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
@@ -59,7 +77,10 @@ export function LoginPage() {
 
     // Google sign-in returns customers and administrators to the storefront.
     // Keep an explicitly requested internal destination such as `/cart`.
-    navigate(postGoogleLoginPath, { replace: true })
+    // Force a fresh application bootstrap after saving the API token. This
+    // avoids leaving the login page in a loading state when the auth event
+    // updates providers during a client-side route transition.
+    window.location.replace(postGoogleLoginPath)
   }
 
   // Process incoming Google OAuth Callback tokens or errors
@@ -187,8 +208,8 @@ export function LoginPage() {
         type: 'success',
       })
 
-      if (redirectParam) {
-        navigate(redirectParam)
+      if (hasSafeRedirect) {
+        navigate(postGoogleLoginPath)
       } else if (authService.isAdmin(res.data?.user)) {
         navigate('/dashboard/admin')
       } else {

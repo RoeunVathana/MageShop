@@ -31,6 +31,49 @@ const PUBLIC_API_BASE_URL =
 const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
 let csrfReady = false
 let csrfRequest: Promise<void> | null = null
+let isRedirectingToLogin = false
+const CSRF_REQUEST_TIMEOUT_MS = 10000
+
+const PUBLIC_AUTH_PATHS = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-otp',
+]
+
+const EMAIL_AUTH_ENDPOINTS = [
+  '/auth/forgot-password',
+  '/auth/verify-otp',
+  '/auth/reset-password',
+]
+
+const hasExpiredSession = (): boolean => {
+  try {
+    return Boolean(localStorage.getItem('tyushop_auth_token'))
+  } catch {
+    return false
+  }
+}
+
+const clearExpiredSessionAndRedirect = (): void => {
+  if (typeof window === 'undefined' || isRedirectingToLogin || !hasExpiredSession()) return
+
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const isPublicAuthPage = PUBLIC_AUTH_PATHS.includes(window.location.pathname)
+  if (isPublicAuthPage) return
+
+  isRedirectingToLogin = true
+  try {
+    localStorage.removeItem('tyushop_auth_token')
+    localStorage.removeItem('tyushop_auth_user')
+    window.dispatchEvent(new Event('tyushop-auth-changed'))
+  } catch {
+    // Continue to login even if browser storage is unavailable.
+  }
+
+  window.location.replace(`/login?redirect=${encodeURIComponent(currentPath || '/')}`)
+}
 
 /**
  * First-Party Sanctum Cookie-Based Axios Instance
@@ -111,6 +154,7 @@ export async function initCsrf(): Promise<void> {
       headers: {
         Accept: 'application/json',
       },
+      timeout: CSRF_REQUEST_TIMEOUT_MS,
     })
     .then(() => {
       csrfReady = true
@@ -130,7 +174,9 @@ apiClient.interceptors.request.use(
   (config) => {
     try {
       const token = localStorage.getItem('tyushop_auth_token')
-      if (token && config.headers) {
+      const requestUrl = config.url || ''
+      const isEmailAuthRequest = EMAIL_AUTH_ENDPOINTS.some((endpoint) => requestUrl.includes(endpoint))
+      if (token && !isEmailAuthRequest && config.headers) {
         config.headers.Authorization = `Bearer ${token}`
       }
     } catch {
@@ -162,13 +208,8 @@ apiClient.interceptors.response.use(
       }
     } else if (status === 401) {
       // Session expired or unauthenticated
-      const currentPath = window.location.pathname
-      const isAuthOrPublic = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-otp'].includes(currentPath)
-
-      if (!isAuthOrPublic && currentPath.startsWith('/dashboard')) {
-        console.warn('[Security] Unauthorized access to protected route. Session terminated.')
-        // Redirect will be handled by auth guard in Phase 2
-      }
+      console.warn('[Security] Unauthorized access. Clearing the expired session and redirecting to login.')
+      clearExpiredSessionAndRedirect()
     }
 
     return Promise.reject(normalized)
