@@ -104,7 +104,7 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
 
   return (
     <div
-      className={`product-card box-border group relative h-full w-auto min-w-0 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white !m-5 !p-0 dark:bg-slate-900/95 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/40 flex flex-col justify-between ${className}`}
+      className={`product-card box-border group relative h-full w-auto min-w-0 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white !m-[5px] !p-0 dark:bg-slate-900/95 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/40 flex flex-col justify-between ${className}`}
     >
       <div className="product-card-content box-border w-full !m-0 !p-0">
         {/* Top Product Media Frame */}

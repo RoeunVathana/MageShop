@@ -412,7 +412,7 @@ html.khmer-mode .language-switcher-option {
   border-radius: 9999px;
 }
 
-/* Product cards keep a 20px outer margin while their inner wrappers and media
+/* Product cards keep a 5px outer margin while their inner wrappers and media
    stay full-bleed so global card styles cannot create an inset image frame. */
 .product-card > :first-child,
 .product-card-content,
