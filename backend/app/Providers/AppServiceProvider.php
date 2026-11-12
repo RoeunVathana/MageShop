@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Database\Query\Grammars\PostgresGrammar;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -26,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Railway uses PostgreSQL behind PgBouncer. Keep emulated prepares
+        // enabled for transaction-pool safety, but compile boolean predicates
+        // as TRUE/FALSE so PostgreSQL never receives `boolean = 1`.
+        if (config('database.default') === 'pgsql') {
+            DB::connection('pgsql')->setQueryGrammar(new PostgresGrammar);
+        }
+
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
             DB::prohibitDestructiveCommands(true);
