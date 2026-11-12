@@ -165,6 +165,7 @@ export function DeliveryDashboard() {
   const [broadcastingGps, setBroadcastingGps] = useState(false)
   const [isContinuousDelivering, setIsContinuousDelivering] = useState(false)
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null)
 
   // Location Management Modal State
   const [editingOrder, setEditingOrder] = useState<DeliveryOrder | null>(null)
@@ -571,6 +572,37 @@ export function DeliveryDashboard() {
       })
     } finally {
       setSavingLocation(false)
+    }
+  }
+
+  // Admin-only order deletion from the delivery queue. Editing remains
+  // available through Manage Location for address, coordinates, ETA, and status.
+  const handleDeleteOrder = async (order: DeliveryOrder) => {
+    if (!canManagePricing || deletingOrderId !== null) return
+    if (!window.confirm(`Delete order #${order.order_number}? This action cannot be undone.`)) return
+
+    setDeletingOrderId(order.id)
+    try {
+      await api.delete(`/admin/orders/${order.id}`)
+      const remainingOrders = orders.filter((item) => item.id !== order.id)
+      setOrders(remainingOrders)
+      setSelectedOrder((current) => {
+        if (current?.id !== order.id) return current
+        return remainingOrders[0] || null
+      })
+      toast({
+        title: `Order #${order.order_number} deleted`,
+        description: 'The order was removed from the delivery queue.',
+        type: 'success',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Order deletion failed',
+        description: error?.message || 'The server did not delete this order.',
+        type: 'error',
+      })
+    } finally {
+      setDeletingOrderId(null)
     }
   }
 
@@ -1239,6 +1271,22 @@ export function DeliveryDashboard() {
                       </Button>
                     </>
                   )}
+                  {canManagePricing && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDeleteOrder(selectedOrder)}
+                      disabled={deletingOrderId === selectedOrder.id}
+                      className="rounded-xl h-8 text-xs font-bold gap-1.5"
+                    >
+                      {deletingOrderId === selectedOrder.id ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      Delete Order
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1337,6 +1385,26 @@ export function DeliveryDashboard() {
                             >
                               <Edit3 className="w-3 h-3" /> Manage Location
                             </Button>
+                            {canManagePricing && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteOrder(order)
+                                }}
+                                disabled={deletingOrderId === order.id}
+                                className="h-7 text-[11px] font-bold rounded-lg px-2.5 gap-1"
+                              >
+                                {deletingOrderId === order.id ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
