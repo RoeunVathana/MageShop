@@ -15,19 +15,49 @@ export const productService = {
     params?: ProductFilterParams,
     options?: { signal?: AbortSignal }
   ): Promise<PaginatedResponse<Product>> {
-    let response
     let lastError: unknown
+    const isUnfilteredActiveCatalog =
+      params?.status === 'active' &&
+      !params.search &&
+      !params.category_id &&
+      !params.brand &&
+      (!params.product_type || params.product_type === 'all') &&
+      params.min_price === undefined &&
+      params.max_price === undefined
 
     // The public API is hosted on Railway and may need to wake from a cold start.
-    // Retry only transient failures so a short network/5xx interruption does not
-    // replace the whole catalog with the error state.
+    // Retry transient failures and an unexpected empty unfiltered response so a
+    // stale cache/cold database does not render the storefront as 0 products.
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        response = await apiClient.get<PaginatedResponse<Product>>('/products', {
+        const response = await apiClient.get<PaginatedResponse<Product>>('/products', {
           params,
           signal: options?.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
         })
-        break
+
+        const payload: any = response.data
+        const normalized: PaginatedResponse<Product> = Array.isArray(payload?.data)
+          ? payload
+          : Array.isArray(payload?.data?.data)
+            ? payload.data
+            : {
+                data: [],
+                meta: { current_page: 1, last_page: 1, per_page: 0, total: 0 },
+              }
+
+        const shouldRetryEmpty =
+          isUnfilteredActiveCatalog &&
+          normalized.data.length === 0 &&
+          attempt < 2
+
+        if (!shouldRetryEmpty) {
+          return normalized
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)))
       } catch (error) {
         lastError = error
         const code = typeof error === 'object' && error !== null && 'code' in error
@@ -43,26 +73,7 @@ export const productService = {
       }
     }
 
-    if (!response) {
-      throw lastError || new Error('The product catalog did not return a response.')
-    }
-
-    const payload: any = response.data
-
-    // Accept both Laravel paginator shapes used by deployed API versions:
-    // { data: Product[] } and { data: { data: Product[], meta: ... } }.
-    if (Array.isArray(payload?.data)) {
-      return payload as PaginatedResponse<Product>
-    }
-
-    if (Array.isArray(payload?.data?.data)) {
-      return payload.data as PaginatedResponse<Product>
-    }
-
-    return {
-      data: [],
-      meta: { current_page: 1, last_page: 1, per_page: 0, total: 0 },
-    }
+    throw lastError || new Error('The product catalog did not return a response.')
   },
 
   /**
