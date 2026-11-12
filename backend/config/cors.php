@@ -39,7 +39,7 @@ return [
         '#^https://([a-z0-9-]+\.)?tyushop\.blog$#',
     ],
 
-    'allowed_headers' => ['Content-Type', 'X-Requested-With', 'Authorization', 'Accept', 'Origin', 'X-XSRF-TOKEN', 'X-Session-ID', 'X-Request-ID'],
+    'allowed_headers' => ['Content-Type', 'Cache-Control', 'X-Requested-With', 'Authorization', 'Accept', 'Origin', 'X-XSRF-TOKEN', 'X-Session-ID', 'X-Request-ID'],
 
     'exposed_headers' => ['X-Request-ID', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
 
