@@ -662,7 +662,7 @@ export function UserDirectoryPage() {
                       <th className="py-3 px-4">Contact</th>
                       <th className="py-3 px-4">Department</th>
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-3 px-4 text-right min-w-[320px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -746,14 +746,14 @@ export function UserDirectoryPage() {
                           </td>
 
                           {/* Account CRUD & role governance */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <td className="py-3.5 px-4 min-w-[320px] whitespace-nowrap">
+                            <div className="flex min-w-max flex-nowrap items-center justify-end gap-1.5">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleOpenEditMember(member)}
                                 disabled={submitting}
-                                className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1.5"
+                                className="h-8 shrink-0 px-2.5 rounded-xl text-xs font-bold gap-1.5"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                                 <span>Edit</span>
@@ -761,7 +761,7 @@ export function UserDirectoryPage() {
                               <Button
                                 size="sm"
                                 onClick={() => handleOpenRoleModal(member)}
-                                className="h-8 px-3 rounded-xl text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                                className="h-8 shrink-0 px-3 rounded-xl text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                               >
                                 <Shield className="w-3.5 h-3.5" />
                                 <span>Assign Role</span>
@@ -772,7 +772,7 @@ export function UserDirectoryPage() {
                                 onClick={() => handleDeleteMember(member)}
                                 disabled={submitting || authService.getStoredUser()?.id === member.id}
                                 title={authService.getStoredUser()?.id === member.id ? 'You cannot delete your own account' : 'Delete user'}
-                                className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1.5"
+                                className="h-8 shrink-0 px-2.5 rounded-xl text-xs font-bold gap-1.5"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 <span>Delete</span>
