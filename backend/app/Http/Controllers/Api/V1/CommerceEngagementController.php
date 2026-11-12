@@ -1008,11 +1008,12 @@ class CommerceEngagementController extends Controller
         $tag62 = '62'.str_pad((string) strlen($tag62Value), 2, '0', STR_PAD_LEFT).$tag62Value;
 
         // Tag 99: Bakong National Scheme Timestamp (required for Dynamic QR 010212).
-        // NBC's KHQR guideline defines this as sub-tag 00 with one 13-digit
-        // creation timestamp. Expiration is enforced by the checkout timer and
-        // server-side payment window, not by adding an undocumented sub-tag.
-        $creationMs = (string) (time() * 1000);
-        $tag99Value = '0013'.$creationMs;
+        // Dynamic KHQR requires both sub-tag 00 (creation) and sub-tag 01
+        // (expiration). A QR containing only the creation timestamp can render
+        // correctly but is rejected by Bakong as an invalid QR code.
+        $creationMs = (string) ((int) round(microtime(true) * 1000));
+        $expirationMs = (string) ((int) round((microtime(true) + $this->bakongQrExpirySeconds()) * 1000));
+        $tag99Value = '0013'.$creationMs.'0113'.$expirationMs;
         $tag99 = '99'.str_pad((string) strlen($tag99Value), 2, '0', STR_PAD_LEFT).$tag99Value;
 
         $emvPayload = '000201'

@@ -139,6 +139,13 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
             ->assertJsonPath('data.qr_payment.merchant_account', $sellerAccount->account_id)
             ->assertJsonPath('data.qr_payment.merchant_source', 'seller');
 
+        $qrString = (string) $response->json('data.qr_payment.qr_string');
+        $this->assertMatchesRegularExpression(
+            '/99340013\d{13}0113\d{13}6304[0-9A-F]{4}$/',
+            $qrString,
+            'Dynamic KHQR must include creation and expiration timestamps before the CRC tag.'
+        );
+
         $this->assertSame($sellerAccount->account_id, Payment::latest('id')->value('merchant_account'));
     }
 

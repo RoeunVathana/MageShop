@@ -34,6 +34,11 @@ let csrfRequest: Promise<void> | null = null
 let isRedirectingToLogin = false
 const CSRF_REQUEST_TIMEOUT_MS = 10000
 
+type ApiRequestConfig = AxiosRequestConfig & {
+  /** Retry a mutation against the direct Railway API when the custom API edge gives no response. */
+  retryOnNetworkFailure?: boolean
+}
+
 const PUBLIC_AUTH_PATHS = [
   '/login',
   '/register',
@@ -223,9 +228,27 @@ export const api = {
   get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.get<T>(url, config).then((res) => res.data),
 
-  post: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+  post: async <T>(url: string, data?: any, config?: ApiRequestConfig): Promise<T> => {
     await initCsrf()
-    return apiClient.post<T>(url, data, config).then((res) => res.data)
+    const { retryOnNetworkFailure = false, ...requestConfig } = config || {}
+
+    try {
+      return await apiClient.post<T>(url, data, requestConfig).then((res) => res.data)
+    } catch (error) {
+      const noResponse = Boolean(
+        error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 0
+      )
+
+      if (!retryOnNetworkFailure || !noResponse || PUBLIC_API_BASE_URL === API_BASE_URL) {
+        throw error
+      }
+
+      // Checkout sends an idempotency key, so retrying the same payload is safe
+      // when the first request was processed but its response was lost at the edge.
+      return apiClient
+        .post<T>(url, data, { ...requestConfig, baseURL: PUBLIC_API_BASE_URL })
+        .then((res) => res.data)
+    }
   },
 
   put: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {

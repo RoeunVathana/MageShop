@@ -83,7 +83,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
     if (!form.account_id.trim() || !form.account_id.includes('@')) {
       toast({
         title: t('Invalid Bakong Account ID', 'គណនី Bakong មិនត្រឹមត្រូវ'),
-        description: t('Use the format account@bank, for example vathana@bakong.', 'សូមប្រើទម្រង់ account@bank ឧទាហរណ៍ vathana@bakong។'),
+        description: t('Use the format account@bank, for example roeun_vathana1@bkrt.', 'សូមប្រើទម្រង់ account@bank ឧទាហរណ៍ roeun_vathana1@bkrt។'),
         type: 'error',
       })
       return
@@ -191,7 +191,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold">{t('Bakong Account ID', 'គណនី Bakong ID')}</label>
-                <Input value={form.account_id} onChange={(event) => setForm({ ...form, account_id: event.target.value })} placeholder="vathana@bakong" className="h-10 rounded-xl font-mono text-xs" />
+                <Input value={form.account_id} onChange={(event) => setForm({ ...form, account_id: event.target.value })} placeholder="roeun_vathana1@bkrt" className="h-10 rounded-xl font-mono text-xs" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold">{t('Merchant name', 'ឈ្មោះអាជីវកម្ម')}</label>

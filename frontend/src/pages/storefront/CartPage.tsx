@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import QRCode from 'qrcode'
 import {
   ShoppingCart,
   ArrowRight,
@@ -411,6 +412,8 @@ export function CartPage() {
 
   // Live KHQR Scan Modal & Payment Confirmation Page State
   const [qrModalData, setQrModalData] = useState<QrSessionData | null>(null)
+  const [qrImageDataUrl, setQrImageDataUrl] = useState<string | null>(null)
+  const [qrImageError, setQrImageError] = useState(false)
   const [qrSecondsLeft, setQrSecondsLeft] = useState(600)
   const [verifyingQrPayment, setVerifyingQrPayment] = useState(false)
   const [paymentSuccessData, setPaymentSuccessData] = useState<PaymentSuccessReport | null>(null)
@@ -521,40 +524,80 @@ export function CartPage() {
     return () => window.clearInterval(timer)
   }, [qrModalData])
 
+  // Generate the KHQR locally so the visible code does not depend on an
+  // external image service that can be blocked or return an empty image.
+  useEffect(() => {
+    if (!qrModalData?.qr_string) {
+      setQrImageDataUrl(null)
+      setQrImageError(false)
+      return
+    }
+
+    let cancelled = false
+    setQrImageDataUrl(null)
+    setQrImageError(false)
+
+    QRCode.toDataURL(qrModalData.qr_string, {
+      errorCorrectionLevel: 'M',
+      width: 640,
+      margin: 4,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setQrImageDataUrl(dataUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setQrImageError(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [qrModalData?.qr_string])
+
   const formatCountdown = (secs: number) => {
     const mins = Math.floor(secs / 60)
     const rem = secs % 60
     return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`
   }
 
-  const handleDownloadQr = () => {
+  const handleDownloadQr = async () => {
     if (!qrModalData) return
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=M&margin=4&data=${encodeURIComponent(
-      qrModalData.qr_string
-    )}`
-    fetch(qrUrl)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `KHQR-Payment-${qrModalData.order_number}.png`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(url)
-        toast({
-          title: t('📥 QR Image Saved to Photos!', '📥 បានរក្សាទុករូប QR!'),
-          description: t(
-            'Open ABA / Bakong / Wing and choose "Scan from Gallery" to pay.',
-            'សូមបើក ABA / Bakong / Wing រួចជ្រើសរើស "ស្កេនពីរូបភាព" ដើម្បីទូទាត់។'
-          ),
-          type: 'success',
-        })
+
+    try {
+      const dataUrl = qrImageDataUrl ?? await QRCode.toDataURL(qrModalData.qr_string, {
+        errorCorrectionLevel: 'M',
+        width: 640,
+        margin: 4,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
       })
-      .catch(() => {
-        window.open(qrUrl, '_blank')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `KHQR-Payment-${qrModalData.order_number}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      toast({
+        title: t('📥 QR Image Saved to Photos!', '📥 បានរក្សាទុករូប QR!'),
+        description: t(
+          'Open ABA / Bakong / Wing and choose "Scan from Gallery" to pay.',
+          'សូមបើក ABA / Bakong / Wing រួចជ្រើសរើស "ស្កេនពីរូបភាព" ដើម្បីទូទាត់។'
+        ),
+        type: 'success',
       })
+    } catch {
+      toast({
+        title: t('QR image could not be generated', 'មិនអាចបង្កើតរូប QR បានទេ'),
+        description: t('Copy the KHQR code and try again.', 'សូមចម្លងកូដ KHQR ហើយសាកល្បងម្ដងទៀត។'),
+        type: 'error',
+      })
+    }
   }
 
   const handleCopyQrPayload = () => {
@@ -823,7 +866,10 @@ export function CartPage() {
         delivery_method_id: selectedDeliveryMethod?.id || null,
       }
 
-      const res = await api.post<any>('/orders/checkout', payload)
+      const res = await api.post<any>('/orders/checkout', payload, {
+        timeout: 20000,
+        retryOnNetworkFailure: true,
+      })
       // `api.post` returns the decoded API body, not the Axios response.
       // Keep this compatible with both the current `{ data: ... }` envelope
       // and older/test adapters that may return the payload directly.
@@ -1917,13 +1963,22 @@ export function CartPage() {
 
               {/* Scannable KHQR Code Frame - High Contrast & Unclipped */}
               <div className="relative mx-auto w-44 h-44 sm:w-48 sm:h-48 rounded-2xl border-2 border-[#E1232E]/30 bg-white p-2.5 shadow-md flex items-center justify-center">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&margin=2&data=${encodeURIComponent(
-                    qrModalData.qr_string
-                  )}`}
-                  alt={`Bakong KHQR for Order ${qrModalData.order_number}`}
-                  className="w-full h-full object-contain select-none"
-                />
+                {qrImageDataUrl ? (
+                  <img
+                    src={qrImageDataUrl}
+                    alt={`Bakong KHQR for Order ${qrModalData.order_number}`}
+                    className="w-full h-full object-contain select-none"
+                  />
+                ) : qrImageError ? (
+                  <div className="px-3 text-center text-xs font-semibold text-red-600">
+                    {t(
+                      'QR image failed. Use Copy QR Code and scan from your bank app.',
+                      'រូប QR មានបញ្ហា។ សូមចម្លងកូដ QR ហើយស្កេនក្នុងកម្មវិធីធនាគារ។'
+                    )}
+                  </div>
+                ) : (
+                  <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" aria-label="Generating QR code" />
+                )}
               </div>
 
               {/* Countdown Timer */}
