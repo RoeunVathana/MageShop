@@ -441,6 +441,15 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     setCartItems([])
     setAppliedCoupon(null)
     setFreeRewardItem(null)
+
+    // Persist the successful checkout immediately. The state effect below
+    // will also write this value, but the synchronous write prevents a quick
+    // redirect or refresh from restoring the previous cart snapshot.
+    try {
+      localStorage.setItem('megacommerce_cart_v2', '[]')
+    } catch {
+      // Ignore storage failures; React state is still cleared for this session.
+    }
   }
 
   const toggleFavorite = (item: FavoriteItem): boolean => {
