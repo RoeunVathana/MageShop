@@ -594,7 +594,7 @@ class CommerceEngagementController extends Controller
             // commits. Let the unique key win, then replay that order instead
             // of returning a database error or awarding points twice.
             $isUniqueViolation = in_array((string) $exception->getCode(), ['23000', '23505'], true);
-            if ($idempotencyKey !== '' && $isUniqueViolation) {
+            if ($idempotencyKey !== '' && $hasIdempotencyColumn && $isUniqueViolation) {
                 $existingOrder = Order::where('user_id', $user->id)
                     ->where('checkout_idempotency_key', $idempotencyKey)
                     ->first();

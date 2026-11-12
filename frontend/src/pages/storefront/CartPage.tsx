@@ -853,12 +853,27 @@ export function CartPage() {
         })
       }
     } catch (error) {
+      const apiError =
+        error && typeof error === 'object'
+          ? (error as { code?: number; message?: unknown })
+          : null
       const errorMessage =
         error instanceof Error
           ? error.message
-          : error && typeof error === 'object' && 'message' in error
-            ? String((error as { message?: unknown }).message || '')
+          : apiError && 'message' in apiError
+            ? String(apiError.message || '')
             : ''
+
+      if (apiError?.code === 401) {
+        authService.clearSession()
+        setIsLoginRequiredModalOpen(true)
+        toast({
+          title: t('Your session expired', 'សម័យចូលគណនីរបស់អ្នកបានផុតកំណត់'),
+          description: t('Please sign in again before checkout.', 'សូមចូលគណនីម្ដងទៀត មុនពេលទូទាត់ប្រាក់។'),
+          type: 'error',
+        })
+        return
+      }
 
       toast({
         title: t('Checkout could not be completed', 'មិនអាចបញ្ចប់ការទូទាត់ប្រាក់បានទេ'),

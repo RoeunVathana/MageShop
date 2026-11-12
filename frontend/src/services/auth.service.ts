@@ -45,7 +45,15 @@ export const authService = {
    * Check whether a user is currently authenticated.
    */
   isAuthenticated: (): boolean => {
-    return Boolean(authService.getStoredUser())
+    // The cached profile alone is not enough to authorize API requests. A
+    // previous session can leave the profile behind after its Sanctum token
+    // expires or is cleared, which made checkout appear logged in and then
+    // fail with an unauthenticated API response.
+    try {
+      return Boolean(authService.getStoredUser() && localStorage.getItem(AUTH_TOKEN_KEY))
+    } catch {
+      return false
+    }
   },
 
   /**
