@@ -930,8 +930,13 @@ export function CartPage() {
 
       toast({
         title: t('Checkout could not be completed', 'មិនអាចបញ្ចប់ការទូទាត់ប្រាក់បានទេ'),
-        description: errorMessage || t('Please check your details and try again.', 'សូមពិនិត្យព័ត៌មានរបស់អ្នក ហើយសាកល្បងម្ដងទៀត។'),
+        description:
+          errorMessage ||
+          (apiError?.code
+            ? `Checkout request failed (HTTP ${apiError.code}). Please try again.`
+            : t('Please check your details and try again.', 'សូមពិនិត្យព័ត៌មានរបស់អ្នក ហើយសាកល្បងម្ដងទៀត។')),
         type: 'error',
+        duration: 15000,
       })
     } finally {
       setCheckoutLoading(false)
