@@ -36,17 +36,9 @@ export function StorefrontLayout() {
         )}
         id="storefront-navigation"
       >
-        {/* Top Announcement Bar */}
-        <div
-          className={cn(
-            'transition-all duration-300 ease-in-out',
-            isScrolled
-              ? 'max-h-0 overflow-hidden opacity-0 pointer-events-none'
-              : 'max-h-12 overflow-visible opacity-100'
-          )}
-        >
-          <AnnouncementBar />
-        </div>
+        {/* Keep the utility bar mounted at a stable height so scrolling does
+            not collapse the navbar and make the page jump. */}
+        <AnnouncementBar />
 
         {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
         <Header
