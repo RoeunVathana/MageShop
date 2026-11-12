@@ -5,6 +5,7 @@ import {
   UserPlus,
   Mail,
   Phone,
+  Pencil,
   Shield,
   ShieldCheck,
   CheckCircle2,
@@ -198,6 +199,13 @@ export function UserDirectoryPage() {
     role: 'staff',
     status: 'active' as TeamMember['status'],
   })
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    status: 'active' as TeamMember['status'],
+  })
 
   // Fetch real users from backend
   const fetchUsers = async () => {
@@ -355,6 +363,89 @@ export function UserDirectoryPage() {
       toast({
         title: 'Error Enrolling User',
         description: err?.message || 'Could not register user account.',
+        type: 'error',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleOpenEditMember = (member: TeamMember) => {
+    setEditingMember(member)
+    setEditFormData({
+      name: member.name,
+      email: member.email,
+      phone: member.phone || '',
+      status: member.status,
+    })
+  }
+
+  const handleUpdateMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingMember || !editFormData.name.trim() || !editFormData.email.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please provide a name and valid email address.',
+        type: 'error',
+      })
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await api.patch('/admin/security/users/' + editingMember.id, {
+        name: editFormData.name.trim(),
+        email: editFormData.email.trim(),
+        phone_number: editFormData.phone.trim() || null,
+        status: editFormData.status,
+      })
+
+      toast({
+        title: 'User Updated',
+        description: editFormData.name.trim() + ' was updated successfully.',
+        type: 'success',
+      })
+      setEditingMember(null)
+      fetchUsers()
+    } catch (err: any) {
+      toast({
+        title: 'Update Failed',
+        description: err?.message || 'Could not update this user account.',
+        type: 'error',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDeleteMember = async (member: TeamMember) => {
+    const currentUser = authService.getStoredUser()
+    if (currentUser?.id === member.id) {
+      toast({
+        title: 'Action Not Allowed',
+        description: 'You cannot delete your own administrator account.',
+        type: 'error',
+      })
+      return
+    }
+
+    if (!window.confirm('Delete user "' + member.name + '"? This action cannot be undone.')) {
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await api.delete('/admin/security/users/' + member.id)
+      toast({
+        title: 'User Deleted',
+        description: member.name + ' was removed from the directory.',
+        type: 'success',
+      })
+      fetchUsers()
+    } catch (err: any) {
+      toast({
+        title: 'Delete Failed',
+        description: err?.message || 'Could not delete this user account.',
         type: 'error',
       })
     } finally {
@@ -571,7 +662,7 @@ export function UserDirectoryPage() {
                       <th className="py-3 px-4">Contact</th>
                       <th className="py-3 px-4">Department</th>
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Role Governance</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -654,16 +745,39 @@ export function UserDirectoryPage() {
                             </Badge>
                           </td>
 
-                          {/* Action Button: Assign Role */}
-                          <td className="py-3.5 px-4 text-right">
-                            <Button
-                              size="sm"
-                              onClick={() => handleOpenRoleModal(member)}
-                              className="h-8 px-3 rounded-xl text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-                            >
-                              <Shield className="w-3.5 h-3.5" />
-                              <span>Assign Role</span>
-                            </Button>
+                          {/* Account CRUD & role governance */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenEditMember(member)}
+                                disabled={submitting}
+                                className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1.5"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleOpenRoleModal(member)}
+                                className="h-8 px-3 rounded-xl text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                              >
+                                <Shield className="w-3.5 h-3.5" />
+                                <span>Assign Role</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteMember(member)}
+                                disabled={submitting || authService.getStoredUser()?.id === member.id}
+                                title={authService.getStoredUser()?.id === member.id ? 'You cannot delete your own account' : 'Delete user'}
+                                className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1.5"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -826,6 +940,103 @@ export function UserDirectoryPage() {
                   >
                     <Save className="w-4 h-4" />
                     <span>{isAssigningRole ? 'Assigning...' : 'Save Role & Permissions'}</span>
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Member Modal */}
+        {editingMember && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+            <div className="relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <div>
+                  <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                    <Pencil className="w-5 h-5 text-indigo-600" />
+                    <span>Edit User Account</span>
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Update account details and status. Use Assign Role for permissions.
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingMember(null)}
+                  className="rounded-full w-8 h-8 p-0"
+                >
+                  <XCircle className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleUpdateMember} className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground">Full Name</label>
+                  <Input
+                    type="text"
+                    required
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="rounded-xl h-10 text-xs font-semibold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-foreground">Email Address</label>
+                    <Input
+                      type="email"
+                      required
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="rounded-xl h-10 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-foreground">Phone Number</label>
+                    <Input
+                      type="text"
+                      value={editFormData.phone}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                      className="rounded-xl h-10 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground">Account Status</label>
+                  <select
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as TeamMember['status'] })}
+                    className="w-full h-10 px-3 rounded-xl border bg-background text-xs font-bold focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="on_leave">On Leave</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setEditingMember(null)}
+                    disabled={submitting}
+                    className="rounded-xl h-10 text-xs font-bold"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="rounded-xl h-10 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    {submitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               </form>

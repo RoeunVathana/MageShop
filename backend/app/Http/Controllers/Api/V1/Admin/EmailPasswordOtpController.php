@@ -147,6 +147,63 @@ class EmailPasswordOtpController extends Controller
     }
 
     /**
+     * Update a user account directly by Administrator.
+     */
+    public function updateUser(Request $request, User $user): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'phone_number' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', 'string', 'in:active,inactive,pending,suspended,on_leave'],
+        ]);
+
+        $oldEmail = $user->email;
+        $user->name = trim($validated['name']);
+        $user->email = strtolower(trim($validated['email']));
+        $user->phone_number = $validated['phone_number'] ?? null;
+        $user->status = $validated['status'];
+        if ($user->email !== $oldEmail) {
+            $user->email_verified_at = now();
+        }
+        $user->save();
+
+        SecurityLogService::log('ADMIN_USER_UPDATED', $request->user()->id, [
+            'target_user_id' => $user->id,
+            'old_email' => $oldEmail,
+            'new_email' => $user->email,
+            'status' => $user->status,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "User {$user->name} updated successfully.",
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'status' => $user->status,
+                'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+                'created_at' => $user->created_at?->toIso8601String(),
+                'roles' => $user->roles->map(fn ($r) => [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'slug' => $r->slug,
+                ]),
+            ],
+        ]);
+    }
+
+    /**
      * Delete user by Administrator.
      */
     public function deleteUser(Request $request, User $user): JsonResponse

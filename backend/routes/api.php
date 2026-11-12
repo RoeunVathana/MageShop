@@ -203,6 +203,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
         // Users & Credentials
         Route::get('/users', [EmailPasswordOtpController::class, 'indexUsers']);
         Route::post('/users', [EmailPasswordOtpController::class, 'storeUser']);
+        Route::patch('/users/{user}', [EmailPasswordOtpController::class, 'updateUser']);
         Route::delete('/users/{user}', [EmailPasswordOtpController::class, 'deleteUser']);
         Route::patch('/users/{user}/email', [EmailPasswordOtpController::class, 'updateEmail']);
         Route::patch('/users/{user}/password', [EmailPasswordOtpController::class, 'updatePassword']);
