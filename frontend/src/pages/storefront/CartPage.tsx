@@ -425,19 +425,46 @@ export function CartPage() {
 
   // Sync auth state and prefill customer info
   useEffect(() => {
+    let mounted = true
+
+    const applyUserProfile = (user: AuthUser | null) => {
+      if (!user) return
+      if (user.name) setCustomerName(user.name)
+      if (user.email) setCustomerEmail(user.email)
+      if ((user as any).phone_number) setCustomerPhone((user as any).phone_number)
+      if ((user as any).address) setDeliveryAddress((user as any).address)
+    }
+
     const syncAuth = () => {
       const user = authService.getStoredUser()
       setCurrentUser(user)
-      if (user) {
-        if (user.name) setCustomerName(user.name)
-        if (user.email) setCustomerEmail(user.email)
-        if ((user as any).phone_number) setCustomerPhone((user as any).phone_number)
-      }
+      applyUserProfile(user)
     }
+
     syncAuth()
+
+    // The cached login payload may not include the latest phone/address.
+    // Refresh the authenticated profile once so checkout can use the saved
+    // contact details instead of submitting an empty required phone field.
+    if (authService.isAuthenticated()) {
+      authService
+        .getCurrentUser()
+        .then((response) => {
+          const freshUser = response?.data?.user
+          if (!mounted || !freshUser) return
+          authService.saveSession(freshUser)
+          setCurrentUser(freshUser)
+          applyUserProfile(freshUser)
+        })
+        .catch(() => {
+          // Keep the cached profile and let the checkout form show any missing field.
+        })
+    }
+
     window.addEventListener('tyushop-auth-changed', syncAuth)
     window.addEventListener('storage', syncAuth)
     return () => {
+      mounted = false
       window.removeEventListener('tyushop-auth-changed', syncAuth)
       window.removeEventListener('storage', syncAuth)
     }
@@ -736,6 +763,27 @@ export function CartPage() {
       return
     }
 
+    const normalizedCustomerName = customerName.trim()
+    const normalizedCustomerPhone = customerPhone.trim()
+    const normalizedDeliveryAddress = deliveryAddress.trim()
+    const missingFields = [
+      !normalizedCustomerName ? t('recipient name', 'ឈ្មោះអ្នកទទួល') : '',
+      !normalizedCustomerPhone ? t('phone number', 'លេខទូរស័ព្ទ') : '',
+      !normalizedDeliveryAddress ? t('delivery address', 'អាសយដ្ឋានដឹកជញ្ជូន') : '',
+    ].filter(Boolean)
+
+    if (missingFields.length > 0) {
+      toast({
+        title: t('Complete checkout details', 'សូមបំពេញព័ត៌មានទូទាត់ប្រាក់'),
+        description: t(
+          `Please enter your ${missingFields.join(', ')} before checkout.`,
+          'សូមបញ្ចូល ' + missingFields.join(', ') + ' មុនពេលទូទាត់ប្រាក់។'
+        ),
+        type: 'error',
+      })
+      return
+    }
+
     setCheckoutLoading(true)
     const isKhqrFlow = paymentMethod === 'bakong_khqr' && finalTotal > 0
     const apiPaymentMethod = paymentMethod
@@ -764,10 +812,10 @@ export function CartPage() {
         coupon_code: appliedCoupon?.code || null,
         idempotency_key: idempotencyKey,
         redeem_free_product_id: freeRewardItem?.id || null,
-        customer_name: customerName,
+        customer_name: normalizedCustomerName,
         customer_email: customerEmail,
-        customer_phone: customerPhone,
-        delivery_address: deliveryAddress,
+        customer_phone: normalizedCustomerPhone,
+        delivery_address: normalizedDeliveryAddress,
         dest_lat: customerCoords?.lat ?? null,
         dest_lng: customerCoords?.lng ?? null,
         payment_method: apiPaymentMethod,
@@ -808,10 +856,10 @@ export function CartPage() {
           merchant_name: qrInfo.merchant_name,
           amount_usd: serverAmountUsd,
           amount_khr: serverAmountKhr,
-          customer_name: customerName,
+          customer_name: normalizedCustomerName,
           customer_email: customerEmail,
-          customer_phone: customerPhone,
-          delivery_address: deliveryAddress,
+          customer_phone: normalizedCustomerPhone,
+          delivery_address: normalizedDeliveryAddress,
           payment_method: 'Bakong KHQR',
           points_earned: pointsEarnedThisOrder,
           discount: discountAmount,
@@ -841,10 +889,10 @@ export function CartPage() {
           amount_khr: finalTotalKhr,
           discount: discountAmount,
           points_earned: pointsEarnedThisOrder,
-          customer_name: customerName,
+          customer_name: normalizedCustomerName,
           customer_email: customerEmail,
-          customer_phone: customerPhone,
-          delivery_address: deliveryAddress,
+          customer_phone: normalizedCustomerPhone,
+          delivery_address: normalizedDeliveryAddress,
           email_report_sent: res?.data?.email_status === 'sent',
           telegram_admin_notified: Boolean(res?.data?.telegram_admin_notified),
           paid_at: res?.data?.order?.paid_at || '',

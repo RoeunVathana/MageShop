@@ -127,10 +127,12 @@ export function ProductCreatePage() {
 
   const selectedCategoryId = watch('category_id')
   const selectedProductType = watch('product_type')
-  const sellingPrice = watch('selling_price') || 0
+  const sellingPrice = Number(watch('selling_price') || 0)
   const rawDiscountPrice = watch('discount_price')
-  const discountPrice = rawDiscountPrice !== undefined && rawDiscountPrice !== null && !isNaN(Number(rawDiscountPrice)) && Number(rawDiscountPrice) > 0 ? Number(rawDiscountPrice) : null
-  const costPrice = watch('cost_price') || 0
+  const parsedDiscountPrice = Number(rawDiscountPrice)
+  const hasDiscountInput = rawDiscountPrice !== undefined && rawDiscountPrice !== null && String(rawDiscountPrice).trim() !== ''
+  const discountPrice = hasDiscountInput && Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice > 0 ? parsedDiscountPrice : null
+  const costPrice = Number(watch('cost_price') || 0)
 
   const hasDiscount = discountPrice !== null && discountPrice < sellingPrice
   const customerEffectivePrice = hasDiscount ? discountPrice : sellingPrice
@@ -861,7 +863,7 @@ export function ProductCreatePage() {
                   <Input
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01"
                     placeholder="0.00"
                     {...register('selling_price')}
                     className="h-9 text-xs font-mono font-bold"
