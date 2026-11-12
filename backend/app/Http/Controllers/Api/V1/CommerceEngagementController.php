@@ -898,12 +898,12 @@ class CommerceEngagementController extends Controller
         $tag62Value = '01'.str_pad((string) strlen($orderNumber), 2, '0', STR_PAD_LEFT).$orderNumber;
         $tag62 = '62'.str_pad((string) strlen($tag62Value), 2, '0', STR_PAD_LEFT).$tag62Value;
 
-        // Tag 99: Bakong National Scheme Timestamp (Strictly required for Dynamic QR 010212)
-        // Sub-tag 00: Creation Timestamp (13-digit Unix ms)
-        // Sub-tag 01: Expiration Timestamp (13-digit Unix ms)
+        // Tag 99: Bakong National Scheme Timestamp (required for Dynamic QR 010212).
+        // NBC's KHQR guideline defines this as sub-tag 00 with one 13-digit
+        // creation timestamp. Expiration is enforced by the checkout timer and
+        // server-side payment window, not by adding an undocumented sub-tag.
         $creationMs = (string) (time() * 1000);
-        $expirationMs = (string) ((time() + $this->bakongQrExpirySeconds()) * 1000);
-        $tag99Value = '0013'.$creationMs.'0113'.$expirationMs;
+        $tag99Value = '0013'.$creationMs;
         $tag99 = '99'.str_pad((string) strlen($tag99Value), 2, '0', STR_PAD_LEFT).$tag99Value;
 
         $emvPayload = '000201'
@@ -1227,6 +1227,14 @@ class CommerceEngagementController extends Controller
                 return response()->json([
                     'status' => 'error',
                     'message' => 'This QR payment is missing verification data. Please create a new checkout.',
+                ], 422);
+            }
+
+            $qrExpiresAt = $payment->created_at?->copy()->addSeconds($this->bakongQrExpirySeconds());
+            if ($qrExpiresAt && now()->greaterThan($qrExpiresAt)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This QR payment has expired. Please create a new checkout.',
                 ], 422);
             }
 
