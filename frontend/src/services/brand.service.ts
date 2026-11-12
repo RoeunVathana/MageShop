@@ -1,4 +1,4 @@
-import { apiClient, publicApiClient } from '@/lib/api'
+import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
 import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export const brandService = {
@@ -26,6 +26,7 @@ export const brandService = {
    * Create a new brand with optional translations (Admin/Staff only).
    */
   async createBrand(payload: BrandFormData): Promise<Brand> {
+    await initCsrf()
     const response = await apiClient.post<{ data: Brand }>('/admin/brands', payload)
     return response.data.data
   },
@@ -34,6 +35,7 @@ export const brandService = {
    * Update existing brand (Admin/Staff only).
    */
   async updateBrand(id: number, payload: Partial<BrandFormData>): Promise<Brand> {
+    await initCsrf()
     const response = await apiClient.patch<{ data: Brand }>(`/admin/brands/${id}`, payload)
     return response.data.data
   },
@@ -42,6 +44,7 @@ export const brandService = {
    * Safely archive a brand (Admin only).
    */
   async archiveBrand(id: number): Promise<Brand> {
+    await initCsrf()
     const response = await apiClient.delete<{ status: string; message: string; data: Brand }>(
       `/admin/brands/${id}`
     )

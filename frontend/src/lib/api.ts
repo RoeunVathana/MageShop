@@ -29,6 +29,8 @@ const PUBLIC_API_BASE_URL =
   'https://mageshop-production.up.railway.app/api/v1'
 // Sanctum csrf cookie endpoint is at the backend root: https://api.tyushop.blog/sanctum/csrf-cookie
 const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
+let csrfReady = false
+let csrfRequest: Promise<void> | null = null
 
 /**
  * First-Party Sanctum Cookie-Based Axios Instance
@@ -100,16 +102,27 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
  * Initialize CSRF cookie for Laravel Sanctum SPA authentication before mutating requests.
  */
 export async function initCsrf(): Promise<void> {
-  try {
-    await axios.get(`${BACKEND_ROOT}/sanctum/csrf-cookie`, {
+  if (csrfReady) return
+  if (csrfRequest) return csrfRequest
+
+  csrfRequest = axios
+    .get(`${BACKEND_ROOT}/sanctum/csrf-cookie`, {
       withCredentials: true,
       headers: {
         Accept: 'application/json',
       },
     })
-  } catch (error) {
-    console.warn('Failed to obtain CSRF cookie from Sanctum:', error)
-  }
+    .then(() => {
+      csrfReady = true
+    })
+    .catch((error) => {
+      console.warn('Failed to obtain CSRF cookie from Sanctum:', error)
+    })
+    .finally(() => {
+      csrfRequest = null
+    })
+
+  return csrfRequest
 }
 
 // Request Interceptor: Attach Sanctum Bearer token if present + cookie credentials
@@ -136,9 +149,17 @@ apiClient.interceptors.response.use(
     const normalized = normalizeApiError(error)
 
     if (status === 419) {
-      // CSRF token mismatch / expired: refresh cookie
-      console.warn('[Security] CSRF session expired. Re-initializing Sanctum CSRF cookie.')
-      await initCsrf()
+      // CSRF token mismatch / expired: refresh the cookie and retry the same
+      // request exactly once. This protects dashboard mutations that call the
+      // shared API helper directly.
+      const requestConfig = error.config as (AxiosRequestConfig & { _csrfRetried?: boolean }) | undefined
+      if (requestConfig && !requestConfig._csrfRetried) {
+        console.warn('[Security] CSRF session expired. Retrying request after refreshing Sanctum CSRF cookie.')
+        requestConfig._csrfRetried = true
+        csrfReady = false
+        await initCsrf()
+        return apiClient.request(requestConfig)
+      }
     } else if (status === 401) {
       // Session expired or unauthenticated
       const currentPath = window.location.pathname
@@ -161,17 +182,25 @@ export const api = {
   get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.get<T>(url, config).then((res) => res.data),
 
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.post<T>(url, data, config).then((res) => res.data),
+  post: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    await initCsrf()
+    return apiClient.post<T>(url, data, config).then((res) => res.data)
+  },
 
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.put<T>(url, data, config).then((res) => res.data),
+  put: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    await initCsrf()
+    return apiClient.put<T>(url, data, config).then((res) => res.data)
+  },
 
-  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.patch<T>(url, data, config).then((res) => res.data),
+  patch: async <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    await initCsrf()
+    return apiClient.patch<T>(url, data, config).then((res) => res.data)
+  },
 
-  delete: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.delete<T>(url, config).then((res) => res.data),
+  delete: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    await initCsrf()
+    return apiClient.delete<T>(url, config).then((res) => res.data)
+  },
 }
 
 export default apiClient
