@@ -23,6 +23,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 const GOOGLE_AUTH_REQUEST_TIMEOUT_MS = 20000
+const GOOGLE_REDIRECT_PENDING_KEY = 'tyushop_google_redirect_pending'
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return Promise.race([
@@ -158,6 +159,22 @@ export function LoginPage() {
     let handled = false
     let unsubscribe: (() => void) | undefined
 
+    // Firebase keeps its user session across page visits. Only process a
+    // redirect result when this tab explicitly started Google redirect login;
+    // otherwise opening /login must remain a normal login-page visit.
+    let redirectWasRequested = false
+    try {
+      redirectWasRequested = sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === '1'
+    } catch {
+      redirectWasRequested = false
+    }
+
+    if (!redirectWasRequested) {
+      return () => {
+        active = false
+      }
+    }
+
     const showRedirectError = (redirectErr: any) => {
       if (!active) return
 
@@ -193,6 +210,12 @@ export function LoginPage() {
         const { auth } = await import('@/lib/firebase')
         const result = await getRedirectResult(auth)
 
+        try {
+          sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY)
+        } catch {
+          // Ignore storage errors and continue the explicit Google flow.
+        }
+
         if (result?.user) {
           await finishWithFirebaseUser(result.user)
           return
@@ -210,6 +233,11 @@ export function LoginPage() {
           if (user) void finishWithFirebaseUser(user)
         })
       } catch (redirectErr: any) {
+        try {
+          sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY)
+        } catch {
+          // Ignore storage errors and keep the login page available.
+        }
         showRedirectError(redirectErr)
       }
     }
@@ -275,6 +303,11 @@ export function LoginPage() {
       const isMobileBrowser =
         /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768
       if (isMobileBrowser) {
+        try {
+          sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, '1')
+        } catch {
+          // Firebase can still report an error if session storage is blocked.
+        }
         await signInWithRedirect(auth, googleAuthProvider)
         return
       }
@@ -282,6 +315,11 @@ export function LoginPage() {
       const result = await signInWithPopup(auth, googleAuthProvider)
       await completeGoogleLogin(result.user)
     } catch (popupErr: any) {
+      try {
+        sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY)
+      } catch {
+        // Ignore storage errors and keep the email login form usable.
+      }
       if (popupErr?.code === 'auth/popup-closed-by-user') {
         setLoading(false)
         return
