@@ -22,11 +22,9 @@ export const mediaService = {
     const res = await api.post<{ success: boolean; data: UploadMediaResponse; message: string }>(
       '/admin/media/upload',
       formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      // Let Axios/browser set the multipart boundary. Setting this header
+      // manually can produce a request without the boundary, so Laravel sees
+      // no uploaded file and rejects the upload.
     )
 
     return res.data

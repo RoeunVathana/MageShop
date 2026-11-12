@@ -66,7 +66,9 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request): JsonResponse
     {
         try {
-            $user = $request->user();
+            // The route is protected by Sanctum. Use the same guard as the
+            // FormRequest so seller ownership and audit fields are consistent.
+            $user = $request->user('sanctum') ?? $request->user();
             $product = $this->productService->createProduct($request->validated(), $user ? $user->id : null);
 
             return (new ProductResource($product))

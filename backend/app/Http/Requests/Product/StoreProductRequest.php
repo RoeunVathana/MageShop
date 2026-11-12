@@ -7,6 +7,30 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProductRequest extends FormRequest
 {
+    /**
+     * Normalize values before the unique rule runs. ProductService stores
+     * uppercase SKUs, so validation must compare the same canonical value or
+     * a lowercase duplicate can pass validation and fail later with a 500.
+     */
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach (['name', 'brand'] as $field) {
+            if (is_string($this->input($field))) {
+                $normalized[$field] = trim((string) $this->input($field));
+            }
+        }
+
+        if (is_string($this->input('sku'))) {
+            $normalized['sku'] = strtoupper(trim((string) $this->input('sku')));
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
     public function authorize(): bool
     {
         $user = $this->user('sanctum') ?: $this->user();

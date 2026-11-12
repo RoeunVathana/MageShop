@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -58,7 +58,8 @@ const productSchema = z.object({
   low_stock_threshold: z.coerce.number().int().min(0, 'Threshold cannot be negative').default(5),
   weight: z.coerce.number().min(0).optional(),
   status: z.enum(['active', 'draft']).default('active'),
-  image_url: z.string().max(1000).optional().or(z.literal('')),
+  // Keep the client limit aligned with StoreProductRequest.image_url|max:500.
+  image_url: z.string().max(500, 'Image URL must be 500 characters or fewer').optional().or(z.literal('')),
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -71,6 +72,25 @@ interface VariantDraft {
   cost_price: number
   initial_stock: number
   option_values: Record<string, string>
+}
+
+function formatProductError(error: unknown): string {
+  const candidate = (error && typeof error === 'object' ? error : {}) as {
+    message?: unknown
+    errors?: Record<string, unknown>
+  }
+  const message = typeof candidate.message === 'string' && candidate.message.trim()
+    ? candidate.message.trim()
+    : 'Failed to create product.'
+  const details = Object.entries(candidate.errors || {})
+    .flatMap(([field, value]) => {
+      const values = Array.isArray(value) ? value : [value]
+      return values
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => `${field}: ${item}`)
+    })
+
+  return details.length > 0 ? `${message} ${details.join(' ')}` : message
 }
 
 export function ProductCreatePage() {
@@ -234,6 +254,14 @@ export function ProductCreatePage() {
   const handleAddGalleryUrl = () => {
     const trimmed = newGalleryInput.trim()
     if (!trimmed) return
+    if (trimmed.length > 500) {
+      toast({
+        title: 'Image URL is too long',
+        description: 'Image URLs must be 500 characters or fewer.',
+        type: 'error',
+      })
+      return
+    }
     if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('/')) {
       toast({
         title: 'Invalid URL',
@@ -292,7 +320,35 @@ export function ProductCreatePage() {
     })
   }
 
+  const handleInvalidForm = (formErrors: FieldErrors<ProductFormData>) => {
+    const firstError = Object.values(formErrors)[0] as { message?: unknown } | undefined
+    const message = typeof firstError?.message === 'string'
+      ? firstError.message
+      : 'Complete the required product fields before creating it.'
+    setServerError(message)
+    toast({
+      title: 'Check the product form',
+      description: message,
+      type: 'error',
+    })
+  }
+
   const onSubmit = async (data: ProductFormData) => {
+    const missingRequiredAttributes = categoryAttributes
+      .filter((attr) => attr.is_required && !attributeFormValues[attr.code]?.trim())
+      .map((attr) => attr.name)
+
+    if (missingRequiredAttributes.length > 0) {
+      const message = `Complete required category field(s): ${missingRequiredAttributes.join(', ')}.`
+      setServerError(message)
+      toast({
+        title: 'Complete required specifications',
+        description: message,
+        type: 'error',
+      })
+      return
+    }
+
     setIsSubmitting(true)
     setServerError(null)
 
@@ -367,8 +423,8 @@ export function ProductCreatePage() {
       })
 
       navigate('/admin/products')
-    } catch (err: any) {
-      const message = err?.message || 'Failed to create product. Check form and required attributes.'
+    } catch (err: unknown) {
+      const message = formatProductError(err)
       setServerError(message)
       toast({
         title: 'Creation Failed',
@@ -412,7 +468,11 @@ export function ProductCreatePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 text-xs">
+        <form
+          noValidate
+          onSubmit={handleSubmit(onSubmit, handleInvalidForm)}
+          className="space-y-6 text-xs"
+        >
           {/* Identity & Department */}
           <Card>
             <CardHeader className="pb-3">
