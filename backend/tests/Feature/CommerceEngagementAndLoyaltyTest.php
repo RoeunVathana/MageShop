@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\MerchantPaymentAccount;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -92,6 +94,98 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
             ->assertJsonPath('data.new_loyalty_points', 15);
 
         $this->assertSame(15, (int) $user->fresh()->loyalty_points);
+    }
+
+    public function test_single_seller_checkout_uses_the_sellers_default_bakong_account(): void
+    {
+        $buyer = User::factory()->create();
+        $seller = User::factory()->create();
+        $seller->assignRole('SELLER');
+
+        $sellerAccount = MerchantPaymentAccount::create([
+            'user_id' => $seller->id,
+            'account_type' => 'bakong',
+            'bank_name' => 'Bakong',
+            'account_id' => 'seller@abaa',
+            'merchant_name' => 'Seller Store',
+            'merchant_city' => 'Phnom Penh',
+            'merchant_phone' => '85512000000',
+            'currency' => 'USD',
+            'is_default' => true,
+            'is_active' => true,
+        ]);
+
+        $product = Product::firstOrFail();
+        $product->update([
+            'seller_id' => $seller->id,
+            'stock_quantity' => 10,
+        ]);
+
+        Sanctum::actingAs($buyer);
+        $response = $this->postJson('/api/v1/orders/checkout', [
+            'items' => [[
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => 1.00,
+                'quantity' => 1,
+            ]],
+            'payment_method' => 'bakong_khqr',
+            'customer_name' => 'Buyer Test',
+            'customer_phone' => '+855 12 111 222',
+            'delivery_address' => 'Phnom Penh, Cambodia',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.qr_payment.merchant_account', $sellerAccount->account_id)
+            ->assertJsonPath('data.qr_payment.merchant_source', 'seller');
+
+        $this->assertSame($sellerAccount->account_id, Payment::latest('id')->value('merchant_account'));
+    }
+
+    public function test_seller_checkout_falls_back_to_the_admin_bakong_account_without_seller_configuration(): void
+    {
+        $buyer = User::factory()->create();
+        $seller = User::factory()->create();
+        $seller->assignRole('SELLER');
+
+        $adminAccount = MerchantPaymentAccount::create([
+            'user_id' => null,
+            'account_type' => 'bakong',
+            'bank_name' => 'Bakong',
+            'account_id' => 'admin@abaa',
+            'merchant_name' => 'Admin Store',
+            'merchant_city' => 'Phnom Penh',
+            'merchant_phone' => '85512000001',
+            'currency' => 'USD',
+            'is_default' => true,
+            'is_active' => true,
+        ]);
+
+        $product = Product::firstOrFail();
+        $product->update([
+            'seller_id' => $seller->id,
+            'stock_quantity' => 10,
+        ]);
+
+        Sanctum::actingAs($buyer);
+        $response = $this->postJson('/api/v1/orders/checkout', [
+            'items' => [[
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => 1.00,
+                'quantity' => 1,
+            ]],
+            'payment_method' => 'bakong_khqr',
+            'customer_name' => 'Buyer Test',
+            'customer_phone' => '+855 12 111 333',
+            'delivery_address' => 'Phnom Penh, Cambodia',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.qr_payment.merchant_account', $adminAccount->account_id)
+            ->assertJsonPath('data.qr_payment.merchant_source', 'admin');
+
+        $this->assertSame($adminAccount->account_id, Payment::latest('id')->value('merchant_account'));
     }
 
     public function test_redeem_100_points_for_free_product_under_30_dollars(): void

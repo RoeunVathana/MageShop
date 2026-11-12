@@ -19,6 +19,9 @@ class Payment extends Model
         'status',
         'khqr_string',
         'khqr_md5',
+        'merchant_account',
+        'merchant_name',
+        'merchant_city',
         'gateway_payload',
         'verified_at',
     ];

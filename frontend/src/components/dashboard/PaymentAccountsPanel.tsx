@@ -99,8 +99,8 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
       toast({
         title: editingId ? t('Payment account updated', 'បានកែប្រែគណនីទូទាត់') : t('Payment account added', 'បានបន្ថែមគណនីទូទាត់'),
         description: adminMode
-          ? t('The default account is used to generate customer checkout QR codes.', 'គណនីលំនាំដើមត្រូវបានប្រើសម្រាប់បង្កើត QR ទូទាត់របស់អតិថិជន។')
-          : t('This account is saved for your seller payout profile.', 'គណនីនេះត្រូវបានរក្សាទុកសម្រាប់ការទូទាត់ចំណូលអ្នកលក់។'),
+          ? t('The admin default receives admin, fallback, and mixed-seller checkout QR payments.', 'គណនី Admin លំនាំដើមទទួល QR ពី Admin ករណី fallback និងការទិញពីអ្នកលក់ច្រើន។')
+          : t('Customers buying only your products will receive a QR for your active default account. If none is configured, checkout uses the admin account.', 'អតិថិជនដែលទិញតែទំនិញរបស់អ្នកនឹងទទួល QR សម្រាប់គណនីលំនាំដើមរបស់អ្នក។ ប្រសិនបើមិនបានកំណត់ នោះប្រើគណនី Admin។'),
         type: 'success',
       })
     } catch (error: any) {
@@ -157,8 +157,8 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
               </CardTitle>
               <CardDescription className="text-xs">
                 {adminMode
-                  ? t('Add multiple Bakong accounts and choose which one receives new checkout payments.', 'បន្ថែមគណនី Bakong ច្រើន និងជ្រើសរើសគណនីទទួលការទូទាត់ថ្មី។')
-                  : t('Manage the Bakong accounts used for your seller payouts.', 'គ្រប់គ្រងគណនី Bakong សម្រាប់ទទួលចំណូលអ្នកលក់។')}
+                  ? t('Add multiple Bakong accounts and choose the admin account used for fallback checkout payments.', 'បន្ថែមគណនី Bakong ច្រើន និងជ្រើសរើសគណនី Admin សម្រាប់ការទូទាត់ fallback។')
+                  : t('Manage the Bakong account that receives QR payments for your seller products.', 'គ្រប់គ្រងគណនី Bakong ដែលទទួល QR ពីការទិញទំនិញរបស់អ្នក។')}
               </CardDescription>
             </div>
           </div>
@@ -214,7 +214,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
             </div>
             {!adminMode && (
               <p className="text-[11px] text-muted-foreground">
-                {t('Bakong API URL and API token are controlled by the platform admin for security.', 'Bakong API URL និង API Token ត្រូវបានគ្រប់គ្រងដោយ Admin សម្រាប់សុវត្ថិភាព។')}
+                {t('Your active default account receives QR payments for your products. Bakong API URL and token remain controlled by the platform admin for security.', 'គណនីលំនាំដើមសកម្មរបស់អ្នកនឹងទទួល QR សម្រាប់ទំនិញរបស់អ្នក។ Bakong API URL និង token ត្រូវបានគ្រប់គ្រងដោយ Admin សម្រាប់សុវត្ថិភាព។')}
               </p>
             )}
             <Button type="submit" disabled={saving} className="rounded-xl text-xs font-bold">
@@ -253,7 +253,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
           </div>
         ))}
         {defaultAccount && adminMode && (
-          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {t('Customer Bakong checkout is linked to the selected default account.', 'ការទូទាត់ Bakong របស់អតិថិជនត្រូវបានភ្ជាប់ទៅគណនីលំនាំដើមដែលបានជ្រើសរើស។')}</p>
+          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {t('Admin-owned, fallback, and mixed-seller checkouts use this selected default account. Seller-only carts use the seller default when configured.', 'ការទិញពី Admin, fallback និងអ្នកលក់ច្រើនប្រើគណនីលំនាំដើមនេះ។ ការទិញតែពីអ្នកលក់ប្រើគណនីអ្នកលក់ ប្រសិនបើបានកំណត់។')}</p>
         )}
       </CardContent>
     </Card>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use App\Models\MerchantPaymentAccount;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -457,8 +458,11 @@ class CommerceEngagementController extends Controller
         // confirms the exact amount, currency, and merchant account.
         $initiateQr = $paymentMethod === 'bakong_khqr' && $totalAmount > 0;
         $isCashOnArrival = $paymentMethod === 'cash_on_delivery' && $totalAmount > 0;
+        $merchantAccount = $initiateQr
+            ? $this->resolveCheckoutMerchantAccount($products)
+            : null;
 
-        if ($initiateQr && app()->environment('production') && ! $this->isBakongPaymentReady()) {
+        if ($initiateQr && app()->environment('production') && ! $this->isBakongPaymentReady($merchantAccount)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.',
@@ -468,7 +472,7 @@ class CommerceEngagementController extends Controller
         $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'pending_qr' : 'paid');
         $txnRef = 'TXN-'.strtoupper(Str::random(10));
         $qrPaymentData = $initiateQr
-            ? $this->buildBakongKhqrPayload($orderNumber, $totalAmount, $txnRef)
+            ? $this->buildBakongKhqrPayload($orderNumber, $totalAmount, $txnRef, $merchantAccount)
             : null;
 
         // Keep the order, payment, and loyalty ledger in one atomic write.
@@ -566,6 +570,9 @@ class CommerceEngagementController extends Controller
                 'verified_at' => ($isCashOnArrival || $initiateQr) ? null : now(),
                 'khqr_string' => $qrPaymentData['qr_string'] ?? null,
                 'khqr_md5' => $qrPaymentData['md5'] ?? null,
+                'merchant_account' => $qrPaymentData['merchant_account'] ?? null,
+                'merchant_name' => $qrPaymentData['merchant_name'] ?? null,
+                'merchant_city' => $qrPaymentData['merchant_city'] ?? null,
             ]);
 
             // Deduct redeemed points immediately, but award purchase points only after payment is final.
@@ -684,9 +691,12 @@ class CommerceEngagementController extends Controller
             $qrPayment = [
                 'qr_string' => $payment->khqr_string,
                 'md5' => $payment->khqr_md5,
-                'merchant_account' => $this->bakongSetting('bakong_account_id', 'bakong.account_id'),
-                'merchant_name' => $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP'),
-                'merchant_city' => $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'),
+                'merchant_account' => $payment->merchant_account
+                    ?: $this->bakongSetting('bakong_account_id', 'bakong.account_id'),
+                'merchant_name' => $payment->merchant_name
+                    ?: $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP'),
+                'merchant_city' => $payment->merchant_city
+                    ?: $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'),
                 'amount_usd' => (float) $order->total_amount,
                 'amount_khr' => (int) round((float) $order->total_amount * 4100),
                 'order_number' => $order->order_number,
@@ -778,13 +788,95 @@ class CommerceEngagementController extends Controller
         return trim($value, " \t\n\r\0\x0B\"'\\");
     }
 
-    protected function isBakongPaymentReady(): bool
+    protected function isBakongPaymentReady(?array $merchantAccount = null): bool
     {
-        $accountId = $this->bakongSetting('bakong_account_id', 'bakong.account_id');
+        $accountId = (string) ($merchantAccount['account_id'] ?? $this->bakongSetting('bakong_account_id', 'bakong.account_id'));
 
         return filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN)
             && $this->bakongApiToken() !== ''
             && preg_match('/^[^@\s]+@[^@\s]+$/', $accountId) === 1;
+    }
+
+    /**
+     * Resolve the merchant that should receive this checkout.
+     *
+     * A KHQR contains one merchant account. A single-seller cart can therefore
+     * use that seller's active default account. Admin-owned products, sellers
+     * without an account, and mixed-seller carts safely fall back to the
+     * platform admin account instead of sending money to the wrong merchant.
+     *
+     * @param \Illuminate\Support\Collection<int, Product> $products
+     * @return array<string, int|string|null>
+     */
+    protected function resolveCheckoutMerchantAccount($products): array
+    {
+        $sellerIds = $products
+            ->pluck('seller_id')
+            ->filter(fn ($sellerId) => $sellerId !== null)
+            ->map(fn ($sellerId) => (int) $sellerId)
+            ->unique()
+            ->values();
+        $hasAdminOwnedProduct = $products->contains(fn (Product $product) => $product->seller_id === null);
+        $accounts = MerchantPaymentAccount::query()
+            ->where('is_active', true)
+            ->whereIn('currency', ['USD', 'BOTH'])
+            ->where(function ($query) use ($sellerIds): void {
+                $query->whereNull('user_id');
+                if ($sellerIds->isNotEmpty()) {
+                    $query->orWhereIn('user_id', $sellerIds->all());
+                }
+            })
+            ->orderByDesc('is_default')
+            ->orderByDesc('id')
+            ->get();
+
+        if (! $hasAdminOwnedProduct && $sellerIds->count() === 1) {
+            $sellerId = (int) $sellerIds->first();
+            $sellerAccount = $accounts->first(
+                fn (MerchantPaymentAccount $account): bool => (int) $account->user_id === $sellerId
+            );
+
+            if ($sellerAccount) {
+                return $this->merchantAccountPayload($sellerAccount, 'seller', $sellerId);
+            }
+        }
+
+        $adminAccount = $accounts->first(
+            fn (MerchantPaymentAccount $account): bool => $account->user_id === null
+        );
+
+        if ($adminAccount) {
+            return $this->merchantAccountPayload($adminAccount, 'admin');
+        }
+
+        return [
+            'account_id' => $this->bakongSetting('bakong_account_id', 'bakong.account_id'),
+            'merchant_name' => $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP'),
+            'merchant_city' => $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'),
+            'source' => 'admin',
+            'seller_id' => null,
+            'account_record_id' => null,
+        ];
+    }
+
+    /**
+     * Convert an account record into the stable merchant details used by QR.
+     *
+     * @return array<string, int|string|null>
+     */
+    protected function merchantAccountPayload(
+        MerchantPaymentAccount $account,
+        string $source,
+        ?int $sellerId = null
+    ): array {
+        return [
+            'account_id' => $account->account_id,
+            'merchant_name' => $account->merchant_name,
+            'merchant_city' => $account->merchant_city,
+            'source' => $source,
+            'seller_id' => $sellerId,
+            'account_record_id' => $account->id,
+        ];
     }
 
     protected function bakongApiToken(): string
@@ -886,11 +978,19 @@ class CommerceEngagementController extends Controller
      * Build EMVCo Bakong KHQR payload and metadata for QR scan checkout.
      * Fully compliant with National Bank of Cambodia (NBC) KHQR EMVCo standards.
      */
-    protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
+    protected function buildBakongKhqrPayload(
+        string $orderNumber,
+        float $amountUsd,
+        string $txnRef,
+        ?array $merchantAccount = null
+    ): array
     {
-        $merchantAccount = $this->bakongSetting('bakong_account_id', 'bakong.account_id');
-        $merchantName = $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP');
-        $merchantCity = $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh');
+        $merchantAccountId = (string) ($merchantAccount['account_id']
+            ?? $this->bakongSetting('bakong_account_id', 'bakong.account_id'));
+        $merchantName = (string) ($merchantAccount['merchant_name']
+            ?? $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP'));
+        $merchantCity = (string) ($merchantAccount['merchant_city']
+            ?? $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'));
 
         // Amount formatting compliant with NBC Bakong EMVCo specification
         $amountStr = (fmod($amountUsd, 1.0) === 0.0)
@@ -900,7 +1000,7 @@ class CommerceEngagementController extends Controller
 
         // Tag 29: Individual Merchant Account Information
         // Sub-tag 00: Bakong Account ID only (e.g., username@abaa or username@bakong)
-        $tag29Value = '00'.str_pad((string) strlen($merchantAccount), 2, '0', STR_PAD_LEFT).$merchantAccount;
+        $tag29Value = '00'.str_pad((string) strlen($merchantAccountId), 2, '0', STR_PAD_LEFT).$merchantAccountId;
         $tag29 = '29'.str_pad((string) strlen($tag29Value), 2, '0', STR_PAD_LEFT).$tag29Value;
 
         // Tag 62: Additional Data Field (Sub-tag 01: Bill Number / Order Number)
@@ -934,9 +1034,11 @@ class CommerceEngagementController extends Controller
         return [
             'qr_string' => $fullQrString,
             'md5' => md5($fullQrString),
-            'merchant_account' => $merchantAccount,
+            'merchant_account' => $merchantAccountId,
             'merchant_name' => $merchantName,
             'merchant_city' => $merchantCity,
+            'merchant_source' => $merchantAccount['source'] ?? 'admin',
+            'seller_id' => $merchantAccount['seller_id'] ?? null,
             'amount_usd' => $amountUsd,
             'amount_khr' => $amountKhr,
             'order_number' => $orderNumber,
@@ -1270,7 +1372,8 @@ class CommerceEngagementController extends Controller
 
             $verificationPayload = $verificationResponse->json();
             $transaction = is_array($verificationPayload) ? ($verificationPayload['data'] ?? null) : null;
-            $expectedMerchant = strtolower($this->bakongSetting('bakong_account_id', 'bakong.account_id'));
+            $expectedMerchant = strtolower((string) ($payment->merchant_account
+                ?: $this->bakongSetting('bakong_account_id', 'bakong.account_id')));
             $paidMerchant = strtolower((string) ($transaction['toAccountId'] ?? ''));
             $amountMatches = is_array($transaction)
                 && abs((float) ($transaction['amount'] ?? -1) - (float) $order->total_amount) < 0.01;
