@@ -26,17 +26,23 @@ export function StorefrontLayout() {
       {/* Pinned Top Navigation Bar with Smooth Scroll Glassmorphism Transition */}
       <div
         className={cn(
-          'sticky top-0 z-40 isolate w-full overflow-visible border-b border-border bg-background transition-shadow duration-300 ease-in-out',
+          // Keep the sticky navigation above floating storefront widgets while
+          // an account/category popover is open. The popover's z-index cannot
+          // escape a lower stacking context created by this wrapper.
+          'sticky top-0 z-[60] isolate w-full overflow-visible border-b border-border bg-background transition-shadow duration-300 ease-in-out',
           isScrolled
             ? 'shadow-lg shadow-slate-950/10'
             : 'shadow-sm'
         )}
+        id="storefront-navigation"
       >
         {/* Top Announcement Bar */}
         <div
           className={cn(
-            'transition-all duration-300 ease-in-out overflow-hidden',
-            isScrolled ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-12 opacity-100'
+            'transition-all duration-300 ease-in-out',
+            isScrolled
+              ? 'max-h-0 overflow-hidden opacity-0 pointer-events-none'
+              : 'max-h-12 overflow-visible opacity-100'
           )}
         >
           <AnnouncementBar />

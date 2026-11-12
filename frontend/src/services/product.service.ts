@@ -11,10 +11,42 @@ export const productService = {
   /**
    * Fetch paginated products with search, category and status filtering
    */
-  async getProducts(params?: ProductFilterParams): Promise<PaginatedResponse<Product>> {
-    const response = await apiClient.get<PaginatedResponse<Product>>('/products', {
-      params,
-    })
+  async getProducts(
+    params?: ProductFilterParams,
+    options?: { signal?: AbortSignal }
+  ): Promise<PaginatedResponse<Product>> {
+    let response
+    let lastError: unknown
+
+    // The public API is hosted on Railway and may need to wake from a cold start.
+    // Retry only transient failures so a short network/5xx interruption does not
+    // replace the whole catalog with the error state.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        response = await apiClient.get<PaginatedResponse<Product>>('/products', {
+          params,
+          signal: options?.signal,
+        })
+        break
+      } catch (error) {
+        lastError = error
+        const code = typeof error === 'object' && error !== null && 'code' in error
+          ? Number((error as { code?: number }).code)
+          : 0
+        const isClientError = code >= 400 && code < 500 && code !== 408 && code !== 429
+
+        if (options?.signal?.aborted || attempt === 2 || isClientError) {
+          throw error
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)))
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error('The product catalog did not return a response.')
+    }
+
     const payload: any = response.data
 
     // Accept both Laravel paginator shapes used by deployed API versions:

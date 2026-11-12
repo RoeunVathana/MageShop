@@ -32,7 +32,6 @@ export function TrackOrderPage() {
   const [tracking, setTracking] = useState<any>(null)
   const [trackingError, setTrackingError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [confirmingPayment, setConfirmingPayment] = useState(false)
 
   // Route progress is derived from the courier coordinates returned by the API.
   const [routeProgress, setRouteProgress] = useState(0)
@@ -71,45 +70,6 @@ export function TrackOrderPage() {
     }, 3500)
     return () => clearInterval(interval)
   }, [activeOrderNum])
-
-  const handleConfirmCashOnArrival = async () => {
-    setConfirmingPayment(true)
-    try {
-      await api.post<any>(`/orders/track/${encodeURIComponent(activeOrderNum)}/confirm-payment`, {})
-    } catch (error) {
-      toast({
-        title: t('Delivery confirmation failed', 'ការបញ្ជាក់ការដឹកជញ្ជូនបានបរាជ័យ'),
-        description: error instanceof Error ? error.message : t('The server did not confirm this handover.', 'ម៉ាស៊ីនមេមិនបានបញ្ជាក់ការប្រគល់ទំនិញនេះទេ។'),
-        type: 'error',
-      })
-      setConfirmingPayment(false)
-      return
-    }
-
-      setRouteProgress(100)
-      setTracking((prev: any) =>
-        prev
-          ? {
-              ...prev,
-              status: 'delivered',
-              payment_status: 'paid',
-              amount_due_on_arrival: 0,
-              checkpoints: (prev.checkpoints || []).map((cp: any, idx: number, arr: any[]) => ({
-                ...cp,
-                done: true,
-                active: idx === arr.length - 1,
-                time: idx === arr.length - 1 ? 'Cash Paid & Delivered Just Now' : cp.time,
-              })),
-            }
-          : prev
-      )
-      toast({
-        title: '💵 Cash on Hand Confirmed at Location!',
-        description: `Order #${activeOrderNum} is marked Paid & Delivered at your GPS destination.`,
-        type: 'success',
-      })
-      setConfirmingPayment(false)
-  }
 
   const whLat = Number(tracking?.gps?.warehouse_lat ?? 0)
   const whLng = Number(tracking?.gps?.warehouse_lng ?? 0)
@@ -519,17 +479,12 @@ export function TrackOrderPage() {
                     <strong className="text-foreground">{formatPrice(Number(tracking?.total_amount ?? 0))}</strong>{' '}
                     {t('to your courier upon arrival at your location.', 'ជូនអ្នកដឹកជញ្ជូនពេលមកដល់ទីតាំងរបស់អ្នក។')}
                   </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={confirmingPayment}
-                    onClick={handleConfirmCashOnArrival}
-                    className="w-full rounded-xl text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
-                  >
-                    {confirmingPayment
-                      ? t('Confirming Handover...', 'កំពុងបញ្ជាក់ការប្រគល់...')
-                      : t('💵 Confirm Cash Paid on Arrival at Location', '💵 បញ្ជាក់ថាបានបង់ប្រាក់សុទ្ធជូនអ្នកដឹក')}
-                  </Button>
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                    {t(
+                      'Your courier confirms the cash handover in the secure delivery dashboard.',
+                      'អ្នកដឹកជញ្ជូននឹងបញ្ជាក់ការបង់ប្រាក់នៅក្នុងផ្ទាំងគ្រប់គ្រងដែលមានសុវត្ថិភាព។'
+                    )}
+                  </div>
                 </div>
               ) : tracking?.payment_status === 'paid' ? (
                 <div className="space-y-2">
@@ -540,16 +495,12 @@ export function TrackOrderPage() {
                     )}
                   </p>
                   {routeProgress < 100 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={confirmingPayment}
-                      onClick={handleConfirmCashOnArrival}
-                      className="w-full rounded-xl text-xs font-bold"
-                    >
-                      {t('✓ Mark Delivery Arrived at My Location', '✓ បញ្ជាក់ថាទំនិញបានមកដល់ទីតាំងខ្ញុំហើយ')}
-                    </Button>
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+                      {t(
+                        'The courier will complete the delivery handover after arriving at your location.',
+                        'អ្នកដឹកជញ្ជូននឹងបញ្ចប់ការប្រគល់ទំនិញបន្ទាប់ពីមកដល់ទីតាំងរបស់អ្នក។'
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (

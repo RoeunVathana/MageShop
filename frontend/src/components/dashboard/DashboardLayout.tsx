@@ -81,34 +81,34 @@ export function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+    <div className="dashboard-shell min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       {/* Desktop Sticky Sidebar - Permanently pinned to viewport when scrolling page */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
+      <aside className="dashboard-sidebar hidden lg:flex flex-col w-80 2xl:w-96 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
         {/* Brand */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <Link to="/" aria-label="TYUSHOP Home">
-            <Logo size="sm" subtitle="WORKSPACE" />
+            <Logo size="md" subtitle="WORKSPACE" />
           </Link>
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
-          <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <div className="px-5 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
-          <div className="flex items-center gap-2 mt-1 min-w-0">
-            <span className={cn('text-xs font-bold truncate min-w-0', roleColor)} title={roleTitle}>{roleTitle}</span>
+          <div className="flex items-center gap-2.5 mt-1.5 min-w-0">
+            <span className={cn('text-sm font-bold truncate min-w-0', roleColor)} title={roleTitle}>{roleTitle}</span>
             <Badge
               variant="outline"
-              className="shrink-0 text-[9px] rounded-md border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1 px-1.5 py-0.5"
+              className="shrink-0 text-[11px] rounded-md border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1 px-2 py-1"
             >
-              <ShieldCheck className="w-3 h-3" /> {t('Verified', 'បានផ្ទៀងផ្ទាត់')}
+              <ShieldCheck className="w-3.5 h-3.5" /> {t('Verified', 'បានផ្ទៀងផ្ទាត់')}
             </Badge>
           </div>
         </div>
 
         {/* Navigation Items - Self-scrolling if menu exceeds viewport height */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overscroll-contain">
+        <nav className="dashboard-sidebar-nav flex-1 px-3.5 py-5 space-y-1 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -119,25 +119,18 @@ export function DashboardLayout({
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-medium transition-all',
+                  'dashboard-nav-link flex items-center justify-between gap-3 min-h-12 px-3.5 py-3 rounded-xl text-[17px] font-medium leading-7 transition-all',
                   isActive
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{displayLabel}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="min-w-0 flex-1 leading-7 whitespace-normal break-keep">{displayLabel}</span>
                 </div>
                 {displayBadge && (
-                  <span
-                    className={cn(
-                      'text-[9px] px-1.5 py-0.5 rounded-md font-bold',
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    )}
-                  >
+                  <span className="dashboard-nav-badge shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-4 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                     {displayBadge}
                   </span>
                 )}
@@ -147,17 +140,17 @@ export function DashboardLayout({
         </nav>
 
         {/* Storefront return link & footer */}
-        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <Link to="/">
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-[11px] gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="w-full h-11 text-sm gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              <Home className="w-3.5 h-3.5" /> {t('Return to Storefront', 'ត្រឡប់ទៅហាង')}
+              <Home className="w-5 h-5" /> {t('Return to Storefront', 'ត្រឡប់ទៅហាង')}
             </Button>
           </Link>
-          <div className="text-[10px] text-slate-400 text-center">
+          <div className="text-xs text-slate-400 text-center">
             {t('TYUSHOP Enterprise • Support 016 555 637', 'TYUSHOP សហគ្រាស • ជំនួយ 016 555 637')}
           </div>
         </div>
@@ -170,10 +163,10 @@ export function DashboardLayout({
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col p-5 z-10 animate-in slide-in-from-left duration-300">
+          <div className="relative w-80 max-w-[92vw] bg-white dark:bg-slate-900 h-full shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col p-5 z-10 animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <Link to="/" aria-label="TYUSHOP Home">
-                <Logo size="sm" subtitle="WORKSPACE" />
+                <Logo size="md" subtitle="WORKSPACE" />
               </Link>
               <div className="flex items-center gap-2">
                 <LanguageSwitcher variant="pill" />
@@ -189,11 +182,11 @@ export function DashboardLayout({
             </div>
 
             <div className="py-3.5 border-b border-slate-200 dark:border-slate-800">
-              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{t('Workspace', 'កន្លែងធ្វើការ')}</p>
-              <p className={cn('text-xs font-bold mt-0.5', roleColor)}>{roleTitle}</p>
+              <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">{t('Workspace', 'កន្លែងធ្វើការ')}</p>
+              <p className={cn('text-sm font-bold mt-1', roleColor)}>{roleTitle}</p>
             </div>
 
-            <nav className="flex-1 py-4 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 py-5 space-y-1.5 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.href
@@ -205,25 +198,18 @@ export function DashboardLayout({
                     to={item.href}
                     onClick={() => setIsMobileSidebarOpen(false)}
                     className={cn(
-                      'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all',
+                      'flex items-center justify-between px-3.5 py-3 rounded-xl text-[17px] font-medium leading-7 transition-all',
                       isActive
                         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4" />
-                      <span>{displayLabel}</span>
+                      <Icon className="w-5 h-5" />
+                      <span className="min-w-0 flex-1 leading-7 break-keep">{displayLabel}</span>
                     </div>
                     {displayBadge && (
-                      <span
-                        className={cn(
-                          'text-[10px] px-2 py-0.5 rounded-lg font-bold',
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                        )}
-                      >
+                      <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-4 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {displayBadge}
                       </span>
                     )}
@@ -235,7 +221,7 @@ export function DashboardLayout({
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
               <Link to="/" onClick={() => setIsMobileSidebarOpen(false)}>
                 <Button variant="outline" size="sm" className="w-full text-xs gap-2 rounded-xl">
-                  <Home className="w-3.5 h-3.5" /> {t('Return to Storefront', 'ត្រឡប់ទៅហាង')}
+                  <Home className="w-5 h-5" /> {t('Return to Storefront', 'ត្រឡប់ទៅហាង')}
                 </Button>
               </Link>
             </div>
@@ -246,8 +232,8 @@ export function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 lg:px-6">
-          <div className="flex items-center gap-3">
+        <header className="min-h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2 sm:h-14 sm:px-5 sm:py-0 lg:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -259,21 +245,21 @@ export function DashboardLayout({
             </Button>
 
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <Link to="/" className="hover:text-indigo-600 transition-colors">
+            <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <Link to="/" className="shrink-0 hover:text-indigo-600 transition-colors">
                 {t('Home', 'ទំព័រដើម')}
               </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{roleTitle}</span>
+              <span className="max-w-[12rem] truncate font-semibold text-slate-800 dark:text-slate-200">{roleTitle}</span>
               <ChevronRight className="w-3.5 h-3.5 hidden sm:inline" />
-              <span className="capitalize hidden sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
+              <span className="capitalize hidden max-w-[10rem] truncate sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
                 {location.pathname.split('/').pop() || 'Overview'}
               </span>
             </div>
           </div>
 
           {/* Right: Actions, Language Switcher, Notifications, Profile, Theme */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             {/* Language Switcher with Flag Pills */}
             <LanguageSwitcher variant="pill" />
 
@@ -361,7 +347,7 @@ export function DashboardLayout({
         </header>
 
         {/* Page Content Area with Generous Whitespace (Full Width) */}
-        <main className="flex-1 p-5 sm:p-8 lg:p-10 overflow-y-auto w-full">
+        <main className="flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

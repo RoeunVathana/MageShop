@@ -12,6 +12,7 @@ import {
   RefreshCw,
   AlertTriangle,
   ArrowUpRight,
+  CheckCircle2,
 } from 'lucide-react'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,6 +35,7 @@ export function StaffDashboard() {
   const [overview, setOverview] = useState<StaffOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
   const isAdmin = authService.isAdmin()
 
   const navItems = useMemo(() => {
@@ -62,6 +64,47 @@ export function StaffDashboard() {
   useEffect(() => {
     loadOverview()
   }, [])
+
+  const getNextAction = (status: string) => {
+    if (status === 'pending' || status === 'confirmed') return { status: 'processing', label: 'Start processing' }
+    if (status === 'processing') return { status: 'shipped', label: 'Ready for dispatch' }
+    return null
+  }
+
+  const handleAdvanceOrder = async (orderNumber: string, status: string) => {
+    setUpdatingOrder(orderNumber)
+    try {
+      await staffService.updateOrderStatus(orderNumber, status)
+      setOverview((previous) => previous ? {
+        ...previous,
+        queue: previous.queue.map((order) => order.order_number === orderNumber ? { ...order, status } : order),
+        stats: {
+          ...previous.stats,
+          pending_orders: status === 'processing'
+            ? Math.max(0, previous.stats.pending_orders - 1)
+            : previous.stats.pending_orders,
+          processing_orders: status === 'processing'
+            ? previous.stats.processing_orders + 1
+            : status === 'shipped'
+            ? Math.max(0, previous.stats.processing_orders - 1)
+            : previous.stats.processing_orders,
+        },
+      } : previous)
+      toast({
+        title: 'Order workflow updated',
+        description: `Order #${orderNumber} is now ${status.replaceAll('_', ' ')}.`,
+        type: 'success',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Could not update order',
+        description: error?.message || 'The server rejected this workflow step.',
+        type: 'error',
+      })
+    } finally {
+      setUpdatingOrder(null)
+    }
+  }
 
   const stats = overview?.stats
   const queue = overview?.queue ?? []
@@ -143,6 +186,17 @@ export function StaffDashboard() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="font-bold text-sm">${Number(order.total_amount || 0).toFixed(2)}</span>
+                    {getNextAction(order.status) && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAdvanceOrder(order.order_number, getNextAction(order.status)!.status)}
+                        disabled={updatingOrder === order.order_number}
+                        className="h-7 text-xs gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        {updatingOrder === order.order_number ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        {getNextAction(order.status)!.label}
+                      </Button>
+                    )}
                     <Link to="/dashboard/delivery">
                       <Button size="sm" variant="outline" className="h-7 text-xs">Open dispatch</Button>
                     </Link>

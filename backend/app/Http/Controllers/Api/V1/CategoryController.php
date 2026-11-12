@@ -10,7 +10,6 @@ use App\Models\Category;
 use App\Services\Category\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use InvalidArgumentException;
 
 class CategoryController extends Controller
@@ -25,20 +24,48 @@ class CategoryController extends Controller
     /**
      * List categories with optional hierarchy nesting and search filtering.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $isTree = filter_var($request->query('tree', false), FILTER_VALIDATE_BOOLEAN);
-        $categories = $this->categoryService->listCategories($request->query(), $isTree);
+        $filters = $request->query();
+        $user = $request->user('sanctum') ?? $request->user();
+        $canViewInactive = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'PRODUCT_MANAGER',
+            'STAFF',
+        ]);
 
-        return CategoryResource::collection($categories);
+        if (! $canViewInactive) {
+            $filters['is_active'] = true;
+        }
+
+        $categories = $this->categoryService->listCategories($filters, $isTree);
+
+        $response = CategoryResource::collection($categories)->response();
+        if (! $user) {
+            $response->headers->set('Cache-Control', 'public, max-age=60, stale-while-revalidate=180');
+        }
+
+        return $response;
     }
 
     /**
      * Display the specified category by ID or slug.
      */
-    public function show(string $idOrSlug): CategoryResource
+    public function show(Request $request, string $idOrSlug): CategoryResource
     {
         $category = $this->categoryService->getCategory($idOrSlug);
+        $user = $request->user('sanctum') ?? $request->user();
+        $canViewInactive = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'PRODUCT_MANAGER',
+            'STAFF',
+        ]);
+        if (! $canViewInactive && ! $category->is_active) {
+            abort(404);
+        }
 
         return new CategoryResource($category);
     }

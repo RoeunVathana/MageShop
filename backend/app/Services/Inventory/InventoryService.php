@@ -16,7 +16,41 @@ class InventoryService
      */
     public function listInventory(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Product::with(['inventory', 'category', 'brandRecord']);
+        $query = Product::query()
+            ->select([
+                'id',
+                'category_id',
+                'brand_id',
+                'name',
+                'brand',
+                'slug',
+                'sku',
+                'product_type',
+                'selling_price',
+                'cost_price',
+                'currency',
+                'price',
+                'discount_price',
+                'status',
+                'is_active',
+                'stock_quantity',
+                'low_stock_threshold',
+                'rating',
+                'reviews_count',
+                'image_url',
+                'description',
+                'weight',
+                'dimensions',
+                'specifications',
+                'gallery_urls',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'inventory:id,product_id,quantity_on_hand,quantity_reserved',
+                'category:id,name,slug,parent_id',
+                'brandRecord:id,name,slug,logo_url',
+            ]);
 
         // Search by product name or SKU
         if (! empty($filters['search'])) {
@@ -30,7 +64,7 @@ class InventoryService
         // Low stock filter
         if (! empty($filters['low_stock'])) {
             $query->whereHas('inventory', function ($q) {
-                $q->whereRaw('quantity_on_hand <= (SELECT low_stock_threshold FROM products WHERE products.id = inventories.product_id)');
+                $q->whereColumn('inventories.quantity_on_hand', '<=', 'products.low_stock_threshold');
             });
         }
 

@@ -34,23 +34,28 @@ export function Navbar() {
   ]
 
   const featuredCategories = [
-    { name: t('Electronics & Gadgets', 'គ្រឿងអេឡិចត្រូនិក'), icon: Laptop, count: t('1,420 items', '១,៤២០ មុខ'), slug: 'electronics' },
-    { name: t('Fashion & Apparel', 'សម្លៀកបំពាក់ និងម៉ូដ'), icon: Shirt, count: t('3,850 items', '៣,៨៥០ មុខ'), slug: 'fashion' },
-    { name: t('Home & Kitchen Appliances', 'សម្ភារៈផ្ទះបាយ និងគេហដ្ឋាន'), icon: Home, count: t('890 items', '៨៩០ មុខ'), slug: 'home-kitchen' },
-    { name: t('Smartphones & Tablets', 'ទូរស័ព្ទ និងថេប្លេត'), icon: Smartphone, count: t('640 items', '៦៤០ មុខ'), slug: 'phones' },
-    { name: t('Wearables & Smartwatches', 'នាឡិកាឆ្លាតវៃ'), icon: Watch, count: t('310 items', '៣១០ មុខ'), slug: 'wearables' },
-    { name: t('Health & Beauty', 'សុខភាព និងសម្រស់'), icon: HeartPulse, count: t('1,120 items', '១,១២០ មុខ'), slug: 'beauty' },
+    // These slugs match the canonical category tree returned by the API.
+    // The old short aliases did not resolve on the backend, so ProductService
+    // correctly fell back to an unfiltered catalog and showed every product.
+    { name: t('Electronics & Gadgets', 'គ្រឿងអេឡិចត្រូនិក'), icon: Laptop, count: t('1,420 items', '១,៤២០ មុខ'), slug: 'electronics-computers' },
+    { name: t('Fashion & Apparel', 'សម្លៀកបំពាក់ និងម៉ូដ'), icon: Shirt, count: t('3,850 items', '៣,៨៥០ មុខ'), slug: 'fashion-clothing' },
+    { name: t('Home & Kitchen Appliances', 'សម្ភារៈផ្ទះបាយ និងគេហដ្ឋាន'), icon: Home, count: t('890 items', '៨៩០ មុខ'), slug: 'home-living' },
+    { name: t('Smartphones & Tablets', 'ទូរស័ព្ទ និងថេប្លេត'), icon: Smartphone, count: t('640 items', '៦៤០ មុខ'), slug: 'mobile-phones-accessories' },
+    { name: t('Wearables & Smartwatches', 'នាឡិកាឆ្លាតវៃ'), icon: Watch, count: t('310 items', '៣១០ មុខ'), slug: 'smartwatches-bands' },
+    { name: t('Health & Beauty', 'សុខភាព និងសម្រស់'), icon: HeartPulse, count: t('1,120 items', '១,១២០ មុខ'), slug: 'beauty-personal-care' },
   ]
 
   return (
-    <nav className="relative z-[100] hidden overflow-visible border-b bg-background transition-colors duration-300 lg:block">
-      <div className="container mx-auto px-4 flex items-center justify-between gap-4">
+    <nav className="relative z-[100] hidden overflow-visible border-b bg-background/95 shadow-sm backdrop-blur-xl transition-colors duration-300 lg:block">
+      <div className="container mx-auto flex min-h-12 items-center justify-between gap-4 px-4">
         {/* Left: Animated Categories Dropdown Menu */}
         <div className={`relative shrink-0 ${isCategoryOpen ? 'z-[110]' : ''}`}>
           <button
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-            className="group relative overflow-hidden flex items-center gap-2 bg-gradient-to-r from-primary via-blue-600 to-indigo-600 hover:from-primary/95 hover:to-indigo-700 text-primary-foreground px-4 py-2.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 rounded-t-lg shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
+            aria-haspopup="menu"
+            aria-expanded={isCategoryOpen}
+            className="group relative flex h-12 items-center gap-2 overflow-hidden rounded-t-xl bg-gradient-to-r from-primary via-blue-600 to-indigo-600 px-4 text-xs font-bold uppercase tracking-wider whitespace-nowrap text-primary-foreground shadow-xs transition-all duration-300 hover:from-primary/95 hover:to-indigo-700 hover:shadow-md active:scale-[.98]"
           >
             {/* Shimmer sweep animation */}
             <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
@@ -67,30 +72,32 @@ export function Navbar() {
                 onClick={() => setIsCategoryOpen(false)}
               />
               <div
-                className="isolate absolute left-0 top-full z-[120] w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-b-2xl border border-border bg-white p-2 text-card-foreground shadow-[0_18px_45px_rgba(15,23,42,0.22)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out dark:bg-slate-900"
+                role="menu"
+                className="isolate absolute left-0 top-full z-[120] w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-b-2xl border border-border bg-white p-1.5 text-card-foreground shadow-[0_18px_45px_rgba(15,23,42,0.22)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out dark:bg-slate-900"
                 style={{ backgroundColor: 'hsl(var(--background))', opacity: 1, mixBlendMode: 'normal' }}
               >
-                <div className="flex items-center justify-between border-b px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center justify-between border-b border-border/70 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   <span>{t('Department Catalog', 'បញ្ជីប្រភេទទំនិញ')}</span>
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
                 </div>
-                <div className="max-h-[min(28rem,calc(100vh-8rem))] overflow-y-auto py-1 no-scrollbar">
+                <div className="dropdown-scrollbar max-h-[min(28rem,calc(100vh-8rem))] overflow-y-auto scroll-smooth py-1">
                   {featuredCategories.map((cat, idx) => {
                     const Icon = cat.icon
                     return (
                       <Link
                         key={cat.slug}
-                        to={`/categories`}
+                        to={`/products?category_id=${encodeURIComponent(cat.slug)}`}
                         onClick={() => setIsCategoryOpen(false)}
                         title={`${cat.name} · ${cat.count}`}
-                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[12px] leading-5 transition-all duration-200 hover:bg-primary/10 active:scale-[.98]"
+                        role="menuitem"
+                        className="group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[12px] leading-5 transition-all duration-200 hover:bg-primary/10 active:scale-[.98]"
                         style={{ animationDelay: `${idx * 40}ms` }}
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2.5">
                           <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/20 text-muted-foreground group-hover:text-primary transition-all duration-200 group-hover:scale-110 shadow-2xs">
                             <Icon className="w-4 h-4 transition-transform duration-200" />
                           </div>
-                          <span className="min-w-0 truncate font-medium text-foreground transition-colors group-hover:text-primary">{cat.name}</span>
+                          <span className="min-w-0 flex-1 font-medium text-foreground transition-colors group-hover:text-primary">{cat.name}</span>
                         </div>
                         <span className="shrink-0 text-[0.7rem] font-mono text-muted-foreground transition-colors group-hover:text-foreground">{cat.count}</span>
                       </Link>

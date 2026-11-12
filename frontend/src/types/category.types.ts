@@ -44,6 +44,7 @@ export interface Category {
   seo_description?: string | null
   seo_keywords?: string | null
   products_count?: number
+  attributes_count?: number
   children?: Category[]
   attributes?: CategoryAttribute[]
   created_at?: string

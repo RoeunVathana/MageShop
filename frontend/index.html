@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg" />
-    <link rel="apple-touch-icon" href="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Square branded favicon; wide hero artwork is not valid as a search favicon. -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="64x64" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <link rel="preload" as="image" href="/logo.jpg" fetchpriority="high" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     
     <!-- Primary SEO & Search Generative Optimization (SGO/EGO) -->
     <title>TYUSHOP | Cambodia Online Marketplace</title>
@@ -16,6 +20,7 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#2563eb" />
     <link rel="canonical" href="https://tyushop.blog/" />
+    <link rel="alternate" type="text/plain" href="https://tyushop.blog/llms.txt" title="TYUSHOP information for AI assistants" />
     <link rel="alternate" hreflang="en" href="https://tyushop.blog/" />
     <link rel="alternate" hreflang="km" href="https://tyushop.blog/" />
     <link rel="alternate" hreflang="x-default" href="https://tyushop.blog/" />
@@ -25,7 +30,7 @@
     <meta property="og:url" content="https://tyushop.blog/" />
     <meta property="og:title" content="TYUSHOP | Cambodia Online Marketplace" />
     <meta property="og:description" content="Shop authentic electronics, fashion, beauty, home goods and groceries in Cambodia with secure checkout and live GPS delivery tracking." />
-    <meta property="og:image" content="https://tyushop.blog/logo.png" />
+    <meta property="og:image" content="https://tyushop.blog/logo.jpg" />
     <meta property="og:image:alt" content="TYUSHOP Cambodia online marketplace" />
     <meta property="og:site_name" content="TYUSHOP" />
     <meta property="og:locale" content="en_US" />
@@ -36,15 +41,16 @@
     <meta name="twitter:url" content="https://tyushop.blog/" />
     <meta name="twitter:title" content="TYUSHOP | Cambodia Online Marketplace" />
     <meta name="twitter:description" content="Shop authentic products in Cambodia with Bakong KHQR, cash on delivery and live GPS delivery tracking." />
-    <meta name="twitter:image" content="https://tyushop.blog/logo.png" />
+    <meta name="twitter:image" content="https://tyushop.blog/logo.jpg" />
 
     <!-- Official Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 
     <!-- Google Fonts for English and Khmer (Khmer OS Battambang / Battambang, Kantumruy Pro, Plus Jakarta Sans) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@300;400;700;900&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://api.tyushop.blog" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <!-- Schema.org SGO/EGO Knowledge Graph (Entity & Search Generative Optimization) -->
     <script type="application/ld+json">
@@ -77,8 +83,8 @@
           "name": "TYUSHOP Cambodia",
           "alternateName": ["TyuShop", "tyushop.blog", "TYUSHOP Online Store"],
           "url": "https://tyushop.blog/",
-          "logo": "https://tyushop.blog/logo.png",
-          "image": "https://tyushop.blog/logo.png",
+          "logo": "https://tyushop.blog/favicon.svg",
+          "image": "https://tyushop.blog/logo.jpg",
           "description": "Enterprise e-commerce platform offering electronics, mobile phones, fashion, lifestyle, and consumer goods with instant Bakong KHQR payments.",
           "address": {
             "@type": "PostalAddress",

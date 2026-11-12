@@ -42,7 +42,7 @@ export function CategoryListPage() {
     setLoading(true)
     try {
       // Tree view for hierarchical tree display
-      const data = await categoryService.getCategories({ tree: true })
+      const data = await categoryService.getCategories({ tree: true, include_attribute_count: true })
       setCategories(data)
     } catch (err: any) {
       toast({
@@ -270,8 +270,8 @@ export function CategoryListPage() {
 
         {/* Hierarchical Tree Table */}
         <div className="border rounded-lg bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="dashboard-table-scroll">
+            <table className="dashboard-data-table w-full text-left text-xs">
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 w-10"></th>
@@ -342,9 +342,9 @@ export function CategoryListPage() {
                             {cat.slug}
                           </td>
                           <td className="p-3 text-center">
-                            {cat.attributes && cat.attributes.length > 0 ? (
+                            {(cat.attributes_count ?? cat.attributes?.length ?? 0) > 0 ? (
                               <Badge variant="outline" className="text-[10px] bg-primary/5">
-                                {cat.attributes.length} attributes
+                                {cat.attributes_count ?? cat.attributes?.length ?? 0} attributes
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground text-[11px]">—</span>
@@ -436,9 +436,9 @@ export function CategoryListPage() {
                                 {sub.slug}
                               </td>
                               <td className="p-3 text-center">
-                                {sub.attributes && sub.attributes.length > 0 ? (
+                                {(sub.attributes_count ?? sub.attributes?.length ?? 0) > 0 ? (
                                   <Badge variant="outline" className="text-[10px]">
-                                    {sub.attributes.length} attrs
+                                    {sub.attributes_count ?? sub.attributes?.length ?? 0} attrs
                                   </Badge>
                                 ) : (
                                   <span className="text-muted-foreground text-[11px]">—</span>

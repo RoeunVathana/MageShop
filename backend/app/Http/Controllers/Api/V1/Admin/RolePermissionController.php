@@ -123,6 +123,15 @@ class RolePermissionController extends Controller
 
         $targetUser = $id instanceof User ? $id : User::findOrFail($id);
 
+        $actor = Auth::guard('web')->user() ?? $request->user('sanctum') ?? $request->user();
+        $isSuperAdmin = $actor?->hasRole('SUPER_ADMIN') ?? false;
+
+        // An ADMIN can manage operational roles, but only SUPER_ADMIN may
+        // change an administrator's own access or grant the root role.
+        if (! $isSuperAdmin && $actor && (int) $actor->id === (int) $targetUser->id) {
+            abort(403, 'Administrators cannot modify their own roles.');
+        }
+
         $roleIds = [];
 
         // 1. From role_ids
@@ -179,6 +188,28 @@ class RolePermissionController extends Controller
                 'status' => 'error',
                 'message' => 'Please provide at least one valid role (e.g. STAFF, DELIVERY_DRIVER, SELLER, ADMIN).',
             ], 422);
+        }
+
+        if (! $isSuperAdmin) {
+            $protectedRoleIds = Role::whereIn('slug', ['super_admin', 'admin'])->pluck('id')->all();
+            if (! empty(array_intersect($protectedRoleIds, $roleIds))) {
+                abort(403, 'Only SUPER_ADMIN may grant ADMIN or SUPER_ADMIN roles.');
+            }
+
+            $requestedPermissionIds = $request->filled('permission_ids')
+                ? (array) $request->input('permission_ids')
+                : [];
+            $requestedPermissionNames = $request->filled('permissions')
+                ? (array) $request->input('permissions')
+                : [];
+            $grantsPermissionManagement = in_array('permissions.grant', $requestedPermissionNames, true)
+                || Permission::whereIn('id', $requestedPermissionIds)
+                    ->where('slug', 'permissions.grant')
+                    ->exists();
+
+            if ($grantsPermissionManagement) {
+                abort(403, 'Only SUPER_ADMIN may grant permission-management access.');
+            }
         }
 
         // Sync roles to user

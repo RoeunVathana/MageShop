@@ -136,6 +136,14 @@ class User extends Authenticatable
             return true;
         }
 
+        // ADMIN is the platform-wide business operator. Keep permission
+        // management itself reserved for SUPER_ADMIN so an admin can manage
+        // products, orders, inventory, settings, and operations without being
+        // able to escalate privilege assignments.
+        if ($this->hasRole('ADMIN') && strtolower($permission) !== 'permissions.grant') {
+            return true;
+        }
+
         return $this->roles->flatMap(function (Role $role) {
             return $role->relationLoaded('permissions') ? $role->permissions : $role->permissions()->get();
         })->contains(function (Permission $p) use ($permission) {

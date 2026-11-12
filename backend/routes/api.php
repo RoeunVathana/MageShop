@@ -53,16 +53,17 @@ Route::prefix('auth')->group(function () {
 
     // Email OTP Password Recovery
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:password-reset');
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])
-        ->middleware('throttle:10,1');
+        ->middleware('throttle:password-otp-verify');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])
         ->middleware('throttle:5,1');
 
     // Google OAuth 2.0 Socialite & Firebase
     Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
     Route::get('/google/callback', [AuthController::class, 'googleCallback']);
-    Route::post('/google/firebase', [AuthController::class, 'googleFirebase']);
+    Route::post('/google/firebase', [AuthController::class, 'googleFirebase'])
+        ->middleware('throttle:google-auth');
 
     // Authenticated Session & Self-Profile Endpoints
     Route::middleware('auth:sanctum')->group(function () {
@@ -175,7 +176,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/store-settings/currency', [StoreSettingsController::class, 'update']);
 
     // Admin Cloud Storage Media Upload
-    Route::post('/media/upload', [MediaController::class, 'upload']);
+    Route::post('/media/upload', [MediaController::class, 'upload'])
+        ->middleware('admin');
 
     // Admin Slide Banner Management
     Route::prefix('banners')->group(function () {
@@ -237,7 +239,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
 // Orders & Branded PDF Receipts
 Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show'])
     ->middleware('auth:sanctum');
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/admin/orders/{order}/resend-receipt', [ReceiptController::class, 'resend']);
     Route::post('/admin/dns/porkbun-configure', [CommerceEngagementController::class, 'configurePorkbunDns']);
 });

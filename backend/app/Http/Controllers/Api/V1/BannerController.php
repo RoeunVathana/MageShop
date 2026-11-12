@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BannerController extends Controller
 {
@@ -16,15 +17,26 @@ class BannerController extends Controller
     {
         $placement = $request->input('placement', 'hero');
 
-        $banners = Banner::active()
-            ->forPlacement($placement)
-            ->ordered()
-            ->get();
+        try {
+            $banners = Cache::store('redis')->remember(
+                'catalog:banners:'.sha1($placement),
+                now()->addMinutes(2),
+                fn () => Banner::active()
+                    ->forPlacement($placement)
+                    ->ordered()
+                    ->get()
+            );
+        } catch (\Throwable) {
+            $banners = Banner::active()
+                ->forPlacement($placement)
+                ->ordered()
+                ->get();
+        }
 
         return response()->json([
             'status' => 'success',
             'data' => $banners,
-        ]);
+        ])->header('Cache-Control', 'public, max-age=120, stale-while-revalidate=300');
     }
 
     /**

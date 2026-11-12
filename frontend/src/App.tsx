@@ -1,8 +1,10 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/context/ThemeProvider'
 import { ShopEngagementProvider } from '@/context/ShopEngagementContext'
 import { ToastProvider } from '@/components/ui/toast'
+import { SeoHead } from '@/components/seo/SeoHead'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
@@ -15,81 +17,56 @@ import {
   WarehouseOrAdminRoute,
 } from '@/components/auth/AdminOnlyRoute'
 
-// Storefront Pages
-import { HomePage } from '@/pages/storefront/HomePage'
-import { ProductsPage } from '@/pages/storefront/ProductsPage'
-import { ProductDetailPage } from '@/pages/storefront/ProductDetailPage'
-import { CategoriesPage } from '@/pages/storefront/CategoriesPage'
-import { BrandsPage } from '@/pages/storefront/BrandsPage'
-import { CartPage } from '@/pages/storefront/CartPage'
-import { WishlistPage } from '@/pages/storefront/WishlistPage'
-import { TrackOrderPage } from '@/pages/storefront/TrackOrderPage'
-import { AboutPage } from '@/pages/storefront/AboutPage'
-import { ContactPage } from '@/pages/storefront/ContactPage'
-import { FaqPage } from '@/pages/storefront/FaqPage'
+// Route-level code splitting keeps the public storefront fast and loads admin,
+// dashboard, and Telegram code only when the user actually opens those areas.
+const HomePage = lazy(() => import('@/pages/storefront/HomePage').then((m) => ({ default: m.HomePage })))
+const ProductsPage = lazy(() => import('@/pages/storefront/ProductsPage').then((m) => ({ default: m.ProductsPage })))
+const ProductDetailPage = lazy(() => import('@/pages/storefront/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })))
+const CategoriesPage = lazy(() => import('@/pages/storefront/CategoriesPage').then((m) => ({ default: m.CategoriesPage })))
+const BrandsPage = lazy(() => import('@/pages/storefront/BrandsPage').then((m) => ({ default: m.BrandsPage })))
+const CartPage = lazy(() => import('@/pages/storefront/CartPage').then((m) => ({ default: m.CartPage })))
+const WishlistPage = lazy(() => import('@/pages/storefront/WishlistPage').then((m) => ({ default: m.WishlistPage })))
+const TrackOrderPage = lazy(() => import('@/pages/storefront/TrackOrderPage').then((m) => ({ default: m.TrackOrderPage })))
+const AboutPage = lazy(() => import('@/pages/storefront/AboutPage').then((m) => ({ default: m.AboutPage })))
+const ContactPage = lazy(() => import('@/pages/storefront/ContactPage').then((m) => ({ default: m.ContactPage })))
+const FaqPage = lazy(() => import('@/pages/storefront/FaqPage').then((m) => ({ default: m.FaqPage })))
+const JoinSellerPage = lazy(() => import('@/pages/storefront/JoinSellerPage').then((m) => ({ default: m.JoinSellerPage })))
 
-// Auth Pages
-import { LoginPage } from '@/pages/auth/LoginPage'
-import { RegisterPage } from '@/pages/auth/RegisterPage'
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
-import { VerifyOtpPage } from '@/pages/auth/VerifyOtpPage'
-import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage').then((m) => ({ default: m.RegisterPage })))
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })))
+const VerifyOtpPage = lazy(() => import('@/pages/auth/VerifyOtpPage').then((m) => ({ default: m.VerifyOtpPage })))
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 
-// Dashboards
-import { CustomerDashboard } from '@/pages/dashboard/CustomerDashboard'
-import { SellerDashboard } from '@/pages/dashboard/SellerDashboard'
-import { AdminDashboard } from '@/pages/dashboard/AdminDashboard'
-import { StaffDashboard } from '@/pages/dashboard/StaffDashboard'
-import { DeliveryDashboard } from '@/pages/dashboard/DeliveryDashboard'
-import { WarehouseDashboard } from '@/pages/dashboard/WarehouseDashboard'
+const CustomerDashboard = lazy(() => import('@/pages/dashboard/CustomerDashboard').then((m) => ({ default: m.CustomerDashboard })))
+const SellerDashboard = lazy(() => import('@/pages/dashboard/SellerDashboard').then((m) => ({ default: m.SellerDashboard })))
+const AdminDashboard = lazy(() => import('@/pages/dashboard/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
+const StaffDashboard = lazy(() => import('@/pages/dashboard/StaffDashboard').then((m) => ({ default: m.StaffDashboard })))
+const DeliveryDashboard = lazy(() => import('@/pages/dashboard/DeliveryDashboard').then((m) => ({ default: m.DeliveryDashboard })))
+const WarehouseDashboard = lazy(() => import('@/pages/dashboard/WarehouseDashboard').then((m) => ({ default: m.WarehouseDashboard })))
 
-// Product & Inventory Administration
-import { ProductListPage } from '@/pages/admin/ProductListPage'
-import { ProductCreatePage } from '@/pages/admin/ProductCreatePage'
-import { ProductEditPage } from '@/pages/admin/ProductEditPage'
-import { InventoryListPage } from '@/pages/admin/InventoryListPage'
-import { InventoryHistoryPage } from '@/pages/admin/InventoryHistoryPage'
+const ProductListPage = lazy(() => import('@/pages/admin/ProductListPage').then((m) => ({ default: m.ProductListPage })))
+const ProductCreatePage = lazy(() => import('@/pages/admin/ProductCreatePage').then((m) => ({ default: m.ProductCreatePage })))
+const ProductEditPage = lazy(() => import('@/pages/admin/ProductEditPage').then((m) => ({ default: m.ProductEditPage })))
+const InventoryListPage = lazy(() => import('@/pages/admin/InventoryListPage').then((m) => ({ default: m.InventoryListPage })))
+const InventoryHistoryPage = lazy(() => import('@/pages/admin/InventoryHistoryPage').then((m) => ({ default: m.InventoryHistoryPage })))
+const CategoryListPage = lazy(() => import('@/pages/admin/CategoryListPage').then((m) => ({ default: m.CategoryListPage })))
+const CategoryCreatePage = lazy(() => import('@/pages/admin/CategoryCreatePage').then((m) => ({ default: m.CategoryCreatePage })))
+const CategoryEditPage = lazy(() => import('@/pages/admin/CategoryEditPage').then((m) => ({ default: m.CategoryEditPage })))
+const BrandListPage = lazy(() => import('@/pages/admin/BrandListPage').then((m) => ({ default: m.BrandListPage })))
+const AdminSecurityPage = lazy(() => import('@/pages/admin/AdminSecurityPage').then((m) => ({ default: m.AdminSecurityPage })))
+const AdminCurrencyPage = lazy(() => import('@/pages/admin/AdminCurrencyPage').then((m) => ({ default: m.AdminCurrencyPage })))
+const AdminCompanyLocationPage = lazy(() => import('@/pages/admin/AdminCompanyLocationPage').then((m) => ({ default: m.AdminCompanyLocationPage })))
+const BannerListPage = lazy(() => import('@/pages/admin/BannerListPage').then((m) => ({ default: m.BannerListPage })))
+const CouponListPage = lazy(() => import('@/pages/admin/CouponListPage').then((m) => ({ default: m.CouponListPage })))
+const AdminOrderListPage = lazy(() => import('@/pages/admin/AdminOrderListPage').then((m) => ({ default: m.AdminOrderListPage })))
+const AdminStoreSettingsPage = lazy(() => import('@/pages/admin/AdminStoreSettingsPage').then((m) => ({ default: m.AdminStoreSettingsPage })))
+const UserDirectoryPage = lazy(() => import('@/pages/admin/UserDirectoryPage').then((m) => ({ default: m.UserDirectoryPage })))
+const AdminSellersPage = lazy(() => import('@/pages/admin/AdminSellersPage').then((m) => ({ default: m.AdminSellersPage })))
 
-// Category & Attribute Administration
-import { CategoryListPage } from '@/pages/admin/CategoryListPage'
-import { CategoryCreatePage } from '@/pages/admin/CategoryCreatePage'
-import { CategoryEditPage } from '@/pages/admin/CategoryEditPage'
-
-// Brand Administration
-import { BrandListPage } from '@/pages/admin/BrandListPage'
-
-// API Token Keys & Security Administration
-import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage'
-
-// Currency & Store Settings Administration
-import { AdminCurrencyPage } from '@/pages/admin/AdminCurrencyPage'
-import { AdminCompanyLocationPage } from '@/pages/admin/AdminCompanyLocationPage'
-
-// Slide Banner Administration
-import { BannerListPage } from '@/pages/admin/BannerListPage'
-
-// Promotional Coupons & Discounts Administration
-import { CouponListPage } from '@/pages/admin/CouponListPage'
-
-// Customer Orders & Sales Administration
-import { AdminOrderListPage } from '@/pages/admin/AdminOrderListPage'
-
-// Store & Loyalty System Administration
-import { AdminStoreSettingsPage } from '@/pages/admin/AdminStoreSettingsPage'
-
-// Team & User Directory Administration
-import { UserDirectoryPage } from '@/pages/admin/UserDirectoryPage'
-import { AdminSellersPage } from '@/pages/admin/AdminSellersPage'
-import { JoinSellerPage } from '@/pages/storefront/JoinSellerPage'
-
-// Telegram Mini App
-import { TelegramApp } from '@/pages/telegram/TelegramApp'
-
-// Diagnostics
-import { DiagnosticsPage } from '@/pages/DiagnosticsPage'
-
-// Self-Profile & Account Management (Admin & All Users)
-import { ProfilePage } from '@/pages/profile/ProfilePage'
+const TelegramApp = lazy(() => import('@/pages/telegram/TelegramApp').then((m) => ({ default: m.TelegramApp })))
+const DiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage').then((m) => ({ default: m.DiagnosticsPage })))
+const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +84,8 @@ export default function App() {
         <ShopEngagementProvider>
           <ToastProvider>
             <Router>
+              <SeoHead />
+              <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading TYUSHOP…</div>}>
               <Routes>
                 {/* Official Telegram Mini App Interface */}
                 <Route path="/telegram-app" element={<TelegramApp />} />
@@ -216,7 +195,8 @@ export default function App() {
 
               {/* Default Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+              </Routes>
+              </Suspense>
           </Router>
         </ToastProvider>
       </ShopEngagementProvider>

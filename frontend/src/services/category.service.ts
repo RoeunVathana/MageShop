@@ -13,6 +13,7 @@ export const categoryService = {
    */
   async getCategories(params?: {
     tree?: boolean
+    include_attribute_count?: boolean
     search?: string
     is_active?: boolean
     parent_id?: number | string

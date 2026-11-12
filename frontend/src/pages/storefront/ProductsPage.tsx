@@ -35,6 +35,7 @@ import type { Product, ProductType } from '@/types/product.types'
 import type { Category } from '@/types/category.types'
 import type { Brand } from '@/types/brand.types'
 import { SeoHead } from '@/components/seo/SeoHead'
+import { Pagination } from '@/components/common/Pagination'
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -91,6 +92,7 @@ export function ProductsPage() {
 
   // Sync products when search params change
   useEffect(() => {
+    const controller = new AbortController()
     setLoading(true)
     setLoadError(null)
 
@@ -110,13 +112,16 @@ export function ProductsPage() {
     if (currentSortDir) params.sort_direction = currentSortDir
 
     productService
-      .getProducts(params)
+      .getProducts(params, { signal: controller.signal })
       .then((res) => {
         setProducts(res.data)
         setTotalProducts(res.meta?.total || res.data.length)
         setTotalPages(res.meta?.last_page || 1)
       })
       .catch((err) => {
+        if (controller.signal.aborted) {
+          return
+        }
         console.error('Failed to load products', err)
         setProducts([])
         setTotalProducts(0)
@@ -129,8 +134,12 @@ export function ProductsPage() {
         )
       })
       .finally(() => {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       })
+
+    return () => controller.abort()
   }, [searchParams, reloadKey])
 
   const updateParam = (key: string, value: string | null) => {
@@ -294,9 +303,9 @@ export function ProductsPage() {
                 </button>
 
                 {categories.map((cat) => {
-                  const isSelected = currentCategory === cat.id.toString()
+                  const isSelected = currentCategory === cat.id.toString() || currentCategory === cat.slug
                   const hasChildren = cat.children && cat.children.length > 0
-                  const isExpanded = expandedCategories[cat.id] || isSelected || cat.children?.some((c) => c.id.toString() === currentCategory)
+                  const isExpanded = expandedCategories[cat.id] || isSelected || cat.children?.some((c) => c.id.toString() === currentCategory || c.slug === currentCategory)
 
                   return (
                     <div key={cat.id} className="space-y-1">
@@ -327,7 +336,7 @@ export function ProductsPage() {
                       {hasChildren && isExpanded && (
                         <div className="pl-4 space-y-1 border-l ml-3 my-1">
                           {cat.children!.map((sub) => {
-                            const isSubSelected = currentCategory === sub.id.toString()
+                            const isSubSelected = currentCategory === sub.id.toString() || currentCategory === sub.slug
                             return (
                               <button
                                 key={sub.id}
@@ -527,39 +536,36 @@ export function ProductsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {products.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
           )}
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage <= 1}
-                onClick={() => updateParam('page', (currentPage - 1).toString())}
-                className="text-xs font-semibold"
-              >
-                {t('Previous', 'ទំព័រមុន')}
-              </Button>
-              <div className="text-xs font-semibold text-muted-foreground px-3">
-                {t('Page', 'ទំព័រ')} {currentPage} {t('of', 'នៃ')} {totalPages}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage >= totalPages}
-                onClick={() => updateParam('page', (currentPage + 1).toString())}
-                className="text-xs font-semibold"
-              >
-                {t('Next', 'ទំព័របន្ទាប់')}
-              </Button>
-            </div>
-          )}
+          {/* Responsive numbered pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalProducts}
+            perPage={12}
+            itemName={t('products', 'ទំនិញ')}
+            labels={{
+              showing: t('Showing', 'បង្ហាញ'),
+              to: t('to', 'ដល់'),
+              of: t('of', 'នៃ'),
+              perPage: t('Per page', 'ក្នុងមួយទំព័រ'),
+              previous: t('Prev', 'មុន'),
+              next: t('Next', 'បន្ទាប់'),
+              firstPage: t('First Page', 'ទំព័រដំបូង'),
+              lastPage: t('Last Page', 'ទំព័រចុងក្រោយ'),
+            }}
+            onPageChange={(page) => {
+              updateParam('page', page.toString())
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            className="mt-6 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-card/80"
+          />
         </main>
       </div>
     </div>

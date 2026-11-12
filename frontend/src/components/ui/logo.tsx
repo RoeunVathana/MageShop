@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface LogoProps {
@@ -15,6 +16,8 @@ export function Logo({
   showText = true,
   subtitle = 'MULTI • VENDOR',
 }: LogoProps) {
+  const [logoSrc, setLogoSrc] = useState('/logo.jpg')
+  const [logoFailed, setLogoFailed] = useState(false)
   const sizeMap = {
     sm: 'h-8 w-8 rounded-lg',
     md: 'h-9 w-9 sm:h-11 sm:w-11 rounded-xl',
@@ -42,17 +45,27 @@ export function Logo({
           imageClassName
         )}
       >
-        <img
-          src="/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg"
-          alt="TYUSHOP Official"
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-          onError={(e) => {
-            const target = e.currentTarget
-            if (target.src.indexOf('logo.jpg') === -1) {
-              target.src = '/logo.jpg'
-            }
-          }}
-        />
+        {logoFailed ? (
+          <span className="text-[10px] font-black tracking-tight text-primary" aria-hidden="true">
+            TYU
+          </span>
+        ) : (
+          <img
+            src={logoSrc}
+            alt="TYUSHOP Official"
+            width="64"
+            height="64"
+            decoding="async"
+            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={() => {
+              if (logoSrc !== '/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg') {
+                setLogoSrc('/Gemini_Generated_Image_1n7mgq1n7mgq1n7m.jpg')
+              } else {
+                setLogoFailed(true)
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Brand Wordmark & Tagline */}

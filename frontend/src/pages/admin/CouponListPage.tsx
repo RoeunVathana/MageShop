@@ -560,8 +560,8 @@ export function CouponListPage({ isSellerView = false }: CouponListPageProps) {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+              <div className="dashboard-table-scroll">
+                <table className="dashboard-data-table w-full text-xs">
                   <thead className="bg-muted/40 text-muted-foreground border-b text-[11px] font-semibold">
                     <tr>
                       <th className="py-3 px-4 text-left">{t('Coupon Code & Preview', 'កូដគូប៉ុង & ទម្រង់បង្ហាញ')}</th>

@@ -47,9 +47,7 @@ class OperationsController extends Controller
                 'phone_number' => $driver->phone_number,
                 'status' => $driver->status,
                 'roles' => $driver->roles->pluck('name')->values(),
-                'assigned_orders_count' => Order::where('driver_id', $driver->id)
-                    ->whereIn('status', ['shipped', 'out_for_delivery'])
-                    ->count(),
+                'assigned_orders_count' => (int) ($driver->assigned_orders_count ?? 0),
             ];
         })->values();
 
@@ -89,9 +87,7 @@ class OperationsController extends Controller
                     'phone_number' => $driver->phone_number,
                     'status' => $driver->status,
                     'roles' => $driver->roles->pluck('name')->values(),
-                    'assigned_orders_count' => Order::where('driver_id', $driver->id)
-                        ->whereIn('status', ['shipped', 'out_for_delivery'])
-                        ->count(),
+                    'assigned_orders_count' => (int) ($driver->assigned_orders_count ?? 0),
                 ];
             })->values(),
         ]);
@@ -106,6 +102,13 @@ class OperationsController extends Controller
         ]);
 
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        if (in_array($order->status, ['delivered', 'cancelled'], true)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Order #{$order->order_number} is already {$order->status} and cannot be assigned.",
+            ], 422);
+        }
+
         $driver = null;
         if (! empty($validated['driver_id'])) {
             $driver = $this->driversQuery()->whereKey((int) $validated['driver_id'])->first();
@@ -199,9 +202,13 @@ class OperationsController extends Controller
     protected function driversQuery()
     {
         return User::query()
+            ->select(['users.id', 'users.name', 'users.email', 'users.phone_number', 'users.status'])
             ->where('status', 'active')
             ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['delivery_driver', 'courier']))
             ->with('roles')
+            ->withCount(['assignedOrders as assigned_orders_count' => function ($query) {
+                $query->whereIn('status', ['shipped', 'out_for_delivery']);
+            }])
             ->orderBy('name');
     }
 }

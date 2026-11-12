@@ -349,8 +349,8 @@ export function AdminSellersPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+              <div className="dashboard-table-scroll">
+                <table className="dashboard-data-table w-full text-left text-xs">
                   <thead className="bg-muted/40 border-b text-muted-foreground font-semibold uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="px-6 py-3.5">{t('Store & Category', 'ហាង & ប្រភេទ')}</th>

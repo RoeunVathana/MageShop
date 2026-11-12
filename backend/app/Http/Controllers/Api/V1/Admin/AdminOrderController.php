@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AdminOrderController extends Controller
@@ -233,32 +234,33 @@ class AdminOrderController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        $totalOrders = Order::count();
-        $totalRevenue = (float) Order::whereIn('payment_status', ['completed', 'paid'])->sum('total_amount');
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $processingOrders = Order::where('status', 'processing')->count();
-        $shippedOrders = Order::where('status', 'shipped')->count();
-        $deliveredOrders = Order::where('status', 'delivered')->count();
-        $cancelledOrders = Order::where('status', 'cancelled')->count();
+        $stats = $this->rememberRedis('admin:system_stats', 10, function () {
+            $totalOrders = Order::count();
+            $totalRevenue = (float) Order::whereIn('payment_status', ['completed', 'paid'])->sum('total_amount');
+            $pendingOrders = Order::where('status', 'pending')->count();
+            $processingOrders = Order::where('status', 'processing')->count();
+            $shippedOrders = Order::where('status', 'shipped')->count();
+            $deliveredOrders = Order::where('status', 'delivered')->count();
+            $cancelledOrders = Order::where('status', 'cancelled')->count();
 
-        $totalProducts = Product::count();
-        $lowStockProducts = Product::where('stock_quantity', '<=', 5)->count();
-        $activeProducts = Product::where('is_active', true)->count();
+            $totalProducts = Product::count();
+            $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+            $activeProducts = Product::where('is_active', true)->count();
 
-        $totalUsers = User::count();
-        $totalCategories = Category::count();
-        $totalBrands = Brand::count();
-        $activeCoupons = Coupon::where('is_active', true)->count();
-        $activeBanners = Banner::where('is_active', true)->count();
+            $totalUsers = User::count();
+            $totalCategories = Category::count();
+            $totalBrands = Brand::count();
+            $activeCoupons = Coupon::where('is_active', true)->count();
+            $activeBanners = Banner::where('is_active', true)->count();
 
-        $recentOrders = Order::with(['items'])
-            ->orderBy('id', 'desc')
-            ->take(6)
-            ->get();
+            $recentOrders = Order::query()
+                ->select(['id', 'order_number', 'status', 'payment_status', 'total_amount', 'currency', 'customer_name', 'customer_phone', 'created_at'])
+                ->with(['items:id,order_id,product_name,quantity,unit_price,total_price'])
+                ->orderByDesc('id')
+                ->take(6)
+                ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            return [
                 'overview' => [
                     'total_revenue' => $totalRevenue,
                     'total_orders' => $totalOrders,
@@ -277,8 +279,22 @@ class AdminOrderController extends Controller
                     'active_banners' => $activeBanners,
                 ],
                 'recent_orders' => $recentOrders,
-            ],
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $stats,
         ]);
+    }
+
+    protected function rememberRedis(string $key, int $seconds, callable $callback): mixed
+    {
+        try {
+            return Cache::store('redis')->remember($key, now()->addSeconds($seconds), $callback);
+        } catch (\Throwable) {
+            return $callback();
+        }
     }
 }
 

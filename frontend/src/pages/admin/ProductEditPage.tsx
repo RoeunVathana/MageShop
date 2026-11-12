@@ -1074,8 +1074,8 @@ export function ProductEditPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border rounded-xl">
-                    <table className="w-full text-left text-xs">
+                  <div className="dashboard-table-scroll border rounded-xl">
+                    <table className="dashboard-data-table w-full text-left text-xs">
                       <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
                         <tr>
                           <th className="p-2.5">Variant SKU</th>

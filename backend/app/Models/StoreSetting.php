@@ -21,11 +21,17 @@ class StoreSetting extends Model
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        return Cache::remember("store_setting:{$key}", 3600, function () use ($key, $default) {
+        $callback = function () use ($key, $default) {
             $setting = self::where('setting_key', $key)->first();
 
             return $setting ? $setting->setting_value : $default;
-        });
+        };
+
+        try {
+            return Cache::store('redis')->remember("store_setting:{$key}", 3600, $callback);
+        } catch (\Throwable) {
+            return Cache::remember("store_setting:{$key}", 3600, $callback);
+        }
     }
 
     /**
@@ -38,6 +44,12 @@ class StoreSetting extends Model
             ['setting_value' => is_array($value) ? json_encode($value) : $value, 'store_id' => $storeId]
         );
 
+        try {
+            Cache::store('redis')->forget("store_setting:{$key}");
+            Cache::store('redis')->forget('store_settings:all');
+        } catch (\Throwable) {
+            // Fall back to the configured default cache store below.
+        }
         Cache::forget("store_setting:{$key}");
         Cache::forget('store_settings:all');
 
@@ -49,8 +61,14 @@ class StoreSetting extends Model
      */
     public static function getAll(): array
     {
-        return Cache::remember('store_settings:all', 3600, function () {
+        $callback = function () {
             return self::pluck('setting_value', 'setting_key')->toArray();
-        });
+        };
+
+        try {
+            return Cache::store('redis')->remember('store_settings:all', 3600, $callback);
+        } catch (\Throwable) {
+            return Cache::remember('store_settings:all', 3600, $callback);
+        }
     }
 }

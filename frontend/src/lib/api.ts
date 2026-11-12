@@ -2,17 +2,22 @@ import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type Ax
 import type { ApiErrorResponse } from '@/types/api.types'
 
 const getApiBaseUrl = (): string => {
+  // Keep local development usable even when the PHP API is not running on the
+  // same machine. A local API can still be selected explicitly with
+  // VITE_API_BASE_URL=http://localhost:8000/api/v1.
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+
   if (typeof window !== 'undefined') {
     const host = window.location.hostname
     if (host === 'localhost' || host === '127.0.0.1') {
-      return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+      return configuredBaseUrl || 'https://api.tyushop.blog/api/v1'
     }
     if (host.includes('railway.app')) {
       return 'https://mageshop-production.up.railway.app/api/v1'
     }
     return 'https://api.tyushop.blog/api/v1'
   }
-  return import.meta.env.VITE_API_BASE_URL || 'https://api.tyushop.blog/api/v1'
+  return configuredBaseUrl || 'https://api.tyushop.blog/api/v1'
 }
 
 const API_BASE_URL = getApiBaseUrl()
@@ -27,9 +32,10 @@ const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  // Railway cold starts and database-backed catalog queries can take a few seconds.
-  // Give the user a chance to receive the real response before showing an error state.
-  timeout: 20000,
+  // Railway cold starts and database-backed catalog queries can take 10–20 seconds.
+  // Keep the request alive long enough for a cold API instance to respond; individual
+  // catalog reads also retry transient failures in product.service.ts.
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

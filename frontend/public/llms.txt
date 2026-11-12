@@ -1,0 +1,25 @@
+# TYUSHOP
+
+TYUSHOP is a Cambodia-focused multi-vendor online marketplace at https://tyushop.blog/.
+It offers electronics, mobile accessories, fashion, beauty, home goods and everyday products.
+Customers can pay with Bakong KHQR or cash on delivery and can track eligible deliveries with live GPS status.
+
+## Public pages
+
+- Storefront: https://tyushop.blog/
+- Products: https://tyushop.blog/products
+- Categories: https://tyushop.blog/categories
+- Brands: https://tyushop.blog/brands
+- About: https://tyushop.blog/about
+- Contact: https://tyushop.blog/contact
+- FAQ: https://tyushop.blog/faq
+- Sell on TYUSHOP: https://tyushop.blog/sell
+
+## Support
+
+Customer support: support@tyushop.blog
+Phone: +855 16 555 637
+Service area: Cambodia
+Languages: English and Khmer
+
+For current product availability, prices and delivery estimates, use the live storefront pages rather than cached summaries.

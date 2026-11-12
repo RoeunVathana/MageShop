@@ -137,7 +137,7 @@ export function ProductListPage() {
     >
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
               <Package className="w-6 h-6 text-purple-600" />
@@ -147,7 +147,7 @@ export function ProductListPage() {
               Manage enterprise multi-vendor catalog, pricing tiers, and stock status.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
             <Link to="/admin/categories">
               <Button variant="outline" size="sm" className="gap-1.5 text-xs text-purple-600 border-purple-500/30">
                 <FolderTree className="w-4 h-4" />
@@ -170,7 +170,7 @@ export function ProductListPage() {
         </div>
 
         {/* Quick KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -220,7 +220,7 @@ export function ProductListPage() {
         </div>
 
         {/* Filters & Search Toolbar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-card p-3 rounded-lg border">
+        <div className="flex flex-col items-stretch justify-between gap-3 rounded-lg border bg-card p-3 md:flex-row md:items-center">
           <form onSubmit={handleSearchSubmit} className="flex-1 w-full md:max-w-xs relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input
@@ -316,19 +316,19 @@ export function ProductListPage() {
 
         {/* Products Table */}
         <div className="border rounded-lg bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="dashboard-table-scroll">
+            <table className="dashboard-data-table min-w-[1320px] w-full text-left text-xs">
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
-                  <th className="p-3 w-12">#</th>
-                  <th className="p-3">Product Name & SKU</th>
-                  <th className="p-3">Type & Brand</th>
-                  <th className="p-3">Department</th>
-                  <th className="p-3">Selling Price</th>
-                  <th className="p-3">Cost Price</th>
-                  <th className="p-3 text-center">Available Stock</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th className="w-12 whitespace-nowrap p-3">#</th>
+                  <th className="whitespace-nowrap p-3">Product Name & SKU</th>
+                  <th className="whitespace-nowrap p-3">Type & Brand</th>
+                  <th className="whitespace-nowrap p-3">Department</th>
+                  <th className="whitespace-nowrap p-3">Selling Price</th>
+                  <th className="whitespace-nowrap p-3">Cost Price</th>
+                  <th className="whitespace-nowrap p-3 text-center">Available Stock</th>
+                  <th className="whitespace-nowrap p-3">Status</th>
+                  <th className="whitespace-nowrap p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -350,9 +350,9 @@ export function ProductListPage() {
                   products.map((p) => {
                     const isLow = p.available_stock <= p.low_stock_threshold
                     return (
-                      <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+                      <tr key={p.id} className="align-top transition-colors hover:bg-muted/30">
                         <td className="p-3 font-mono text-muted-foreground">{p.id}</td>
-                        <td className="p-3">
+                        <td className="min-w-[280px] p-3">
                           <div className="flex items-center gap-3">
                             {p.image_url ? (
                               <img
@@ -366,7 +366,7 @@ export function ProductListPage() {
                               </div>
                             )}
                             <div>
-                              <div className="font-bold text-foreground hover:underline">
+                              <div className="max-w-[22rem] font-bold leading-snug text-foreground hover:underline line-clamp-2">
                                 <Link to={`/admin/products/${p.id}/edit`}>{p.name}</Link>
                               </div>
                               <span className="font-mono text-[11px] text-muted-foreground">

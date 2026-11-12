@@ -39,6 +39,14 @@ const customerNav: NavItem[] = [
   { label: 'Payment Methods', labelKm: 'វិធីសាស្ត្រទូទាត់', href: '/dashboard/customer/payments', icon: CreditCard },
 ]
 
+const customerOrderSteps = [
+  { keys: ['pending', 'confirmed'], label: 'Received', labelKm: 'បានទទួល' },
+  { keys: ['processing'], label: 'Preparing', labelKm: 'កំពុងរៀបចំ' },
+  { keys: ['shipped'], label: 'Dispatched', labelKm: 'បានចេញដំណើរ' },
+  { keys: ['out_for_delivery'], label: 'On route', labelKm: 'កំពុងដឹក' },
+  { keys: ['delivered'], label: 'Delivered', labelKm: 'បានដឹកដល់' },
+]
+
 export function CustomerDashboard() {
   const location = useLocation()
   const { loyaltyPoints, t } = useShopEngagement()
@@ -341,6 +349,9 @@ export function CustomerDashboard() {
                     : '—'
                   const date = ord.created_at ? new Date(ord.created_at).toLocaleDateString() : '—'
                   const isDelivered = status === 'delivered'
+                  const activeStep = status === 'cancelled'
+                    ? -1
+                    : Math.max(0, customerOrderSteps.findIndex((step) => step.keys.includes(status)))
 
                   return (
                     <div
@@ -384,6 +395,31 @@ export function CustomerDashboard() {
                         <p className="text-[11px] text-muted-foreground">
                           {t('Ordered on:', 'កាលបរិច្ឆេទ៖')} {date}
                         </p>
+                        {status === 'cancelled' ? (
+                          <div className="mt-3 rounded-lg bg-rose-500/10 px-3 py-2 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                            {t('This order was cancelled.', 'ការបញ្ជាទិញនេះត្រូវបានបោះបង់។')}
+                          </div>
+                        ) : (
+                          <div className="mt-3 flex min-w-[260px] items-start gap-1">
+                            {customerOrderSteps.map((step, index) => {
+                              const complete = index <= activeStep
+                              const current = index === activeStep
+                              return (
+                                <React.Fragment key={step.label}>
+                                  <div className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center">
+                                    <span className={`h-2.5 w-2.5 rounded-full border-2 ${complete ? 'border-primary bg-primary' : 'border-muted-foreground/30 bg-background'} ${current ? 'ring-4 ring-primary/10' : ''}`} />
+                                    <span className={`text-[9px] leading-tight ${complete ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                                      {t(step.label, step.labelKm)}
+                                    </span>
+                                  </div>
+                                  {index < customerOrderSteps.length - 1 && (
+                                    <span className={`mt-1 h-0.5 flex-1 rounded-full ${index < activeStep ? 'bg-primary' : 'bg-muted'}`} />
+                                  )}
+                                </React.Fragment>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 flex-wrap justify-end">

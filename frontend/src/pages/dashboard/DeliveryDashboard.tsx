@@ -14,7 +14,6 @@ import {
   Edit3,
   X,
   Save,
-  Check,
   User,
   Package,
   Layers,
@@ -32,6 +31,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Settings,
+  ArrowRight,
 } from 'lucide-react'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -91,6 +91,7 @@ export function DeliveryDashboard() {
   const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
   const canManagePricing = authService.isAdmin(currentUser)
   const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
+  const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
@@ -163,6 +164,7 @@ export function DeliveryDashboard() {
   const [loading, setLoading] = useState(false)
   const [broadcastingGps, setBroadcastingGps] = useState(false)
   const [isContinuousDelivering, setIsContinuousDelivering] = useState(false)
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
 
   // Location Management Modal State
   const [editingOrder, setEditingOrder] = useState<DeliveryOrder | null>(null)
@@ -645,31 +647,57 @@ export function DeliveryDashboard() {
     )
   }
 
-  // Quick Status Toggle: Mark as Delivered
-  const handleMarkDelivered = async (order: DeliveryOrder) => {
+  const getNextDeliveryStep = (status: string) => {
+    if (status === 'pending' || status === 'confirmed') {
+      return isDriverOnly
+        ? { status: 'shipped', label: 'Accept delivery' }
+        : { status: 'processing', label: 'Start processing' }
+    }
+    if (status === 'processing') return { status: 'shipped', label: 'Ready for dispatch' }
+    if (status === 'shipped') return { status: 'out_for_delivery', label: 'Start delivery' }
+    if (status === 'out_for_delivery') return { status: 'delivered', label: 'Mark delivered' }
+    return null
+  }
+
+  // Advance one controlled step in the shared staff -> driver -> customer workflow.
+  const handleAdvanceDelivery = async (order: DeliveryOrder) => {
+    const next = getNextDeliveryStep(order.status)
+    if (!next) return
+
+    setStatusUpdating(order.order_number)
     try {
       await api.post(`/delivery/orders/${encodeURIComponent(order.order_number)}/status`, {
-        status: 'delivered',
+        status: next.status,
       })
     } catch (error) {
       toast({
-        title: 'Could not mark order delivered',
+        title: 'Could not update delivery step',
         description: error instanceof Error ? error.message : 'The server did not confirm delivery.',
         type: 'error',
       })
+      setStatusUpdating(null)
       return
     }
 
-    const updated = { ...order, status: 'delivered', payment_status: 'paid' }
+    const updated = {
+      ...order,
+      status: next.status,
+      payment_status: next.status === 'delivered' && ['cash_on_delivery', 'cash_on_hand'].includes(order.payment_method)
+        ? 'paid'
+        : order.payment_status,
+    }
     setOrders((prev) => prev.map((o) => (o.order_number === order.order_number ? updated : o)))
     if (selectedOrder?.order_number === order.order_number) {
       setSelectedOrder(updated)
     }
     toast({
-      title: `🎉 Order #${order.order_number} Delivered!`,
-      description: 'Customer handover confirmed and payment settlement verified.',
+      title: `Order #${order.order_number} updated`,
+      description: next.status === 'delivered'
+        ? 'Customer handover confirmed and payment settlement verified.'
+        : `The next workflow step is ${next.status.replaceAll('_', ' ')}.`,
       type: 'success',
     })
+    setStatusUpdating(null)
   }
 
   // Continuous GPS Telemetry Streaming & Driver Progression Loop
@@ -775,14 +803,16 @@ export function DeliveryDashboard() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                Staff & Delivery Location Manager
+                {isDriverOnly ? 'My Delivery Route' : 'Staff & Delivery Location Manager'}
               </h1>
               <Badge className="bg-indigo-600 text-white text-[11px] font-bold">
                 Live GPS Active
               </Badge>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.
+              {isDriverOnly
+                ? 'Accept assigned parcels, share live GPS, and confirm customer handover from one route view.'
+                : 'Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.'}
             </p>
           </div>
 
@@ -1182,7 +1212,7 @@ export function DeliveryDashboard() {
                       <Phone className="w-3.5 h-3.5" /> Call Customer
                     </Button>
                   </a>
-                  {selectedOrder.status !== 'delivered' && (
+                  {getNextDeliveryStep(selectedOrder.status) && (
                     <>
                       <Button
                         size="sm"
@@ -1198,10 +1228,14 @@ export function DeliveryDashboard() {
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleMarkDelivered(selectedOrder)}
+                        onClick={() => handleAdvanceDelivery(selectedOrder)}
+                        disabled={statusUpdating === selectedOrder.order_number}
                         className="rounded-xl h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
                       >
-                        <Check className="w-3.5 h-3.5" /> Mark Delivered
+                        {statusUpdating === selectedOrder.order_number
+                          ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          : <ArrowRight className="w-3.5 h-3.5" />}
+                        {getNextDeliveryStep(selectedOrder.status)!.label}
                       </Button>
                     </>
                   )}

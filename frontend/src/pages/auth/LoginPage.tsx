@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, ExternalLink, AlertCircle, X } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, ArrowRight, ExternalLink, AlertCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -30,6 +30,37 @@ export function LoginPage() {
   const redirectParam = searchParams.get('redirect')
   const { toast } = useToast()
   const { t, language, setLanguage } = useShopEngagement()
+
+  const completeGoogleLogin = async (fbUser: {
+    email: string | null
+    displayName: string | null
+    photoURL: string | null
+    uid: string
+    getIdToken: () => Promise<string>
+  }) => {
+    const idToken = await fbUser.getIdToken()
+    const res = await authService.loginWithFirebase({
+      id_token: idToken,
+      email: fbUser.email,
+      name: fbUser.displayName,
+      avatar: fbUser.photoURL,
+      uid: fbUser.uid,
+    })
+
+    toast({
+      title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
+      description: t(`Signed in as ${fbUser.displayName || fbUser.email}!`, `បានចូលជា ${fbUser.displayName || fbUser.email}!`),
+      type: 'success',
+    })
+
+    if (redirectParam) {
+      navigate(redirectParam)
+    } else if (authService.isAdmin(res.data?.user)) {
+      navigate('/dashboard/admin')
+    } else {
+      navigate('/')
+    }
+  }
 
   // Process incoming Google OAuth Callback tokens or errors
   useEffect(() => {
@@ -107,6 +138,44 @@ export function LoginPage() {
     }
   }, [searchParams])
 
+  // Mobile browsers return here after signInWithRedirect(). Complete the
+  // Firebase-to-TYUSHOP API exchange before navigating away from the login page.
+  useEffect(() => {
+    let active = true
+
+    const finishRedirectLogin = async () => {
+      try {
+        const { getRedirectResult } = await import('firebase/auth')
+        const { auth } = await import('@/lib/firebase')
+        const result = await getRedirectResult(auth)
+
+        if (!active || !result?.user) return
+
+        setLoading(true)
+        await completeGoogleLogin(result.user)
+      } catch (redirectErr: any) {
+        if (!active) return
+
+        console.warn('Google redirect auth error:', redirectErr)
+        toast({
+          title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
+          description: redirectErr?.message || t(
+            'Google authorization returned, but TYUSHOP could not complete your sign-in.',
+            'Google បានអនុញ្ញាត ប៉ុន្តែ TYUSHOP មិនអាចបញ្ចប់ការចូលប្រើប្រាស់បានទេ។'
+          ),
+          type: 'error',
+        })
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void finishRedirectLogin()
+    return () => {
+      active = false
+    }
+  }, [])
+
   const {
     register,
     handleSubmit,
@@ -153,33 +222,19 @@ export function LoginPage() {
   const handleGoogleAuth = async () => {
     setLoading(true)
     try {
-      const { signInWithPopup } = await import('firebase/auth')
+      const { signInWithPopup, signInWithRedirect } = await import('firebase/auth')
       const { auth, googleAuthProvider } = await import('@/lib/firebase')
-      const result = await signInWithPopup(auth, googleAuthProvider)
-      const fbUser = result.user
-      const idToken = await fbUser.getIdToken()
 
-      const res = await authService.loginWithFirebase({
-        id_token: idToken,
-        email: fbUser.email,
-        name: fbUser.displayName,
-        avatar: fbUser.photoURL,
-        uid: fbUser.uid,
-      })
-
-      toast({
-        title: t('Sign In Successful', 'ចូលប្រើប្រាស់បានជោគជ័យ'),
-        description: t(`Signed in as ${fbUser.displayName || fbUser.email}!`, `បានចូលជា ${fbUser.displayName || fbUser.email}!`),
-        type: 'success',
-      })
-
-      if (redirectParam) {
-        navigate(redirectParam)
-      } else if (authService.isAdmin(res.data?.user)) {
-        navigate('/dashboard/admin')
-      } else {
-        navigate('/')
+      // Full-page redirect is more reliable than a popup on phones and avoids
+      // mobile browsers closing the OAuth window before the API exchange.
+      const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      if (isMobileBrowser) {
+        await signInWithRedirect(auth, googleAuthProvider)
+        return
       }
+
+      const result = await signInWithPopup(auth, googleAuthProvider)
+      await completeGoogleLogin(result.user)
     } catch (popupErr: any) {
       if (popupErr?.code === 'auth/popup-closed-by-user') {
         setLoading(false)
@@ -241,18 +296,6 @@ export function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-4 px-6 sm:px-8 pb-8">
-          {/* Phase S1 Protected Security Badge */}
-          <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-            <span className="leading-relaxed">
-              <strong>{t('Phase S1 Protected:', 'សុវត្ថិភាពខ្ពស់ S1:')}</strong>{' '}
-              {t(
-                'First-party HttpOnly cookie session via Laravel Sanctum with Argon2id hashing, anti-enumeration, and brute-force throttling.',
-                'ការចូលប្រើប្រាស់មានសុវត្ថិភាពខ្ពស់ ត្រូវបានការពារដោយការអ៊ិនគ្រីប SSL ២៥៦ ប៊ីត និងទប់ស្កាត់ការវាយប្រហារ។'
-              )}
-            </span>
-          </div>
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Email Field */}
             <div className="space-y-1.5">

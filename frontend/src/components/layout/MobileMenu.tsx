@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  X,
   Home,
   ShoppingBag,
   Grid,
@@ -23,8 +22,6 @@ import {
   HeartPulse,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Logo } from '@/components/ui/logo'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { authService } from '@/services/auth.service'
 import type { User } from '@/types/user.types'
@@ -37,6 +34,7 @@ interface MobileMenuProps {
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { language, setLanguage, currency, setCurrency, usdToKhrRate, t } = useShopEngagement()
   const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getStoredUser())
+  const [menuTop, setMenuTop] = useState(0)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -48,6 +46,29 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       window.removeEventListener('storage', syncAuth)
     }
   }, [])
+
+  useLayoutEffect(() => {
+    if (!isOpen) return
+
+    const navigation = document.getElementById('storefront-navigation')
+    if (!navigation) return
+
+    const updateMenuTop = () => {
+      setMenuTop(Math.max(0, Math.round(navigation.getBoundingClientRect().bottom)))
+    }
+
+    updateMenuTop()
+    const observer = new ResizeObserver(updateMenuTop)
+    observer.observe(navigation)
+    window.addEventListener('resize', updateMenuTop)
+    window.addEventListener('scroll', updateMenuTop, { passive: true })
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateMenuTop)
+      window.removeEventListener('scroll', updateMenuTop)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -80,34 +101,19 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   ]
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden flex">
+    <div
+      className="fixed inset-x-0 bottom-0 z-50 flex lg:hidden"
+      style={{ top: `${menuTop}px` }}
+    >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        style={{ top: `${menuTop}px` }}
         onClick={onClose}
       />
 
       {/* Tablet/Mobile Slide-Out Drawer */}
-      <div className="relative w-5/6 sm:w-96 max-w-sm bg-background h-full shadow-2xl flex flex-col p-4 sm:p-5 overflow-y-auto animate-in slide-in-from-left duration-300">
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b">
-          <Link to="/" onClick={onClose} className="flex items-center gap-2">
-            <Logo size="md" subtitle={t('Multi-Vendor', 'ផ្សារទំនើបអនឡាញ')} />
-          </Link>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="rounded-full h-8 w-8 sm:h-9 sm:w-9"
-              aria-label="Close Navigation Drawer"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-
+      <div className="relative z-10 w-5/6 max-w-sm bg-background shadow-2xl flex flex-col p-4 sm:p-5 overflow-y-auto overscroll-contain animate-in slide-in-from-left duration-300">
         {/* User Account / Auth Section */}
         {currentUser ? (
           <div className="my-3 p-3 rounded-2xl bg-card border shadow-xs space-y-2">

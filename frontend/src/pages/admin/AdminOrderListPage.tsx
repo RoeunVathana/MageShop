@@ -359,8 +359,8 @@ export function AdminOrderListPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="dashboard-table-scroll">
+                <table className="dashboard-data-table w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b bg-muted/40 text-muted-foreground font-bold uppercase tracking-wider text-[10.5px]">
                       <th className="py-3 px-4">{t('Order #', 'លេខបញ្ជាទិញ')}</th>

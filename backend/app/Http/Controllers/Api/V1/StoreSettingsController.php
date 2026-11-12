@@ -125,7 +125,7 @@ class StoreSettingsController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $publicSettings,
-        ]);
+        ])->header('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
     }
 
     /**
@@ -185,6 +185,7 @@ class StoreSettingsController extends Controller
             'contact_phone' => 'nullable|string|max:50',
             'support_email' => 'nullable|email|max:100',
             'business_email' => 'nullable|email|max:100',
+            'telegram_support_contact' => 'nullable|string|max:100',
             'default_currency' => 'nullable|string|in:USD,KHR',
             'usd_to_khr_rate' => 'nullable|numeric|min:1|max:100000',
             'allowed_currencies' => 'nullable|string|in:BOTH,USD_ONLY,KHR_ONLY,USD,KHR',

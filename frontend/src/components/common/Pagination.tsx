@@ -11,6 +11,16 @@ export interface PaginationProps {
   onPerPageChange?: (perPage: number) => void
   perPageOptions?: number[]
   itemName?: string
+  labels?: {
+    showing?: string
+    to?: string
+    of?: string
+    perPage?: string
+    previous?: string
+    next?: string
+    firstPage?: string
+    lastPage?: string
+  }
   className?: string
 }
 
@@ -23,6 +33,7 @@ export function Pagination({
   onPerPageChange,
   perPageOptions = [10, 20, 50, 100],
   itemName = 'items',
+  labels = {},
   className = '',
 }: PaginationProps) {
   // If there are no items at all, don't show pagination
@@ -61,6 +72,16 @@ export function Pagination({
   }
 
   const pages = getPageNumbers()
+  const {
+    showing = 'Showing',
+    to = 'to',
+    of = 'of',
+    perPage: perPageLabel = 'Per page',
+    previous = 'Prev',
+    next = 'Next',
+    firstPage = 'First Page',
+    lastPage = 'Last Page',
+  } = labels
 
   return (
     <div
@@ -69,14 +90,14 @@ export function Pagination({
       {/* Left: Summary and per-page selector */}
       <div className="flex flex-wrap items-center gap-3 text-muted-foreground w-full sm:w-auto justify-between sm:justify-start">
         <span className="font-medium">
-          Showing <strong className="text-foreground font-bold">{startItem}</strong> to{' '}
-          <strong className="text-foreground font-bold">{endItem}</strong> of{' '}
+          {showing} <strong className="text-foreground font-bold">{startItem}</strong> {to}{' '}
+          <strong className="text-foreground font-bold">{endItem}</strong> {of}{' '}
           <strong className="text-foreground font-bold">{totalItems}</strong> {itemName}
         </span>
 
         {onPerPageChange && (
           <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
-            <span className="text-[11px]">Per page:</span>
+            <span className="text-[11px]">{perPageLabel}:</span>
             <select
               value={perPage}
               onChange={(e) => onPerPageChange(Number(e.target.value))}
@@ -101,7 +122,7 @@ export function Pagination({
           disabled={currentPage <= 1}
           onClick={() => onPageChange(1)}
           className="h-8 w-8 p-0 hidden md:inline-flex rounded-lg"
-          title="First Page"
+          title={firstPage}
         >
           <ChevronsLeft className="w-3.5 h-3.5" />
         </Button>
@@ -115,7 +136,7 @@ export function Pagination({
           className="h-8 px-2.5 rounded-lg text-xs font-semibold gap-1"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Prev</span>
+          <span className="hidden sm:inline">{previous}</span>
         </Button>
 
         {/* Numbered Page Buttons */}
@@ -158,7 +179,7 @@ export function Pagination({
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           className="h-8 px-2.5 rounded-lg text-xs font-semibold gap-1"
         >
-          <span className="hidden sm:inline">Next</span>
+          <span className="hidden sm:inline">{next}</span>
           <ChevronRight className="w-3.5 h-3.5" />
         </Button>
 
@@ -169,7 +190,7 @@ export function Pagination({
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(totalPages)}
           className="h-8 w-8 p-0 hidden md:inline-flex rounded-lg"
-          title="Last Page"
+          title={lastPage}
         >
           <ChevronsRight className="w-3.5 h-3.5" />
         </Button>

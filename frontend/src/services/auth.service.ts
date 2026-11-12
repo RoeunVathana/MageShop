@@ -225,6 +225,9 @@ export const authService = {
     avatar?: string | null
     uid?: string | null
   }): Promise<ApiResponse<{ user: User; token: string }>> => {
+    // Google sign-in is a mutating API request too. Initialize Sanctum first
+    // so the deployed API receives the CSRF cookie/header pair from localhost.
+    await initCsrf()
     const res = await api.post<ApiResponse<{ user: User; token: string }>>('/auth/google/firebase', payload)
     if (res?.data?.user) {
       authService.saveSession(res.data.user, res.data.token)

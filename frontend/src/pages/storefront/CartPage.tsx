@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ShoppingCart,
@@ -306,6 +306,9 @@ export function CartPage() {
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'cash_on_delivery'>('bakong_khqr')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  // Keep the same key across a network retry so the API can replay the
+  // original checkout instead of creating a duplicate order.
+  const checkoutIdempotencyKeyRef = useRef<string | null>(null)
 
   // Real-time GPS Geolocation Detector
   const handleDetectCurrentLocation = () => {
@@ -736,6 +739,8 @@ export function CartPage() {
     const isKhqrFlow = paymentMethod === 'bakong_khqr' && finalTotal > 0
     const apiPaymentMethod = paymentMethod
     const snapshotItems = buildOrderItemsSnapshot()
+    const idempotencyKey = checkoutIdempotencyKeyRef.current || `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`
+    checkoutIdempotencyKeyRef.current = idempotencyKey
 
     try {
       const payload = {
@@ -756,6 +761,7 @@ export function CartPage() {
                 },
               ],
         coupon_code: appliedCoupon?.code || null,
+        idempotency_key: idempotencyKey,
         redeem_free_product_id: freeRewardItem?.id || null,
         customer_name: customerName,
         customer_email: customerEmail,
@@ -807,6 +813,7 @@ export function CartPage() {
           discount: discountAmount,
           items: snapshotItems,
         })
+        checkoutIdempotencyKeyRef.current = null
         toast({
           title: t('📲 Scan Bakong KHQR to Pay', '📲 សូមស្កេនកូដ Bakong KHQR ដើម្បីទូទាត់ប្រាក់'),
           description: t(
@@ -838,6 +845,7 @@ export function CartPage() {
           paid_at: res?.data?.order?.paid_at || '',
           items: snapshotItems,
         })
+        checkoutIdempotencyKeyRef.current = null
         toast({
           title: `🎉 Order #${orderNum} Confirmed!`,
           description: `Receipt emailed to ${customerEmail} & report sent to Telegram Admin!`,
@@ -887,7 +895,6 @@ export function CartPage() {
         `/orders/track/${encodeURIComponent(qrModalData.order_number)}/confirm-payment`,
         {
           context: 'qr_checkout',
-          customer_email: qrModalData.customer_email,
         }
       )
 

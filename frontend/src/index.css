@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Battambang:wght@300;400;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,10 +11,44 @@
   font-display: swap;
 }
 
+/* Use a real Khmer UI face instead of the browser's serif fallback.  The
+   fallback chain still keeps Latin labels clean when the font is loading. */
+@font-face {
+  font-family: 'Kantumruy Pro';
+  src: url('https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1urEs0.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kantumruy Pro';
+  src: url('https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1crEs0.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kantumruy Pro';
+  src: url('https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg2wq0s0.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kantumruy Pro';
+  src: url('https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg2Jq0s0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'Khmer OS Battambang';
   src: local('Khmer OS Battambang Bold'), local('Khmer OS Battambang'), local('Battambang Bold'), local('Battambang'),
-       url('https://fonts.gstatic.com/s/battambang/v24/uk-lEGe7raEw-HjkzZabNsmM5y58.woff2') format('woff2');
+       url('https://fonts.gstatic.com/s/battambang/v24/uk-mEGe7raEw-HjkzZabPnKp4g.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -105,11 +137,15 @@ html[lang="km"],
 html.khmer-mode,
 .khmer-mode,
 [lang="km"] {
-  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  /* Keep Latin text on the product font and fall back to a Khmer font only
+     when the glyph is unavailable. This prevents mixed Khmer/English labels
+     from switching to an inconsistent visual style. */
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   letter-spacing: normal !important;
   word-spacing: normal !important;
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
+  font-synthesis: none;
 }
 
 /* 
@@ -132,16 +168,46 @@ html.khmer-mode *::after,
 /* Relaxed vertical metrics for Khmer script so superscripts and subscripts are NEVER clipped */
 html[lang="km"] body,
 html.khmer-mode body {
-  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  font-size: 1.04rem;
-  line-height: 1.85 !important;
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 1rem;
+  line-height: 1.78 !important;
+  font-weight: 400;
+}
+
+/* One consistent Khmer rhythm across storefront, auth, dashboard, and
+   Telegram surfaces. The previous page-level utility overrides made Khmer
+   labels look cramped or vertically misaligned. */
+html[lang="km"] :where(p, li, label, th, td, dt, dd, button, [role="button"], a),
+html.khmer-mode :where(p, li, label, th, td, dt, dd, button, [role="button"], a) {
+  line-height: 1.65;
+}
+
+html[lang="km"] :where(h1, h2, h3, h4, h5, h6),
+html.khmer-mode :where(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.48 !important;
+  text-wrap: balance;
+}
+
+html[lang="km"] :where(input, select, textarea),
+html.khmer-mode :where(input, select, textarea) {
+  line-height: 1.55 !important;
+  font-weight: 400;
+}
+
+/* Keep technical values, IDs, SKUs, and prices legible in a real monospace
+   face; they should not inherit the Khmer display face. */
+html[lang="km"] :where(code, pre, .font-mono),
+html.khmer-mode :where(code, pre, .font-mono) {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0 !important;
 }
 
 html[lang="km"] h1, html.khmer-mode h1,
 html[lang="km"] h2, html.khmer-mode h2,
 html[lang="km"] h3, html.khmer-mode h3,
 html[lang="km"] h4, html.khmer-mode h4 {
-  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif !important;
   line-height: 1.6 !important;
   letter-spacing: normal !important;
 }
@@ -149,16 +215,16 @@ html[lang="km"] h4, html.khmer-mode h4 {
 html[lang="km"] button, html.khmer-mode button,
 html[lang="km"] .badge, html.khmer-mode .badge,
 html[lang="km"] [class*="badge"], html.khmer-mode [class*="badge"] {
-  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
-  line-height: 1.6 !important;
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif !important;
+  line-height: 1.45 !important;
   letter-spacing: normal !important;
 }
 
 html[lang="km"] input, html.khmer-mode input,
 html[lang="km"] select, html.khmer-mode select,
 html[lang="km"] textarea, html.khmer-mode textarea {
-  font-family: 'Khmer OS Battambang', 'Battambang', 'Kantumruy Pro', sans-serif !important;
-  line-height: 1.65 !important;
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif !important;
+  line-height: 1.5 !important;
 }
 
 /* Override tight Tailwind leading classes in Khmer mode */
@@ -167,33 +233,7 @@ html[lang="km"] .leading-tight, html.khmer-mode .leading-tight,
 html[lang="km"] .leading-snug, html.khmer-mode .leading-snug,
 html[lang="km"] .leading-3, html.khmer-mode .leading-3,
 html[lang="km"] .leading-4, html.khmer-mode .leading-4 {
-  line-height: 1.65 !important;
-}
-
-/* Upscale text in Khmer mode to ensure clarity and effortless readability ("add text size more") */
-html[lang="km"] .text-\[9px\], html.khmer-mode .text-\[9px\] {
-  font-size: 0.85rem !important;
-  line-height: 1.55rem !important;
-}
-html[lang="km"] .text-\[10px\], html.khmer-mode .text-\[10px\] {
-  font-size: 0.88rem !important;
-  line-height: 1.55rem !important;
-}
-html[lang="km"] .text-\[11px\], html.khmer-mode .text-\[11px\] {
-  font-size: 0.92rem !important;
-  line-height: 1.6rem !important;
-}
-html[lang="km"] .text-xs, html.khmer-mode .text-xs {
-  font-size: 0.94rem !important;
-  line-height: 1.65rem !important;
-}
-html[lang="km"] .text-sm, html.khmer-mode .text-sm {
-  font-size: 1.02rem !important;
-  line-height: 1.7rem !important;
-}
-html[lang="km"] .text-base, html.khmer-mode .text-base {
-  font-size: 1.08rem !important;
-  line-height: 1.75rem !important;
+  line-height: 1.55 !important;
 }
 
 /* Khmer has no spaces between words: never split labels marked nowrap (nav, buttons, badges) */
@@ -311,8 +351,9 @@ body {
 
 /* Account popover: keep every action reachable on short screens. */
 .account-menu-scroll {
-  max-height: min(42rem, calc(100dvh - 6rem));
-  overflow-y: scroll;
+  /* Leave room for the sticky header and mobile browser safe area. */
+  max-height: min(42rem, calc(100dvh - 5rem));
+  overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
@@ -331,6 +372,246 @@ body {
 .account-menu-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.35);
   border-radius: 9999px;
+}
+
+/* Keep the language control compact and prevent Khmer global button rules from
+   expanding or clipping the selector and its options. */
+html[lang="km"] .language-switcher-trigger,
+html.khmer-mode .language-switcher-trigger,
+html[lang="km"] .language-switcher-option,
+html.khmer-mode .language-switcher-option {
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  line-height: 1.55 !important;
+  letter-spacing: normal !important;
+}
+
+.language-switcher-menu {
+  min-width: 13rem;
+}
+
+.language-switcher-option {
+  min-height: 2.75rem;
+}
+
+.dropdown-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 9999px;
+}
+
+/* Product cards use a full-bleed media area. Keep every wrapper above the
+   image at zero spacing so global card styles cannot create an inset frame. */
+.product-card,
+.product-card > :first-child,
+.product-card-content,
+.product-card-media,
+.product-card-media > a,
+.product-card-media img {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Dashboard content has denser data tables and navigation than the storefront.
+   Keep Khmer readable without allowing the global accessibility scale-up to
+   make rows, badges, and side navigation wrap excessively. */
+html[lang="km"] .dashboard-shell .text-\[9px\],
+html.khmer-mode .dashboard-shell .text-\[9px\] {
+  font-size: 0.68rem !important;
+  line-height: 1.3 !important;
+}
+
+html[lang="km"] .dashboard-shell .text-\[10px\],
+html.khmer-mode .dashboard-shell .text-\[10px\] {
+  font-size: 0.72rem !important;
+  line-height: 1.4 !important;
+}
+
+html[lang="km"] .dashboard-shell .text-\[11px\],
+html.khmer-mode .dashboard-shell .text-\[11px\] {
+  font-size: 0.76rem !important;
+  line-height: 1.45 !important;
+}
+
+html[lang="km"] .dashboard-shell .text-xs,
+html.khmer-mode .dashboard-shell .text-xs {
+  font-size: 0.8rem !important;
+  line-height: 1.6 !important;
+}
+
+/* Dashboard data surfaces: Khmer labels must stay readable, while wide data
+   tables must scroll inside their card instead of squeezing numbers into
+   one-character columns or pushing the whole page off-screen. */
+.dashboard-shell {
+  min-width: 0;
+}
+
+/* Keep the enlarged admin navigation comfortable to scan while making the
+   long Khmer menu visibly scrollable instead of clipping its lower items. */
+.dashboard-sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.45) hsl(var(--muted) / 0.45);
+}
+
+.dashboard-sidebar-nav::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-sidebar-nav::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.45);
+  border-radius: 9999px;
+}
+
+.dashboard-sidebar-nav::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.45);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+}
+
+.dashboard-sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.75);
+  background-clip: padding-box;
+}
+
+html[lang="km"] .dashboard-shell,
+html.khmer-mode .dashboard-shell {
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.dashboard-shell table {
+  border-collapse: separate;
+  border-spacing: 0;
+  line-height: 1.45;
+}
+
+.dashboard-shell th,
+.dashboard-shell td {
+  vertical-align: middle;
+  overflow-wrap: normal;
+}
+
+.dashboard-shell th {
+  white-space: nowrap;
+}
+
+.dashboard-shell .dashboard-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.45) hsl(var(--muted) / 0.55);
+}
+
+.dashboard-shell .dashboard-table-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.dashboard-shell .dashboard-table-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.55);
+  border-radius: 9999px;
+}
+
+.dashboard-shell .dashboard-table-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.55), hsl(263 83% 58% / 0.7));
+  border: 2px solid hsl(var(--muted) / 0.55);
+  border-radius: 9999px;
+}
+
+.dashboard-shell .dashboard-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.85);
+}
+
+.dashboard-shell .dashboard-data-table {
+  min-width: 980px;
+}
+
+html[lang="km"] .dashboard-shell .dashboard-data-table,
+html.khmer-mode .dashboard-shell .dashboard-data-table {
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Compact status pills stay single-line in both Khmer and English. */
+.bilingual-badge {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-height: 1.2;
+}
+
+/* Storefront highlight cards: keep the title and status chip readable in
+   Khmer without allowing either one to split into broken narrow columns. */
+.feature-highlight-card {
+  min-height: calc(10.75rem + 10px);
+}
+
+.feature-highlight-card h3,
+.feature-highlight-description {
+  overflow-wrap: anywhere;
+}
+
+.feature-highlight-badge {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  max-width: 7rem;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25 !important;
+}
+
+html[lang="km"] .feature-highlight-card h3,
+html.khmer-mode .feature-highlight-card h3 {
+  color: hsl(var(--foreground));
+  font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700;
+  line-height: 1.5 !important;
+}
+
+html[lang="km"] .feature-highlight-description,
+html.khmer-mode .feature-highlight-description {
+  color: hsl(var(--muted-foreground));
+  line-height: 1.65 !important;
+}
+
+html[lang="km"] .feature-highlight-badge,
+html.khmer-mode .feature-highlight-badge {
+  font-family: 'Plus Jakarta Sans', 'Kantumruy Pro', sans-serif !important;
+  font-size: 0.66rem !important;
+}
+
+@media (max-width: 639px) {
+  .feature-highlight-card {
+    min-height: 0;
+  }
+}
+
+html.khmer-mode .bilingual-badge,
+html[lang="km"] .bilingual-badge {
+  font-family: 'Plus Jakarta Sans', 'Kantumruy Pro', sans-serif !important;
+  font-size: 0.66rem !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
 }
 
 /* Word break rules for bilingual text (Khmer & English) */

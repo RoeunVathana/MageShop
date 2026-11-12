@@ -462,8 +462,8 @@ export function BannerListPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="dashboard-table-scroll">
+              <table className="dashboard-data-table w-full text-left text-xs">
                 <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                   <tr>
                     <th className="py-2.5 px-4 w-12 text-center">Order</th>

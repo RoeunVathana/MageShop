@@ -10,7 +10,6 @@ use App\Models\Brand;
 use App\Services\Brand\BrandService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BrandController extends Controller
 {
@@ -24,7 +23,7 @@ class BrandController extends Controller
     /**
      * List brands with pagination and search.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->query('per_page', 20), 100);
         $filters = $request->query();
@@ -40,14 +39,30 @@ class BrandController extends Controller
 
         $brands = $this->brandService->listBrands($filters, $perPage);
 
-        return BrandResource::collection($brands);
+        $response = BrandResource::collection($brands)->response();
+        if (! $user) {
+            $response->headers->set('Cache-Control', 'public, max-age=60, stale-while-revalidate=180');
+        }
+
+        return $response;
     }
 
     /**
      * Show single brand with translations and product count.
      */
-    public function show(Brand $brand): JsonResponse
+    public function show(Request $request, Brand $brand): JsonResponse
     {
+        $user = $request->user('sanctum') ?? $request->user();
+        $canViewInactive = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'PRODUCT_MANAGER',
+            'STAFF',
+        ]);
+        if (! $canViewInactive && (! $brand->is_active || $brand->status !== 'active')) {
+            abort(404);
+        }
+
         $brand->load(['translations'])->loadCount('products');
 
         return response()->json([

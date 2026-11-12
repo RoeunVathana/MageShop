@@ -13,9 +13,11 @@ use App\Services\Receipt\PaymentReceiptPdfService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CommerceEngagementController extends Controller
 {
@@ -246,6 +248,7 @@ class CommerceEngagementController extends Controller
             'items.*.price' => ['required', 'numeric', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'coupon_code' => ['nullable', 'string', 'max:40'],
+            'idempotency_key' => ['nullable', 'string', 'max:80', 'regex:/^[A-Za-z0-9._:-]+$/'],
             'redeem_free_product_id' => ['nullable', 'integer'],
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_email' => ['nullable', 'email', 'max:150'],
@@ -253,7 +256,7 @@ class CommerceEngagementController extends Controller
             'delivery_address' => ['required', 'string', 'max:500'],
             'dest_lat' => ['nullable', 'numeric'],
             'dest_lng' => ['nullable', 'numeric'],
-            'payment_method' => ['nullable', 'string', 'max:40'],
+            'payment_method' => ['nullable', 'string', Rule::in(['bakong_khqr', 'cash_on_delivery'])],
             'initiate_qr' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
             'delivery_method_id' => ['nullable', 'string', 'max:60'],
@@ -262,6 +265,20 @@ class CommerceEngagementController extends Controller
         $user = $request->user('sanctum') ?? $request->user();
         if (! $user) {
             abort(401, 'Authentication is required to place an order.');
+        }
+
+        // A client may retry after a network timeout. Return the original
+        // checkout instead of creating a second order or awarding points twice.
+        $idempotencyKey = trim((string) ($validated['idempotency_key'] ?? ''));
+        if ($idempotencyKey !== '') {
+            $existingOrder = Order::with(['items', 'payments', 'receipt'])
+                ->where('user_id', $user->id)
+                ->where('checkout_idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existingOrder) {
+                return $this->existingCheckoutResponse($existingOrder);
+            }
         }
 
         $availablePoints = (int) ($user->loyalty_points ?? 0);
@@ -424,81 +441,111 @@ class CommerceEngagementController extends Controller
 
         $orderNumber = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
         $paymentMethod = $validated['payment_method'] ?? 'bakong_khqr';
-        $initiateQr = ! empty($validated['initiate_qr']) && $paymentMethod === 'bakong_khqr' && $totalAmount > 0;
-        $isCashOnArrival = in_array($paymentMethod, ['cash_on_delivery', 'cash_on_hand'], true) && $totalAmount > 0;
+        // Never let the client disable verification for a paid Bakong order.
+        // Any non-zero KHQR checkout must remain pending until the gateway
+        // confirms the exact amount, currency, and merchant account.
+        $initiateQr = $paymentMethod === 'bakong_khqr' && $totalAmount > 0;
+        $isCashOnArrival = $paymentMethod === 'cash_on_delivery' && $totalAmount > 0;
         $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'pending_qr' : 'paid');
-
-        $order = Order::create([
-            'order_number' => $orderNumber,
-            'user_id' => $user->id,
-            'status' => 'pending',
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'coupon_code' => $appliedCouponCode,
-            'points_earned' => $pointsEarned,
-            'points_redeemed' => $pointsRedeemed,
-            'free_reward_product_id' => $freeProduct ? $freeProduct->id : null,
-            'shipping_fee' => $shippingFee,
-            'tax' => $tax,
-            'total_amount' => $totalAmount,
-            'currency' => 'USD',
-            'payment_status' => $paymentStatus,
-            'payment_method' => $paymentMethod,
-            'customer_name' => $validated['customer_name'],
-            'customer_email' => $validated['customer_email'] ?? $user->email,
-            'customer_phone' => $validated['customer_phone'],
-            'delivery_address' => $validated['delivery_address'],
-            'notes' => $validated['notes'] ?? null,
-            'dest_lat' => isset($validated['dest_lat']) ? (float) $validated['dest_lat'] : null,
-            'dest_lng' => isset($validated['dest_lng']) ? (float) $validated['dest_lng'] : null,
-            'current_lat' => null,
-            'current_lng' => null,
-            'estimated_arrival' => null,
-        ]);
-
-        foreach ($orderItems as $item) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $item['product_id'],
-                'product_name' => $item['product_name'],
-                'product_sku' => $item['product_sku'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'total_price' => $item['total_price'],
-            ]);
-        }
-
-        // If a 100-point free item was redeemed, include it in OrderItems at $0.00
-        if ($freeProduct) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $freeProduct->id,
-                'product_name' => '[FREE 100-PT REWARD] '.$freeProduct->name,
-                'product_sku' => $freeProduct->sku,
-                'quantity' => 1,
-                'unit_price' => 0.00,
-                'total_price' => 0.00,
-            ]);
-        }
-
         $txnRef = 'TXN-'.strtoupper(Str::random(10));
-        $qrPaymentData = $this->buildBakongKhqrPayload($order->order_number, $totalAmount, $txnRef);
-        $payment = Payment::create([
-            'order_id' => $order->id,
-            'transaction_reference' => $txnRef,
-            'payment_method' => $order->payment_method,
-            'amount' => $totalAmount,
-            'currency' => 'USD',
-            'status' => $isCashOnArrival ? 'pending_arrival' : ($initiateQr ? 'pending_qr' : 'completed'),
-            'verified_at' => ($isCashOnArrival || $initiateQr) ? null : now(),
-            'khqr_string' => $initiateQr ? $qrPaymentData['qr_string'] : null,
-            'khqr_md5' => $initiateQr ? $qrPaymentData['md5'] : null,
-        ]);
+        $qrPaymentData = $initiateQr
+            ? $this->buildBakongKhqrPayload($orderNumber, $totalAmount, $txnRef)
+            : null;
 
-        // Deduct redeemed points immediately, but award purchase points only after payment is final.
-        $pointsAwardedNow = $paymentStatus === 'paid';
-        $newPointsBalance = max(0, $availablePoints - $pointsRedeemed + ($pointsAwardedNow ? $pointsEarned : 0));
-        if ($user) {
+        // Keep the order, payment, and loyalty ledger in one atomic write.
+        try {
+            [$order, $payment, $newPointsBalance] = DB::transaction(function () use (
+                $orderNumber,
+                $idempotencyKey,
+                $user,
+                $paymentStatus,
+                $subtotal,
+                $discount,
+                $appliedCouponCode,
+                $pointsEarned,
+                $pointsRedeemed,
+                $freeProduct,
+                $shippingFee,
+                $tax,
+                $totalAmount,
+                $paymentMethod,
+                $validated,
+                $orderItems,
+                $isCashOnArrival,
+                $initiateQr,
+                $qrPaymentData,
+                $txnRef,
+                $availablePoints
+            ): array {
+            $order = Order::create([
+                'order_number' => $orderNumber,
+                'checkout_idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
+                'user_id' => $user->id,
+                'status' => 'pending',
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'coupon_code' => $appliedCouponCode,
+                'points_earned' => $pointsEarned,
+                'points_redeemed' => $pointsRedeemed,
+                'free_reward_product_id' => $freeProduct ? $freeProduct->id : null,
+                'shipping_fee' => $shippingFee,
+                'tax' => $tax,
+                'total_amount' => $totalAmount,
+                'currency' => 'USD',
+                'payment_status' => $paymentStatus,
+                'payment_method' => $paymentMethod,
+                'customer_name' => $validated['customer_name'],
+                'customer_email' => $validated['customer_email'] ?? $user->email,
+                'customer_phone' => $validated['customer_phone'],
+                'delivery_address' => $validated['delivery_address'],
+                'notes' => $validated['notes'] ?? null,
+                'dest_lat' => isset($validated['dest_lat']) ? (float) $validated['dest_lat'] : null,
+                'dest_lng' => isset($validated['dest_lng']) ? (float) $validated['dest_lng'] : null,
+                'current_lat' => null,
+                'current_lng' => null,
+                'estimated_arrival' => null,
+            ]);
+
+            foreach ($orderItems as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $item['product_name'],
+                    'product_sku' => $item['product_sku'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total_price' => $item['total_price'],
+                ]);
+            }
+
+            // If a 100-point free item was redeemed, include it in OrderItems at $0.00
+            if ($freeProduct) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $freeProduct->id,
+                    'product_name' => '[FREE 100-PT REWARD] '.$freeProduct->name,
+                    'product_sku' => $freeProduct->sku,
+                    'quantity' => 1,
+                    'unit_price' => 0.00,
+                    'total_price' => 0.00,
+                ]);
+            }
+
+            $payment = Payment::create([
+                'order_id' => $order->id,
+                'transaction_reference' => $txnRef,
+                'payment_method' => $order->payment_method,
+                'amount' => $totalAmount,
+                'currency' => 'USD',
+                'status' => $isCashOnArrival ? 'pending_arrival' : ($initiateQr ? 'pending_qr' : 'completed'),
+                'verified_at' => ($isCashOnArrival || $initiateQr) ? null : now(),
+                'khqr_string' => $qrPaymentData['qr_string'] ?? null,
+                'khqr_md5' => $qrPaymentData['md5'] ?? null,
+            ]);
+
+            // Deduct redeemed points immediately, but award purchase points only after payment is final.
+            $pointsAwardedNow = $paymentStatus === 'paid';
+            $newPointsBalance = max(0, $availablePoints - $pointsRedeemed + ($pointsAwardedNow ? $pointsEarned : 0));
             $user->loyalty_points = $newPointsBalance;
             $user->save();
 
@@ -525,6 +572,25 @@ class CommerceEngagementController extends Controller
                     'updated_at' => now(),
                 ]);
             }
+
+                return [$order, $payment, $newPointsBalance];
+            });
+        } catch (QueryException $exception) {
+            // Two retries can pass the initial lookup before either request
+            // commits. Let the unique key win, then replay that order instead
+            // of returning a database error or awarding points twice.
+            $isUniqueViolation = in_array((string) $exception->getCode(), ['23000', '23505'], true);
+            if ($idempotencyKey !== '' && $isUniqueViolation) {
+                $existingOrder = Order::where('user_id', $user->id)
+                    ->where('checkout_idempotency_key', $idempotencyKey)
+                    ->first();
+
+                if ($existingOrder) {
+                    return $this->existingCheckoutResponse($existingOrder);
+                }
+            }
+
+            throw $exception;
         }
         $receiptService = app(PaymentReceiptPdfService::class);
         $telegramNotified = false;
@@ -553,7 +619,8 @@ class CommerceEngagementController extends Controller
                 'email_status' => $receipt ? $receipt->email_status : 'pending',
                 'email_sent_to' => $order->customer_email,
                 'telegram_admin_notified' => $telegramNotified,
-                'qr_payment' => $qrPaymentData,
+                // Do not expose a QR payload for COD or zero-value orders.
+                'qr_payment' => $initiateQr ? $qrPaymentData : null,
                 'payment_mode' => $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'awaiting_qr_scan' : 'pay_now'),
                 'amount_due_on_arrival' => $isCashOnArrival ? $totalAmount : 0.00,
                 'points_earned' => $pointsEarned,
@@ -562,6 +629,96 @@ class CommerceEngagementController extends Controller
                 'tracking_url' => "/track-order/{$order->order_number}",
             ],
         ], 201);
+    }
+
+    /**
+     * Return a safe, replayable checkout response for an idempotent retry.
+     */
+    protected function existingCheckoutResponse(Order $order): JsonResponse
+    {
+        $order->loadMissing(['items', 'payments', 'receipt']);
+        $payment = $order->payments->sortByDesc('id')->first();
+        $receipt = $order->receipt;
+        // Payment gateway payloads must never be serialized in the order API.
+        $order->unsetRelation('payments');
+        $order->unsetRelation('receipt');
+        $isPendingQr = $order->payment_method === 'bakong_khqr'
+            && $order->payment_status === 'pending_qr'
+            && $payment
+            && ! empty($payment->khqr_string)
+            && ! empty($payment->khqr_md5);
+
+        $qrPayment = null;
+        if ($isPendingQr) {
+            $qrPayment = [
+                'qr_string' => $payment->khqr_string,
+                'md5' => $payment->khqr_md5,
+                'merchant_account' => (string) StoreSetting::get('bakong_account_id', config('bakong.account_id', '')),
+                'merchant_name' => (string) StoreSetting::get('bakong_merchant_name', config('bakong.merchant_name', 'TYUSHOP')),
+                'merchant_city' => (string) StoreSetting::get('company_city', config('bakong.merchant_city', 'Phnom Penh')),
+                'amount_usd' => (float) $order->total_amount,
+                'amount_khr' => (int) round((float) $order->total_amount * 4100),
+                'order_number' => $order->order_number,
+                'transaction_reference' => $payment->transaction_reference,
+                'expires_in_seconds' => 900,
+            ];
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => $isPendingQr
+                ? "Bakong KHQR is ready for Order #{$order->order_number}."
+                : "Checkout already processed for Order #{$order->order_number}.",
+            'data' => [
+                'order' => $order,
+                'receipt_number' => $receipt?->receipt_number,
+                'transaction_reference' => $payment?->transaction_reference,
+                'email_status' => $receipt?->email_status ?? 'pending',
+                'email_sent_to' => $order->customer_email,
+                'telegram_admin_notified' => false,
+                'qr_payment' => $qrPayment,
+                'payment_mode' => $order->payment_status === 'cash_on_delivery'
+                    ? 'cash_on_delivery'
+                    : ($isPendingQr ? 'awaiting_qr_scan' : 'pay_now'),
+                'amount_due_on_arrival' => $order->payment_status === 'cash_on_delivery'
+                    ? (float) $order->total_amount
+                    : 0.00,
+                'points_earned' => (int) ($order->points_earned ?? 0),
+                'points_redeemed' => (int) ($order->points_redeemed ?? 0),
+                'new_loyalty_points' => (int) ($order->user?->loyalty_points ?? 0),
+                'tracking_url' => "/track-order/{$order->order_number}",
+            ],
+        ]);
+    }
+
+    /**
+     * Return a non-mutating response when payment was already confirmed.
+     */
+    protected function alreadyConfirmedPaymentResponse(Order $order): JsonResponse
+    {
+        $order->loadMissing(['items', 'payments', 'receipt']);
+        $payment = $order->payments->sortByDesc('id')->first();
+        $receipt = $order->receipt;
+        $order->unsetRelation('payments');
+        $order->unsetRelation('receipt');
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => "Payment already confirmed for Order #{$order->order_number}.",
+            'data' => [
+                'order_number' => $order->order_number,
+                'order' => $order,
+                'receipt_number' => $receipt?->receipt_number,
+                'transaction_reference' => $payment?->transaction_reference,
+                'email_status' => $receipt?->email_status,
+                'email_sent_to' => $order->customer_email,
+                'telegram_admin_notified' => false,
+                'payment_status' => 'paid',
+                'amount_due_on_arrival' => 0.00,
+                'status' => $order->status,
+                'new_loyalty_points' => (int) ($order->user?->loyalty_points ?? 0),
+            ],
+        ]);
     }
 
     /**
@@ -891,22 +1048,48 @@ class CommerceEngagementController extends Controller
         }
         $this->authorizeOrderAccess($request, $order);
 
-        $receipt = null;
-        $payment = null;
-        $telegramNotified = false;
-
-        $isQrCheckoutConfirm = ($request->input('context') === 'qr_checkout') || ($order->payment_status === 'pending_qr');
-
-        if (! $isQrCheckoutConfirm
-            && ! in_array($order->payment_method, ['cash_on_delivery', 'cash_on_hand'], true)
-        ) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Only cash-on-delivery orders can be confirmed at handover.',
-            ], 422);
+        // Confirmation is idempotent. Do not resend receipts or award loyalty
+        // points when a customer retries after a slow network response.
+        if (in_array($order->payment_status, ['paid', 'completed'], true)) {
+            return $this->alreadyConfirmedPaymentResponse($order);
         }
 
-        $payment = Payment::where('order_id', $order->id)->latest()->first();
+        $user = $request->user('sanctum') ?? $request->user();
+        $isQrCheckoutConfirm = $order->payment_method === 'bakong_khqr'
+            && $order->payment_status === 'pending_qr';
+
+        if (! $isQrCheckoutConfirm) {
+            // A customer must never be able to self-confirm cash receipt or
+            // mark an order delivered. Only an authorized delivery operator
+            // can complete the handover from the delivery dashboard.
+            $canConfirmHandover = $user
+                && method_exists($user, 'hasAnyRole')
+                && $user->hasAnyRole([
+                    'SUPER_ADMIN',
+                    'ADMIN',
+                    'STAFF',
+                    'ORDER_MANAGER',
+                    'LOGISTICS_MANAGER',
+                    'DISPATCHER',
+                    'DELIVERY_DRIVER',
+                    'COURIER',
+                ]);
+            if (! $canConfirmHandover) {
+                abort(403, 'Only authorized delivery staff can confirm cash handover.');
+            }
+
+            $this->authorizeDeliveryOrder($request, $order);
+            if ($order->payment_method !== 'cash_on_delivery') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only cash-on-delivery orders can be confirmed at handover.',
+                ], 422);
+            }
+        }
+
+        $payment = Payment::where('order_id', $order->id)->latest('id')->first();
+        $verificationPayload = null;
+        $gatewayReference = null;
         if ($isQrCheckoutConfirm) {
             if (! $payment || ! $payment->khqr_md5) {
                 return response()->json([
@@ -958,53 +1141,91 @@ class CommerceEngagementController extends Controller
                 ], 422);
             }
 
-            $payment->gateway_payload = $verificationPayload;
-            $payment->transaction_reference = (string) ($transaction['hash'] ?? $payment->transaction_reference);
-            $payment->save();
+            $gatewayReference = trim((string) ($transaction['hash'] ?? ''));
+            if ($gatewayReference !== ''
+                && Payment::where('transaction_reference', $gatewayReference)
+                    ->where('id', '!=', $payment->id)
+                    ->exists()
+            ) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This Bakong transaction has already been used for another order.',
+                ], 422);
+            }
         }
-
-        if (! empty($request->input('customer_email'))) {
-            $order->customer_email = (string) $request->input('customer_email');
-        }
-
-        $order->payment_status = 'paid';
-        if (! $isQrCheckoutConfirm) {
-            $order->status = 'delivered';
-        }
-        $order->save();
-
-        Payment::where('order_id', $order->id)->update([
-            'status' => 'completed',
-            'verified_at' => now(),
-        ]);
-        $payment = Payment::where('order_id', $order->id)->latest()->first();
 
         $newPointsBalance = null;
-        $customer = $order->user;
-        if ($customer) {
-            $earnedAlready = DB::table('loyalty_transactions')
-                ->where('order_id', $order->id)
-                ->where('type', 'earned')
-                ->exists();
+        $alreadyConfirmedDuringRace = false;
 
-            if (! $earnedAlready) {
-                $pointsEarned = (int) ($order->points_earned ?? self::POINTS_PER_PURCHASE);
-                $customer->increment('loyalty_points', $pointsEarned);
-                DB::table('loyalty_transactions')->insert([
-                    'user_id' => $customer->id,
-                    'order_id' => $order->id,
-                    'type' => 'earned',
-                    'points' => $pointsEarned,
-                    'description' => "Earned +{$pointsEarned} points from Order #{$order->order_number}",
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+        DB::transaction(function () use (
+            &$order,
+            &$payment,
+            &$newPointsBalance,
+            &$alreadyConfirmedDuringRace,
+            $isQrCheckoutConfirm,
+            $verificationPayload,
+            $gatewayReference
+        ): void {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if (in_array($lockedOrder->payment_status, ['paid', 'completed'], true)) {
+                $alreadyConfirmedDuringRace = true;
+                $order = $lockedOrder->load('items');
+                $payment = Payment::where('order_id', $lockedOrder->id)->latest('id')->first();
+                return;
             }
 
-            $newPointsBalance = (int) $customer->fresh()->loyalty_points;
+            $lockedPayment = Payment::where('order_id', $lockedOrder->id)->latest('id')->lockForUpdate()->firstOrFail();
+            if ($isQrCheckoutConfirm) {
+                $lockedPayment->gateway_payload = $verificationPayload;
+                if ($gatewayReference !== '') {
+                    $lockedPayment->transaction_reference = $gatewayReference;
+                }
+            }
+            $lockedPayment->status = 'completed';
+            $lockedPayment->verified_at = now();
+            $lockedPayment->save();
+
+            $lockedOrder->payment_status = 'paid';
+            if (! $isQrCheckoutConfirm) {
+                $lockedOrder->status = 'delivered';
+            }
+            $lockedOrder->save();
+
+            $customer = $lockedOrder->user()->lockForUpdate()->first();
+            if ($customer) {
+                $earnedAlready = DB::table('loyalty_transactions')
+                    ->where('order_id', $lockedOrder->id)
+                    ->where('type', 'earned')
+                    ->exists();
+
+                if (! $earnedAlready) {
+                    $pointsEarned = (int) ($lockedOrder->points_earned ?? self::POINTS_PER_PURCHASE);
+                    $customer->increment('loyalty_points', $pointsEarned);
+                    DB::table('loyalty_transactions')->insert([
+                        'user_id' => $customer->id,
+                        'order_id' => $lockedOrder->id,
+                        'type' => 'earned',
+                        'points' => $pointsEarned,
+                        'description' => "Earned +{$pointsEarned} points from Order #{$lockedOrder->order_number}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $newPointsBalance = (int) $customer->fresh()->loyalty_points;
+            }
+
+            $order = $lockedOrder->load('items');
+            $payment = $lockedPayment->fresh();
+        });
+
+        if ($alreadyConfirmedDuringRace) {
+            return $this->alreadyConfirmedPaymentResponse($order);
         }
 
         // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
+        $receipt = null;
+        $telegramNotified = false;
         $receipt = app(PaymentReceiptPdfService::class)->generateAndSend($order, $payment);
         $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
 
@@ -1311,8 +1532,18 @@ class CommerceEngagementController extends Controller
             'driver_name' => ['nullable', 'string', 'max:120'],
             'driver_phone' => ['nullable', 'string', 'max:60'],
             'driver_vehicle' => ['nullable', 'string', 'max:120'],
-            'status' => ['nullable', 'in:pending,shipped,out_for_delivery,delivered,cancelled'],
+            'status' => ['nullable', 'in:pending,confirmed,processing,shipped,out_for_delivery,delivered,cancelled'],
         ]);
+
+        if (isset($validated['status']) && $validated['status'] !== $order->status) {
+            $transitionError = $this->deliveryStatusTransitionError($request, $order, $validated['status']);
+            if ($transitionError) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $transitionError,
+                ], 422);
+            }
+        }
 
         foreach ($validated as $field => $val) {
             if ($val !== null) {
@@ -1345,9 +1576,17 @@ class CommerceEngagementController extends Controller
         $this->authorizeDeliveryOrder($request, $order);
 
         $validated = $request->validate([
-            'status' => ['required', 'in:pending,shipped,out_for_delivery,delivered,cancelled'],
+            'status' => ['required', 'in:pending,confirmed,processing,shipped,out_for_delivery,delivered,cancelled'],
         ]);
         $status = $validated['status'];
+
+        $transitionError = $this->deliveryStatusTransitionError($request, $order, $status);
+        if ($transitionError) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $transitionError,
+            ], 422);
+        }
 
         if ($status === 'delivered' && $order->payment_status === 'pending_qr') {
             return response()->json([
@@ -1433,6 +1672,42 @@ class CommerceEngagementController extends Controller
         if (! $isStaff && ! $isAssignedDriver && ((int) $order->user_id !== (int) $user->id)) {
             abort(403, 'You do not have access to this order.');
         }
+    }
+
+    protected function deliveryStatusTransitionError(Request $request, Order $order, string $status): ?string
+    {
+        if ($status === $order->status) {
+            return null;
+        }
+
+        $user = $request->user('sanctum') ?? $request->user();
+        $isDriver = $user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER']);
+        $isSupervisor = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'STAFF',
+            'ORDER_MANAGER',
+            'LOGISTICS_MANAGER',
+            'DISPATCHER',
+        ]);
+
+        // Keep the customer-facing lifecycle monotonic. A driver can accept a
+        // prepared order, start the route, and complete the handover. Staff
+        // can prepare/dispatch, but only an assigned driver (or supervisor)
+        // can move a parcel through the live delivery steps.
+        $allowedNextStatuses = match ($order->status) {
+            'pending', 'confirmed' => $isDriver ? ['shipped'] : ['processing', 'shipped', 'cancelled'],
+            'processing' => $isDriver ? ['shipped'] : ['shipped', 'cancelled'],
+            'shipped' => $isDriver || $isSupervisor ? ['out_for_delivery', 'delivered'] : [],
+            'out_for_delivery' => $isDriver || $isSupervisor ? ['delivered'] : [],
+            default => [],
+        };
+
+        if (! in_array($status, $allowedNextStatuses, true)) {
+            return "Order #{$order->order_number} cannot move from {$order->status} to {$status} in the current workflow.";
+        }
+
+        return null;
     }
 
     protected function authorizeDeliveryStaff(Request $request): void

@@ -23,9 +23,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Khmer OS Battambang"', '"Battambang"', 'sans-serif'],
-        serif: ['"Khmer OS Battambang"', '"Battambang"', 'serif'],
-        mono: ['"Khmer OS Battambang"', '"Battambang"', 'monospace'],
+        // Keep Latin UI text on the product font. Khmer mode is applied by
+        // index.css with Kantumruy Pro, so English labels do not inherit a
+        // Khmer-only face through Tailwind's font-sans utility.
+        sans: ['"Plus Jakarta Sans"', '"Kantumruy Pro"', 'system-ui', 'sans-serif'],
+        serif: ['Georgia', '"Plus Jakarta Sans"', 'serif'],
+        mono: ['"SFMono-Regular"', 'Consolas', '"Liberation Mono"', 'monospace'],
       },
       fontSize: {
         xs: ['0.875rem', { lineHeight: '1.5rem' }],     // 14px (up from 12px)

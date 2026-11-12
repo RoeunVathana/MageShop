@@ -1,24 +1,23 @@
 import { Sparkles, Phone, ChevronDown, Check } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 
 export function AnnouncementBar() {
-  const { language, setLanguage, currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
+  const { currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
   const { toast } = useToast()
-  const [langOpen, setLangOpen] = useState(false)
   const [currOpen, setCurrOpen] = useState(false)
-  const langRef = useRef<HTMLDivElement>(null)
+  const [currMenuPosition, setCurrMenuPosition] = useState({ top: 0, left: 0, width: 208 })
   const currRef = useRef<HTMLDivElement>(null)
+  const currMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setLangOpen(false)
-      }
       if (currRef.current && !currRef.current.contains(e.target as Node)) {
+        if (currMenuRef.current?.contains(e.target as Node)) return
         setCurrOpen(false)
       }
     }
@@ -26,18 +25,54 @@ export function AnnouncementBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelectLanguage = (nextLang: 'EN' | 'KM') => {
-    setLanguage(nextLang)
-    setLangOpen(false)
-    toast({
-      title: nextLang === 'KM' ? 'បានប្តូរទៅភាសាខ្មែរ (Khmer) 🇰🇭' : 'Switched to English (EN) 🇺🇸',
-      description:
-        nextLang === 'KM'
-          ? 'គេហទំព័រត្រូវបានប្តូរទៅជាភាសាខ្មែរដោយជោគជ័យ។'
-          : 'Storefront language updated to English.',
-      type: 'info',
-    })
-  }
+  useLayoutEffect(() => {
+    if (!currOpen) return
+
+    const updateMenuPosition = () => {
+      const rect = currRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const viewportGutter = 8
+      const menuGap = 8
+      const menuWidth = Math.min(208, window.innerWidth - viewportGutter * 2)
+      const maxLeft = Math.max(viewportGutter, window.innerWidth - menuWidth - viewportGutter)
+      const left = Math.min(
+        Math.max(viewportGutter, rect.right - menuWidth),
+        maxLeft
+      )
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      const menuHeight = currMenuRef.current?.getBoundingClientRect().height ?? 0
+      const preferredTop = rect.bottom + menuGap
+      const fitsBelow = preferredTop + menuHeight <= viewportHeight - viewportGutter
+      const top = fitsBelow
+        ? preferredTop
+        : Math.max(
+            viewportGutter,
+            Math.min(
+              rect.top - menuHeight - menuGap,
+              viewportHeight - menuHeight - viewportGutter
+            )
+          )
+
+      setCurrMenuPosition({
+        top: Math.round(top),
+        left: Math.round(left),
+        width: Math.round(menuWidth),
+      })
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+    window.visualViewport?.addEventListener('resize', updateMenuPosition)
+    window.visualViewport?.addEventListener('scroll', updateMenuPosition)
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+      window.visualViewport?.removeEventListener('resize', updateMenuPosition)
+      window.visualViewport?.removeEventListener('scroll', updateMenuPosition)
+    }
+  }, [currOpen])
 
   const handleSelectCurrency = (nextCurr: 'USD' | 'KHR') => {
     setCurrency(nextCurr)
@@ -59,8 +94,8 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="relative z-50 bg-slate-900 text-slate-200 text-xs py-1.5 sm:py-2 px-2.5 sm:px-4 border-b border-slate-800">
-      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap overflow-hidden">
+    <div className="relative z-[160] isolate border-b border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-200 sm:px-4 sm:py-2">
+      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap overflow-visible">
         {/* Left message */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
           <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 shadow-xs">
@@ -90,9 +125,7 @@ export function AnnouncementBar() {
             {/* Currency Selector */}
             <div
               ref={currRef}
-              className="relative shrink-0"
-              onMouseEnter={() => setCurrOpen(true)}
-              onMouseLeave={() => setCurrOpen(false)}
+              className={currOpen ? 'relative z-[3000] shrink-0' : 'relative shrink-0'}
             >
               <button
                 type="button"
@@ -100,6 +133,7 @@ export function AnnouncementBar() {
                   setCurrOpen((prev) => !prev)
                 }}
                 aria-expanded={currOpen}
+                aria-haspopup="menu"
                 aria-label="Select Currency"
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-white border border-slate-700 shadow-xs transition-all cursor-pointer shrink-0 whitespace-nowrap text-xs font-bold"
               >
@@ -110,14 +144,24 @@ export function AnnouncementBar() {
                 <ChevronDown className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 shrink-0 ${currOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {currOpen && (
-                <div className="absolute right-0 top-full pt-1 z-50 min-w-36">
-                  <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 text-slate-200 overflow-hidden text-xs">
+              {currOpen && typeof document !== 'undefined' && createPortal(
+                <div
+                  ref={currMenuRef}
+                  role="menu"
+                  className="pointer-events-auto fixed z-[2147483647] animate-in fade-in slide-in-from-top-1 duration-150"
+                  style={{
+                    top: currMenuPosition.top,
+                    left: currMenuPosition.left,
+                    width: currMenuPosition.width,
+                  }}
+                >
+                  <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 py-1.5 text-xs text-slate-200 shadow-2xl shadow-slate-950/30">
                     {(allowedCurrencies === 'BOTH' || allowedCurrencies === 'USD_ONLY') && (
                       <button
                         type="button"
                         onClick={() => handleSelectCurrency('USD')}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
+                        role="menuitem"
+                        className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-slate-700 cursor-pointer ${
                           currency === 'USD' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
                         }`}
                       >
@@ -130,7 +174,8 @@ export function AnnouncementBar() {
                       <button
                         type="button"
                         onClick={() => handleSelectCurrency('KHR')}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors cursor-pointer ${
+                        role="menuitem"
+                        className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-slate-700 cursor-pointer ${
                           currency === 'KHR' ? 'text-white font-bold bg-slate-700/60' : 'text-slate-300'
                         }`}
                       >
@@ -151,7 +196,8 @@ export function AnnouncementBar() {
                       ⚙ {t('Custom Rate (Admin)', 'កំណត់អត្រា (Admin)')}
                     </Link>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           </div>

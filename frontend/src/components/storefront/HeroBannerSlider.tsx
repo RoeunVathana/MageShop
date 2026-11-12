@@ -11,7 +11,6 @@ import {
   Shield,
   Pause,
   Play,
-  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -92,6 +91,7 @@ export function HeroBannerSlider() {
   const [banners, setBanners] = useState<Banner[]>(defaultFallbackBanners)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [failedVideoKey, setFailedVideoKey] = useState<string | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const { t, language } = useShopEngagement()
   const tb = (text?: string | null) =>
@@ -124,6 +124,9 @@ export function HeroBannerSlider() {
   }, [banners.length, isPaused, currentIndex])
 
   const currentBanner = banners[currentIndex] || defaultFallbackBanners[0]
+  const currentVideoKey = currentBanner.video_url
+    ? `${currentBanner.id}:${currentBanner.video_url}`
+    : null
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % banners.length)
@@ -151,7 +154,7 @@ export function HeroBannerSlider() {
     <section
       className={`relative overflow-hidden bg-gradient-to-b ${getGradientClass(
         currentBanner.background_style
-      )} py-6 sm:py-10 md:py-16 border-b transition-colors duration-1000`}
+      )} pt-2 pb-6 sm:pt-4 sm:pb-10 md:pt-6 md:pb-16 border-b transition-colors duration-1000`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -236,14 +239,20 @@ export function HeroBannerSlider() {
           <div className="lg:col-span-5 relative">
             <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl p-2 bg-gradient-to-tr from-primary/30 via-purple-500/20 to-indigo-500/30 shadow-2xl backdrop-blur-xl border border-white/20 dark:border-slate-800">
               <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video lg:aspect-[4/3] group">
-                {currentBanner.video_url ? (
+                {currentBanner.video_url && currentVideoKey !== failedVideoKey ? (
                   <video
-                    key={currentBanner.video_url}
+                    key={`${currentBanner.id}-${currentBanner.video_url}`}
                     src={mediaService.resolveMediaUrl(currentBanner.video_url)}
+                    poster={currentBanner.image_url ? mediaService.resolveMediaUrl(currentBanner.image_url) : undefined}
                     autoPlay
                     loop
                     muted
                     playsInline
+                    preload="metadata"
+                    onError={() => {
+                      if (currentVideoKey) setFailedVideoKey(currentVideoKey)
+                    }}
+                    aria-label={tb(currentBanner.title)}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : currentBanner.image_url ? (
@@ -251,6 +260,8 @@ export function HeroBannerSlider() {
                     key={currentBanner.image_url}
                     src={mediaService.resolveMediaUrl(currentBanner.image_url)}
                     alt={tb(currentBanner.title)}
+                    fetchPriority="high"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (

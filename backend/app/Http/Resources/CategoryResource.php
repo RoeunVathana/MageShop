@@ -24,6 +24,7 @@ class CategoryResource extends JsonResource
             'seo_description' => $this->seo_description,
             'seo_keywords' => $this->seo_keywords,
             'products_count' => $this->whenCounted('products', fn () => $this->products_count),
+            'attributes_count' => $this->whenCounted('attributes', fn () => $this->attributes_count),
             'children' => CategoryResource::collection($this->whenLoaded('children')),
             'attributes' => CategoryAttributeResource::collection($this->whenLoaded('attributes')),
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,

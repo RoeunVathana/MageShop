@@ -250,8 +250,8 @@ export function InventoryListPage() {
 
         {/* Inventory Table */}
         <div className="border rounded-lg bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="dashboard-table-scroll">
+            <table className="dashboard-data-table w-full text-left text-xs">
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 w-12">#</th>

@@ -57,4 +57,10 @@ export const staffService = {
       driver_id: driverId,
     })
   },
+
+  async updateOrderStatus(orderNumber: string, status: string): Promise<{ status: string; message?: string; data?: unknown }> {
+    return api.post<{ status: string; message?: string; data?: unknown }>(`/delivery/orders/${encodeURIComponent(orderNumber)}/status`, {
+      status,
+    })
+  },
 }

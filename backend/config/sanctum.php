@@ -50,7 +50,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Personal access tokens are a fallback for non-cookie clients. Keep them
+    // short-lived so a leaked token cannot grant indefinite API access.
+    'expiration' => (int) env('SANCTUM_TOKEN_EXPIRATION', 60),
 
     /*
     |--------------------------------------------------------------------------

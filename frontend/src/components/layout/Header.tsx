@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -33,6 +34,13 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAccountOpen, setIsAccountOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getStoredUser())
+  const [accountMenuPosition, setAccountMenuPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 288,
+  })
+  const accountButtonRef = useRef<HTMLButtonElement>(null)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { cartCount, favoritesCount, loyaltyPoints, t } = useShopEngagement()
 
@@ -45,6 +53,55 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
       window.removeEventListener('storage', syncAuth)
     }
   }, [])
+
+  useLayoutEffect(() => {
+    if (!isAccountOpen) return
+
+    const updateAccountMenuPosition = () => {
+      const buttonRect = accountButtonRef.current?.getBoundingClientRect()
+      if (!buttonRect) return
+
+      const viewportGutter = 8
+      const menuGap = 8
+      const menuWidth = Math.min(288, window.innerWidth - viewportGutter * 2)
+      const maxLeft = Math.max(viewportGutter, window.innerWidth - menuWidth - viewportGutter)
+      const left = Math.min(
+        Math.max(viewportGutter, buttonRect.right - menuWidth),
+        maxLeft
+      )
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      const menuHeight = accountMenuRef.current?.getBoundingClientRect().height ?? 0
+      const preferredTop = buttonRect.bottom + menuGap
+      const fitsBelow = preferredTop + menuHeight <= viewportHeight - viewportGutter
+      const top = fitsBelow
+        ? preferredTop
+        : Math.max(
+            viewportGutter,
+            Math.min(
+              buttonRect.top - menuHeight - menuGap,
+              viewportHeight - menuHeight - viewportGutter
+            )
+          )
+
+      setAccountMenuPosition({
+        top: Math.round(top),
+        left: Math.round(left),
+        width: Math.round(menuWidth),
+      })
+    }
+
+    updateAccountMenuPosition()
+    window.addEventListener('resize', updateAccountMenuPosition)
+    window.addEventListener('scroll', updateAccountMenuPosition, true)
+    window.visualViewport?.addEventListener('resize', updateAccountMenuPosition)
+    window.visualViewport?.addEventListener('scroll', updateAccountMenuPosition)
+    return () => {
+      window.removeEventListener('resize', updateAccountMenuPosition)
+      window.removeEventListener('scroll', updateAccountMenuPosition, true)
+      window.visualViewport?.removeEventListener('resize', updateAccountMenuPosition)
+      window.visualViewport?.removeEventListener('scroll', updateAccountMenuPosition)
+    }
+  }, [isAccountOpen])
 
   const isAdmin = authService.isAdmin(currentUser)
 
@@ -63,7 +120,13 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-30 w-full border-b border-border bg-background">
+    <header
+      className={`relative w-full border-b border-border bg-background ${
+        // Lift the whole header above the desktop navbar while the account
+        // menu is open; a child z-index cannot beat a higher sibling layer.
+        isAccountOpen ? 'z-[150]' : 'z-30'
+      }`}
+    >
       <div className="container mx-auto flex min-h-16 items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-2.5 lg:min-h-[4.25rem] lg:gap-4">
         {/* Left: Mobile/iPad Navigation Toggle & Brand Logo */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
@@ -188,7 +251,10 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
             <div className={`relative shrink-0 ${isAccountOpen ? 'z-50' : ''}`}>
               <Button
                 variant="ghost"
-                onClick={() => setIsAccountOpen(!isAccountOpen)}
+                ref={accountButtonRef}
+                onClick={() => setIsAccountOpen((previous) => !previous)}
+                aria-expanded={isAccountOpen}
+                aria-haspopup="menu"
                 title={currentUser ? currentUser.name : t('Account & Menu', 'គណនី & ម៉ឺនុយ')}
                 className="group h-8 sm:h-9 px-1.5 sm:px-2 rounded-xl hover:bg-primary/15 text-primary active:scale-90 transition-all duration-200 flex items-center gap-1 shrink-0"
               >
@@ -206,13 +272,24 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                 <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ${isAccountOpen ? 'rotate-180' : ''}`} />
               </Button>
 
-            {isAccountOpen && (
+            {isAccountOpen && typeof document !== 'undefined' && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-slate-950/10"
-                  onClick={() => setIsAccountOpen(false)}
+                  className="fixed inset-0 z-[9998] bg-slate-950/10"
+                  onMouseDown={() => setIsAccountOpen(false)}
+                  aria-hidden="true"
                 />
-                <div className="account-menu-scroll absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border bg-white dark:bg-slate-900 p-2 text-card-foreground shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                <div
+                  ref={accountMenuRef}
+                  role="menu"
+                  aria-label={t('Account menu', 'ម៉ឺនុយគណនី')}
+                  className="account-menu-scroll pointer-events-auto fixed rounded-2xl border border-border bg-white p-2 text-card-foreground shadow-2xl shadow-slate-950/20 z-[9999] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 dark:bg-slate-900"
+                  style={{
+                    top: accountMenuPosition.top,
+                    left: accountMenuPosition.left,
+                    width: accountMenuPosition.width,
+                  }}
+                >
                   {/* User Profile Header */}
                   <div className="px-3 py-2.5 border-b flex items-center gap-2.5">
                     {currentUser?.avatar_url ? (
@@ -430,7 +507,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                     </div>
                   )}
                 </div>
-              </>
+              </>,
+              document.body
             )}
           </div>
         </div>

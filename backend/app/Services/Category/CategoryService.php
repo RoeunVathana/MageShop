@@ -7,6 +7,7 @@ use App\Models\CategoryAttribute;
 use App\Models\CategoryAttributeOption;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -20,7 +21,29 @@ class CategoryService
      */
     public function listCategories(array $filters = [], bool $tree = false)
     {
-        $query = Category::query();
+        $cacheFilters = $filters;
+        ksort($cacheFilters);
+        $cacheKey = 'catalog:categories:'.sha1((string) json_encode([
+            'filters' => $cacheFilters,
+            'tree' => $tree,
+        ]));
+
+        $query = Category::query()->select([
+            'id',
+            'parent_id',
+            'name',
+            'slug',
+            'icon',
+            'image_url',
+            'description',
+            'sort_order',
+            'is_active',
+            'seo_title',
+            'seo_description',
+            'seo_keywords',
+            'created_at',
+            'updated_at',
+        ]);
 
         // Search by name or description
         if (! empty($filters['search'])) {
@@ -46,18 +69,76 @@ class CategoryService
             }
         }
 
-        if ($tree) {
-            // Eager load tree starting from root categories
-            return $query->whereNull('parent_id')
-                ->with(['children.children', 'attributes.options'])
-                ->withCount('products')
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get();
+        $activeFilter = array_key_exists('is_active', $filters)
+            ? filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN)
+            : null;
+        $withCounts = $activeFilter === true
+            ? ['products' => function ($products) {
+                $products->where('products.is_active', true)
+                    ->where('products.status', 'active');
+            }]
+            : ['products'];
+        if (filter_var($filters['include_attribute_count'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $withCounts[] = 'attributes';
         }
 
-        // Flat listing with parent relationship and product counts
-        $query->with(['parent', 'attributes.options'])->withCount('products');
+        if ($tree) {
+            // The storefront and category manager only need the hierarchy and
+            // product counts. Attribute definitions are loaded on the category
+            // detail screen, not for every category in the tree.
+            return $this->rememberRedis($cacheKey, 60, fn () => $query->whereNull('parent_id')
+                ->with([
+                    'children' => function ($children) use ($activeFilter) {
+                        $children->select([
+                            'id',
+                            'parent_id',
+                            'name',
+                            'slug',
+                            'icon',
+                            'image_url',
+                            'description',
+                            'sort_order',
+                            'is_active',
+                            'seo_title',
+                            'seo_description',
+                            'seo_keywords',
+                            'created_at',
+                            'updated_at',
+                        ]);
+                        if ($activeFilter !== null) {
+                            $children->where('is_active', $activeFilter);
+                        }
+                    },
+                    'children.children' => function ($children) use ($activeFilter) {
+                        $children->select([
+                            'id',
+                            'parent_id',
+                            'name',
+                            'slug',
+                            'icon',
+                            'image_url',
+                            'description',
+                            'sort_order',
+                            'is_active',
+                            'seo_title',
+                            'seo_description',
+                            'seo_keywords',
+                            'created_at',
+                            'updated_at',
+                        ]);
+                        if ($activeFilter !== null) {
+                            $children->where('is_active', $activeFilter);
+                        }
+                    },
+                ])
+                ->withCount($withCounts)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get());
+        }
+
+        // Flat listing with only the parent label and product counts.
+        $query->with('parent:id,name')->withCount($withCounts);
 
         $sort = $filters['sort_by'] ?? 'created_at';
         $direction = strtolower($filters['sort_dir'] ?? $filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
@@ -71,10 +152,23 @@ class CategoryService
         if (! empty($filters['per_page'])) {
             $perPage = min((int) $filters['per_page'], 100);
 
-            return $query->paginate($perPage);
+            return $this->rememberRedis($cacheKey, 60, fn () => $query->paginate($perPage));
         }
 
-        return $query->get();
+        return $this->rememberRedis($cacheKey, 60, fn () => $query->get());
+    }
+
+    /**
+     * Use the low-latency Redis cache when available, but keep local/test
+     * environments functional without a running Redis service.
+     */
+    protected function rememberRedis(string $key, int $seconds, callable $callback): mixed
+    {
+        try {
+            return Cache::store('redis')->remember($key, now()->addSeconds($seconds), $callback);
+        } catch (\Throwable) {
+            return $callback();
+        }
     }
 
     /**

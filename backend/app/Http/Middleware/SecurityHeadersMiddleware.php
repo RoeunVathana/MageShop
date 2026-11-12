@@ -79,7 +79,10 @@ class SecurityHeadersMiddleware
         $response->headers->remove('Server');
 
         // 6. Attach forensic request correlation ID
-        $requestId = $request->header('X-Request-ID') ?: (string) Str::uuid();
+        $suppliedRequestId = (string) $request->header('X-Request-ID', '');
+        $requestId = preg_match('/^[A-Za-z0-9._:-]{1,100}$/', $suppliedRequestId)
+            ? $suppliedRequestId
+            : (string) Str::uuid();
         $response->headers->set('X-Request-ID', $requestId);
 
         // 7. Enforce strict OWASP ASVS Level 3 HTTP response headers
@@ -99,7 +102,7 @@ class SecurityHeadersMiddleware
         $response->headers->set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
         $response->headers->set(
             'Content-Security-Policy',
-            "default-src 'self' https: data: blob: 'unsafe-inline'; frame-ancestors 'self' https://web.telegram.org; base-uri 'self'; form-action 'self';"
+            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://web.telegram.org; form-action 'self' https://accounts.google.com; script-src 'self' https://telegram.org 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https://api.tyushop.blog https://*.railway.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com https://telegram.org wss:; frame-src 'self' https://accounts.google.com https://web.telegram.org; worker-src 'self' blob:;"
         );
 
         // 8. Prevent proxy/browser caching of sensitive authentication and admin responses

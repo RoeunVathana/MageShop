@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\AdminMiddleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -26,6 +27,9 @@ return Application::configure(dirname(__DIR__))
         'api/v1'
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'admin' => AdminMiddleware::class,
+        ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens([
             'api/*',
@@ -118,9 +122,13 @@ return Application::configure(dirname(__DIR__))
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 $status = ($status >= 100 && $status < 600) ? $status : 500;
 
+                $safeMessage = $status >= 500
+                    ? 'An internal error occurred. Please try again later.'
+                    : 'Request could not be completed.';
+
                 return response()->json(array_merge([
                     'status' => 'error',
-                    'message' => config('app.debug') ? $e->getMessage() : ($e instanceof \Illuminate\Validation\ValidationException ? $e->getMessage() : ($status === 500 ? 'An internal error occurred: ' . $e->getMessage() : $e->getMessage())),
+                    'message' => config('app.debug') ? $e->getMessage() : $safeMessage,
                 ], config('app.debug') ? ['trace' => $e->getFile().':'.$e->getLine()] : []), $status);
             }
         });

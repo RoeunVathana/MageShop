@@ -34,6 +34,7 @@ import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
 import type { Product } from '@/types/product.types'
 import { SeoHead } from '@/components/seo/SeoHead'
+import { Pagination } from '@/components/common/Pagination'
 
 const quickDepartments = [
   { name: 'Electronics & Computers', nameKm: 'គ្រឿងអេឡិចត្រូនិក និងកុំព្យូទ័រ', slug: 'electronics-computers', icon: Laptop, color: 'text-blue-500' },
@@ -47,22 +48,36 @@ const quickDepartments = [
 export function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [featuredPage, setFeaturedPage] = useState(1)
+  const [featuredTotal, setFeaturedTotal] = useState(0)
+  const [featuredTotalPages, setFeaturedTotalPages] = useState(1)
   const { addToCart, toggleFavorite, isFavorite, loyaltyPoints, favoritesCount, t, formatPrice } = useShopEngagement()
   const { toast } = useToast()
 
   useEffect(() => {
     productService
-      .getProducts({ per_page: 8, status: 'active', sort_by: 'created_at', sort_direction: 'desc' })
+      .getProducts({
+        page: featuredPage,
+        per_page: 8,
+        status: 'active',
+        sort_by: 'created_at',
+        sort_direction: 'desc',
+      })
       .then((res) => {
         setFeaturedProducts(res.data)
+        setFeaturedTotal(res.meta?.total || res.data.length)
+        setFeaturedTotalPages(res.meta?.last_page || 1)
       })
       .catch((err) => {
         console.error('Failed to load featured products', err)
+        setFeaturedProducts([])
+        setFeaturedTotal(0)
+        setFeaturedTotalPages(1)
       })
       .finally(() => {
         setLoading(false)
       })
-  }, [])
+  }, [featuredPage])
 
   return (
     <div className="space-y-12 pb-16">
@@ -75,23 +90,23 @@ export function HomePage() {
       <HeroBannerSlider />
 
       {/* Customer Experience Highlights: Loyalty, Coupons, Live GPS Delivery Tracking, Favorites & 24/7 Supporter */}
-      <section className="container mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="container mx-auto px-4 py-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Link
             to="/track-order"
-            className="flex items-start gap-3.5 p-4 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-md transition-all group"
+            className="feature-highlight-card flex items-start gap-3 p-[18px] rounded-2xl border bg-card hover:border-primary/50 hover:shadow-md transition-all group"
           >
-            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">{t('Live GPS Delivery Track', 'តាមដានការដឹកជញ្ជូន GPS ផ្ទាល់')}</h3>
-                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[9px] px-1.5 py-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start justify-between gap-1.5">
+                <h3 className="min-w-0 flex-1 text-[13px] sm:text-sm font-bold leading-snug">{t('Live GPS Delivery Track', 'តាមដានការដឹកជញ្ជូន GPS ផ្ទាល់')}</h3>
+                <Badge className="feature-highlight-badge bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-0 text-[9px] px-1.5 py-1">
                   REALTIME
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              <p className="feature-highlight-description mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {t(
                   "Watch your driver's live map coordinates, route progress & ETA in real time.",
                   'មើលទីតាំងអ្នកដឹកជញ្ជូនផ្ទាល់លើផែនទី និងពេលវេលាមកដល់ជាក់ស្តែង។'
@@ -102,19 +117,19 @@ export function HomePage() {
 
           <Link
             to="/cart"
-            className="flex items-start gap-3.5 p-4 rounded-2xl border bg-card hover:border-amber-500/50 hover:shadow-md transition-all group"
+            className="feature-highlight-card flex items-start gap-3 p-[18px] rounded-2xl border bg-card hover:border-amber-500/50 hover:shadow-md transition-all group"
           >
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shrink-0">
               <Gift className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">{t('100 Pts = Free Item ≤$30', '១០០ ពិន្ទុ = ទំនិញឥតគិតថ្លៃ ≤$30')}</h3>
-                <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-0 text-[9px] px-1.5 py-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start justify-between gap-1.5">
+                <h3 className="min-w-0 flex-1 text-[13px] sm:text-sm font-bold leading-snug">{t('100 Pts = Free Item ≤$30', '១០០ ពិន្ទុ = ទំនិញឥតគិតថ្លៃ ≤$30')}</h3>
+                <Badge className="feature-highlight-badge bg-amber-500/15 text-amber-600 dark:text-amber-300 border-0 text-[9px] px-1.5 py-1">
                   {loyaltyPoints} PTS
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              <p className="feature-highlight-description mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {t(
                   'Earn +5 points every purchase! Exchange 100 points for any product ≤$30 FREE.',
                   'ទទួលបាន +5 ពិន្ទុរាល់ការទិញ! ប្តូរ ១០០ ពិន្ទុយកទំនិញតម្លៃ ≤$30 ដោយឥតគិតថ្លៃ។'
@@ -125,19 +140,19 @@ export function HomePage() {
 
           <Link
             to="/wishlist"
-            className="flex items-start gap-3.5 p-4 rounded-2xl border bg-card hover:border-rose-500/50 hover:shadow-md transition-all group"
+            className="feature-highlight-card flex items-start gap-3 p-[18px] rounded-2xl border bg-card hover:border-rose-500/50 hover:shadow-md transition-all group"
           >
-            <div className="p-3 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform shrink-0">
               <Heart className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">{t('Customer Favorites & Likes', 'ទំនិញពេញចិត្ត (Favorites)')}</h3>
-                <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-0 text-[9px] px-1.5 py-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start justify-between gap-1.5">
+                <h3 className="min-w-0 flex-1 text-[13px] sm:text-sm font-bold leading-snug">{t('Customer Favorites & Likes', 'ទំនិញពេញចិត្ត (Favorites)')}</h3>
+                <Badge className="feature-highlight-badge bg-rose-500/15 text-rose-600 dark:text-rose-300 border-0 text-[9px] px-1.5 py-1">
                   {favoritesCount} SAVED
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              <p className="feature-highlight-description mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {t(
                   'Save items you love with one click and move them straight to your shopping cart.',
                   'រក្សាទុកទំនិញដែលអ្នកពេញចិត្ត ហើយដាក់ចូលកន្ត្រកទិញទំនិញបានភ្លាមៗ។'
@@ -148,19 +163,19 @@ export function HomePage() {
 
           <Link
             to="/contact"
-            className="flex items-start gap-3.5 p-4 rounded-2xl border bg-card hover:border-purple-500/50 hover:shadow-md transition-all group"
+            className="feature-highlight-card flex items-start gap-3 p-[18px] rounded-2xl border bg-card hover:border-purple-500/50 hover:shadow-md transition-all group"
           >
-            <div className="p-3 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform shrink-0">
               <Headphones className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-black">{t('24/7 Supporter & Coupons', 'ជំនួយ 24/7 និងគូប៉ុងបញ្ចុះតម្លៃ')}</h3>
-                <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border-0 text-[9px] px-1.5 py-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start justify-between gap-1.5">
+                <h3 className="min-w-0 flex-1 text-[13px] sm:text-sm font-bold leading-snug">{t('24/7 Supporter & Coupons', 'ជំនួយ 24/7 និងគូប៉ុងបញ្ចុះតម្លៃ')}</h3>
+                <Badge className="feature-highlight-badge bg-purple-500/15 text-purple-600 dark:text-purple-300 border-0 text-[9px] px-1.5 py-1">
                   WELCOME10
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+              <p className="feature-highlight-description mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {t(
                   'Instant AI & human support plus promo codes (WELCOME10, SAVE20, KHQR5).',
                   'ជំនួយអតិថិជនរហ័ស និងកូដបញ្ចុះតម្លៃពិសេស (WELCOME10, SAVE20, KHQR5)។'
@@ -201,7 +216,7 @@ export function HomePage() {
       </section>
 
       {/* Live Featured Products from Database */}
-      <section className="container mx-auto px-4 space-y-6">
+      <section id="live-catalog" className="container mx-auto px-4 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">{t('Live Marketplace Catalog', 'បញ្ជីផលិតផលផ្ទាល់ពីស្តុក')}</h2>
@@ -220,20 +235,47 @@ export function HomePage() {
         {loading ? (
           <div className="p-16 text-center text-muted-foreground">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-            <p className="text-xs">Loading live catalog items...</p>
+            <p className="text-xs">
+              {t('Loading live catalog items...', 'កំពុងទាញយកទិន្នន័យផលិតផលផ្ទាល់...')}
+            </p>
           </div>
         ) : featuredProducts.length === 0 ? (
           <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20">
             <ShoppingBag className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">No active products available in catalog.</p>
+            <p className="text-xs text-muted-foreground">
+              {t('No active products available in catalog.', 'មិនមានផលិតផលសកម្មនៅក្នុងបញ្ជីទំនិញទេ។')}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {featuredProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
         )}
+
+        <Pagination
+          currentPage={featuredPage}
+          totalPages={featuredTotalPages}
+          totalItems={featuredTotal}
+          perPage={8}
+          itemName={t('products', 'ទំនិញ')}
+          labels={{
+            showing: t('Showing', 'បង្ហាញ'),
+            to: t('to', 'ដល់'),
+            of: t('of', 'នៃ'),
+            perPage: t('Per page', 'ក្នុងមួយទំព័រ'),
+            previous: t('Prev', 'មុន'),
+            next: t('Next', 'បន្ទាប់'),
+            firstPage: t('First Page', 'ទំព័រដំបូង'),
+            lastPage: t('Last Page', 'ទំព័រចុងក្រោយ'),
+          }}
+          onPageChange={(page) => {
+            setFeaturedPage(page)
+            document.getElementById('live-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+          className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-card/80"
+        />
       </section>
     </div>
   )

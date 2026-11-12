@@ -151,17 +151,12 @@ export const storeSettingsService = {
     contact_phone?: string
     support_email?: string
     business_email?: string
+    telegram_support_contact?: string
     tax_id?: string
   }): Promise<{ status: string; message: string; data?: any }> {
-    try {
-      return await api.patch<any>('/store-settings', settings)
-    } catch {
-      try {
-        return await api.patch<any>('/admin/store-settings', settings)
-      } catch {
-        return await api.post<any>('/store-settings', settings)
-      }
-    }
+    // Use the explicit admin route so permission failures and validation
+    // errors are returned to the admin instead of being hidden by fallbacks.
+    return api.patch<any>('/admin/store-settings', settings)
   },
 
   /**

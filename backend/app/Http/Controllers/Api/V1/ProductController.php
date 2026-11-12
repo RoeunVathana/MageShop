@@ -10,7 +10,6 @@ use App\Models\Product;
 use App\Services\Product\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
@@ -24,17 +23,41 @@ class ProductController extends Controller
     /**
      * List products with pagination and search.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->query('per_page', 15), 100);
         $filters = $request->query();
         $user = $request->user('sanctum') ?? $request->user();
+        $canViewInactive = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'PRODUCT_MANAGER',
+            'STAFF',
+            'INVENTORY_MANAGER',
+            'WAREHOUSE_MANAGER',
+            'SELLER',
+            'SELLER_STAFF',
+        ]);
+
         if ($user && $user->hasRole(['SELLER', 'SELLER_STAFF']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
             $filters['seller_id'] = $user->id;
         }
+        if (! $canViewInactive) {
+            $filters['status'] = 'active';
+            $filters['is_active'] = true;
+        }
         $products = $this->productService->listProducts($filters, $perPage);
 
-        return ProductResource::collection($products);
+        $response = ProductResource::collection($products)->response();
+
+        // The unauthenticated storefront can safely reuse a very short-lived
+        // catalog response while Railway wakes or the database is busy. Never
+        // cache authenticated admin/seller results.
+        if (! $user) {
+            $response->headers->set('Cache-Control', 'public, max-age=20, stale-while-revalidate=60');
+        }
+
+        return $response;
     }
 
     /**
@@ -60,8 +83,23 @@ class ProductController extends Controller
     /**
      * Display the specified product.
      */
-    public function show(Product $product): ProductResource
+    public function show(Request $request, Product $product): ProductResource
     {
+        $user = $request->user('sanctum') ?? $request->user();
+        $canViewInactive = $user && $user->hasRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'PRODUCT_MANAGER',
+            'STAFF',
+            'INVENTORY_MANAGER',
+            'WAREHOUSE_MANAGER',
+            'SELLER',
+            'SELLER_STAFF',
+        ]);
+        if (! $canViewInactive && (! $product->is_active || $product->status !== 'active')) {
+            abort(404);
+        }
+
         $product->load([
             'category.parent',
             'categories',

@@ -5,6 +5,7 @@ namespace App\Services\Brand;
 use App\Models\Brand;
 use App\Models\BrandTranslation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class BrandService
@@ -14,7 +15,34 @@ class BrandService
      */
     public function listBrands(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = Brand::query()->withCount('products');
+        $cacheFilters = $filters;
+        ksort($cacheFilters);
+        $cacheKey = 'catalog:brands:'.sha1((string) json_encode([
+            'filters' => $cacheFilters,
+            'per_page' => $perPage,
+        ]));
+
+        // Keep the public filter list small. Translations and product details
+        // belong to the brand detail/admin screens, not every filter request.
+        $query = Brand::query()
+            ->select([
+                'id',
+                'name',
+                'slug',
+                'logo_url',
+                'description',
+                'country',
+                'website',
+                'status',
+                'is_active',
+                'sort_order',
+                'seo_title',
+                'seo_description',
+                'seo_keywords',
+                'created_at',
+                'updated_at',
+            ])
+            ->withCount('products');
 
         if (! empty($filters['search'])) {
             $search = '%'.strtolower($filters['search']).'%';
@@ -42,7 +70,16 @@ class BrandService
             $query->orderBy('id', 'desc');
         }
 
-        return $query->paginate($perPage);
+        return $this->rememberRedis($cacheKey, 60, fn () => $query->paginate($perPage));
+    }
+
+    protected function rememberRedis(string $key, int $seconds, callable $callback): mixed
+    {
+        try {
+            return Cache::store('redis')->remember($key, now()->addSeconds($seconds), $callback);
+        } catch (\Throwable) {
+            return $callback();
+        }
     }
 
     /**

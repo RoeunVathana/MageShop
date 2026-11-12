@@ -217,6 +217,7 @@ export function AdminCompanyLocationPage() {
         contact_phone: contactPhone.trim(),
         support_email: supportEmail.trim(),
         business_email: businessEmail.trim(),
+        telegram_support_contact: telegramSupport.trim(),
       }
 
       await storeSettingsService.updateCompanySettings(payload)

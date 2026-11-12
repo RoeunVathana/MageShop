@@ -91,5 +91,29 @@ class AppServiceProvider extends ServiceProvider
                 }),
             ];
         });
+
+        // Password recovery is intentionally stricter than general API traffic:
+        // limit both the target email and the originating IP to slow OTP abuse.
+        RateLimiter::for('password-reset', function (Request $request) {
+            $email = Str::lower(trim((string) $request->input('email', '')));
+
+            return [
+                Limit::perMinute(3)->by($email.'|'.$request->ip()),
+                Limit::perMinute(12)->by($request->ip()),
+            ];
+        });
+
+        RateLimiter::for('password-otp-verify', function (Request $request) {
+            $email = Str::lower(trim((string) $request->input('email', '')));
+
+            return [
+                Limit::perMinute(5)->by($email.'|'.$request->ip()),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
+
+        RateLimiter::for('google-auth', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 }

@@ -908,8 +908,8 @@ export function AdminSecurityPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                <div className="dashboard-table-scroll">
+                  <table className="dashboard-data-table w-full text-left text-xs">
                     <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                       <tr>
                         <th className="py-2.5 px-4">Token Name & Scopes</th>
@@ -1052,8 +1052,8 @@ export function AdminSecurityPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                <div className="dashboard-table-scroll">
+                  <table className="dashboard-data-table w-full text-left text-xs">
                     <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                       <tr>
                         <th className="py-2.5 px-4">User Details</th>
@@ -1390,8 +1390,8 @@ export function AdminSecurityPage() {
                     </form>
 
                     {/* Sent OTP Table */}
-                    <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
-                      <table className="w-full text-left text-xs">
+                    <div className="dashboard-table-scroll max-h-[460px] overflow-y-auto">
+                      <table className="dashboard-data-table w-full text-left text-xs">
                         <thead className="bg-muted/50 border-b text-muted-foreground font-semibold sticky top-0">
                           <tr>
                             <th className="py-2 px-3">Recipient</th>

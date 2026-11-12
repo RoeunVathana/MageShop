@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\VariantAttributeValue;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -25,17 +26,58 @@ class ProductService
      */
     public function listProducts(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Product::with([
-            'category.parent',
-            'categories',
-            'brandRecord',
-            'inventory',
-            'variants.attributeValues.attribute',
-            'variants.attributeValues.option',
-            'variants.inventory',
-            'attributeValues.attribute',
-            'attributeValues.selectedOption',
-        ]);
+        $cacheFilters = $filters;
+        ksort($cacheFilters);
+        $cacheKey = 'catalog:products:'.sha1((string) json_encode([
+            'filters' => $cacheFilters,
+            'per_page' => $perPage,
+        ]));
+
+        // List pages only need catalog card/table fields. Loading variants,
+        // attributes, and every secondary category here made one request fan
+        // out into a large number of queries and a very large JSON response.
+        // Product details are loaded by show() when a user opens one product.
+        $query = Product::query()
+            ->select([
+                'id',
+                'category_id',
+                'brand_id',
+                'seller_id',
+                'name',
+                'brand',
+                'slug',
+                'sku',
+                'product_type',
+                'selling_price',
+                'cost_price',
+                'currency',
+                'price',
+                'discount_price',
+                'status',
+                'is_active',
+                'is_featured',
+                'is_new_arrival',
+                'is_best_seller',
+                'is_flash_sale',
+                'rating',
+                'reviews_count',
+                'stock_quantity',
+                'low_stock_threshold',
+                'image_url',
+                'description',
+                'weight',
+                'dimensions',
+                'specifications',
+                'gallery_urls',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'category:id,name,slug,parent_id',
+                'category.parent:id,name',
+                'brandRecord:id,name,slug,logo_url',
+                'inventory:id,product_id,quantity_on_hand,quantity_reserved',
+            ]);
 
         if (isset($filters['seller_id']) && is_numeric($filters['seller_id'])) {
             $query->where('seller_id', (int) $filters['seller_id']);
@@ -56,6 +98,9 @@ class ProductService
         if (! empty($filters['status']) && $filters['status'] !== 'all') {
             $query->where('status', $filters['status']);
         }
+        if (array_key_exists('is_active', $filters)) {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
 
         // Filter by category (including all nested subcategories!)
         $categoryParam = $filters['category_id'] ?? $filters['category'] ?? null;
@@ -65,15 +110,39 @@ class ProductService
                 : Category::where('slug', (string) $categoryParam)->first();
 
             if ($category) {
-                $categoryIds = array_merge([$category->id], $category->getAllDescendantIds());
+                // Resolve the complete tree in one query instead of calling
+                // getAllDescendantIds(), which performs one query per level.
+                $childrenByParent = Category::query()
+                    ->whereNotNull('parent_id')
+                    ->get(['id', 'parent_id'])
+                    ->groupBy('parent_id');
+                $categoryIds = [(int) $category->id => true];
+                $pending = [(int) $category->id];
+
+                while ($parentId = array_pop($pending)) {
+                    foreach ($childrenByParent->get($parentId, collect()) as $child) {
+                        $childId = (int) $child->id;
+                        if (isset($categoryIds[$childId])) {
+                            continue;
+                        }
+
+                        $categoryIds[$childId] = true;
+                        $pending[] = $childId;
+                    }
+                }
+
+                $categoryIds = array_keys($categoryIds);
                 $query->where(function ($q) use ($categoryIds) {
                     $q->whereIn('category_id', $categoryIds)
                         ->orWhereHas('categories', function ($cq) use ($categoryIds) {
                             $cq->whereIn('categories.id', $categoryIds);
                         });
                 });
-            } elseif (is_numeric($categoryParam)) {
-                $query->where('category_id', (int) $categoryParam);
+            } else {
+                // Never silently drop an invalid category filter. Returning
+                // the complete catalog here makes a failed category link look
+                // like a successful unfiltered search.
+                $query->whereRaw('1 = 0');
             }
         }
 
@@ -126,7 +195,20 @@ class ProductService
             $query->orderByDesc('id');
         }
 
-        return $query->paginate($perPage);
+        return $this->rememberRedis($cacheKey, 30, fn () => $query->paginate($perPage));
+    }
+
+    /**
+     * Cache read-heavy catalog queries without making Redis a hard dependency
+     * for local development or automated tests.
+     */
+    protected function rememberRedis(string $key, int $seconds, callable $callback): mixed
+    {
+        try {
+            return Cache::store('redis')->remember($key, now()->addSeconds($seconds), $callback);
+        } catch (\Throwable) {
+            return $callback();
+        }
     }
 
     /**
