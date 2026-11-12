@@ -1916,7 +1916,7 @@ export function CartPage() {
               <div className="pt-1 space-y-2">
                 <Button
                   type="button"
-                  disabled={verifyingQrPayment}
+                  disabled={verifyingQrPayment || qrSecondsLeft <= 0}
                   onClick={handleConfirmQrPayment}
                   className="w-full rounded-2xl h-11 font-black text-xs sm:text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all cursor-pointer"
                 >
@@ -1929,8 +1929,8 @@ export function CartPage() {
                     <>
                       <CheckCircle2 className="w-4 h-4" />
                       {t(
-                        'Check Payment & Confirm',
-                        'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់'
+                        qrSecondsLeft > 0 ? 'Check Payment & Confirm' : 'QR Expired — Start Again',
+                        qrSecondsLeft > 0 ? 'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់' : 'QR ផុតកំណត់ — ចាប់ផ្ដើមម្ដងទៀត'
                       )}
                     </>
                   )}

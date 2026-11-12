@@ -767,9 +767,11 @@ class CommerceEngagementController extends Controller
 
     protected function isBakongPaymentReady(): bool
     {
+        $accountId = $this->bakongSetting('bakong_account_id', 'bakong.account_id');
+
         return filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN)
             && $this->bakongApiToken() !== ''
-            && $this->bakongSetting('bakong_account_id', 'bakong.account_id') !== '';
+            && preg_match('/^[^@\s]+@[^@\s]+$/', $accountId) === 1;
     }
 
     protected function bakongApiToken(): string
