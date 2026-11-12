@@ -945,6 +945,29 @@ class CommerceEngagementController extends Controller
     }
 
     /**
+     * Deliver the receipt and admin notification after the payment response
+     * has been sent. SMTP, PDF rendering, and Telegram are external services;
+     * none of them should make a successfully verified payment look failed.
+     */
+    protected function scheduleCheckoutReceiptDelivery(Order $order, Payment $payment): void
+    {
+        app()->terminating(function () use ($order, $payment): void {
+            try {
+                $receipt = $this->prepareCheckoutReceipt($order, $payment, true);
+                if ($receipt) {
+                    app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+                }
+            } catch (\Throwable $exception) {
+                Log::error('Deferred checkout receipt delivery failed.', [
+                    'order_number' => $order->order_number,
+                    'payment_id' => $payment->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    /**
      * Keep the client response complete even when receipt persistence is
      * temporarily unavailable. This value is only a display/reference value;
      * payment state remains controlled by the order and payment records.
@@ -1476,13 +1499,10 @@ class CommerceEngagementController extends Controller
             return $this->alreadyConfirmedPaymentResponse($order);
         }
 
-        // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
-        $receipt = null;
-        $telegramNotified = false;
-        $receipt = $this->prepareCheckoutReceipt($order, $payment, true);
-        if ($receipt) {
-            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
-        }
+        // Create the receipt record now so the response has a stable number,
+        // then defer PDF/email/Telegram delivery until after the response.
+        $receipt = $this->prepareCheckoutReceipt($order, $payment, false);
+        $this->scheduleCheckoutReceiptDelivery($order, $payment);
 
         return response()->json([
             'status' => 'ok',
@@ -1492,9 +1512,9 @@ class CommerceEngagementController extends Controller
                 'order' => $order,
                 'receipt_number' => $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number),
                 'transaction_reference' => $payment?->transaction_reference,
-                'email_status' => $receipt?->email_status,
+                'email_status' => $receipt?->email_status ?? 'pending',
                 'email_sent_to' => $order->customer_email,
-                'telegram_admin_notified' => $telegramNotified,
+                'telegram_admin_notified' => false,
                 'payment_status' => 'paid',
                 'amount_due_on_arrival' => 0.00,
                 'status' => $order->status,
