@@ -758,7 +758,15 @@ class CommerceEngagementController extends Controller
      */
     protected function bakongSetting(string $key, string $configKey, string $default = ''): string
     {
-        $storedValue = trim((string) StoreSetting::get($key, ''));
+        // Payment configuration must reflect the latest admin change even if
+        // a long-lived worker still has an old Redis value cached.
+        $storedValue = trim((string) StoreSetting::query()
+            ->where('setting_key', $key)
+            ->value('setting_value'));
+
+        if ($storedValue === '') {
+            $storedValue = trim((string) StoreSetting::get($key, ''));
+        }
 
         return $storedValue !== ''
             ? $storedValue
@@ -776,16 +784,14 @@ class CommerceEngagementController extends Controller
 
     protected function bakongApiToken(): string
     {
-        $encrypted = trim((string) StoreSetting::get('bakong_api_token_encrypted', ''));
+        // Read the encrypted token directly so verification never depends on
+        // a stale or unavailable cache entry after an admin update.
+        $encrypted = trim((string) StoreSetting::query()
+            ->where('setting_key', 'bakong_api_token_encrypted')
+            ->value('setting_value'));
 
-        // A checkout request can land on a worker with a stale cache entry
-        // immediately after an admin saves the token. Read the persisted
-        // setting directly before falling back to the environment secret so
-        // QR generation and payment verification see the same configuration.
         if ($encrypted === '') {
-            $encrypted = trim((string) StoreSetting::query()
-                ->where('setting_key', 'bakong_api_token_encrypted')
-                ->value('setting_value'));
+            $encrypted = trim((string) StoreSetting::get('bakong_api_token_encrypted', ''));
         }
 
         if ($encrypted !== '') {
