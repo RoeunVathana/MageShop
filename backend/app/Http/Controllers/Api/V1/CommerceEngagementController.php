@@ -768,9 +768,14 @@ class CommerceEngagementController extends Controller
             $storedValue = trim((string) StoreSetting::get($key, ''));
         }
 
-        return $storedValue !== ''
+        return $this->cleanBakongValue($storedValue !== ''
             ? $storedValue
-            : trim((string) config($configKey, $default));
+            : (string) config($configKey, $default));
+    }
+
+    protected function cleanBakongValue(string $value): string
+    {
+        return trim($value, " \t\n\r\0\x0B\"'\\");
     }
 
     protected function isBakongPaymentReady(): bool
@@ -796,18 +801,22 @@ class CommerceEngagementController extends Controller
 
         if ($encrypted !== '') {
             try {
-                return trim(Crypt::decryptString($encrypted));
+                return $this->cleanBakongValue(Crypt::decryptString($encrypted));
             } catch (\Throwable) {
                 // Fall back to the server environment secret when decryption fails.
             }
         }
 
-        return trim((string) config('bakong.api_token', ''));
+        return $this->cleanBakongValue((string) config('bakong.api_token', ''));
     }
 
     protected function bakongApiUrl(): string
     {
-        return $this->bakongSetting('bakong_api_url', 'bakong.api_url', 'https://api-bakong.nbc.gov.kh');
+        return str_replace('\\', '', $this->bakongSetting(
+            'bakong_api_url',
+            'bakong.api_url',
+            'https://api-bakong.nbc.gov.kh'
+        ));
     }
 
     protected function bakongQrExpirySeconds(): int
