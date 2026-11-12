@@ -454,6 +454,14 @@ class CommerceEngagementController extends Controller
         // confirms the exact amount, currency, and merchant account.
         $initiateQr = $paymentMethod === 'bakong_khqr' && $totalAmount > 0;
         $isCashOnArrival = $paymentMethod === 'cash_on_delivery' && $totalAmount > 0;
+
+        if ($initiateQr && app()->environment('production') && ! $this->isBakongPaymentReady()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.',
+            ], 503);
+        }
+
         $paymentStatus = $isCashOnArrival ? 'cash_on_delivery' : ($initiateQr ? 'pending_qr' : 'paid');
         $txnRef = 'TXN-'.strtoupper(Str::random(10));
         $qrPaymentData = $initiateQr
@@ -667,9 +675,9 @@ class CommerceEngagementController extends Controller
             $qrPayment = [
                 'qr_string' => $payment->khqr_string,
                 'md5' => $payment->khqr_md5,
-                'merchant_account' => (string) StoreSetting::get('bakong_account_id', config('bakong.account_id', '')),
-                'merchant_name' => (string) StoreSetting::get('bakong_merchant_name', config('bakong.merchant_name', 'TYUSHOP')),
-                'merchant_city' => (string) StoreSetting::get('company_city', config('bakong.merchant_city', 'Phnom Penh')),
+                'merchant_account' => $this->bakongSetting('bakong_account_id', 'bakong.account_id'),
+                'merchant_name' => $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP'),
+                'merchant_city' => $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'),
                 'amount_usd' => (float) $order->total_amount,
                 'amount_khr' => (int) round((float) $order->total_amount * 4100),
                 'order_number' => $order->order_number,
@@ -736,6 +744,26 @@ class CommerceEngagementController extends Controller
     }
 
     /**
+     * Resolve a Bakong setting while ignoring empty database overrides.
+     * This keeps QR generation and gateway verification on the same merchant.
+     */
+    protected function bakongSetting(string $key, string $configKey, string $default = ''): string
+    {
+        $storedValue = trim((string) StoreSetting::get($key, ''));
+
+        return $storedValue !== ''
+            ? $storedValue
+            : trim((string) config($configKey, $default));
+    }
+
+    protected function isBakongPaymentReady(): bool
+    {
+        return filter_var(config('bakong.enabled', true), FILTER_VALIDATE_BOOLEAN)
+            && trim((string) config('bakong.api_token', '')) !== ''
+            && $this->bakongSetting('bakong_account_id', 'bakong.account_id') !== '';
+    }
+
+    /**
      * Compute CRC-16/CCITT-FALSE (polynomial 0x1021, init 0xFFFF) for EMVCo Bakong KHQR.
      */
     protected function calculateCrc16Ccitt(string $data): string
@@ -761,9 +789,9 @@ class CommerceEngagementController extends Controller
      */
     protected function buildBakongKhqrPayload(string $orderNumber, float $amountUsd, string $txnRef): array
     {
-        $merchantAccount = (string) StoreSetting::get('bakong_account_id', config('bakong.account_id', ''));
-        $merchantName = (string) StoreSetting::get('bakong_merchant_name', config('bakong.merchant_name', 'TYUSHOP'));
-        $merchantCity = (string) StoreSetting::get('company_city', config('bakong.merchant_city', 'Phnom Penh'));
+        $merchantAccount = $this->bakongSetting('bakong_account_id', 'bakong.account_id');
+        $merchantName = $this->bakongSetting('bakong_merchant_name', 'bakong.merchant_name', 'TYUSHOP');
+        $merchantCity = $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh');
 
         // Amount formatting compliant with NBC Bakong EMVCo specification
         $amountStr = (fmod($amountUsd, 1.0) === 0.0)
@@ -1135,7 +1163,7 @@ class CommerceEngagementController extends Controller
 
             $verificationPayload = $verificationResponse->json();
             $transaction = is_array($verificationPayload) ? ($verificationPayload['data'] ?? null) : null;
-            $expectedMerchant = strtolower((string) StoreSetting::get('bakong_account_id', config('bakong.account_id', '')));
+            $expectedMerchant = strtolower($this->bakongSetting('bakong_account_id', 'bakong.account_id'));
             $paidMerchant = strtolower((string) ($transaction['toAccountId'] ?? ''));
             $amountMatches = is_array($transaction)
                 && abs((float) ($transaction['amount'] ?? -1) - (float) $order->total_amount) < 0.01;

@@ -886,42 +886,48 @@ export function CartPage() {
   }
 
   // Step 2: Verify KHQR Scan -> Dispatch Email to Customer + Telegram Report to Admin -> Show Success Popup
-  const handleConfirmQrPayment = async (forceFail: boolean = false) => {
+  const handleConfirmQrPayment = async () => {
     if (!qrModalData) return
     setVerifyingQrPayment(true)
 
-    const isFailure = forceFail === true
-    if (isFailure) {
-      setPaymentFailedData({
-        order_number: qrModalData.order_number,
-        amount_usd: qrModalData.amount_usd,
-        amount_khr: qrModalData.amount_khr,
-        error_message: 'Transaction declined by bank or verification timed out. Payment status: FAILED (FALSE).',
-        error_message_km: 'ប្រតិបត្តិការត្រូវបានបដិសេធដោយធនាគារ ឬផុតកំណត់។ ស្ថានភាព៖ បរាជ័យ (FALSE)។',
-        payment_method: 'Bakong KHQR',
-        timestamp: new Date().toLocaleTimeString(),
-        qrDataToRetry: qrModalData,
-      })
-      setQrModalData(null)
-      setVerifyingQrPayment(false)
-      toast({
-        title: t('⚠️ Payment Failed', '⚠️ ការទូទាត់មិនជោគជ័យ!'),
-        description: t('Bank transaction was declined or timed out.', 'មិនអាចផ្ទៀងផ្ទាត់ការទូទាត់ប្រាក់បានឡើយ។'),
-        type: 'error',
-      })
-      return
-    }
-
     try {
-      const res = await api.post<any>(
-        `/orders/track/${encodeURIComponent(qrModalData.order_number)}/confirm-payment`,
-        {
-          context: 'qr_checkout',
+      let res: any = null
+      let lastError: unknown = null
+
+      // Bakong can take a few seconds to publish a just-completed scan. Retry
+      // only the safe "not confirmed yet" response; all other errors stop
+      // immediately and leave the order unpaid.
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          res = await api.post<any>(
+            `/orders/track/${encodeURIComponent(qrModalData.order_number)}/confirm-payment`,
+            {
+              context: 'qr_checkout',
+            }
+          )
+          break
+        } catch (error) {
+          lastError = error
+          const apiError = error && typeof error === 'object' ? error as { code?: number; message?: string } : null
+          const message = String(apiError?.message || '').toLowerCase()
+          const isPendingGatewayConfirmation = apiError?.code === 422 && message.includes('not confirmed')
+
+          if (!isPendingGatewayConfirmation || attempt === 2) {
+            throw error
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)))
         }
-      )
+      }
+
+      if (!res) {
+        throw lastError || new Error('Payment verification did not return a response.')
+      }
 
       const confirmedReceipt = res?.data?.receipt_number || qrModalData.receipt_number
       const confirmedTxn = res?.data?.transaction_reference || qrModalData.transaction_reference
+      const confirmedAmount = Number(res?.data?.order?.total_amount ?? qrModalData.amount_usd)
+      const confirmedAmountKhr = Math.round(confirmedAmount * 4100)
 
       addRecentOrder(qrModalData.order_number)
       clearCart()
@@ -931,18 +937,18 @@ export function CartPage() {
         receipt_number: confirmedReceipt,
         transaction_reference: confirmedTxn,
         payment_method: 'BAKONG KHQR (INSTANT SCAN)',
-        payment_status: 'PAID & VERIFIED',
-        amount_usd: qrModalData.amount_usd,
-        amount_khr: qrModalData.amount_khr,
+        payment_status: res?.data?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
+        amount_usd: confirmedAmount,
+        amount_khr: confirmedAmountKhr,
         discount: qrModalData.discount,
         points_earned: qrModalData.points_earned,
         customer_name: qrModalData.customer_name,
         customer_email: qrModalData.customer_email,
         customer_phone: qrModalData.customer_phone,
         delivery_address: qrModalData.delivery_address,
-        email_report_sent: true,
-        telegram_admin_notified: true,
-        paid_at: new Date().toLocaleString(),
+        email_report_sent: res?.data?.email_status === 'sent',
+        telegram_admin_notified: Boolean(res?.data?.telegram_admin_notified),
+        paid_at: res?.data?.order?.updated_at || new Date().toLocaleString(),
         items: qrModalData.items,
       })
 
@@ -960,9 +966,11 @@ export function CartPage() {
         order_number: qrModalData.order_number,
         amount_usd: qrModalData.amount_usd,
         amount_khr: qrModalData.amount_khr,
-        error_message: error instanceof Error
-          ? error.message
-          : 'Payment verification failed. Your order remains unpaid.',
+        error_message: error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: string }).message || 'Payment verification failed. Your order remains unpaid.')
+          : error instanceof Error
+            ? error.message
+            : 'Payment verification failed. Your order remains unpaid.',
         error_message_km: 'ការផ្ទៀងផ្ទាត់ការទូទាត់បានបរាជ័យ។ ការបញ្ជាទិញរបស់អ្នកនៅមិនទាន់បានបង់ប្រាក់នៅឡើយទេ។',
         payment_method: 'Bakong KHQR',
         timestamp: new Date().toLocaleTimeString(),
@@ -1904,7 +1912,7 @@ export function CartPage() {
                 <Button
                   type="button"
                   disabled={verifyingQrPayment}
-                  onClick={() => handleConfirmQrPayment(false)}
+                  onClick={handleConfirmQrPayment}
                   className="w-full rounded-2xl h-11 font-black text-xs sm:text-sm gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all cursor-pointer"
                 >
                   {verifyingQrPayment ? (
@@ -1916,7 +1924,7 @@ export function CartPage() {
                     <>
                       <CheckCircle2 className="w-4 h-4" />
                       {t(
-                        'I Have Scanned & Paid — Confirm',
+                        'Check Payment & Confirm',
                         'ខ្ញុំបានស្កេនរួចរាល់ — បញ្ជាក់ការទូទាត់'
                       )}
                     </>
@@ -1937,18 +1945,6 @@ export function CartPage() {
                   </button>
                 </div>
 
-                {/* Subtle QA Simulate Failure (kept discreetly for testing without cluttering UI) */}
-                <div className="text-right px-1">
-                  <button
-                    type="button"
-                    disabled={verifyingQrPayment}
-                    onClick={() => handleConfirmQrPayment(true)}
-                    className="text-[9.5px] text-muted-foreground/35 hover:text-rose-500 transition-colors cursor-pointer"
-                    title="Simulate payment failure for testing"
-                  >
-                    {t('Simulate Failure (Test)', 'សាកល្បងបរាជ័យ (Test)')}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
