@@ -824,16 +824,20 @@ export function CartPage() {
       }
 
       const res = await api.post<any>('/orders/checkout', payload)
-      const orderNum = res?.data?.order?.order_number
-      const receiptNum = res?.data?.receipt_number
-      const txnRef = res?.data?.transaction_reference
+      // `api.post` returns the decoded API body, not the Axios response.
+      // Keep this compatible with both the current `{ data: ... }` envelope
+      // and older/test adapters that may return the payload directly.
+      const checkoutData = res?.data ?? res
+      const orderNum = checkoutData?.order?.order_number
+      const receiptNum = checkoutData?.receipt_number
+      const txnRef = checkoutData?.transaction_reference
       if (!orderNum || !receiptNum || !txnRef) {
         throw new Error('The server returned an incomplete order confirmation. Please try again.')
       }
-      const qrInfo = res?.data?.qr_payment
+      const qrInfo = checkoutData?.qr_payment
 
-      if (typeof res?.data?.new_loyalty_points === 'number') {
-        setLoyaltyPoints(res.data.new_loyalty_points)
+      if (typeof checkoutData?.new_loyalty_points === 'number') {
+        setLoyaltyPoints(checkoutData.new_loyalty_points)
       }
 
       if (isKhqrFlow) {
@@ -841,7 +845,7 @@ export function CartPage() {
           throw new Error('Payment QR is not available yet. Please try again.')
         }
 
-        const serverAmountUsd = Number(res?.data?.order?.total_amount ?? qrInfo.amount_usd ?? finalTotal)
+        const serverAmountUsd = Number(checkoutData?.order?.total_amount ?? qrInfo.amount_usd ?? finalTotal)
         const serverAmountKhr = Number(qrInfo.amount_khr ?? Math.round(serverAmountUsd * 4100))
 
         // Step 1: Open Live Scannable Bakong KHQR Payment Modal
@@ -893,9 +897,9 @@ export function CartPage() {
           customer_email: customerEmail,
           customer_phone: normalizedCustomerPhone,
           delivery_address: normalizedDeliveryAddress,
-          email_report_sent: res?.data?.email_status === 'sent',
-          telegram_admin_notified: Boolean(res?.data?.telegram_admin_notified),
-          paid_at: res?.data?.order?.paid_at || '',
+          email_report_sent: checkoutData?.email_status === 'sent',
+          telegram_admin_notified: Boolean(checkoutData?.telegram_admin_notified),
+          paid_at: checkoutData?.order?.paid_at || '',
           items: snapshotItems,
         })
         checkoutIdempotencyKeyRef.current = null
@@ -982,9 +986,10 @@ export function CartPage() {
         throw lastError || new Error('Payment verification did not return a response.')
       }
 
-      const confirmedReceipt = res?.data?.receipt_number || qrModalData.receipt_number
-      const confirmedTxn = res?.data?.transaction_reference || qrModalData.transaction_reference
-      const confirmedAmount = Number(res?.data?.order?.total_amount ?? qrModalData.amount_usd)
+      const confirmationData = res?.data ?? res
+      const confirmedReceipt = confirmationData?.receipt_number || qrModalData.receipt_number
+      const confirmedTxn = confirmationData?.transaction_reference || qrModalData.transaction_reference
+      const confirmedAmount = Number(confirmationData?.order?.total_amount ?? qrModalData.amount_usd)
       const confirmedAmountKhr = Math.round(confirmedAmount * 4100)
 
       addRecentOrder(qrModalData.order_number)
@@ -995,7 +1000,7 @@ export function CartPage() {
         receipt_number: confirmedReceipt,
         transaction_reference: confirmedTxn,
         payment_method: 'BAKONG KHQR (INSTANT SCAN)',
-        payment_status: res?.data?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
+        payment_status: confirmationData?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
         amount_usd: confirmedAmount,
         amount_khr: confirmedAmountKhr,
         discount: qrModalData.discount,
@@ -1004,9 +1009,9 @@ export function CartPage() {
         customer_email: qrModalData.customer_email,
         customer_phone: qrModalData.customer_phone,
         delivery_address: qrModalData.delivery_address,
-        email_report_sent: res?.data?.email_status === 'sent',
-        telegram_admin_notified: Boolean(res?.data?.telegram_admin_notified),
-        paid_at: res?.data?.order?.updated_at || new Date().toLocaleString(),
+        email_report_sent: confirmationData?.email_status === 'sent',
+        telegram_admin_notified: Boolean(confirmationData?.telegram_admin_notified),
+        paid_at: confirmationData?.order?.updated_at || new Date().toLocaleString(),
         items: qrModalData.items,
       })
 
