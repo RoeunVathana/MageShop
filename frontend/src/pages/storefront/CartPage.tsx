@@ -131,6 +131,7 @@ interface QrSessionData {
   merchant_name: string
   amount_usd: number
   amount_khr: number
+  expires_in_seconds?: number
   customer_name: string
   customer_email: string
   customer_phone: string
@@ -486,7 +487,7 @@ export function CartPage() {
   // Countdown timer when KHQR modal is open
   useEffect(() => {
     if (!qrModalData) return
-    setQrSecondsLeft(600)
+    setQrSecondsLeft(Math.max(0, qrModalData.expires_in_seconds ?? 600))
     const timer = window.setInterval(() => {
       setQrSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
@@ -792,6 +793,9 @@ export function CartPage() {
           throw new Error('Payment QR is not available yet. Please try again.')
         }
 
+        const serverAmountUsd = Number(res?.data?.order?.total_amount ?? qrInfo.amount_usd ?? finalTotal)
+        const serverAmountKhr = Number(qrInfo.amount_khr ?? Math.round(serverAmountUsd * 4100))
+
         // Step 1: Open Live Scannable Bakong KHQR Payment Modal
         setQrModalData({
           order_number: orderNum,
@@ -802,8 +806,8 @@ export function CartPage() {
           md5: qrInfo.md5,
           merchant_account: qrInfo.merchant_account,
           merchant_name: qrInfo.merchant_name,
-          amount_usd: finalTotal,
-          amount_khr: finalTotalKhr,
+          amount_usd: serverAmountUsd,
+          amount_khr: serverAmountKhr,
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
@@ -812,6 +816,7 @@ export function CartPage() {
           points_earned: pointsEarnedThisOrder,
           discount: discountAmount,
           items: snapshotItems,
+          expires_in_seconds: Number(qrInfo.expires_in_seconds ?? 600),
         })
         checkoutIdempotencyKeyRef.current = null
         toast({

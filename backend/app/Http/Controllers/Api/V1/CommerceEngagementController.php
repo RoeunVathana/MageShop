@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Receipt;
 use App\Models\StoreSetting;
 use App\Services\Receipt\PaymentReceiptPdfService;
 use App\Services\Telegram\TelegramService;
@@ -17,6 +18,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -615,18 +617,24 @@ class CommerceEngagementController extends Controller
 
             throw $exception;
         }
-        $receiptService = app(PaymentReceiptPdfService::class);
         $telegramNotified = false;
         $receipt = null;
 
         if ($initiateQr) {
             // Prepare receipt number while waiting for customer to scan & confirm QR payment
-            $receipt = $receiptService->getOrCreateReceipt($order, $payment);
+            $receipt = $this->prepareCheckoutReceipt($order, $payment, false);
         } else {
             // Immediately dispatch Customer Payment Report Email & Telegram Admin Report
-            $receipt = $receiptService->generateAndSend($order, $payment);
-            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+            $receipt = $this->prepareCheckoutReceipt($order, $payment, true);
+            if ($receipt) {
+                $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+            }
         }
+
+        // Receipt delivery is deliberately non-blocking. The order/payment rows
+        // above are the source of truth; a mail, PDF, or receipt-table problem
+        // must not make a successful checkout look like an internal server error.
+        $receiptNumber = $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number);
 
         return response()->json([
             'status' => 'ok',
@@ -637,7 +645,7 @@ class CommerceEngagementController extends Controller
                     : "Order #{$order->order_number} paid & confirmed! You earned +{$pointsEarned} Loyalty Points."),
             'data' => [
                 'order' => $order->load('items'),
-                'receipt_number' => $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd')),
+                'receipt_number' => $receiptNumber,
                 'transaction_reference' => $txnRef,
                 'email_status' => $receipt ? $receipt->email_status : 'pending',
                 'email_sent_to' => $order->customer_email,
@@ -683,7 +691,7 @@ class CommerceEngagementController extends Controller
                 'amount_khr' => (int) round((float) $order->total_amount * 4100),
                 'order_number' => $order->order_number,
                 'transaction_reference' => $payment->transaction_reference,
-                'expires_in_seconds' => 900,
+                'expires_in_seconds' => $this->bakongQrExpirySeconds(),
             ];
         }
 
@@ -694,7 +702,7 @@ class CommerceEngagementController extends Controller
                 : "Checkout already processed for Order #{$order->order_number}.",
             'data' => [
                 'order' => $order,
-                'receipt_number' => $receipt?->receipt_number,
+                'receipt_number' => $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number),
                 'transaction_reference' => $payment?->transaction_reference,
                 'email_status' => $receipt?->email_status ?? 'pending',
                 'email_sent_to' => $order->customer_email,
@@ -731,7 +739,7 @@ class CommerceEngagementController extends Controller
             'data' => [
                 'order_number' => $order->order_number,
                 'order' => $order,
-                'receipt_number' => $receipt?->receipt_number,
+                'receipt_number' => $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number),
                 'transaction_reference' => $payment?->transaction_reference,
                 'email_status' => $receipt?->email_status,
                 'email_sent_to' => $order->customer_email,
@@ -783,6 +791,49 @@ class CommerceEngagementController extends Controller
         return $this->bakongSetting('bakong_api_url', 'bakong.api_url', 'https://api-bakong.nbc.gov.kh');
     }
 
+    protected function bakongQrExpirySeconds(): int
+    {
+        $minutes = (int) StoreSetting::get(
+            'payment_qr_expires_minutes',
+            config('bakong.qr_expires_minutes', 10)
+        );
+
+        return max(60, min(3600, $minutes * 60));
+    }
+
+    /**
+     * Generate a receipt without allowing an email/PDF/database issue to
+     * invalidate an order that has already been persisted.
+     */
+    protected function prepareCheckoutReceipt(Order $order, Payment $payment, bool $sendImmediately): ?Receipt
+    {
+        try {
+            $service = app(PaymentReceiptPdfService::class);
+
+            return $sendImmediately
+                ? $service->generateAndSend($order, $payment)
+                : $service->getOrCreateReceipt($order, $payment);
+        } catch (\Throwable $exception) {
+            Log::error('Checkout receipt preparation failed.', [
+                'order_number' => $order->order_number,
+                'payment_id' => $payment->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Keep the client response complete even when receipt persistence is
+     * temporarily unavailable. This value is only a display/reference value;
+     * payment state remains controlled by the order and payment records.
+     */
+    protected function fallbackReceiptNumber(string $orderNumber): string
+    {
+        return 'REC-'.date('Ymd').'-'.strtoupper(substr(hash('sha256', $orderNumber), 0, 8));
+    }
+
     /**
      * Compute CRC-16/CCITT-FALSE (polynomial 0x1021, init 0xFFFF) for EMVCo Bakong KHQR.
      */
@@ -830,9 +881,9 @@ class CommerceEngagementController extends Controller
 
         // Tag 99: Bakong National Scheme Timestamp (Strictly required for Dynamic QR 010212)
         // Sub-tag 00: Creation Timestamp (13-digit Unix ms)
-        // Sub-tag 01: Expiration Timestamp (13-digit Unix ms, valid for 15 minutes)
+        // Sub-tag 01: Expiration Timestamp (13-digit Unix ms)
         $creationMs = (string) (time() * 1000);
-        $expirationMs = (string) ((time() + 900) * 1000);
+        $expirationMs = (string) ((time() + $this->bakongQrExpirySeconds()) * 1000);
         $tag99Value = '0013'.$creationMs.'0113'.$expirationMs;
         $tag99 = '99'.str_pad((string) strlen($tag99Value), 2, '0', STR_PAD_LEFT).$tag99Value;
 
@@ -862,7 +913,7 @@ class CommerceEngagementController extends Controller
             'amount_khr' => $amountKhr,
             'order_number' => $orderNumber,
             'transaction_reference' => $txnRef,
-            'expires_in_seconds' => 900,
+            'expires_in_seconds' => $this->bakongQrExpirySeconds(),
         ];
     }
 
@@ -1288,8 +1339,10 @@ class CommerceEngagementController extends Controller
         // Dispatch Customer Email Payment Report & Telegram Admin Order/Payment Report
         $receipt = null;
         $telegramNotified = false;
-        $receipt = app(PaymentReceiptPdfService::class)->generateAndSend($order, $payment);
-        $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+        $receipt = $this->prepareCheckoutReceipt($order, $payment, true);
+        if ($receipt) {
+            $telegramNotified = app(TelegramService::class)->notifyAdminOrderAndPaymentReport($order, $receipt, $payment);
+        }
 
         return response()->json([
             'status' => 'ok',
@@ -1297,7 +1350,7 @@ class CommerceEngagementController extends Controller
             'data' => [
                 'order_number' => $order->order_number,
                 'order' => $order,
-                'receipt_number' => $receipt?->receipt_number,
+                'receipt_number' => $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number),
                 'transaction_reference' => $payment?->transaction_reference,
                 'email_status' => $receipt?->email_status,
                 'email_sent_to' => $order->customer_email,
