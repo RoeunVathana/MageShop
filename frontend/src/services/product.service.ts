@@ -1,4 +1,5 @@
 import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
+import { cachedRead, invalidateReadCache, stableReadKey } from '@/lib/read-cache'
 import type {
   Product,
   CreateProductPayload,
@@ -15,21 +16,31 @@ export const productService = {
     params?: ProductFilterParams,
     options?: { signal?: AbortSignal; public?: boolean }
   ): Promise<PaginatedResponse<Product>> {
-    let lastError: unknown
-    const isUnfilteredActiveCatalog =
-      params?.status === 'active' &&
-      !params.search &&
-      !params.category_id &&
-      !params.brand &&
-      (!params.product_type || params.product_type === 'all') &&
-      params.min_price === undefined &&
-      params.max_price === undefined
+    const request = async (): Promise<PaginatedResponse<Product>> => {
+      return this.fetchProducts(params, options)
+    }
 
-    // The public API is hosted on Railway and may need to wake from a cold start.
-    // Retry transient failures and an unexpected empty unfiltered response so a
-    // stale cache/cold database does not render the storefront as 0 products.
+    if (options?.public) {
+      return cachedRead(
+        stableReadKey('public:products', params as Record<string, unknown>),
+        request,
+        30_000,
+        !options.signal
+      )
+    }
+
+    return request()
+  },
+
+  async fetchProducts(
+    params?: ProductFilterParams,
+    options?: { signal?: AbortSignal; public?: boolean }
+  ): Promise<PaginatedResponse<Product>> {
+    let lastError: unknown
+    // Retry only transport/server failures. An empty result is a valid response
+    // and must render immediately instead of waiting through artificial retries.
     const client = options?.public ? publicApiClient : apiClient
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const response = await client.get<PaginatedResponse<Product>>('/products', {
           params,
@@ -46,16 +57,7 @@ export const productService = {
                 meta: { current_page: 1, last_page: 1, per_page: 0, total: 0 },
               }
 
-        const shouldRetryEmpty =
-          isUnfilteredActiveCatalog &&
-          normalized.data.length === 0 &&
-          attempt < 2
-
-        if (!shouldRetryEmpty) {
-          return normalized
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)))
+        return normalized
       } catch (error) {
         lastError = error
         const code = typeof error === 'object' && error !== null && 'code' in error
@@ -63,11 +65,11 @@ export const productService = {
           : 0
         const isClientError = code >= 400 && code < 500 && code !== 408 && code !== 429
 
-        if (options?.signal?.aborted || attempt === 2 || isClientError) {
+        if (options?.signal?.aborted || attempt === 1 || isClientError) {
           throw error
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)))
+        await new Promise((resolve) => setTimeout(resolve, 250))
       }
     }
 
@@ -88,6 +90,7 @@ export const productService = {
   async createProduct(payload: CreateProductPayload): Promise<Product> {
     await initCsrf()
     const response = await apiClient.post<{ data: Product }>('/products', payload)
+    invalidateReadCache('public:products')
     return response.data.data
   },
 
@@ -97,6 +100,7 @@ export const productService = {
   async updateProduct(id: number | string, payload: UpdateProductPayload): Promise<Product> {
     await initCsrf()
     const response = await apiClient.patch<{ data: Product }>(`/products/${id}`, payload)
+    invalidateReadCache('public:products')
     return response.data.data
   },
 
@@ -108,6 +112,7 @@ export const productService = {
     const response = await apiClient.delete<{ status: string; message: string; data: Product }>(
       `/products/${id}`
     )
+    invalidateReadCache('public:products')
     return response.data
   },
 

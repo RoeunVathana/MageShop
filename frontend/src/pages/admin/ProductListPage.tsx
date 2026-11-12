@@ -48,6 +48,8 @@ export function ProductListPage() {
   const [perPage, setPerPage] = useState<number>(15)
   const [sortBy, setSortBy] = useState<string>('created_at')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
+  const [appliedSearch, setAppliedSearch] = useState<string>('')
+  const [reloadKey, setReloadKey] = useState<number>(0)
   const [actionProductId, setActionProductId] = useState<number | null>(null)
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null)
 
@@ -65,7 +67,7 @@ export function ProductListPage() {
       const res = await productService.getProducts({
         page: currentPage,
         per_page: perPage,
-        search: search.trim() || undefined,
+        search: appliedSearch || undefined,
         status: statusFilter,
         category_id: categoryFilter || undefined,
         product_type: (typeFilter as any) || undefined,
@@ -97,12 +99,12 @@ export function ProductListPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, perPage, statusFilter, categoryFilter, typeFilter, sortBy, sortDirection])
+  }, [currentPage, perPage, statusFilter, categoryFilter, typeFilter, sortBy, sortDirection, appliedSearch, reloadKey])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setAppliedSearch(search.trim())
     setCurrentPage(1)
-    fetchProducts()
   }
 
   const handleArchive = (product: Product) => {
@@ -335,7 +337,7 @@ export function ProductListPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchProducts}
+              onClick={() => setReloadKey((key) => key + 1)}
               className="h-9 px-2.5 text-xs ml-auto"
               title="Refresh product list"
             >

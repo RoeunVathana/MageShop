@@ -203,7 +203,12 @@ class ProductService
             $query->orderByDesc('id');
         }
 
-        return $this->rememberRedis($cacheKey, 60, fn () => $query->paginate($perPage));
+        // Public card pages are read-heavy and can safely tolerate a short
+        // cache window. Admin/seller lists keep the shorter window so recent
+        // edits remain visible quickly.
+        $cacheSeconds = $isCardView && ($filters['status'] ?? null) === 'active' ? 300 : 60;
+
+        return $this->rememberRedis($cacheKey, $cacheSeconds, fn () => $query->paginate($perPage));
     }
 
     /**
@@ -213,7 +218,9 @@ class ProductService
     protected function rememberRedis(string $key, int $seconds, callable $callback): mixed
     {
         try {
-            return Cache::store('redis')->remember($key, now()->addSeconds($seconds), $callback);
+            return Cache::store('redis')
+                ->tags(['catalog'])
+                ->remember($key, now()->addSeconds($seconds), $callback);
         } catch (\Throwable) {
             return $callback();
         }
@@ -224,7 +231,7 @@ class ProductService
      */
     public function createProduct(array $data, ?int $userId = null): Product
     {
-        return DB::transaction(function () use ($data, $userId) {
+        $product = DB::transaction(function () use ($data, $userId) {
             $sellingPrice = (float) ($data['selling_price'] ?? $data['price'] ?? 0);
             $costPrice = (float) ($data['cost_price'] ?? 0);
 
@@ -355,6 +362,10 @@ class ProductService
                 'attributeValues.selectedOption',
             ]);
         });
+
+        $this->flushCatalogCache();
+
+        return $product;
     }
 
     /**
@@ -484,7 +495,7 @@ class ProductService
         $fresh = Product::find($product->id);
         $resultProduct = $fresh ?: $product;
 
-        return $resultProduct->load([
+        $result = $resultProduct->load([
             'category.parent',
             'categories',
             'brandRecord',
@@ -495,6 +506,10 @@ class ProductService
             'attributeValues.attribute',
             'attributeValues.selectedOption',
         ]);
+
+        $this->flushCatalogCache();
+
+        return $result;
     }
 
     /**
@@ -769,7 +784,20 @@ class ProductService
     public function archiveProduct(Product $product): Product
     {
         $product->archive();
+        $this->flushCatalogCache();
 
         return $product;
+    }
+
+    /**
+     * Invalidate catalog pages after a product mutation.
+     */
+    protected function flushCatalogCache(): void
+    {
+        try {
+            Cache::store('redis')->tags(['catalog'])->flush();
+        } catch (\Throwable) {
+            // Cache invalidation must never make a successful mutation fail.
+        }
     }
 }

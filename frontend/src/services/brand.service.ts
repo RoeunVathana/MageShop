@@ -1,4 +1,5 @@
 import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
+import { cachedRead, invalidateReadCache, stableReadKey } from '@/lib/read-cache'
 import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export const brandService = {
@@ -9,9 +10,21 @@ export const brandService = {
     params: Record<string, any> = {},
     options?: { public?: boolean }
   ): Promise<{ data: Brand[]; meta?: any }> {
-    const client = options?.public ? publicApiClient : apiClient
-    const response = await client.get<{ data: Brand[]; meta: any }>('/brands', { params })
-    return response.data
+    const request = async () => {
+      const client = options?.public ? publicApiClient : apiClient
+      const response = await client.get<{ data: Brand[]; meta: any }>('/brands', { params })
+      return response.data
+    }
+
+    if (options?.public) {
+      return cachedRead(
+        stableReadKey('public:brands', params),
+        request,
+        60_000
+      )
+    }
+
+    return request()
   },
 
   /**
@@ -28,6 +41,7 @@ export const brandService = {
   async createBrand(payload: BrandFormData): Promise<Brand> {
     await initCsrf()
     const response = await apiClient.post<{ data: Brand }>('/admin/brands', payload)
+    invalidateReadCache('public:brands')
     return response.data.data
   },
 
@@ -37,6 +51,7 @@ export const brandService = {
   async updateBrand(id: number, payload: Partial<BrandFormData>): Promise<Brand> {
     await initCsrf()
     const response = await apiClient.patch<{ data: Brand }>(`/admin/brands/${id}`, payload)
+    invalidateReadCache('public:brands')
     return response.data.data
   },
 
@@ -48,6 +63,7 @@ export const brandService = {
     const response = await apiClient.delete<{ status: string; message: string; data: Brand }>(
       `/admin/brands/${id}`
     )
+    invalidateReadCache('public:brands')
     return response.data.data
   },
 }

@@ -1,4 +1,5 @@
 import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
+import { cachedRead, invalidateReadCache, stableReadKey } from '@/lib/read-cache'
 import type {
   Category,
   CategoryAttribute,
@@ -18,9 +19,21 @@ export const categoryService = {
     is_active?: boolean
     parent_id?: number | string
   }, options?: { public?: boolean }): Promise<Category[]> {
-    const client = options?.public ? publicApiClient : apiClient
-    const response = await client.get<{ data: Category[] }>('/categories', { params })
-    return response.data.data
+    const request = async () => {
+      const client = options?.public ? publicApiClient : apiClient
+      const response = await client.get<{ data: Category[] }>('/categories', { params })
+      return response.data.data
+    }
+
+    if (options?.public) {
+      return cachedRead(
+        stableReadKey('public:categories', params as Record<string, unknown>),
+        request,
+        60_000
+      )
+    }
+
+    return request()
   },
 
   /**
@@ -37,6 +50,7 @@ export const categoryService = {
   async createCategory(payload: CreateCategoryPayload): Promise<Category> {
     await initCsrf()
     const response = await apiClient.post<{ data: Category }>('/admin/categories', payload)
+    invalidateReadCache('public:categories')
     return response.data.data
   },
 
@@ -46,6 +60,7 @@ export const categoryService = {
   async updateCategory(id: number | string, payload: UpdateCategoryPayload): Promise<Category> {
     await initCsrf()
     const response = await apiClient.patch<{ data: Category }>(`/admin/categories/${id}`, payload)
+    invalidateReadCache('public:categories')
     return response.data.data
   },
 
@@ -57,6 +72,7 @@ export const categoryService = {
     const response = await apiClient.delete<{ status: string; message: string }>(
       `/admin/categories/${id}`
     )
+    invalidateReadCache('public:categories')
     return response.data
   },
 
@@ -108,6 +124,7 @@ export const categoryService = {
     const response = await apiClient.delete<{ status: string; message: string }>(
       `/admin/category-attributes/${attributeId}`
     )
+    invalidateReadCache('public:categories')
     return response.data
   },
 }

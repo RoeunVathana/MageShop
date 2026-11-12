@@ -1,4 +1,5 @@
-import { api } from '@/lib/api'
+import { api, publicApiClient } from '@/lib/api'
+import { cachedRead, invalidateReadCache } from '@/lib/read-cache'
 import type { ApiResponse } from '@/types/api.types'
 
 export interface Banner {
@@ -44,9 +45,12 @@ export const bannerService = {
    * Public: Fetch active banners for a specific placement (default 'hero').
    */
   getBanners: async (placement: string = 'hero'): Promise<ApiResponse<Banner[]>> => {
-    return api.get<ApiResponse<Banner[]>>('/banners', {
-      params: { placement },
-    })
+    return cachedRead(`public:banners:${placement}`, async () => {
+      const response = await publicApiClient.get<ApiResponse<Banner[]>>('/banners', {
+        params: { placement },
+      })
+      return response.data
+    }, 120_000)
   },
 
   /**
@@ -79,35 +83,45 @@ export const bannerService = {
    * Admin: Create a new slide banner.
    */
   createBanner: async (payload: CreateBannerPayload): Promise<ApiResponse<Banner>> => {
-    return api.post<ApiResponse<Banner>>('/admin/banners', payload)
+    const response = await api.post<ApiResponse<Banner>>('/admin/banners', payload)
+    invalidateReadCache('public:banners:')
+    return response
   },
 
   /**
    * Admin: Update an existing slide banner.
    */
   updateBanner: async (id: number, payload: UpdateBannerPayload): Promise<ApiResponse<Banner>> => {
-    return api.patch<ApiResponse<Banner>>(`/admin/banners/${id}`, payload)
+    const response = await api.patch<ApiResponse<Banner>>(`/admin/banners/${id}`, payload)
+    invalidateReadCache('public:banners:')
+    return response
   },
 
   /**
    * Admin: Delete a slide banner.
    */
   deleteBanner: async (id: number): Promise<ApiResponse<null>> => {
-    return api.delete<ApiResponse<null>>(`/admin/banners/${id}`)
+    const response = await api.delete<ApiResponse<null>>(`/admin/banners/${id}`)
+    invalidateReadCache('public:banners:')
+    return response
   },
 
   /**
    * Admin: Toggle active status.
    */
   toggleBannerActive: async (id: number): Promise<ApiResponse<Banner>> => {
-    return api.post<ApiResponse<Banner>>(`/admin/banners/${id}/toggle`)
+    const response = await api.post<ApiResponse<Banner>>(`/admin/banners/${id}/toggle`)
+    invalidateReadCache('public:banners:')
+    return response
   },
 
   /**
    * Admin: Reorder banners.
    */
   reorderBanners: async (items: { id: number; sort_order: number }[]): Promise<ApiResponse<Banner[]>> => {
-    return api.post<ApiResponse<Banner[]>>('/admin/banners/reorder', { items })
+    const response = await api.post<ApiResponse<Banner[]>>('/admin/banners/reorder', { items })
+    invalidateReadCache('public:banners:')
+    return response
   },
 }
 

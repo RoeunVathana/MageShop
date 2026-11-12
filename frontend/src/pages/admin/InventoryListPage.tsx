@@ -38,6 +38,8 @@ export function InventoryListPage() {
   const [perPage, setPerPage] = useState<number>(15)
   const [sortBy, setSortBy] = useState<string>('id')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
+  const [appliedSearch, setAppliedSearch] = useState<string>('')
+  const [reloadKey, setReloadKey] = useState<number>(0)
 
   // Stock Adjustment Dialog
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -49,45 +51,47 @@ export function InventoryListPage() {
       const res = await inventoryService.getInventory({
         page: currentPage,
         per_page: perPage,
-        search: search.trim() || undefined,
+        search: appliedSearch || undefined,
         low_stock: lowStockOnly ? 'true' : undefined,
         sort_by: sortBy as any,
         sort_direction: sortDirection,
       })
-      if (res?.data && res.data.length > 0) {
+      if (res) {
         setItems(res.data)
         if (res.meta) {
           setTotalPages(res.meta.last_page)
           setTotalCount(res.meta.total)
         }
+        // An empty inventory page is a valid result. Do not issue a second
+        // full catalog request; that doubled backend latency and could show
+        // products without their inventory fields.
         return
       }
     } catch {
       // Graceful fallback to products catalog if inventory service is temporarily restricted
-    }
-
-    try {
-      const prodRes = await productService.getProducts({
-        page: currentPage,
-        per_page: perPage,
-        search: search.trim() || undefined,
-        sort_by: sortBy as any,
-        sort_direction: sortDirection,
-      })
-      if (prodRes?.data) {
-        setItems(prodRes.data)
-        if (prodRes.meta) {
-          setTotalPages(prodRes.meta.last_page)
-          setTotalCount(prodRes.meta.total)
+      try {
+        const prodRes = await productService.getProducts({
+          page: currentPage,
+          per_page: perPage,
+          search: appliedSearch || undefined,
+          sort_by: sortBy as any,
+          sort_direction: sortDirection,
+        })
+        if (prodRes?.data) {
+          setItems(prodRes.data)
+          if (prodRes.meta) {
+            setTotalPages(prodRes.meta.last_page)
+            setTotalCount(prodRes.meta.total)
+          }
+          return
         }
-        return
+      } catch (err: any) {
+        toast({
+          title: 'Failed to load inventory',
+          description: err?.message || 'Could not fetch stock levels from backend.',
+          type: 'error',
+        })
       }
-    } catch (err: any) {
-      toast({
-        title: 'Failed to load inventory',
-        description: err?.message || 'Could not fetch stock levels from backend.',
-        type: 'error',
-      })
     } finally {
       setLoading(false)
     }
@@ -95,12 +99,12 @@ export function InventoryListPage() {
 
   useEffect(() => {
     fetchInventory()
-  }, [currentPage, perPage, lowStockOnly, sortBy, sortDirection])
+  }, [currentPage, perPage, lowStockOnly, sortBy, sortDirection, appliedSearch, reloadKey])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setAppliedSearch(search.trim())
     setCurrentPage(1)
-    fetchInventory()
   }
 
   // Summary Metrics calculations
@@ -239,7 +243,7 @@ export function InventoryListPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchInventory}
+              onClick={() => setReloadKey((key) => key + 1)}
               className="h-9 px-2.5 text-xs ml-auto"
               title="Refresh inventory"
             >
@@ -391,7 +395,7 @@ export function InventoryListPage() {
         }}
         product={selectedProduct}
         onSuccess={() => {
-          fetchInventory()
+          setReloadKey((key) => key + 1)
         }}
       />
     </DashboardLayout>

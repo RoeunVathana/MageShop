@@ -1,4 +1,5 @@
-import { api } from '@/lib/api'
+import { api, publicApiClient } from '@/lib/api'
+import { cachedRead } from '@/lib/read-cache'
 
 export interface StoreCurrencySettings {
   default_currency: 'USD' | 'KHR'
@@ -91,12 +92,14 @@ export const storeSettingsService = {
    * Fetch public store currency configuration, company location & exchange rates
    */
   async getPublicSettings(): Promise<StoreCurrencySettings> {
-    try {
-      const res = await api.get<ApiResponse<any>>('/store-settings')
-      return this.mapSettingData(res?.data || {})
-    } catch {
-      return this.mapSettingData({})
-    }
+    return cachedRead('public:store-settings', async () => {
+      try {
+        const response = await publicApiClient.get<ApiResponse<any>>('/store-settings')
+        return this.mapSettingData(response.data?.data || {})
+      } catch {
+        return this.mapSettingData({})
+      }
+    }, 60_000)
   },
 
   /**
