@@ -26,6 +26,13 @@ export interface StoreCurrencySettings {
   google_client_secret?: string
   google_callback_url?: string
   google_is_configured?: boolean
+  bakong_account_id?: string
+  bakong_merchant_name?: string
+  merchant_phone?: string
+  bakong_api_url?: string
+  bakong_api_enabled?: boolean | string
+  bakong_api_token_configured?: boolean
+  bakong_api_token_masked?: string
 }
 
 interface ApiResponse<T> {
@@ -70,6 +77,13 @@ export const storeSettingsService = {
       google_client_secret: data.google_client_secret,
       google_callback_url: data.google_callback_url || 'https://api.tyushop.blog/api/v1/auth/google/callback',
       google_is_configured: data.google_is_configured,
+      bakong_account_id: data.bakong_account_id || 'roeun_vathana1@bkrt',
+      bakong_merchant_name: data.bakong_merchant_name || 'Tyushop',
+      merchant_phone: data.merchant_phone || '855976554143',
+      bakong_api_url: data.bakong_api_url || 'https://api-bakong.nbc.gov.kh',
+      bakong_api_enabled: data.bakong_api_enabled === 'false' || data.bakong_api_enabled === false ? false : true,
+      bakong_api_token_configured: Boolean(data.bakong_api_token_configured),
+      bakong_api_token_masked: data.bakong_api_token_masked || '',
     }
   },
 

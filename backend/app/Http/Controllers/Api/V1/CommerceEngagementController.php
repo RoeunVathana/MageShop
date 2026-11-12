@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -758,9 +759,28 @@ class CommerceEngagementController extends Controller
 
     protected function isBakongPaymentReady(): bool
     {
-        return filter_var(config('bakong.enabled', true), FILTER_VALIDATE_BOOLEAN)
-            && trim((string) config('bakong.api_token', '')) !== ''
+        return filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN)
+            && $this->bakongApiToken() !== ''
             && $this->bakongSetting('bakong_account_id', 'bakong.account_id') !== '';
+    }
+
+    protected function bakongApiToken(): string
+    {
+        $encrypted = trim((string) StoreSetting::get('bakong_api_token_encrypted', ''));
+        if ($encrypted !== '') {
+            try {
+                return trim(Crypt::decryptString($encrypted));
+            } catch (\Throwable) {
+                // Fall back to the server environment secret when decryption fails.
+            }
+        }
+
+        return trim((string) config('bakong.api_token', ''));
+    }
+
+    protected function bakongApiUrl(): string
+    {
+        return $this->bakongSetting('bakong_api_url', 'bakong.api_url', 'https://api-bakong.nbc.gov.kh');
     }
 
     /**
@@ -1140,8 +1160,8 @@ class CommerceEngagementController extends Controller
                 ], 422);
             }
 
-            $apiToken = (string) config('bakong.api_token');
-            if (! filter_var(config('bakong.enabled', true), FILTER_VALIDATE_BOOLEAN) || $apiToken === '') {
+            $apiToken = $this->bakongApiToken();
+            if (! filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN) || $apiToken === '') {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Bakong verification is not configured on the server yet.',
@@ -1151,7 +1171,7 @@ class CommerceEngagementController extends Controller
             try {
                 $verificationResponse = Http::timeout(12)
                     ->withToken($apiToken)
-                    ->post(rtrim((string) config('bakong.api_url'), '/').'/v1/check_transaction_by_md5', [
+                    ->post(rtrim($this->bakongApiUrl(), '/').'/v1/check_transaction_by_md5', [
                         'md5' => $payment->khqr_md5,
                     ]);
             } catch (\Throwable $e) {

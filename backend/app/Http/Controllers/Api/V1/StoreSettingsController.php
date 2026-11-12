@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class StoreSettingsController extends Controller
 {
@@ -157,6 +158,8 @@ class StoreSettingsController extends Controller
         $all['google_client_id'] = $all['google_client_id'] ?? (env('GOOGLE_CLIENT_ID') !== 'your-google-client-id' ? env('GOOGLE_CLIENT_ID') : '');
         $all['google_is_configured'] = ! empty($all['google_client_id']) && ! empty($all['google_client_secret'] ?? env('GOOGLE_CLIENT_SECRET'));
 
+        $all = $this->prepareAdminSettings($all);
+
         return response()->json([
             'status' => 'success',
             'data' => $all,
@@ -209,12 +212,27 @@ class StoreSettingsController extends Controller
             'loyalty_points_for_free_item' => 'nullable|integer|min:1|max:1000',
             'bakong_account_id' => 'nullable|string|max:100',
             'bakong_merchant_name' => 'nullable|string|max:100',
+            'merchant_phone' => 'nullable|string|max:50',
+            'bakong_api_url' => 'nullable|url|max:255',
+            'bakong_api_enabled' => 'nullable|boolean',
+            'bakong_api_token' => 'nullable|string|max:2048',
+            'bakong_api_token_clear' => 'nullable|boolean',
         ]);
+
+        $bakongToken = trim((string) ($validated['bakong_api_token'] ?? ''));
+        $clearBakongToken = (bool) ($validated['bakong_api_token_clear'] ?? false);
+        unset($validated['bakong_api_token'], $validated['bakong_api_token_clear']);
 
         foreach ($validated as $key => $value) {
             if ($value !== null) {
-                StoreSetting::set($key, (string) $value);
+                StoreSetting::set($key, is_bool($value) ? ($value ? 'true' : 'false') : (string) $value);
             }
+        }
+
+        if ($clearBakongToken) {
+            StoreSetting::set('bakong_api_token_encrypted', '');
+        } elseif ($bakongToken !== '') {
+            StoreSetting::set('bakong_api_token_encrypted', Crypt::encryptString($bakongToken));
         }
 
         Cache::forget('store_settings:all');
@@ -223,7 +241,7 @@ class StoreSettingsController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Store currency and settings updated successfully.',
-            'data' => StoreSetting::getAll(),
+            'data' => $this->prepareAdminSettings(StoreSetting::getAll()),
         ]);
     }
 
@@ -240,5 +258,35 @@ class StoreSettingsController extends Controller
         if (! ($user->hasRole('SUPER_ADMIN') || $user->hasRole('ADMIN') || $user->hasRole('STAFF'))) {
             abort(403, 'Unauthorized. Administrative permissions required.');
         }
+    }
+
+    protected function resolveBakongApiToken(array $settings): string
+    {
+        $encrypted = trim((string) ($settings['bakong_api_token_encrypted'] ?? ''));
+        if ($encrypted !== '') {
+            try {
+                return trim(Crypt::decryptString($encrypted));
+            } catch (\Throwable) {
+                // Fall back to the server secret if an old APP_KEY cannot decrypt it.
+            }
+        }
+
+        return trim((string) config('bakong.api_token', ''));
+    }
+
+    protected function prepareAdminSettings(array $settings): array
+    {
+        // Never return the Bakong token or encrypted ciphertext to the browser.
+        $settings['bakong_account_id'] = $settings['bakong_account_id'] ?? config('bakong.account_id');
+        $settings['bakong_merchant_name'] = $settings['bakong_merchant_name'] ?? config('bakong.merchant_name');
+        $settings['merchant_phone'] = $settings['merchant_phone'] ?? config('bakong.merchant_phone');
+        $settings['bakong_api_url'] = $settings['bakong_api_url'] ?? config('bakong.api_url');
+        $settings['bakong_api_enabled'] = $settings['bakong_api_enabled'] ?? (config('bakong.enabled', true) ? 'true' : 'false');
+        $bakongToken = $this->resolveBakongApiToken($settings);
+        $settings['bakong_api_token_configured'] = $bakongToken !== '';
+        $settings['bakong_api_token_masked'] = $bakongToken === '' ? '' : '••••••••' . substr($bakongToken, -4);
+        unset($settings['bakong_api_token'], $settings['bakong_api_token_encrypted']);
+
+        return $settings;
     }
 }

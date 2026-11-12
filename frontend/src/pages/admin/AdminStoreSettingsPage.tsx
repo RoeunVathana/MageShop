@@ -65,10 +65,16 @@ export function AdminStoreSettingsPage() {
     // Bakong KHQR
     bakong_account_id: 'roeun_vathana1@bkrt',
     bakong_merchant_name: 'Tyushop',
+    merchant_phone: '855976554143',
+    bakong_api_url: 'https://api-bakong.nbc.gov.kh',
+    bakong_api_enabled: true,
+    bakong_api_token: '',
     // Telegram
     telegram_bot_username: '',
     telegram_support_contact: '',
   })
+  const [bakongTokenConfigured, setBakongTokenConfigured] = useState(false)
+  const [bakongTokenMasked, setBakongTokenMasked] = useState('')
 
   const fetchSettings = async () => {
     setLoading(true)
@@ -98,9 +104,15 @@ export function AdminStoreSettingsPage() {
         company_country: data.company_country || 'Cambodia',
         bakong_account_id: data.bakong_account_id || 'roeun_vathana1@bkrt',
         bakong_merchant_name: data.bakong_merchant_name || 'Tyushop',
+        merchant_phone: data.merchant_phone || '855976554143',
+        bakong_api_url: data.bakong_api_url || 'https://api-bakong.nbc.gov.kh',
+        bakong_api_enabled: data.bakong_api_enabled !== false && data.bakong_api_enabled !== 'false',
+        bakong_api_token: '',
         telegram_bot_username: data.telegram_bot_username || 'MegaCommerceAiBot',
         telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       })
+      setBakongTokenConfigured(Boolean(data.bakong_api_token_configured))
+      setBakongTokenMasked(data.bakong_api_token_masked || '')
     } catch (err: any) {
       console.warn('Could not fetch admin settings, loading defaults:', err)
     } finally {
@@ -460,6 +472,62 @@ export function AdminStoreSettingsPage() {
                   className="rounded-xl h-10 text-xs font-semibold font-mono"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">
+                  {t('Bakong API URL', 'អាសយដ្ឋាន Bakong API')}
+                </label>
+                <Input
+                  type="url"
+                  value={form.bakong_api_url}
+                  onChange={(e) => setForm({ ...form, bakong_api_url: e.target.value })}
+                  placeholder="https://api-bakong.nbc.gov.kh"
+                  className="rounded-xl h-10 text-xs font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">
+                  {t('Merchant Phone', 'លេខទូរស័ព្ទអាជីវកម្ម')}
+                </label>
+                <Input
+                  type="text"
+                  value={form.merchant_phone}
+                  onChange={(e) => setForm({ ...form, merchant_phone: e.target.value })}
+                  placeholder="855976554143"
+                  className="rounded-xl h-10 text-xs font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="flex items-center justify-between text-xs font-bold text-foreground">
+                  <span>{t('Bakong API Token', 'Bakong API Token')}</span>
+                  <span className={bakongTokenConfigured ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                    {bakongTokenConfigured ? `${t('Configured', 'បានកំណត់')} ${bakongTokenMasked}` : t('Not configured', 'មិនទាន់កំណត់')}
+                  </span>
+                </label>
+                <Input
+                  type="password"
+                  value={form.bakong_api_token}
+                  onChange={(e) => setForm({ ...form, bakong_api_token: e.target.value })}
+                  placeholder={bakongTokenConfigured ? t('Leave blank to keep the current token', 'ទុកទទេដើម្បីរក្សា Token បច្ចុប្បន្ន') : 'Paste the new server token'}
+                  autoComplete="new-password"
+                  className="rounded-xl h-10 text-xs font-mono"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('The token is encrypted on the server and is never returned to this page.', 'Token ត្រូវបានអ៊ិនគ្រីបនៅលើ server ហើយមិនត្រូវបានបង្ហាញត្រឡប់មកទំព័រនេះទេ។')}
+                </p>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  checked={form.bakong_api_enabled}
+                  onChange={(e) => setForm({ ...form, bakong_api_enabled: e.target.checked })}
+                />
+                {t('Enable Bakong payment verification', 'បើកការផ្ទៀងផ្ទាត់ការទូទាត់ Bakong')}
+              </label>
             </div>
           </CardContent>
         </Card>
