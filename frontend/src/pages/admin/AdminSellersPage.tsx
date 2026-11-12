@@ -350,15 +350,23 @@ export function AdminSellersPage() {
               </div>
             ) : (
               <div className="dashboard-table-scroll">
-                <table className="dashboard-data-table w-full text-left text-xs">
-                  <thead className="bg-muted/40 border-b text-muted-foreground font-semibold uppercase tracking-wider text-[11px]">
+                <table className="dashboard-data-table seller-applications-table w-full min-w-[1280px] text-left text-sm">
+                  <colgroup>
+                    <col className="w-[250px]" />
+                    <col className="w-[220px]" />
+                    <col className="w-[225px]" />
+                    <col className="w-[205px]" />
+                    <col className="w-[155px]" />
+                    <col className="w-[285px]" />
+                  </colgroup>
+                  <thead className="bg-muted/40 border-b text-muted-foreground font-bold text-xs tracking-normal">
                     <tr>
-                      <th className="px-6 py-3.5">{t('Store & Category', 'ហាង & ប្រភេទ')}</th>
-                      <th className="px-6 py-3.5">{t('Applicant Member', 'សមាជិកស្នើសុំ')}</th>
-                      <th className="px-6 py-3.5">{t('Location & Contact', 'ទីតាំង & ទំនាក់ទំនង')}</th>
-                      <th className="px-6 py-3.5">{t('Bakong Settlement', 'គណនីទូទាត់បាគង')}</th>
-                      <th className="px-6 py-3.5">{t('Status', 'ស្ថានភាព')}</th>
-                      <th className="px-6 py-3.5 text-right">{t('Governance Action', 'សកម្មភាព')}</th>
+                      <th className="px-5 py-4">{t('Store & Category', 'ហាង និងប្រភេទ')}</th>
+                      <th className="px-5 py-4">{t('Applicant Member', 'សមាជិកដាក់ពាក្យ')}</th>
+                      <th className="px-5 py-4">{t('Location & Contact', 'ទីតាំង និងទំនាក់ទំនង')}</th>
+                      <th className="px-5 py-4">{t('Bakong Settlement', 'គណនីទូទាត់ Bakong')}</th>
+                      <th className="px-5 py-4">{t('Status', 'ស្ថានភាព')}</th>
+                      <th className="px-5 py-4 text-right">{t('Governance Actions', 'សកម្មភាពគ្រប់គ្រង')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -374,7 +382,7 @@ export function AdminSellersPage() {
                           className="hover:bg-muted/30 transition-colors group"
                         >
                           {/* Store Name & Category */}
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-5 align-top">
                             <div className="flex items-center gap-3">
                               <div className="h-11 w-11 rounded-xl border bg-muted/60 overflow-hidden flex items-center justify-center shrink-0">
                                 {app.logo_url ? (
@@ -388,7 +396,7 @@ export function AdminSellersPage() {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <div className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                                <div className="font-bold text-foreground text-[15px] leading-6 flex items-center gap-1.5">
                                   <span>{app.store_name}</span>
                                   {isApproved && (
                                     <span title="Verified Seller">
@@ -396,51 +404,51 @@ export function AdminSellersPage() {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                <div className="text-xs leading-5 text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1">
                                   <span className="font-mono text-primary/80">@{app.slug}</span>
                                   <span>•</span>
-                                  <span className="capitalize">{app.category || 'General Store'}</span>
+                                  <span className="capitalize">{app.category || t('General Store', 'ហាងទូទៅ')}</span>
                                 </div>
                               </div>
                             </div>
                           </td>
 
                           {/* Applicant Member */}
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-5 align-top">
                             <div className="space-y-0.5">
-                              <div className="font-medium text-foreground flex items-center gap-1.5">
+                              <div className="font-medium text-foreground text-sm leading-6 flex items-center gap-1.5">
                                 <User className="h-3.5 w-3.5 text-muted-foreground" />
                                 <span>{app.user?.name || 'Member #' + app.user_id}</span>
                               </div>
-                              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                              <div className="text-xs leading-5 text-muted-foreground flex items-center gap-1.5">
                                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="truncate max-w-[180px]">{app.user?.email || 'No email'}</span>
+                                <span className="truncate max-w-[190px]">{app.user?.email || t('No email', 'មិនមានអ៊ីមែល')}</span>
                               </div>
                             </div>
                           </td>
 
                           {/* Location & Contact */}
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-5 align-top">
                             <div className="space-y-0.5">
-                              <div className="font-medium text-foreground flex items-center gap-1.5">
+                              <div className="font-medium text-foreground text-sm leading-6 flex items-center gap-1.5">
                                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                                 <span className="font-mono">{app.phone}</span>
                               </div>
-                              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                              <div className="text-xs leading-5 text-muted-foreground flex items-center gap-1.5">
                                 <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{app.city || 'Cambodia'}</span>
+                                <span>{app.city || t('Cambodia', 'កម្ពុជា')}</span>
                               </div>
                             </div>
                           </td>
 
                           {/* Bakong Settlement Info */}
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-5 align-top">
                             <div className="space-y-0.5">
-                              <div className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                              <div className="font-semibold text-emerald-600 dark:text-emerald-400 text-sm leading-6 flex items-center gap-1">
                                 <DollarSign className="h-3.5 w-3.5" />
                                 <span>{app.bank_name || 'Bakong KHQR'}</span>
                               </div>
-                              <div className="text-[11px] font-mono text-muted-foreground">
+                              <div className="text-xs leading-5 font-mono text-muted-foreground">
                                 {app.bakong_account_id ? (
                                   <span className="bg-muted px-1.5 py-0.5 rounded">
                                     {app.bakong_account_id}
@@ -453,27 +461,27 @@ export function AdminSellersPage() {
                           </td>
 
                           {/* Status Badge */}
-                          <td className="px-6 py-4">
+                          <td className="px-5 py-5 align-top">
                             {isPending && (
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 font-semibold gap-1 text-[11px]">
+                                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 font-semibold gap-1 text-xs leading-5">
                                 <Clock className="h-3 w-3 animate-spin" />
                                 {t('Under Review', 'រង់ចាំពិនិត្យ')}
                               </Badge>
                             )}
                             {isApproved && (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-semibold gap-1 text-[11px]">
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-semibold gap-1 text-xs leading-5">
                                 <CheckCircle2 className="h-3 w-3" />
                                 {t('Approved & Active', 'បានអនុម័ត')}
                               </Badge>
                             )}
                             {isRejected && (
-                              <Badge variant="outline" className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-semibold gap-1 text-[11px]">
+                                <Badge variant="outline" className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-semibold gap-1 text-xs leading-5">
                                 <XCircle className="h-3 w-3" />
                                 {t('Rejected', 'បានបដិសេធ')}
                               </Badge>
                             )}
                             {isSuspended && (
-                              <Badge variant="outline" className="bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/30 font-semibold gap-1 text-[11px]">
+                                <Badge variant="outline" className="bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/30 font-semibold gap-1 text-xs leading-5">
                                 <AlertCircle className="h-3 w-3" />
                                 {t('Suspended', 'បានផ្អាក')}
                               </Badge>
@@ -481,8 +489,8 @@ export function AdminSellersPage() {
                           </td>
 
                           {/* Governance Action Buttons */}
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                          <td className="px-5 py-5 text-right align-top">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
                               {/* View Details */}
                               <Button
                                 variant="outline"
