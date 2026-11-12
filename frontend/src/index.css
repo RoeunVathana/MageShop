@@ -412,9 +412,8 @@ html.khmer-mode .language-switcher-option {
   border-radius: 9999px;
 }
 
-/* Product cards use a full-bleed media area. Keep every wrapper above the
-   image at zero spacing so global card styles cannot create an inset frame. */
-.product-card,
+/* Product cards keep a 20px outer margin while their inner wrappers and media
+   stay full-bleed so global card styles cannot create an inset image frame. */
 .product-card > :first-child,
 .product-card-content,
 .product-card-media,
