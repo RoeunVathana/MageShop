@@ -56,7 +56,11 @@ export function LoginPage() {
     uid: string
     getIdToken: () => Promise<string>
   }) => {
-    const idToken = await fbUser.getIdToken()
+    const idToken = await withTimeout(
+      fbUser.getIdToken(),
+      GOOGLE_AUTH_REQUEST_TIMEOUT_MS,
+      t('Google sign-in token timed out. Please try again.', 'ការទទួល token ពី Google ចំណាយពេលយូរពេក។ សូមព្យាយាមម្តងទៀត។')
+    )
     await withTimeout(
       authService.loginWithFirebase({
         id_token: idToken,
@@ -236,7 +240,8 @@ export function LoginPage() {
 
       // Full-page redirect is more reliable than a popup on phones and avoids
       // mobile browsers closing the OAuth window before the API exchange.
-      const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      const isMobileBrowser =
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768
       if (isMobileBrowser) {
         await signInWithRedirect(auth, googleAuthProvider)
         return
