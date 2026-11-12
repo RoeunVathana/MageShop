@@ -123,6 +123,40 @@ class AdminOrderController extends Controller
     }
 
     /**
+     * Update editable customer and delivery information for an order.
+     * Fulfillment and payment state remain on their dedicated endpoints.
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'customer_name' => ['required', 'string', 'max:120'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:50'],
+            'delivery_address' => ['required', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $order = Order::find($id);
+        if (! $order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Order #{$id} not found.",
+            ], 404);
+        }
+
+        $order->fill($validated);
+        $order->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Order #{$order->order_number} details updated successfully.",
+            'data' => $order->fresh(['items', 'payments', 'customer']),
+        ]);
+    }
+
+    /**
      * Update order fulfillment status.
      */
     public function updateStatus(Request $request, $id): JsonResponse

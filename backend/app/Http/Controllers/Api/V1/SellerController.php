@@ -254,6 +254,77 @@ class SellerController extends Controller
     }
 
     /**
+     * Admin: Update seller store and settlement details without changing governance status.
+     */
+    public function adminUpdate(Request $request, int $id): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'store_name' => 'required|string|max:255',
+            'category' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:2000',
+            'phone' => 'required|string|max:50',
+            'telegram_username' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'address' => 'nullable|string|max:500',
+            'bank_name' => 'nullable|string|max:100',
+            'bakong_account_id' => 'nullable|string|max:100',
+            'logo_url' => 'nullable|string|max:1000',
+            'banner_url' => 'nullable|string|max:1000',
+        ]);
+
+        $application = SellerApplication::findOrFail($id);
+        $baseSlug = Str::slug($validated['store_name']) ?: 'store-' . $application->user_id;
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (SellerApplication::where('slug', $slug)
+            ->where('id', '!=', $application->id)
+            ->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        $application->fill([
+            ...$validated,
+            'slug' => $slug,
+        ]);
+        $application->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Seller store '{$application->store_name}' updated successfully.",
+            'data' => $application->fresh('user:id,name,email,created_at'),
+        ]);
+    }
+
+    /**
+     * Admin: Delete a seller application and revoke its SELLER role.
+     */
+    public function adminDestroy(Request $request, int $id): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $application = SellerApplication::with('user')->findOrFail($id);
+        $storeName = $application->store_name;
+
+        DB::transaction(function () use ($application): void {
+            $user = $application->user;
+            $application->delete();
+
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('SELLER') && method_exists($user, 'removeRole')) {
+                $user->removeRole('SELLER');
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Seller store '{$storeName}' deleted successfully.",
+        ]);
+    }
+
+    /**
      * Authorize admin user.
      */
     protected function authorizeAdmin(Request $request): void

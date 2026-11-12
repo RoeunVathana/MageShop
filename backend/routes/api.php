@@ -153,6 +153,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/database/seed', [AdminMaintenanceController::class, 'seedAll']);
     // Admin Orders & Sales Mutations
     Route::prefix('orders')->group(function () {
+        Route::patch('/{id}', [AdminOrderController::class, 'update']);
         Route::patch('/{id}/status', [AdminOrderController::class, 'updateStatus']);
         Route::patch('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus']);
         Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
@@ -350,6 +351,8 @@ Route::prefix('sellers')->group(function () {
 // Admin Seller Member Governance & Approvals
 Route::prefix('admin/sellers')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [SellerController::class, 'adminIndex']);
+    Route::patch('/{id}', [SellerController::class, 'adminUpdate']);
+    Route::delete('/{id}', [SellerController::class, 'adminDestroy']);
     Route::post('/{id}/approve', [SellerController::class, 'adminApprove']);
     Route::post('/{id}/reject', [SellerController::class, 'adminReject']);
     Route::patch('/{id}/status', [SellerController::class, 'adminUpdateStatus']);

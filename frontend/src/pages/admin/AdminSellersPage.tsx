@@ -22,6 +22,8 @@ import {
   Check,
   X,
   AlertTriangle,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -29,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import {
@@ -55,6 +58,22 @@ export function AdminSellersPage() {
   const [rejectionReason, setRejectionReason] = useState('')
   const [submittingReject, setSubmittingReject] = useState(false)
   const [approvingId, setApprovingId] = useState<number | null>(null)
+  const [editingApp, setEditingApp] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingApp, setDeletingApp] = useState<SellerApplicationData | null>(null)
+  const [editForm, setEditForm] = useState({
+    store_name: '',
+    category: '',
+    description: '',
+    phone: '',
+    telegram_username: '',
+    city: '',
+    address: '',
+    bank_name: '',
+    bakong_account_id: '',
+    logo_url: '',
+    banner_url: '',
+  })
 
   const loadData = async () => {
     setLoading(true)
@@ -140,6 +159,68 @@ export function AdminSellersPage() {
       loadData()
     } catch (err: any) {
       toast({ title: err?.message || 'Failed to update store status', type: 'error' })
+    }
+  }
+
+  const openSellerEditor = (app: SellerApplicationData) => {
+    setSelectedApp(app)
+    setEditingApp(true)
+    setEditForm({
+      store_name: app.store_name || '',
+      category: app.category || '',
+      description: app.description || '',
+      phone: app.phone || '',
+      telegram_username: app.telegram_username || '',
+      city: app.city || '',
+      address: app.address || '',
+      bank_name: app.bank_name || '',
+      bakong_account_id: app.bakong_account_id || '',
+      logo_url: app.logo_url || '',
+      banner_url: app.banner_url || '',
+    })
+  }
+
+  const closeSellerModal = () => {
+    setSelectedApp(null)
+    setEditingApp(false)
+  }
+
+  const handleSellerUpdate = async () => {
+    if (!selectedApp || !editForm.store_name.trim() || !editForm.phone.trim()) {
+      toast({ title: t('Store name and phone are required', 'ត្រូវការឈ្មោះហាង និងលេខទូរស័ព្ទ'), type: 'error' })
+      return
+    }
+
+    setSavingEdit(true)
+    try {
+      const res = await sellerService.updateSeller(selectedApp.id, editForm)
+      setApplications((current) => current.map((app) => app.id === selectedApp.id ? res.data : app))
+      setSelectedApp(res.data)
+      setEditingApp(false)
+      toast({ title: res.message || t('Seller store updated successfully', 'បានកែប្រែហាងអ្នកលក់ដោយជោគជ័យ'), type: 'success' })
+      await loadData()
+    } catch (err: any) {
+      toast({ title: err?.message || t('Failed to update seller store', 'មិនអាចកែប្រែហាងអ្នកលក់បានទេ'), type: 'error' })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleSellerDelete = async () => {
+    if (!deletingApp) return
+
+    try {
+      const deletedId = deletingApp.id
+      const res = await sellerService.deleteSeller(deletedId)
+      setApplications((current) => current.filter((app) => app.id !== deletedId))
+      if (selectedApp?.id === deletedId) {
+        closeSellerModal()
+      }
+      setDeletingApp(null)
+      toast({ title: res.message || t('Seller store deleted successfully', 'បានលុបហាងអ្នកលក់ដោយជោគជ័យ'), type: 'success' })
+      await loadData()
+    } catch (err: any) {
+      toast({ title: err?.message || t('Failed to delete seller store', 'មិនអាចលុបហាងអ្នកលក់បានទេ'), type: 'error' })
     }
   }
 
@@ -503,6 +584,28 @@ export function AdminSellersPage() {
                                 <span>{t('View', 'មើល')}</span>
                               </Button>
 
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openSellerEditor(app)}
+                                className="h-8 px-2.5 text-xs rounded-lg"
+                                title="Edit seller store"
+                              >
+                                <Pencil className="h-3.5 w-3.5 mr-1" />
+                                <span>{t('Edit', 'កែប្រែ')}</span>
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeletingApp(app)}
+                                className="h-8 px-2.5 text-xs rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                                title="Delete seller store"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                <span>{t('Delete', 'លុប')}</span>
+                              </Button>
+
                               {/* Pending State Actions: Approve & Reject */}
                               {isPending && (
                                 <>
@@ -582,7 +685,7 @@ export function AdminSellersPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setSelectedApp(null)}
+                  onClick={closeSellerModal}
                   className="h-8 w-8 rounded-full"
                 >
                   <X className="h-4 w-4" />
@@ -644,6 +747,54 @@ export function AdminSellersPage() {
                   </Badge>
                 </div>
 
+                {editingApp && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Pencil className="h-4 w-4 text-primary" />
+                      {t('Edit Seller Store', 'កែប្រែហាងអ្នកលក់')}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        ['store_name', t('Store name', 'ឈ្មោះហាង')],
+                        ['category', t('Category', 'ប្រភេទ')],
+                        ['phone', t('Phone', 'ទូរស័ព្ទ')],
+                        ['telegram_username', t('Telegram username', 'Telegram')],
+                        ['city', t('City', 'ក្រុង/ខេត្ត')],
+                        ['bank_name', t('Bank name', 'ឈ្មោះធនាគារ')],
+                        ['bakong_account_id', t('Bakong account ID', 'លេខគណនី Bakong')],
+                        ['logo_url', 'Logo URL'],
+                        ['banner_url', 'Banner URL'],
+                      ].map(([field, label]) => (
+                        <label key={field} className="space-y-1">
+                          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                          <Input
+                            value={editForm[field as keyof typeof editForm]}
+                            onChange={(e) => setEditForm((current) => ({ ...current, [field]: e.target.value }))}
+                            className="h-9 text-xs rounded-lg"
+                          />
+                        </label>
+                      ))}
+                      <label className="space-y-1 sm:col-span-2">
+                        <span className="text-xs font-medium text-muted-foreground">{t('Address', 'អាសយដ្ឋាន')}</span>
+                        <Input
+                          value={editForm.address}
+                          onChange={(e) => setEditForm((current) => ({ ...current, address: e.target.value }))}
+                          className="h-9 text-xs rounded-lg"
+                        />
+                      </label>
+                      <label className="space-y-1 sm:col-span-2">
+                        <span className="text-xs font-medium text-muted-foreground">{t('Description', 'ការពិពណ៌នា')}</span>
+                        <textarea
+                          value={editForm.description}
+                          onChange={(e) => setEditForm((current) => ({ ...current, description: e.target.value }))}
+                          rows={3}
+                          className="w-full text-xs rounded-lg border bg-background p-2.5 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 {/* Description */}
                 <div>
                   <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-1">
@@ -694,11 +845,42 @@ export function AdminSellersPage() {
 
               {/* Modal Footer with Actions */}
               <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between">
-                <Button variant="outline" size="sm" onClick={() => setSelectedApp(null)} className="text-xs">
+                <Button variant="outline" size="sm" onClick={closeSellerModal} className="text-xs">
                   {t('Close', 'បិទ')}
                 </Button>
 
                 <div className="flex items-center gap-2">
+                  {editingApp ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingApp(false)}
+                        disabled={savingEdit}
+                        className="text-xs"
+                      >
+                        {t('Cancel', 'បោះបង់')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSellerUpdate}
+                        disabled={savingEdit || !editForm.store_name.trim() || !editForm.phone.trim()}
+                        className="text-xs font-semibold"
+                      >
+                        {savingEdit ? t('Saving...', 'កំពុងរក្សាទុក...') : t('Save Changes', 'រក្សាទុកការកែប្រែ')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openSellerEditor(selectedApp)}
+                      className="text-xs"
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      {t('Edit Store', 'កែប្រែហាង')}
+                    </Button>
+                  )}
                   {selectedApp.status === 'pending' && (
                     <>
                       <Button
@@ -789,6 +971,20 @@ export function AdminSellersPage() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          open={deletingApp !== null}
+          onOpenChange={(open) => !open && setDeletingApp(null)}
+          title={t('Delete Seller Store?', 'លុបហាងអ្នកលក់?')}
+          description={deletingApp
+            ? t(
+                `Permanently delete "${deletingApp.store_name}" and revoke its seller access? This action cannot be undone.`,
+                `តើលុប "${deletingApp.store_name}" និងដកសិទ្ធិអ្នកលក់ជាអចិន្ត្រៃយ៍ឬ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។`
+              )
+            : ''}
+          confirmLabel={t('Delete Store', 'លុបហាង')}
+          onConfirm={handleSellerDelete}
+        />
       </div>
     </DashboardLayout>
   )

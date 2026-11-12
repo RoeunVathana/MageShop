@@ -23,6 +23,8 @@ import {
   CreditCard,
   QrCode,
   Package,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
@@ -33,6 +35,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { adminOrderService, type AdminOrder } from '@/services/adminOrder.service'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 const ORDER_STATUSES = [
   { value: 'all', label: 'All Orders', labelKm: 'ទាំងអស់' },
@@ -61,6 +64,16 @@ export function AdminOrderListPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [newStatus, setNewStatus] = useState<string>('')
   const [newPaymentStatus, setNewPaymentStatus] = useState<string>('')
+  const [isEditingOrder, setIsEditingOrder] = useState(false)
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<AdminOrder | null>(null)
+  const [editForm, setEditForm] = useState({
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+    delivery_address: '',
+    notes: '',
+  })
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -94,6 +107,81 @@ export function AdminOrderListPage() {
     e.preventDefault()
     setCurrentPage(1)
     fetchOrders()
+  }
+
+  const openOrderDetails = (order: AdminOrder) => {
+    setSelectedOrder(order)
+    setIsEditingOrder(false)
+  }
+
+  const openOrderEditor = (order: AdminOrder) => {
+    setSelectedOrder(order)
+    setIsEditingOrder(true)
+    setEditForm({
+      customer_name: order.customer_name || '',
+      customer_email: order.customer_email || '',
+      customer_phone: order.customer_phone || '',
+      delivery_address: order.delivery_address || '',
+      notes: order.notes || '',
+    })
+  }
+
+  const closeOrderDetails = () => {
+    setSelectedOrder(null)
+    setIsEditingOrder(false)
+  }
+
+  const handleOrderUpdate = async () => {
+    if (!selectedOrder) return
+    setIsSavingOrder(true)
+    try {
+      const updated = await adminOrderService.updateOrder(selectedOrder.id, {
+        customer_name: editForm.customer_name.trim(),
+        customer_email: editForm.customer_email.trim() || null,
+        customer_phone: editForm.customer_phone.trim(),
+        delivery_address: editForm.delivery_address.trim(),
+        notes: editForm.notes.trim() || null,
+      })
+      setOrders((prev) => prev.map((order) => (order.id === updated.id ? updated : order)))
+      setSelectedOrder(updated)
+      setIsEditingOrder(false)
+      toast({
+        title: t('Order Updated', 'បានកែប្រែការបញ្ជាទិញ'),
+        description: t(`Order #${updated.order_number} details were saved.`, `ព័ត៌មានការបញ្ជាទិញ #${updated.order_number} ត្រូវបានរក្សាទុក។`),
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: t('Update Failed', 'ការកែប្រែបានបរាជ័យ'),
+        description: err?.message || 'Failed to update order details.',
+        type: 'error',
+      })
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }
+
+  const handleOrderDelete = async () => {
+    if (!deleteTarget) return
+    const order = deleteTarget
+    try {
+      await adminOrderService.deleteOrder(order.id)
+      setOrders((prev) => prev.filter((item) => item.id !== order.id))
+      setTotalOrders((total) => Math.max(0, total - 1))
+      if (selectedOrder?.id === order.id) closeOrderDetails()
+      setDeleteTarget(null)
+      toast({
+        title: t('Order Deleted', 'បានលុបការបញ្ជាទិញ'),
+        description: t(`Order #${order.order_number} was deleted.`, `ការបញ្ជាទិញ #${order.order_number} ត្រូវបានលុប។`),
+        type: 'info',
+      })
+    } catch (err: any) {
+      toast({
+        title: t('Delete Failed', 'ការលុបបានបរាជ័យ'),
+        description: err?.message || 'Failed to delete the order.',
+        type: 'error',
+      })
+    }
   }
 
   const handleStatusUpdate = async (orderId: number, status: string) => {
@@ -387,7 +475,7 @@ export function AdminOrderListPage() {
                           <td className="py-3.5 px-4 font-black text-foreground">
                             <button
                               type="button"
-                              onClick={() => setSelectedOrder(order)}
+                              onClick={() => openOrderDetails(order)}
                               className="text-primary hover:underline flex items-center gap-1 font-mono text-xs"
                             >
                               <span>{order.order_number}</span>
@@ -453,7 +541,7 @@ export function AdminOrderListPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setSelectedOrder(order)}
+                                onClick={() => openOrderDetails(order)}
                                 className="h-8 px-2.5 rounded-lg text-xs font-bold gap-1"
                                 title={t('View Full Order Details', 'មើលព័ត៌មានលម្អិត')}
                               >
@@ -476,6 +564,28 @@ export function AdminOrderListPage() {
                                   <FileText className="w-4 h-4" />
                                 </Button>
                               </a>
+
+                              {/* Edit order contact and delivery details */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openOrderEditor(order)}
+                                className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                title={t('Edit Order Details', 'កែប្រែព័ត៌មានការបញ្ជាទិញ')}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+
+                              {/* Delete order with explicit confirmation */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteTarget(order)}
+                                className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                title={t('Delete Order', 'លុបការបញ្ជាទិញ')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
 
                               {/* Live GPS Track */}
                               <Link
@@ -575,12 +685,65 @@ export function AdminOrderListPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedOrder(null)}
+                  onClick={closeOrderDetails}
                   className="rounded-full w-8 h-8 p-0 text-muted-foreground hover:text-foreground"
                 >
                   <XCircle className="w-5 h-5" />
                 </Button>
               </div>
+
+              {isEditingOrder && (
+                <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 space-y-3">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                    {t('Edit Customer & Delivery Details', 'កែប្រែព័ត៌មានអតិថិជន និងការដឹកជញ្ជូន')}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground">{t('Customer Name', 'ឈ្មោះអតិថិជន')}</label>
+                      <Input
+                        value={editForm.customer_name}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, customer_name: e.target.value }))}
+                        maxLength={120}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground">{t('Customer Email', 'អ៊ីមែលអតិថិជន')}</label>
+                      <Input
+                        type="email"
+                        value={editForm.customer_email}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, customer_email: e.target.value }))}
+                        maxLength={255}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground">{t('Phone Number', 'លេខទូរស័ព្ទ')}</label>
+                      <Input
+                        value={editForm.customer_phone}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
+                        maxLength={50}
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-muted-foreground">{t('Delivery Address', 'អាសយដ្ឋានដឹកជញ្ជូន')}</label>
+                      <Input
+                        value={editForm.delivery_address}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, delivery_address: e.target.value }))}
+                        maxLength={500}
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-muted-foreground">{t('Order Notes', 'កំណត់ចំណាំការបញ្ជាទិញ')}</label>
+                      <textarea
+                        value={editForm.notes}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                        maxLength={1000}
+                        rows={3}
+                        className="w-full rounded-xl border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Status Update Controls */}
               <div className="p-4 rounded-2xl bg-muted/40 border space-y-3">
@@ -722,6 +885,18 @@ export function AdminOrderListPage() {
               {/* Action Buttons in Modal */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {!isEditingOrder && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openOrderEditor(selectedOrder)}
+                      className="w-full sm:w-auto rounded-xl h-9 text-xs font-bold gap-1.5"
+                    >
+                      <Pencil className="w-4 h-4 text-primary" />
+                      <span>{t('Edit Order', 'កែប្រែការបញ្ជាទិញ')}</span>
+                    </Button>
+                  )}
+
                   <a
                     href={`https://api.tyushop.blog/api/v1/orders/${selectedOrder.id}/receipt`}
                     target="_blank"
@@ -754,17 +929,54 @@ export function AdminOrderListPage() {
                   </Link>
                 </div>
 
-                <Button
-                  size="sm"
-                  onClick={() => setSelectedOrder(null)}
-                  className="w-full sm:w-auto rounded-xl h-9 text-xs font-bold"
-                >
-                  {t('Close', 'បិទ')}
-                </Button>
+                {isEditingOrder ? (
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingOrder(false)}
+                      disabled={isSavingOrder}
+                      className="w-full sm:w-auto rounded-xl h-9 text-xs font-bold"
+                    >
+                      {t('Cancel', 'បោះបង់')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleOrderUpdate}
+                      disabled={isSavingOrder || !editForm.customer_name.trim() || !editForm.customer_phone.trim() || !editForm.delivery_address.trim()}
+                      className="w-full sm:w-auto rounded-xl h-9 text-xs font-bold gap-1.5"
+                    >
+                      {isSavingOrder ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {t('Save Changes', 'រក្សាទុកការកែប្រែ')}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={closeOrderDetails}
+                    className="w-full sm:w-auto rounded-xl h-9 text-xs font-bold"
+                  >
+                    {t('Close', 'បិទ')}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          title={t('Delete Order?', 'លុបការបញ្ជាទិញ?')}
+          description={deleteTarget
+            ? t(
+                `Permanently delete order #${deleteTarget.order_number} and its related records? This action cannot be undone.`,
+                `តើលុបការបញ្ជាទិញ #${deleteTarget.order_number} និងទិន្នន័យពាក់ព័ន្ធជាអចិន្ត្រៃយ៍ឬ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។`
+              )
+            : ''}
+          confirmLabel={t('Delete Order', 'លុបការបញ្ជាទិញ')}
+          onConfirm={handleOrderDelete}
+        />
       </div>
     </DashboardLayout>
   )

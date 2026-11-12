@@ -150,4 +150,18 @@ export const sellerService = {
   async updateStatus(id: number, status: 'approved' | 'suspended' | 'pending'): Promise<{ data: SellerApplicationData; message: string }> {
     return api.patch(`/admin/sellers/${id}/status`, { status })
   },
+
+  /**
+   * Admin: Edit seller store and settlement details
+   */
+  async updateSeller(id: number, payload: SellerApplyPayload): Promise<{ data: SellerApplicationData; message: string }> {
+    return api.patch(`/admin/sellers/${id}`, payload)
+  },
+
+  /**
+   * Admin: Delete seller application and revoke SELLER access
+   */
+  async deleteSeller(id: number): Promise<{ message: string }> {
+    return api.delete(`/admin/sellers/${id}`)
+  },
 }

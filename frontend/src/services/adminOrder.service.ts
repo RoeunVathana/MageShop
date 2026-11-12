@@ -113,6 +113,27 @@ export const adminOrderService = {
   },
 
   /**
+   * Update editable customer and delivery details without changing payment
+   * or fulfillment state.
+   */
+  async updateOrder(
+    id: number | string,
+    data: {
+      customer_name: string
+      customer_email?: string | null
+      customer_phone: string
+      delivery_address: string
+      notes?: string | null
+    }
+  ): Promise<AdminOrder> {
+    const res = await api.patch<{ status: string; message: string; data: AdminOrder }>(
+      `/admin/orders/${id}`,
+      data
+    )
+    return res.data
+  },
+
+  /**
    * Update order status
    */
   async updateStatus(
