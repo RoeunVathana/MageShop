@@ -1011,6 +1011,15 @@ export function CartPage() {
             `/orders/track/${encodeURIComponent(qrModalData.order_number)}/confirm-payment`,
             {
               context: 'qr_checkout',
+            },
+            {
+              // Confirmation is idempotent on the backend. If the custom API
+              // edge drops the response after the Bakong check completes,
+              // retry the same request against the direct Railway API so the
+              // customer sees the real payment state instead of a generic
+              // "No response" failure.
+              timeout: 20000,
+              retryOnNetworkFailure: true,
             }
           )
           break
