@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -270,7 +271,14 @@ class CommerceEngagementController extends Controller
         // A client may retry after a network timeout. Return the original
         // checkout instead of creating a second order or awarding points twice.
         $idempotencyKey = trim((string) ($validated['idempotency_key'] ?? ''));
-        if ($idempotencyKey !== '') {
+        $hasIdempotencyColumn = false;
+        try {
+            $hasIdempotencyColumn = Schema::hasColumn('orders', 'checkout_idempotency_key');
+        } catch (\Throwable) {
+            // Keep checkout available if schema inspection is temporarily unavailable.
+        }
+
+        if ($idempotencyKey !== '' && $hasIdempotencyColumn) {
             $existingOrder = Order::with(['items', 'payments', 'receipt'])
                 ->where('user_id', $user->id)
                 ->where('checkout_idempotency_key', $idempotencyKey)
@@ -475,11 +483,11 @@ class CommerceEngagementController extends Controller
                 $initiateQr,
                 $qrPaymentData,
                 $txnRef,
-                $availablePoints
+                $availablePoints,
+                $hasIdempotencyColumn
             ): array {
-            $order = Order::create([
+            $orderAttributes = [
                 'order_number' => $orderNumber,
-                'checkout_idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
                 'user_id' => $user->id,
                 'status' => 'pending',
                 'subtotal' => $subtotal,
@@ -504,7 +512,13 @@ class CommerceEngagementController extends Controller
                 'current_lat' => null,
                 'current_lng' => null,
                 'estimated_arrival' => null,
-            ]);
+            ];
+
+            if ($hasIdempotencyColumn && $idempotencyKey !== '') {
+                $orderAttributes['checkout_idempotency_key'] = $idempotencyKey;
+            }
+
+            $order = Order::create($orderAttributes);
 
             foreach ($orderItems as $item) {
                 OrderItem::create([

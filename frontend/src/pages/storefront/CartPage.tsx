@@ -853,9 +853,16 @@ export function CartPage() {
         })
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : error && typeof error === 'object' && 'message' in error
+            ? String((error as { message?: unknown }).message || '')
+            : ''
+
       toast({
         title: t('Checkout could not be completed', 'មិនអាចបញ្ចប់ការទូទាត់ប្រាក់បានទេ'),
-        description: error instanceof Error ? error.message : t('Please check your details and try again.', 'សូមពិនិត្យព័ត៌មានរបស់អ្នក ហើយសាកល្បងម្ដងទៀត។'),
+        description: errorMessage || t('Please check your details and try again.', 'សូមពិនិត្យព័ត៌មានរបស់អ្នក ហើយសាកល្បងម្ដងទៀត។'),
         type: 'error',
       })
     } finally {
