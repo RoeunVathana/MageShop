@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { sellerService, type SellerDashboardData } from '@/services/seller.service'
+import { PaymentAccountsPanel } from '@/components/dashboard/PaymentAccountsPanel'
 
 const sellerNav: NavItem[] = [
   { label: 'Store Overview', href: '/dashboard/seller', icon: Store },
@@ -108,6 +109,8 @@ export function SellerDashboard() {
           <SellerMetric label="Active Listings" value={loading ? '—' : String(stats?.active_listings ?? 0)} icon={Package} tone="blue" />
           <SellerMetric label="Payout Balance" value={loading ? '—' : `$${Number(stats?.payout_balance || 0).toFixed(2)}`} icon={TrendingUp} tone="indigo" />
         </div>
+
+        <PaymentAccountsPanel />
 
         {dashboard && stats?.total_listings === 0 && (
           <Card className="border-emerald-200/70 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10">

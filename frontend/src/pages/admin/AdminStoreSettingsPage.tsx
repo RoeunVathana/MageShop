@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { storeSettingsService } from '@/services/storeSettings.service'
 import { api } from '@/lib/api'
+import { PaymentAccountsPanel } from '@/components/dashboard/PaymentAccountsPanel'
 
 export function AdminStoreSettingsPage() {
   const { t } = useShopEngagement()
@@ -62,8 +63,8 @@ export function AdminStoreSettingsPage() {
     company_city: 'Phnom Penh',
     company_country: 'Cambodia',
     // Bakong KHQR
-    bakong_account_id: 'vathana@abaa',
-    bakong_merchant_name: 'TYUSHOP',
+    bakong_account_id: 'roeun_vathana1@bkrt',
+    bakong_merchant_name: 'Tyushop',
     // Telegram
     telegram_bot_username: '',
     telegram_support_contact: '',
@@ -95,8 +96,8 @@ export function AdminStoreSettingsPage() {
         store_address: data.store_address || 'Preah Monivong Blvd, Sangkat Boeung Keng Kang 1, Khan Chamkarmon, Phnom Penh',
         company_city: data.company_city || 'Phnom Penh',
         company_country: data.company_country || 'Cambodia',
-        bakong_account_id: data.bakong_account_id || 'vathana@abaa',
-        bakong_merchant_name: data.bakong_merchant_name || 'TYUSHOP',
+        bakong_account_id: data.bakong_account_id || 'roeun_vathana1@bkrt',
+        bakong_merchant_name: data.bakong_merchant_name || 'Tyushop',
         telegram_bot_username: data.telegram_bot_username || 'MegaCommerceAiBot',
         telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       })
@@ -532,6 +533,8 @@ export function AdminStoreSettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <PaymentAccountsPanel adminMode />
 
         {/* Bottom Save Bar */}
         <div className="flex items-center justify-end gap-3 p-4 rounded-2xl bg-card border shadow-sm">

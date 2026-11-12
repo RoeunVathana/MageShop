@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react'
 import { storeSettingsService } from '@/services/storeSettings.service'
 import { api } from '@/lib/api'
 
@@ -369,7 +369,7 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     }
   }, [language])
 
-  const t = (en: string, km: string): string => (language === 'KM' ? km : en)
+  const t = useCallback((en: string, km: string): string => (language === 'KM' ? km : en), [language])
 
   const formatPrice = (usdAmount: number, targetCurrency?: 'USD' | 'KHR'): string => {
     const safeUsd = Number(usdAmount || 0)

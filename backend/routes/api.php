@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\MerchantPaymentAccountController;
 use App\Http\Controllers\Api\V1\OperationsController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReceiptController;
@@ -91,6 +92,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Public Store Settings
 Route::get('/store-settings', [StoreSettingsController::class, 'show']);
+
+// Authenticated Bakong merchant and seller payout account management.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/payment-accounts', [MerchantPaymentAccountController::class, 'index']);
+    Route::post('/payment-accounts', [MerchantPaymentAccountController::class, 'store']);
+    Route::patch('/payment-accounts/{account}', [MerchantPaymentAccountController::class, 'update']);
+    Route::delete('/payment-accounts/{account}', [MerchantPaymentAccountController::class, 'destroy']);
+    Route::post('/payment-accounts/{account}/default', [MerchantPaymentAccountController::class, 'makeDefault']);
+});
 
 // Authenticated Store Settings Update Aliases
 Route::middleware('auth:sanctum')->group(function () {
