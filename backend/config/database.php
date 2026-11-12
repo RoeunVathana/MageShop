@@ -97,6 +97,18 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Railway PostgreSQL is reached through PgBouncer transaction
+            // pooling. Server-side PDO prepared statements belong to the
+            // connection that created them, so they can disappear when the
+            // next query is assigned to another pooled connection. That was
+            // producing `prepared statement ... does not exist` errors and
+            // could turn checkout transactions into generic 500 responses.
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => filter_var(
+                    env('DB_EMULATE_PREPARES', true),
+                    FILTER_VALIDATE_BOOLEAN
+                ),
+            ],
         ],
 
         'sqlsrv' => [
