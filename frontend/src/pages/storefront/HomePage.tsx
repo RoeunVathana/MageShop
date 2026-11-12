@@ -62,7 +62,7 @@ export function HomePage() {
         status: 'active',
         sort_by: 'created_at',
         sort_direction: 'desc',
-      })
+      }, { public: true })
       .then((res) => {
         setFeaturedProducts(res.data)
         setFeaturedTotal(res.meta?.total || res.data.length)

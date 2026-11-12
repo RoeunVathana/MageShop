@@ -1,4 +1,4 @@
-import { apiClient, initCsrf } from '@/lib/api'
+import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
 import type {
   Product,
   CreateProductPayload,
@@ -13,7 +13,7 @@ export const productService = {
    */
   async getProducts(
     params?: ProductFilterParams,
-    options?: { signal?: AbortSignal }
+    options?: { signal?: AbortSignal; public?: boolean }
   ): Promise<PaginatedResponse<Product>> {
     let lastError: unknown
     const isUnfilteredActiveCatalog =
@@ -28,14 +28,12 @@ export const productService = {
     // The public API is hosted on Railway and may need to wake from a cold start.
     // Retry transient failures and an unexpected empty unfiltered response so a
     // stale cache/cold database does not render the storefront as 0 products.
+    const client = options?.public ? publicApiClient : apiClient
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        const response = await apiClient.get<PaginatedResponse<Product>>('/products', {
+        const response = await client.get<PaginatedResponse<Product>>('/products', {
           params,
           signal: options?.signal,
-          headers: {
-            'Cache-Control': 'no-cache',
-          },
         })
 
         const payload: any = response.data

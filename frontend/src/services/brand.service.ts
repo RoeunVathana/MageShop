@@ -1,12 +1,16 @@
-import { apiClient } from '@/lib/api'
+import { apiClient, publicApiClient } from '@/lib/api'
 import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export const brandService = {
   /**
    * Get paginated or filtered list of brands.
    */
-  async getBrands(params: Record<string, any> = {}): Promise<{ data: Brand[]; meta?: any }> {
-    const response = await apiClient.get<{ data: Brand[]; meta: any }>('/brands', { params })
+  async getBrands(
+    params: Record<string, any> = {},
+    options?: { public?: boolean }
+  ): Promise<{ data: Brand[]; meta?: any }> {
+    const client = options?.public ? publicApiClient : apiClient
+    const response = await client.get<{ data: Brand[]; meta: any }>('/brands', { params })
     return response.data
   },
 

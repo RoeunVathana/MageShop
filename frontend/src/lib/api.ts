@@ -21,6 +21,12 @@ const getApiBaseUrl = (): string => {
 }
 
 const API_BASE_URL = getApiBaseUrl()
+// Public catalog reads use the Railway service URL directly. The custom API
+// domain adds several seconds of edge latency for uncached product requests,
+// while authenticated and mutating requests continue using API_BASE_URL.
+const PUBLIC_API_BASE_URL =
+  import.meta.env.VITE_PUBLIC_API_BASE_URL?.trim() ||
+  'https://mageshop-production.up.railway.app/api/v1'
 // Sanctum csrf cookie endpoint is at the backend root: https://api.tyushop.blog/sanctum/csrf-cookie
 const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
 
@@ -43,6 +49,21 @@ export const apiClient: AxiosInstance = axios.create({
   },
   withCredentials: true,
   withXSRFToken: true,
+})
+
+/**
+ * Lightweight client for public catalog reads.
+ *
+ * It intentionally avoids cookies, CSRF, and custom request headers so these
+ * GET requests do not need an extra CORS preflight round trip.
+ */
+export const publicApiClient: AxiosInstance = axios.create({
+  baseURL: PUBLIC_API_BASE_URL,
+  timeout: 20000,
+  headers: {
+    Accept: 'application/json',
+  },
+  withCredentials: false,
 })
 
 /**

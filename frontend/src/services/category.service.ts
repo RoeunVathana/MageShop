@@ -1,4 +1,4 @@
-import { apiClient, initCsrf } from '@/lib/api'
+import { apiClient, initCsrf, publicApiClient } from '@/lib/api'
 import type {
   Category,
   CategoryAttribute,
@@ -17,8 +17,9 @@ export const categoryService = {
     search?: string
     is_active?: boolean
     parent_id?: number | string
-  }): Promise<Category[]> {
-    const response = await apiClient.get<{ data: Category[] }>('/categories', { params })
+  }, options?: { public?: boolean }): Promise<Category[]> {
+    const client = options?.public ? publicApiClient : apiClient
+    const response = await client.get<{ data: Category[] }>('/categories', { params })
     return response.data.data
   },
 

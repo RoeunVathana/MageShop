@@ -72,7 +72,7 @@ export function ProductsPage() {
   // Load category tree & brands on mount
   useEffect(() => {
     categoryService
-      .getCategories({ tree: true })
+      .getCategories({ tree: true }, { public: true })
       .then((cats) => {
         setCategories(cats)
       })
@@ -81,7 +81,7 @@ export function ProductsPage() {
       })
 
     brandService
-      .getBrands({ per_page: 50, is_active: true })
+      .getBrands({ per_page: 50, is_active: true }, { public: true })
       .then((res) => {
         setBrands(res.data || [])
       })
@@ -112,7 +112,7 @@ export function ProductsPage() {
     if (currentSortDir) params.sort_direction = currentSortDir
 
     productService
-      .getProducts(params, { signal: controller.signal })
+      .getProducts(params, { signal: controller.signal, public: true })
       .then((res) => {
         setProducts(res.data)
         setTotalProducts(res.meta?.total || res.data.length)
