@@ -8,6 +8,29 @@ use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
+    /**
+     * ProductService stores canonical uppercase SKUs. Normalize before the
+     * unique rule so editing a SKU cannot pass validation and fail at the DB.
+     */
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach (['name', 'brand'] as $field) {
+            if (is_string($this->input($field))) {
+                $normalized[$field] = trim((string) $this->input($field));
+            }
+        }
+
+        if (is_string($this->input('sku'))) {
+            $normalized['sku'] = strtoupper(trim((string) $this->input('sku')));
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
     public function authorize(): bool
     {
         $product = $this->route('product');

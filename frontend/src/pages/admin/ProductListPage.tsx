@@ -47,6 +47,7 @@ export function ProductListPage() {
   const [perPage, setPerPage] = useState<number>(15)
   const [sortBy, setSortBy] = useState<string>('created_at')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
+  const [actionProductId, setActionProductId] = useState<number | null>(null)
 
   // Quick Adjustment Dialog State
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null)
@@ -108,19 +109,43 @@ export function ProductListPage() {
     }
 
     try {
-      await productService.archiveProduct(product.id)
+      setActionProductId(product.id)
+      await productService.deleteProduct(product.id)
       toast({
-        title: 'Product Archived',
-        description: `Product "${product.name}" is now safely archived.`,
+        title: 'Product Deleted',
+        description: `Product "${product.name}" was safely archived and removed from the active catalog.`,
         type: 'success',
       })
-      fetchProducts()
+      await fetchProducts()
     } catch (err: any) {
       toast({
-        title: 'Archive Failed',
-        description: err?.message || 'Could not archive product.',
+        title: 'Delete Failed',
+        description: err?.message || 'Could not delete product.',
         type: 'error',
       })
+    } finally {
+      setActionProductId(null)
+    }
+  }
+
+  const handleRestore = async (product: Product) => {
+    setActionProductId(product.id)
+    try {
+      await productService.updateProduct(product.id, { status: 'active', is_active: true })
+      toast({
+        title: 'Product Restored',
+        description: `Product "${product.name}" is active again.`,
+        type: 'success',
+      })
+      await fetchProducts()
+    } catch (err: any) {
+      toast({
+        title: 'Restore Failed',
+        description: err?.message || 'Could not restore product.',
+        type: 'error',
+      })
+    } finally {
+      setActionProductId(null)
     }
   }
 
@@ -522,16 +547,36 @@ export function ProductListPage() {
                               </Button>
                             </Link>
 
-                            {/* Archive */}
-                            {p.status !== 'archived' && (
+                            {/* Safe delete: DELETE archives the record so it can be restored. */}
+                            {p.status !== 'archived' ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                                title="Archive Product"
+                                disabled={actionProductId === p.id}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive disabled:opacity-50"
+                                title="Delete Product (safe archive)"
                                 onClick={() => handleArchive(p)}
                               >
-                                <Archive className="w-3.5 h-3.5" />
+                                {actionProductId === p.id ? (
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Archive className="w-3.5 h-3.5" />
+                                )}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={actionProductId === p.id}
+                                className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                                title="Restore Product"
+                                onClick={() => handleRestore(p)}
+                              >
+                                {actionProductId === p.id ? (
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <ArchiveRestore className="w-3.5 h-3.5" />
+                                )}
                               </Button>
                             )}
                           </div>

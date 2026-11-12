@@ -103,12 +103,20 @@ export const productService = {
   /**
    * Safely archive a product (soft delete / status change)
    */
-  async archiveProduct(id: number | string): Promise<{ status: string; message: string; data: Product }> {
+  async deleteProduct(id: number | string): Promise<{ status: string; message: string; data: Product }> {
     await initCsrf()
     const response = await apiClient.delete<{ status: string; message: string; data: Product }>(
       `/products/${id}`
     )
     return response.data
+  },
+
+  /**
+   * Backwards-compatible alias for the safe DELETE endpoint. The backend
+   * archives products instead of physically removing them.
+   */
+  async archiveProduct(id: number | string): Promise<{ status: string; message: string; data: Product }> {
+    return this.deleteProduct(id)
   },
 
   /**
