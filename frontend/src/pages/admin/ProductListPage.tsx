@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { productService } from '@/services/product.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -48,6 +49,7 @@ export function ProductListPage() {
   const [sortBy, setSortBy] = useState<string>('created_at')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
   const [actionProductId, setActionProductId] = useState<number | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<Product | null>(null)
 
   // Quick Adjustment Dialog State
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null)
@@ -103,11 +105,13 @@ export function ProductListPage() {
     fetchProducts()
   }
 
-  const handleArchive = async (product: Product) => {
-    if (!window.confirm(`Are you sure you want to archive product "${product.name}"? It will be hidden from the storefront catalog.`)) {
-      return
-    }
+  const handleArchive = (product: Product) => {
+    setArchiveTarget(product)
+  }
 
+  const confirmArchive = async () => {
+    if (!archiveTarget) return
+    const product = archiveTarget
     try {
       setActionProductId(product.id)
       await productService.deleteProduct(product.id)
@@ -117,6 +121,7 @@ export function ProductListPage() {
         type: 'success',
       })
       await fetchProducts()
+      setArchiveTarget(null)
     } catch (err: any) {
       toast({
         title: 'Delete Failed',
@@ -632,6 +637,17 @@ export function ProductListPage() {
           )
           fetchProducts()
         }}
+      />
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+        title="Archive product?"
+        description={archiveTarget
+          ? `Archive "${archiveTarget.name}"? It will be hidden from the storefront catalog and can be restored later.`
+          : ''}
+        confirmLabel="Archive product"
+        onConfirm={confirmArchive}
       />
     </DashboardLayout>
   )

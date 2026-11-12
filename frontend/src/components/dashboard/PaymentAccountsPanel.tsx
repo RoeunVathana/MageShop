@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import {
   paymentAccountsService,
@@ -35,6 +36,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
   const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [accountToRemove, setAccountToRemove] = useState<MerchantPaymentAccount | null>(null)
 
   const defaultAccount = useMemo(() => accounts.find((account) => account.is_default), [accounts])
 
@@ -130,12 +132,16 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
     }
   }
 
-  const remove = async (account: MerchantPaymentAccount) => {
-    if (!window.confirm(t(`Remove ${account.account_id}?`, `តើលុប ${account.account_id} ឬទេ?`))) return
+  const remove = (account: MerchantPaymentAccount) => {
+    setAccountToRemove(account)
+  }
+
+  const confirmRemove = async () => {
+    if (!accountToRemove) return
     try {
-      await paymentAccountsService.remove(account.id)
+      await paymentAccountsService.remove(accountToRemove.id)
       await loadAccounts()
-      if (editingId === account.id) resetForm()
+      if (editingId === accountToRemove.id) resetForm()
       toast({ title: t('Payment account removed', 'បានលុបគណនីទូទាត់'), type: 'success' })
     } catch (error: any) {
       toast({ title: t('Could not remove payment account', 'មិនអាចលុបគណនីទូទាត់បានទេ'), description: error?.message, type: 'error' })
@@ -256,6 +262,16 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {t('Admin-owned, fallback, and mixed-seller checkouts use this selected default account. Seller-only carts use the seller default when configured.', 'ការទិញពី Admin, fallback និងអ្នកលក់ច្រើនប្រើគណនីលំនាំដើមនេះ។ ការទិញតែពីអ្នកលក់ប្រើគណនីអ្នកលក់ ប្រសិនបើបានកំណត់។')}</p>
         )}
       </CardContent>
+      <ConfirmDialog
+        open={accountToRemove !== null}
+        onOpenChange={(open) => !open && setAccountToRemove(null)}
+        title={t('Remove payment account?', 'លុបគណនីទូទាត់?')}
+        description={accountToRemove
+          ? t(`Remove ${accountToRemove.account_id}? This account will no longer be available for checkout QR payments.`, `តើលុប ${accountToRemove.account_id} មែនទេ? គណនីនេះនឹងមិនអាចប្រើសម្រាប់ QR ទូទាត់បានទៀតទេ។`)
+          : ''}
+        confirmLabel={t('Remove account', 'លុបគណនី')}
+        onConfirm={confirmRemove}
+      />
     </Card>
   )
 }

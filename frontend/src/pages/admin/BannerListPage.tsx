@@ -28,6 +28,7 @@ import { adminNavItems } from '@/components/admin/adminNav'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { Pagination } from '@/components/common/Pagination'
 import { bannerService, type Banner, type CreateBannerPayload } from '@/services/banner.service'
@@ -43,6 +44,7 @@ export function BannerListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
   const [perPage, setPerPage] = useState(10)
   const [sortBy, setSortBy] = useState('id')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
@@ -229,9 +231,13 @@ export function BannerListPage() {
     }
   }
 
-  const handleDeleteBanner = async (banner: Banner) => {
-    if (!confirm(`Are you sure you want to permanently delete slide banner "${banner.title}"?`)) return
+  const handleDeleteBanner = (banner: Banner) => {
+    setDeleteTarget(banner)
+  }
 
+  const confirmDeleteBanner = async () => {
+    if (!deleteTarget) return
+    const banner = deleteTarget
     try {
       await bannerService.deleteBanner(banner.id)
       toast({ title: 'Banner Deleted', description: `"${banner.title}" deleted.`, type: 'info' })
@@ -239,6 +245,7 @@ export function BannerListPage() {
         setPreviewBanner(null)
       }
       fetchBanners()
+      setDeleteTarget(null)
     } catch (err: any) {
       toast({ title: 'Delete Failed', description: err.message, type: 'error' })
     }
@@ -1046,6 +1053,16 @@ export function BannerListPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete banner?"
+        description={deleteTarget
+          ? `Permanently delete the slide banner "${deleteTarget.title}"? This action cannot be undone.`
+          : ''}
+        confirmLabel="Delete banner"
+        onConfirm={confirmDeleteBanner}
+      />
     </DashboardLayout>
   )
 }

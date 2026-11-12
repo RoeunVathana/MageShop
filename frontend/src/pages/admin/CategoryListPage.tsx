@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { categoryService } from '@/services/category.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -37,6 +38,7 @@ export function CategoryListPage() {
   const [perPage, setPerPage] = useState<number>(10)
   const [sortBy, setSortBy] = useState<string>('id')
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc')
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
 
   const fetchCategories = async () => {
     setLoading(true)
@@ -63,11 +65,13 @@ export function CategoryListPage() {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const handleDelete = async (category: Category) => {
-    if (!window.confirm(`Are you sure you want to delete category "${category.name}"? Any subcategories or products will be reassigned safely to its parent.`)) {
-      return
-    }
+  const handleDelete = (category: Category) => {
+    setDeleteTarget(category)
+  }
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    const category = deleteTarget
     try {
       await categoryService.deleteCategory(category.id)
       toast({
@@ -76,6 +80,7 @@ export function CategoryListPage() {
         type: 'success',
       })
       fetchCategories()
+      setDeleteTarget(null)
     } catch (err: any) {
       toast({
         title: 'Deletion Failed',
@@ -509,6 +514,16 @@ export function CategoryListPage() {
           />
         </div>
       </div>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete category?"
+        description={deleteTarget
+          ? `Delete "${deleteTarget.name}"? Any subcategories or products will be safely reassigned to its parent.`
+          : ''}
+        confirmLabel="Delete category"
+        onConfirm={confirmDelete}
+      />
     </DashboardLayout>
   )
 }

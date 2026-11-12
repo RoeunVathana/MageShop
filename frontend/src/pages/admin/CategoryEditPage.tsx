@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { categoryService } from '@/services/category.service'
 import type { Category, CategoryAttribute, AttributeType } from '@/types/category.types'
 
@@ -75,6 +76,7 @@ export function CategoryEditPage() {
   const [optionInput, setOptionInput] = useState<string>('')
   const [optionsList, setOptionsList] = useState<string[]>([])
   const [isSavingAttr, setIsSavingAttr] = useState<boolean>(false)
+  const [attributeToDelete, setAttributeToDelete] = useState<CategoryAttribute | null>(null)
 
   const {
     register,
@@ -222,11 +224,13 @@ export function CategoryEditPage() {
     }
   }
 
-  const handleDeleteAttribute = async (attr: CategoryAttribute) => {
-    if (!window.confirm(`Delete attribute "${attr.name}"? Products using this attribute will have this field unlinked.`)) {
-      return
-    }
+  const handleDeleteAttribute = (attr: CategoryAttribute) => {
+    setAttributeToDelete(attr)
+  }
 
+  const confirmDeleteAttribute = async () => {
+    if (!attributeToDelete) return
+    const attr = attributeToDelete
     try {
       await categoryService.deleteAttribute(attr.id)
       toast({
@@ -235,6 +239,7 @@ export function CategoryEditPage() {
         type: 'success',
       })
       setAttributes((prev) => prev.filter((a) => a.id !== attr.id))
+      setAttributeToDelete(null)
     } catch (err: any) {
       toast({
         title: 'Delete Failed',
@@ -717,6 +722,16 @@ export function CategoryEditPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={attributeToDelete !== null}
+        onOpenChange={(open) => !open && setAttributeToDelete(null)}
+        title="Delete attribute?"
+        description={attributeToDelete
+          ? `Delete "${attributeToDelete.name}"? Products using this attribute will have the field unlinked.`
+          : ''}
+        confirmLabel="Delete attribute"
+        onConfirm={confirmDeleteAttribute}
+      />
     </DashboardLayout>
   )
 }

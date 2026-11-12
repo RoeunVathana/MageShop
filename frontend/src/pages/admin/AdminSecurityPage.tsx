@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Pagination } from '@/components/common/Pagination'
 import {
   securityService,
@@ -57,6 +58,7 @@ export function AdminSecurityPage() {
   const [revealedToken, setRevealedToken] = useState<CreatedApiTokenData | null>(null)
   const [copiedToken, setCopiedToken] = useState(false)
   const [showPlainToken, setShowPlainToken] = useState(true)
+  const [tokenToRevoke, setTokenToRevoke] = useState<{ id: number; name: string } | null>(null)
 
   // --- TELEGRAM BOT API TOKEN KEY & WEBHOOK STATE ---
   const [telegramSettings, setTelegramSettings] = useState<TelegramSettings>({
@@ -319,13 +321,18 @@ export function AdminSecurityPage() {
   }
 
   // Revoke Token Action
-  const handleRevokeToken = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to permanently revoke API token "${name}"?`)) return
+  const handleRevokeToken = (id: number, name: string) => {
+    setTokenToRevoke({ id, name })
+  }
 
+  const confirmRevokeToken = async () => {
+    if (!tokenToRevoke) return
+    const { id, name } = tokenToRevoke
     try {
       await securityService.revokeApiToken(id)
       toast({ title: 'Token Revoked', description: `API token "${name}" has been revoked.`, type: 'info' })
       fetchTokens()
+      setTokenToRevoke(null)
     } catch (err: any) {
       toast({ title: 'Revocation Failed', description: err.message, type: 'error' })
     }
@@ -1673,6 +1680,16 @@ export function AdminSecurityPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={tokenToRevoke !== null}
+        onOpenChange={(open) => !open && setTokenToRevoke(null)}
+        title="Revoke API token?"
+        description={tokenToRevoke
+          ? `Permanently revoke "${tokenToRevoke.name}"? Any integration using this token will stop working immediately.`
+          : ''}
+        confirmLabel="Revoke token"
+        onConfirm={confirmRevokeToken}
+      />
     </DashboardLayout>
   )
 }

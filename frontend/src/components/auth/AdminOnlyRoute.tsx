@@ -11,7 +11,7 @@ export function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const user = authService.getStoredUser()
 
-  if (!user) {
+  if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
@@ -30,7 +30,7 @@ export function AdminOrSellerRoute({ children }: { children: React.ReactNode }) 
   const location = useLocation()
   const user = authService.getStoredUser()
 
-  if (!user) {
+  if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
@@ -49,7 +49,7 @@ export function StaffOrAdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const user = authService.getStoredUser()
 
-  if (!user) {
+  if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
@@ -68,7 +68,7 @@ export function DeliveryOrAdminRoute({ children }: { children: React.ReactNode }
   const location = useLocation()
   const user = authService.getStoredUser()
 
-  if (!user) {
+  if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
@@ -113,7 +113,7 @@ export function WarehouseOrAdminRoute({ children }: { children: React.ReactNode 
   const location = useLocation()
   const user = authService.getStoredUser()
 
-  if (!user) {
+  if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 

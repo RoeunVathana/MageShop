@@ -38,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { api } from '@/lib/api'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 import { authService } from '@/services/auth.service'
@@ -65,6 +66,10 @@ export interface DeliveryOrder {
   estimated_arrival?: string
   created_at?: string
 }
+
+type DeliveryDeleteTarget =
+  | { type: 'method'; id: string; name: string }
+  | { type: 'order'; order: DeliveryOrder }
 
 const CAMBODIA_LOCATION_PRESETS = [
   { label: 'BKK1, Chamkarmon', zone: 'Chamkarmon', address: 'BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia', lat: 11.5564, lng: 104.9282 },
@@ -152,6 +157,7 @@ export function DeliveryDashboard() {
   const [formIsActive, setFormIsActive] = useState(true)
   const [savingMethod, setSavingMethod] = useState(false)
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<DeliveryDeleteTarget | null>(null)
 
   const [orders, setOrders] = useState<DeliveryOrder[]>([])
   const [drivers, setDrivers] = useState<StaffDriver[]>([])
@@ -460,10 +466,12 @@ export function DeliveryDashboard() {
   }
 
   // Delete Delivery Method
-  const handleDeleteMethod = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete delivery method "${name}"?`)) {
-      return
-    }
+  const handleDeleteMethod = (id: string, name: string) => {
+    if (deletingMethodId !== null) return
+    setDeleteTarget({ type: 'method', id, name })
+  }
+
+  const deleteMethod = async (id: string, name: string) => {
     setDeletingMethodId(id)
     try {
       const res = await deliveryService.deleteMethod(id)
@@ -577,10 +585,12 @@ export function DeliveryDashboard() {
 
   // Admin-only order deletion from the delivery queue. Editing remains
   // available through Manage Location for address, coordinates, ETA, and status.
-  const handleDeleteOrder = async (order: DeliveryOrder) => {
+  const handleDeleteOrder = (order: DeliveryOrder) => {
     if (!canManagePricing || deletingOrderId !== null) return
-    if (!window.confirm(`Delete order #${order.order_number}? This action cannot be undone.`)) return
+    setDeleteTarget({ type: 'order', order })
+  }
 
+  const deleteOrder = async (order: DeliveryOrder) => {
     setDeletingOrderId(order.id)
     try {
       await api.delete(`/admin/orders/${order.id}`)
@@ -2130,6 +2140,26 @@ export function DeliveryDashboard() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && deletingMethodId === null && deletingOrderId === null) setDeleteTarget(null)
+        }}
+        title={deleteTarget?.type === 'method' ? 'Delete delivery method?' : 'Delete order?'}
+        description={deleteTarget?.type === 'method'
+          ? `Delete "${deleteTarget.name}"? Customers will no longer be able to select this delivery method.`
+          : deleteTarget
+            ? `Delete order #${deleteTarget.order.order_number}? This action cannot be undone.`
+            : ''}
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          if (deleteTarget?.type === 'method') {
+            await deleteMethod(deleteTarget.id, deleteTarget.name)
+          } else if (deleteTarget?.type === 'order') {
+            await deleteOrder(deleteTarget.order)
+          }
+        }}
+      />
     </DashboardLayout>
   )
 }

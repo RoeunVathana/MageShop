@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { brandService } from '@/services/brand.service'
 import { mediaService } from '@/services/media.service'
@@ -46,6 +47,7 @@ export function BrandListPage() {
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [uploadingLogo, setUploadingLogo] = useState<boolean>(false)
+  const [archiveTarget, setArchiveTarget] = useState<Brand | null>(null)
 
   // Form Fields
   const [formName, setFormName] = useState<string>('')
@@ -189,11 +191,13 @@ export function BrandListPage() {
     }
   }
 
-  const handleArchive = async (b: Brand) => {
-    if (!window.confirm(`Are you sure you want to safely archive brand "${b.name}"?`)) {
-      return
-    }
+  const handleArchive = (b: Brand) => {
+    setArchiveTarget(b)
+  }
 
+  const confirmArchive = async () => {
+    if (!archiveTarget) return
+    const b = archiveTarget
     try {
       await brandService.archiveBrand(b.id)
       toast({
@@ -202,6 +206,7 @@ export function BrandListPage() {
         type: 'success',
       })
       fetchBrands()
+      setArchiveTarget(null)
     } catch (err: any) {
       toast({
         title: 'Archive Failed',
@@ -755,6 +760,16 @@ export function BrandListPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+        title="Archive brand?"
+        description={archiveTarget
+          ? `Safely archive "${archiveTarget.name}"? Existing products will remain intact.`
+          : ''}
+        confirmLabel="Archive brand"
+        onConfirm={confirmArchive}
+      />
     </DashboardLayout>
   )
 }

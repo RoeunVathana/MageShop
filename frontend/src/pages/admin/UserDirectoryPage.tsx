@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Pagination } from '@/components/common/Pagination'
 import { authService } from '@/services/auth.service'
 import { api } from '@/lib/api'
@@ -206,6 +207,7 @@ export function UserDirectoryPage() {
     phone: '',
     status: 'active' as TeamMember['status'],
   })
+  const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null)
 
   // Fetch real users from backend
   const fetchUsers = async () => {
@@ -418,7 +420,7 @@ export function UserDirectoryPage() {
     }
   }
 
-  const handleDeleteMember = async (member: TeamMember) => {
+  const handleDeleteMember = (member: TeamMember) => {
     const currentUser = authService.getStoredUser()
     if (currentUser?.id === member.id) {
       toast({
@@ -429,10 +431,12 @@ export function UserDirectoryPage() {
       return
     }
 
-    if (!window.confirm('Delete user "' + member.name + '"? This action cannot be undone.')) {
-      return
-    }
+    setMemberToDelete(member)
+  }
 
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete) return
+    const member = memberToDelete
     setSubmitting(true)
     try {
       await api.delete('/admin/security/users/' + member.id)
@@ -442,6 +446,7 @@ export function UserDirectoryPage() {
         type: 'success',
       })
       fetchUsers()
+      setMemberToDelete(null)
     } catch (err: any) {
       toast({
         title: 'Delete Failed',
@@ -1138,6 +1143,16 @@ export function UserDirectoryPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={memberToDelete !== null}
+        onOpenChange={(open) => !open && setMemberToDelete(null)}
+        title="Delete user account?"
+        description={memberToDelete
+          ? `Delete "${memberToDelete.name}"? This action cannot be undone.`
+          : ''}
+        confirmLabel="Delete user"
+        onConfirm={confirmDeleteMember}
+      />
     </DashboardLayout>
   )
 }
