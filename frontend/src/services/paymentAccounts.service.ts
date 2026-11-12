@@ -7,6 +7,7 @@ export interface MerchantPaymentAccount {
   account_id: string
   merchant_name: string
   merchant_city: string
+  merchant_phone?: string | null
   currency: 'USD' | 'KHR' | 'BOTH'
   is_default: boolean
   is_active: boolean
@@ -20,6 +21,7 @@ export interface PaymentAccountPayload {
   account_id: string
   merchant_name: string
   merchant_city: string
+  merchant_phone?: string
   currency: 'USD' | 'KHR' | 'BOTH'
   is_active: boolean
 }

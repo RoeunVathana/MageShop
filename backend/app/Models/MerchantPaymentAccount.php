@@ -18,6 +18,7 @@ class MerchantPaymentAccount extends Model
         'account_id',
         'merchant_name',
         'merchant_city',
+        'merchant_phone',
         'currency',
         'is_default',
         'is_active',

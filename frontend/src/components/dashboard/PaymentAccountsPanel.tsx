@@ -22,6 +22,7 @@ const emptyForm: PaymentAccountPayload = {
   account_id: '',
   merchant_name: 'TYUSHOP',
   merchant_city: 'Phnom Penh',
+  merchant_phone: '',
   currency: 'USD',
   is_active: true,
 }
@@ -69,6 +70,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
       account_id: account.account_id,
       merchant_name: account.merchant_name,
       merchant_city: account.merchant_city,
+      merchant_phone: account.merchant_phone || '',
       currency: account.currency,
       is_active: account.is_active,
     })
@@ -194,6 +196,10 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
                 <Input value={form.merchant_city} onChange={(event) => setForm({ ...form, merchant_city: event.target.value })} placeholder="Phnom Penh" className="h-10 rounded-xl text-xs" />
               </div>
               <div className="space-y-1.5">
+                <label className="text-xs font-bold">{t('Merchant phone', 'លេខទូរស័ព្ទអាជីវកម្ម')}</label>
+                <Input value={form.merchant_phone || ''} onChange={(event) => setForm({ ...form, merchant_phone: event.target.value })} placeholder="855976554143" className="h-10 rounded-xl font-mono text-xs" />
+              </div>
+              <div className="space-y-1.5">
                 <label className="text-xs font-bold">{t('Currency', 'រូបិយប័ណ្ណ')}</label>
                 <select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value as PaymentAccountPayload['currency'] })} className="h-10 w-full rounded-xl border border-input bg-background px-3 text-xs font-semibold">
                   <option value="USD">USD</option>
@@ -206,6 +212,11 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
                 {t('Account is active', 'គណនីកំពុងដំណើរការ')}
               </label>
             </div>
+            {!adminMode && (
+              <p className="text-[11px] text-muted-foreground">
+                {t('Bakong API URL and API token are controlled by the platform admin for security.', 'Bakong API URL និង API Token ត្រូវបានគ្រប់គ្រងដោយ Admin សម្រាប់សុវត្ថិភាព។')}
+              </p>
+            )}
             <Button type="submit" disabled={saving} className="rounded-xl text-xs font-bold">
               {saving ? t('Saving...', 'កំពុងរក្សាទុក...') : editingId ? t('Save account', 'រក្សាទុកគណនី') : t('Add account', 'បន្ថែមគណនី')}
             </Button>

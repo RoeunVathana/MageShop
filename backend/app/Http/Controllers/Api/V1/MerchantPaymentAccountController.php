@@ -221,6 +221,7 @@ class MerchantPaymentAccountController extends Controller
             'account_id' => [$required, 'string', 'max:100', 'regex:/^[^@\s]+@[^@\s]+$/'],
             'merchant_name' => [$required, 'string', 'max:100'],
             'merchant_city' => [$required, 'string', 'max:100'],
+            'merchant_phone' => ['nullable', 'string', 'max:50'],
             'currency' => [$required, Rule::in(['USD', 'KHR', 'BOTH'])],
             'is_active' => [$partial ? 'sometimes' : 'nullable', 'boolean'],
             'is_default' => [$partial ? 'sometimes' : 'nullable', 'boolean'],
@@ -281,6 +282,7 @@ class MerchantPaymentAccountController extends Controller
     {
         StoreSetting::set('bakong_account_id', $account->account_id);
         StoreSetting::set('bakong_merchant_name', $account->merchant_name);
+        StoreSetting::set('merchant_phone', $account->merchant_phone ?? '');
         StoreSetting::set('company_city', $account->merchant_city);
     }
 }
