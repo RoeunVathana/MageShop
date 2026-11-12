@@ -349,8 +349,8 @@ export function AdminSellersPage() {
                 </p>
               </div>
             ) : (
-              <div className="dashboard-table-scroll">
-                <table className="dashboard-data-table seller-applications-table w-full min-w-[1280px] text-left text-sm">
+              <div className="dashboard-table-scroll seller-applications-table-scroll pb-2">
+                <table className="dashboard-data-table seller-applications-table w-full min-w-[1400px] table-auto text-left text-sm">
                   <colgroup>
                     <col className="w-[250px]" />
                     <col className="w-[220px]" />
