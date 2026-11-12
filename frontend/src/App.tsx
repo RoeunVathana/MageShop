@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/context/ThemeProvider'
 import { ShopEngagementProvider } from '@/context/ShopEngagementContext'
 import { ToastProvider } from '@/components/ui/toast'
 import { SeoHead } from '@/components/seo/SeoHead'
+import { ScrollToTop } from '@/components/routing/ScrollToTop'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
@@ -84,6 +85,7 @@ export default function App() {
         <ShopEngagementProvider>
           <ToastProvider>
             <Router>
+              <ScrollToTop />
               <SeoHead />
               <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading TYUSHOP…</div>}>
               <Routes>
