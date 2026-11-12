@@ -6,8 +6,10 @@ use App\Models\Inventory;
 use App\Models\InventoryMovement;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Throwable;
 
 class InventoryService
 {
@@ -76,7 +78,30 @@ class InventoryService
             $query->orderBy('id', 'desc');
         }
 
-        return $query->paginate($perPage);
+        $cacheFilters = $filters;
+        ksort($cacheFilters);
+        $cacheKey = 'inventory:list:'.sha1((string) json_encode([
+            'filters' => $cacheFilters,
+            'per_page' => $perPage,
+        ]));
+
+        // Inventory is read frequently by the admin dashboard, while stock
+        // writes are comparatively rare. A short Redis cache removes the
+        // repeated count + eager-load queries without serving stale stock for
+        // long periods. The cache is flushed after every stock adjustment.
+        if (app()->environment('testing')) {
+            return $query->paginate($perPage);
+        }
+
+        try {
+            return Cache::store('redis')
+                ->tags(['inventory'])
+                ->remember($cacheKey, now()->addSeconds(15), fn () => $query->paginate($perPage));
+        } catch (Throwable) {
+            // Redis is an optional acceleration layer. Never fail inventory
+            // reads when it is unavailable or does not support tags.
+            return $query->paginate($perPage);
+        }
     }
 
     /**
@@ -119,7 +144,7 @@ class InventoryService
         }
 
         // Step 6: Begin Database Transaction
-        return DB::transaction(function () use (
+        $result = DB::transaction(function () use (
             $product,
             $quantityChange,
             $normalizedType,
@@ -203,6 +228,23 @@ class InventoryService
                 'movement' => $movement,
             ];
         });
+
+        $this->flushListCache();
+
+        return $result;
+    }
+
+    /**
+     * Clear cached inventory pages after a stock mutation.
+     */
+    protected function flushListCache(): void
+    {
+        try {
+            Cache::store('redis')->tags(['inventory'])->flush();
+        } catch (Throwable) {
+            // Cache invalidation must never turn a successful stock update
+            // into a failed request.
+        }
     }
 
     /**

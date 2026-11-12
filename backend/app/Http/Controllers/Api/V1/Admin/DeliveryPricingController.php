@@ -48,11 +48,15 @@ class DeliveryPricingController extends Controller
      */
     public function getSettings(): JsonResponse
     {
-        $isFree = filter_var(StoreSetting::get('delivery_is_free', true), FILTER_VALIDATE_BOOLEAN);
-        $freeThreshold = (float) StoreSetting::get('delivery_free_threshold', 0.0);
-        $defaultFee = (float) StoreSetting::get('delivery_default_fee', 0.0);
+        // Read all settings through one cached query instead of making four
+        // independent cache/database lookups on every checkout/dashboard
+        // request. StoreSetting::set() invalidates this cache on updates.
+        $allSettings = StoreSetting::getAll();
+        $isFree = filter_var($allSettings['delivery_is_free'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $freeThreshold = (float) ($allSettings['delivery_free_threshold'] ?? 0.0);
+        $defaultFee = (float) ($allSettings['delivery_default_fee'] ?? 0.0);
 
-        $methodsRaw = StoreSetting::get('delivery_methods');
+        $methodsRaw = $allSettings['delivery_methods'] ?? null;
         $methods = ! empty($methodsRaw) ? json_decode($methodsRaw, true) : null;
         if (! is_array($methods) || empty($methods)) {
             $methods = self::DEFAULT_METHODS;
@@ -66,7 +70,7 @@ class DeliveryPricingController extends Controller
                 'default_delivery_fee' => $defaultFee,
                 'methods' => $methods,
             ],
-        ]);
+        ])->header('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=120');
     }
 
     /**
