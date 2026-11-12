@@ -155,37 +155,69 @@ export function LoginPage() {
   // Firebase-to-TYUSHOP API exchange before navigating away from the login page.
   useEffect(() => {
     let active = true
+    let handled = false
+    let unsubscribe: (() => void) | undefined
+
+    const showRedirectError = (redirectErr: any) => {
+      if (!active) return
+
+      console.warn('Google redirect auth error:', redirectErr)
+      toast({
+        title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
+        description: redirectErr?.message || t(
+          'Google authorization returned, but TYUSHOP could not complete your sign-in.',
+          'Google បានអនុញ្ញាត ប៉ុន្តែ TYUSHOP មិនអាចបញ្ចប់ការចូលប្រើប្រាស់បានទេ។'
+        ),
+        type: 'error',
+      })
+    }
+
+    const finishWithFirebaseUser = async (user: any) => {
+      if (!active || handled || !user) return
+
+      handled = true
+      setLoading(true)
+      try {
+        await completeGoogleLogin(user)
+      } catch (redirectErr: any) {
+        handled = false
+        showRedirectError(redirectErr)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
 
     const finishRedirectLogin = async () => {
       try {
-        const { getRedirectResult } = await import('firebase/auth')
+        const { getRedirectResult, onAuthStateChanged } = await import('firebase/auth')
         const { auth } = await import('@/lib/firebase')
         const result = await getRedirectResult(auth)
 
-        if (!active || !result?.user) return
+        if (result?.user) {
+          await finishWithFirebaseUser(result.user)
+          return
+        }
 
-        setLoading(true)
-        await completeGoogleLogin(result.user)
-      } catch (redirectErr: any) {
-        if (!active) return
+        // Some mobile browsers finish the OAuth redirect before Firebase
+        // exposes a UserCredential. Reuse the hydrated auth state instead of
+        // leaving the customer on /login with no visible error.
+        if (auth.currentUser) {
+          await finishWithFirebaseUser(auth.currentUser)
+          return
+        }
 
-        console.warn('Google redirect auth error:', redirectErr)
-        toast({
-          title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
-          description: redirectErr?.message || t(
-            'Google authorization returned, but TYUSHOP could not complete your sign-in.',
-            'Google បានអនុញ្ញាត ប៉ុន្តែ TYUSHOP មិនអាចបញ្ចប់ការចូលប្រើប្រាស់បានទេ។'
-          ),
-          type: 'error',
+        unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (user) void finishWithFirebaseUser(user)
         })
-      } finally {
-        if (active) setLoading(false)
+      } catch (redirectErr: any) {
+        showRedirectError(redirectErr)
       }
     }
 
     void finishRedirectLogin()
     return () => {
       active = false
+      unsubscribe?.()
     }
   }, [])
 
