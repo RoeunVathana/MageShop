@@ -777,6 +777,17 @@ class CommerceEngagementController extends Controller
     protected function bakongApiToken(): string
     {
         $encrypted = trim((string) StoreSetting::get('bakong_api_token_encrypted', ''));
+
+        // A checkout request can land on a worker with a stale cache entry
+        // immediately after an admin saves the token. Read the persisted
+        // setting directly before falling back to the environment secret so
+        // QR generation and payment verification see the same configuration.
+        if ($encrypted === '') {
+            $encrypted = trim((string) StoreSetting::query()
+                ->where('setting_key', 'bakong_api_token_encrypted')
+                ->value('setting_value'));
+        }
+
         if ($encrypted !== '') {
             try {
                 return trim(Crypt::decryptString($encrypted));
