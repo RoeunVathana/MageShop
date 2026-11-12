@@ -37,7 +37,7 @@ class HealthController extends Controller
         // database is waking up. Health detail consumers do not need a fresh
         // SQL round-trip on every poll, so serve a short-lived cached result.
         // The basic /health endpoint remains an immediate process check.
-        $cacheKey = 'health:readiness:v1';
+        $cacheKey = 'health:readiness:v2';
 
         if (! app()->environment('testing')) {
             try {
@@ -60,7 +60,7 @@ class HealthController extends Controller
                         'status_code' => $statusCode,
                         'payload' => $payload,
                     ],
-                    now()->addSeconds($statusCode === 200 ? 30 : 5)
+                    now()->addSeconds($statusCode === 200 ? 60 : 5)
                 );
             } catch (Throwable) {
                 // Health checks must still work without cache storage.

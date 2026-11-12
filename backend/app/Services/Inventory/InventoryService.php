@@ -96,7 +96,7 @@ class InventoryService
         try {
             return Cache::store('redis')
                 ->tags(['inventory'])
-                ->remember($cacheKey, now()->addSeconds(15), fn () => $query->paginate($perPage));
+                ->remember($cacheKey, now()->addSeconds(60), fn () => $query->paginate($perPage));
         } catch (Throwable) {
             // Redis is an optional acceleration layer. Never fail inventory
             // reads when it is unavailable or does not support tags.
