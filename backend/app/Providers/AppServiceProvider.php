@@ -31,7 +31,8 @@ class AppServiceProvider extends ServiceProvider
         // enabled for transaction-pool safety, but compile boolean predicates
         // as TRUE/FALSE so PostgreSQL never receives `boolean = 1`.
         if (config('database.default') === 'pgsql') {
-            DB::connection('pgsql')->setQueryGrammar(new PostgresGrammar);
+            $connection = DB::connection('pgsql');
+            $connection->setQueryGrammar(new PostgresGrammar($connection));
         }
 
         if ($this->app->isProduction()) {
