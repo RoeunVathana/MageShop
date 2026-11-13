@@ -10,11 +10,30 @@ export interface UploadMediaResponse {
   disk: string
 }
 
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico', 'avif',
+  'mp4', 'webm', 'mov', 'pdf', 'doc', 'docx', 'xlsx', 'csv',
+])
+
+const getFileExtension = (fileName: string): string => {
+  const parts = fileName.toLowerCase().split('.')
+  return parts.length > 1 ? parts[parts.length - 1] : ''
+}
+
 export const mediaService = {
   /**
    * Upload an image, video, or file directly to free S3 cloud storage
    */
   async uploadMedia(file: File, folder: string = 'banners'): Promise<UploadMediaResponse> {
+    const extension = getFileExtension(file.name)
+    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+      throw new Error(`Unsupported file type .${extension || '(none)'}. Use JPG, PNG, WebP, GIF, SVG, ICO, or AVIF.`)
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      throw new Error(`File "${file.name}" is larger than the 100 MB upload limit.`)
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     formData.append('folder', folder)
@@ -22,10 +41,19 @@ export const mediaService = {
     const res = await api.post<{ success: boolean; data: UploadMediaResponse; message: string }>(
       '/admin/media/upload',
       formData,
-      // Let Axios/browser set the multipart boundary. Setting this header
-      // manually can produce a request without the boundary, so Laravel sees
-      // no uploaded file and rejects the upload.
+      {
+        // Explicitly remove the JSON default from apiClient. The browser must
+        // set multipart/form-data together with its boundary for FormData.
+        headers: {
+          'Content-Type': undefined,
+          Accept: 'application/json',
+        },
+      },
     )
+
+    if (!res?.data?.url) {
+      throw new Error('The upload completed without a media URL from the API.')
+    }
 
     return res.data
   },

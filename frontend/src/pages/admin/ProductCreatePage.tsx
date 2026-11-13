@@ -211,28 +211,20 @@ export function ProductCreatePage() {
 
     setUploadingMedia(true)
     const uploadedUrls: string[] = []
+    const currentCover = watch('image_url')
 
     try {
       for (let i = 0; i < files.length; i++) {
         setUploadProgress(`Uploading ${i + 1}/${files.length} to Cloud S3...`)
         const file = files[i]
         const uploaded = await mediaService.uploadMedia(file, 'products')
-        if (uploaded?.url) {
-          uploadedUrls.push(uploaded.url)
+        if (!uploaded?.url) throw new Error(`Upload response for "${file.name}" did not contain a media URL.`)
+
+        uploadedUrls.push(uploaded.url)
+        setGalleryUrls((prev) => prev.includes(uploaded.url) ? prev : [...prev, uploaded.url])
+        if (!currentCover && uploadedUrls.length === 1) {
+          setValue('image_url', uploaded.url, { shouldValidate: true })
         }
-      }
-
-      setGalleryUrls((prev) => {
-        const next = [...prev]
-        uploadedUrls.forEach((u) => {
-          if (!next.includes(u)) next.push(u)
-        })
-        return next
-      })
-
-      const currentCover = watch('image_url')
-      if (!currentCover && uploadedUrls.length > 0) {
-        setValue('image_url', uploadedUrls[0], { shouldValidate: true })
       }
 
       toast({
@@ -240,10 +232,13 @@ export function ProductCreatePage() {
         description: `Successfully uploaded ${uploadedUrls.length} image(s) to permanent storage.`,
         type: 'success',
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not upload media files.'
       toast({
-        title: 'Upload Failed',
-        description: err?.message || 'Could not upload media files.',
+        title: uploadedUrls.length > 0 ? 'Some Images Uploaded' : 'Upload Failed',
+        description: uploadedUrls.length > 0
+          ? `${uploadedUrls.length}/${files.length} images uploaded. ${message}`
+          : message,
         type: 'error',
       })
     } finally {
@@ -591,7 +586,7 @@ export function ProductCreatePage() {
                     <span>{uploadingMedia ? (uploadProgress || 'Uploading to Cloud S3...') : '☁️ Upload Multiple Images'}</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png,.webp,.gif,.svg,.ico,.avif,image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/x-icon,image/avif"
                       multiple
                       className="hidden"
                       disabled={uploadingMedia}

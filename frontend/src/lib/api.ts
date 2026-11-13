@@ -142,9 +142,19 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
         data?.data?.message,
       ].find((value): value is string => typeof value === 'string' && value.trim().length > 0)
 
+      // Laravel often uses the generic message "The given data was invalid."
+      // for 422 responses. Prefer the field-level explanation in that case so
+      // upload and CRUD forms show the real failing key to the user.
+      const isGenericValidationMessage =
+        typeof message === 'string' &&
+        ['The given data was invalid.', 'The given data was invalid'].includes(message.trim())
+      const actionableMessage = isGenericValidationMessage && validationMessage
+        ? `${message} ${validationMessage}`
+        : message
+
       return {
         status: 'error',
-        message: message || `Request failed with status ${axiosError.response.status}`,
+        message: actionableMessage || `Request failed with status ${axiosError.response.status}`,
         errors: validationErrors as ApiErrorResponse['errors'],
         code: axiosError.response.status,
       }

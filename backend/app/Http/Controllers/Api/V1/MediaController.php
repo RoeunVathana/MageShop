@@ -19,7 +19,7 @@ class MediaController extends Controller
      * @var array<int, string>
      */
     private const ALLOWED_EXTENSIONS = [
-        'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico',
+        'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico', 'avif',
         'mp4', 'webm', 'mov',
         'pdf', 'doc', 'docx', 'xlsx', 'csv',
     ];
@@ -111,7 +111,7 @@ class MediaController extends Controller
                 'required',
                 'file',
                 'max:102400', // max 100MB
-                'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,mov,pdf,doc,docx,xlsx,csv',
+                'mimes:jpg,jpeg,png,webp,gif,svg,ico,avif,mp4,webm,mov,pdf,doc,docx,xlsx,csv',
             ],
             'folder' => ['nullable', 'string', 'max:50', 'regex:/^[a-zA-Z0-9_\-\/]+$/'],
         ]);
