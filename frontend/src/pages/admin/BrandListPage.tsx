@@ -217,7 +217,7 @@ export function BrandListPage() {
   }
 
   // Summary Metrics
-  const totalBrands = brands.length
+  const totalBrands = totalCount || brands.length
   const activeCount = brands.filter((b) => b.is_active).length
   const totalBrandedProducts = brands.reduce((acc, b) => acc + (b.products_count || 0), 0)
   const uniqueCountries = Array.from(new Set(brands.map((b) => b.country).filter(Boolean))).length

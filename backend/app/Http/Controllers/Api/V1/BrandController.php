@@ -39,6 +39,13 @@ class BrandController extends Controller
 
         $brands = $this->brandService->listBrands($filters, $perPage);
 
+        // The admin editor needs bilingual values to populate the edit form.
+        // Keep the public catalog response lean, but include translations for
+        // authenticated catalog managers.
+        if ($isAdmin) {
+            $brands->getCollection()->load('translations');
+        }
+
         $response = BrandResource::collection($brands)->response();
         if (! $user) {
             $response->headers->set('Cache-Control', 'public, max-age=60, stale-while-revalidate=180');

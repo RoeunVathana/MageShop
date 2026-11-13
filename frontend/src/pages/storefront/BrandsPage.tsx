@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { brandService } from '@/services/brand.service'
+import { authService } from '@/services/auth.service'
 import type { Brand } from '@/types/brand.types'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { SeoHead } from '@/components/seo/SeoHead'
@@ -279,6 +280,14 @@ export function BrandsPage() {
             <span className="text-xs font-bold text-muted-foreground mt-0.5">
               {t('Verified Partners', 'ដៃគូផ្លូវការ')}
             </span>
+            {authService.isAdmin() && (
+              <Link to="/admin/brands" className="mt-3">
+                <Button size="sm" variant="outline" className="rounded-xl text-xs gap-1.5">
+                  {t('Manage Brands', 'គ្រប់គ្រងម៉ាកយីហោ')}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
