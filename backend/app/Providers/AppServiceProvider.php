@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Database\PostgresConnection;
 use App\Database\Query\Grammars\PostgresGrammar;
 use App\Services\Security\SecurityLogService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,7 +21,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // PostgreSQL receives boolean bindings as the strings `true`/`false`
+        // instead of Laravel's default integer `1`/`0` normalization. This
+        // keeps every Eloquent create/update and pivot write compatible with
+        // PostgreSQL, including admin CRUD forms.
+        Connection::resolverFor('pgsql', function ($connection, $database, $prefix, $config) {
+            return new PostgresConnection($connection, $database, $prefix, $config);
+        });
     }
 
     /**

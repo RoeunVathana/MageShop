@@ -124,10 +124,28 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
     const axiosError = error as AxiosError<any>
     if (axiosError.response) {
       const data = axiosError.response.data
+      const validationErrors = data?.errors as Record<string, unknown> | undefined
+      const validationMessage = validationErrors
+        ? Object.values(validationErrors)
+            .flatMap((value) => Array.isArray(value) ? value : [value])
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+            .join(' ')
+        : ''
+
+      // Laravel responses can put a useful message in `errors`, `error`, or
+      // a nested data envelope. Keep the first actionable server explanation
+      // instead of replacing every failed CRUD action with a generic toast.
+      const message = [
+        data?.message,
+        data?.error,
+        validationMessage,
+        data?.data?.message,
+      ].find((value): value is string => typeof value === 'string' && value.trim().length > 0)
+
       return {
         status: 'error',
-        message: data?.message || `Request failed with status ${axiosError.response.status}`,
-        errors: data?.errors,
+        message: message || `Request failed with status ${axiosError.response.status}`,
+        errors: validationErrors as ApiErrorResponse['errors'],
         code: axiosError.response.status,
       }
     } else if (axiosError.request) {

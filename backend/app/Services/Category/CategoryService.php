@@ -23,7 +23,9 @@ class CategoryService
     {
         $cacheFilters = $filters;
         ksort($cacheFilters);
+        $cacheVersion = $this->categoryCacheVersion();
         $cacheKey = 'catalog:categories:'.sha1((string) json_encode([
+            'version' => $cacheVersion,
             'filters' => $cacheFilters,
             'tree' => $tree,
         ]));
@@ -172,6 +174,30 @@ class CategoryService
     }
 
     /**
+     * Return a small cache version so category mutations invalidate every
+     * hierarchy/filter combination without flushing unrelated application
+     * data from Redis.
+     */
+    protected function categoryCacheVersion(): int
+    {
+        try {
+            return max(1, (int) (Cache::store('redis')->get('catalog:categories:version') ?: 1));
+        } catch (\Throwable) {
+            return 1;
+        }
+    }
+
+    protected function invalidateCategoryCache(): void
+    {
+        try {
+            Cache::store('redis')->increment('catalog:categories:version');
+        } catch (\Throwable) {
+            // Redis is an optimization; database mutations remain valid if it
+            // is unavailable during a deployment or local development.
+        }
+    }
+
+    /**
      * Retrieve category by ID or unique slug.
      *
      * @param  int|string  $idOrSlug
@@ -199,7 +225,7 @@ class CategoryService
      */
     public function createCategory(array $data): Category
     {
-        return DB::transaction(function () use ($data) {
+        $category = DB::transaction(function () use ($data) {
             $slug = ! empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['name']);
             if (Category::where('slug', $slug)->exists()) {
                 $slug .= '-'.Str::lower(Str::random(4));
@@ -227,6 +253,10 @@ class CategoryService
 
             return $category->load(['parent', 'children', 'attributes.options']);
         });
+
+        $this->invalidateCategoryCache();
+
+        return $category;
     }
 
     /**
@@ -234,7 +264,7 @@ class CategoryService
      */
     public function updateCategory(Category $category, array $data): Category
     {
-        return DB::transaction(function () use ($category, $data) {
+        $updated = DB::transaction(function () use ($category, $data) {
             // Verify parent cycle prevention
             if (array_key_exists('parent_id', $data)) {
                 $proposedParentId = ! empty($data['parent_id']) ? (int) $data['parent_id'] : null;
@@ -276,6 +306,10 @@ class CategoryService
 
             return $category->load(['parent', 'children', 'attributes.options']);
         });
+
+        $this->invalidateCategoryCache();
+
+        return $updated;
     }
 
     /**
@@ -284,14 +318,48 @@ class CategoryService
     public function deleteCategory(Category $category): void
     {
         DB::transaction(function () use ($category) {
+            $parentId = $category->parent_id;
+
             // Move child categories to category's parent
-            $category->children()->update(['parent_id' => $category->parent_id]);
+            $category->children()->update(['parent_id' => $parentId]);
 
             // Reassign direct products to parent category if exists, or null
-            $category->products()->update(['category_id' => $category->parent_id]);
+            $category->products()->update(['category_id' => $parentId]);
+
+            // Preserve secondary category assignments where possible before
+            // deleting the category. The pivot has a cascading foreign key,
+            // so leaving these rows untouched would silently remove a product
+            // association during an otherwise successful delete.
+            if ($parentId !== null && DB::getSchemaBuilder()->hasTable('product_categories')) {
+                $now = now();
+                DB::table('product_categories')
+                    ->where('category_id', $category->id)
+                    ->get(['product_id', 'is_primary'])
+                    ->each(function ($pivot) use ($parentId, $now) {
+                        DB::table('product_categories')->updateOrInsert(
+                            [
+                                'product_id' => $pivot->product_id,
+                                'category_id' => $parentId,
+                            ],
+                            [
+                                'is_primary' => (bool) $pivot->is_primary,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ]
+                        );
+                    });
+            }
+
+            if (DB::getSchemaBuilder()->hasTable('product_categories')) {
+                DB::table('product_categories')
+                    ->where('category_id', $category->id)
+                    ->delete();
+            }
 
             $category->delete();
         });
+
+        $this->invalidateCategoryCache();
     }
 
     /**
