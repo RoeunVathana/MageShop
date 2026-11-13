@@ -25,6 +25,21 @@ class MediaController extends Controller
     ];
 
     /**
+     * Only use S3 when all required connection settings are available.
+     * Otherwise uploads must go to the public disk so the media proxy can
+     * serve the returned URL instead of writing to Laravel's private disk.
+     */
+    private function hasS3Configuration(): bool
+    {
+        $s3 = (array) config('filesystems.disks.s3', []);
+
+        return ! empty($s3['key'])
+            && ! empty($s3['secret'])
+            && ! empty($s3['bucket'])
+            && ! empty($s3['region']);
+    }
+
+    /**
      * Resolve and serve or redirect to media stored in cloud (S3) or local storage.
      *
      * @return RedirectResponse|BinaryFileResponse|StreamedResponse|JsonResponse
@@ -48,10 +63,8 @@ class MediaController extends Controller
             ], 403);
         }
 
-        $disk = config('filesystems.default', 'local');
-
         // 3. Check if S3 disk is configured and contains the file
-        if ($disk === 's3' || config('filesystems.disks.s3.key')) {
+        if ($this->hasS3Configuration()) {
             try {
                 if (Storage::disk('s3')->exists($path)) {
                     // Generate 7-day signed pre-signed URL for Tigris/S3 object storage
@@ -106,6 +119,14 @@ class MediaController extends Controller
      */
     public function upload(Request $request): JsonResponse
     {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user || ! $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Product media upload permission is required.',
+            ], 403);
+        }
+
         $request->validate([
             'file' => [
                 'required',
@@ -140,17 +161,27 @@ class MediaController extends Controller
 
         $folder = trim(str_replace('..', '', (string) $request->input('folder', 'uploads')), '/');
 
-        // Determine target disk: prefer s3 if configured, else public
-        $disk = config('filesystems.disks.s3.key') ? 's3' : config('filesystems.default', 'public');
+        // Determine target disk: prefer fully configured S3, otherwise use the
+        // public disk. Never use the private local disk for storefront media.
+        $disk = $this->hasS3Configuration() ? 's3' : 'public';
 
         $filename = time().'_'.bin2hex(random_bytes(8)).'.'.$ext;
         $key = $folder ? "{$folder}/{$filename}" : $filename;
 
         try {
-            $stream = fopen($realPath, 'r');
-            Storage::disk($disk)->put($key, $stream);
-            if (is_resource($stream)) {
+            $stream = fopen($realPath, 'rb');
+            if ($stream === false) {
+                throw new \RuntimeException('The uploaded file could not be opened.');
+            }
+
+            try {
+                $stored = Storage::disk($disk)->put($key, $stream);
+            } finally {
                 fclose($stream);
+            }
+
+            if (! $stored) {
+                throw new \RuntimeException("Storage write failed on the {$disk} disk.");
             }
 
             // Generate accessible URL

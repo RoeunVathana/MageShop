@@ -43,6 +43,7 @@ import type { Brand } from '@/types/brand.types'
 const productSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters').max(255),
   brand: z.string().optional(),
+  brand_id: z.coerce.number().optional(),
   sku: z
     .string()
     .min(2, 'SKU must be at least 2 characters')
@@ -392,10 +393,12 @@ export function ProductCreatePage() {
       const combinedGallery = Array.from(
         new Set([...(finalCover ? [finalCover] : []), ...galleryUrls])
       )
+      const selectedBrand = brands.find((brand) => brand.id === Number(data.brand_id))
 
       const created = await productService.createProduct({
         name: data.name.trim(),
-        brand: data.brand?.trim() || undefined,
+        brand: selectedBrand?.name || data.brand?.trim() || undefined,
+        brand_id: selectedBrand?.id || undefined,
         sku: data.sku.toUpperCase().trim(),
         product_type: data.product_type,
         description: data.description?.trim(),
@@ -496,19 +499,17 @@ export function ProductCreatePage() {
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground">Brand / Manufacturer</label>
-                  <Input
-                    {...register('brand')}
-                    list="registered-brands"
-                    placeholder="e.g. MegaBasics, Aura Silk, UrbanPulse"
-                    className="h-9 text-xs"
-                  />
-                  <datalist id="registered-brands">
+                  <select
+                    {...register('brand_id')}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="">Select Brand / Manufacturer...</option>
                     {brands.map((b) => (
-                      <option key={b.id} value={b.name}>
+                      <option key={b.id} value={b.id}>
                         {b.country ? `${b.name} (${b.country})` : b.name}
                       </option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
               </div>
 

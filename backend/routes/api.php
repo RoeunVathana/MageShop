@@ -187,9 +187,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::patch('/store-settings', [StoreSettingsController::class, 'update']);
     Route::post('/store-settings/currency', [StoreSettingsController::class, 'update']);
 
-    // Admin Cloud Storage Media Upload
-    Route::post('/media/upload', [MediaController::class, 'upload'])
-        ->middleware('admin');
+    // Product media upload for admins and sellers. The controller applies the
+    // role check so seller product create/edit pages can upload images too.
+    Route::post('/media/upload', [MediaController::class, 'upload']);
 
     // Admin Slide Banner Management
     Route::prefix('banners')->group(function () {

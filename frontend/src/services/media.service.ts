@@ -51,6 +51,10 @@ export const mediaService = {
       },
     )
 
+    if (res?.success === false) {
+      throw new Error(res.message || 'The media API rejected the upload.')
+    }
+
     if (!res?.data?.url) {
       throw new Error('The upload completed without a media URL from the API.')
     }
