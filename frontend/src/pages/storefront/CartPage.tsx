@@ -867,8 +867,12 @@ export function CartPage() {
       }
 
       const res = await api.post<any>('/orders/checkout', payload, {
-        timeout: 20000,
+        // Checkout may dispatch the receipt and Telegram report after the
+        // order is committed. Use the direct API first so an unhealthy custom
+        // edge does not turn a successful order into a generic error toast.
+        timeout: 45000,
         retryOnNetworkFailure: true,
+        preferPublicApi: true,
       })
       // `api.post` returns the decoded API body, not the Axios response.
       // Keep this compatible with both the current `{ data: ... }` envelope

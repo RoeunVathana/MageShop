@@ -280,10 +280,16 @@ export const api = {
   },
 
   post: async <T>(url: string, data?: any, config?: ApiRequestConfig): Promise<T> => {
-    await initCsrf()
     const { retryOnNetworkFailure = false, preferPublicApi = false, ...requestConfig } = config || {}
     const primaryBaseUrl = preferPublicApi ? PUBLIC_API_BASE_URL : API_BASE_URL
     const fallbackBaseUrl = preferPublicApi ? API_BASE_URL : PUBLIC_API_BASE_URL
+
+    // Bearer-authenticated requests do not need a Sanctum cookie. Skipping
+    // the custom-domain CSRF round trip keeps the direct Railway fallback
+    // genuinely direct for slow or unhealthy edge routes.
+    if (!preferPublicApi) {
+      await initCsrf()
+    }
 
     try {
       return await apiClient
