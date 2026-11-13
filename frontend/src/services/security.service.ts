@@ -197,5 +197,12 @@ export const securityService = {
       chat_id: chatId,
     })
   },
+
+  clearApplicationData: async (): Promise<ApiResponse<{ deleted: Record<string, number>; preserved_admin_user_ids: number[] }>> => {
+    return api.post<ApiResponse<{ deleted: Record<string, number>; preserved_admin_user_ids: number[] }>>(
+      '/admin/database/clear-application-data',
+      { confirmation: 'CLEAR_ALL_APPLICATION_DATA' }
+    )
+  },
 }
 

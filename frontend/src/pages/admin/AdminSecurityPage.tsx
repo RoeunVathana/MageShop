@@ -113,6 +113,8 @@ export function AdminSecurityPage() {
 
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [clearDataOpen, setClearDataOpen] = useState(false)
+  const [clearingData, setClearingData] = useState(false)
 
   const [sentOtps, setSentOtps] = useState<SentOtp[]>([])
   const [otpsLoading, setOtpsLoading] = useState(false)
@@ -522,6 +524,27 @@ export function AdminSecurityPage() {
     }
   }
 
+  const handleClearApplicationData = async () => {
+    setClearingData(true)
+    try {
+      const res = await securityService.clearApplicationData()
+      toast({
+        title: 'Application data cleared',
+        description: res.message || 'Application records were removed while protected system data was preserved.',
+        type: 'success',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Clear data failed',
+        description: err.response?.data?.message || err.message,
+        type: 'error',
+      })
+      throw err
+    } finally {
+      setClearingData(false)
+    }
+  }
+
   return (
     <DashboardLayout
       roleTitle="Admin Security & API Governance"
@@ -566,6 +589,30 @@ export function AdminSecurityPage() {
             )}
           </div>
         </div>
+
+        <Card className="border-rose-500/30 bg-rose-500/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Production Data Maintenance
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Clears application records while preserving database tables, the admin account, roles, permissions, store settings, and the global Bakong account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setClearDataOpen(true)}
+              disabled={clearingData}
+              className="gap-1.5 text-xs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear All Application Data
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 border-b pb-2 overflow-x-auto">
@@ -1689,6 +1736,14 @@ export function AdminSecurityPage() {
           : ''}
         confirmLabel="Revoke token"
         onConfirm={confirmRevokeToken}
+      />
+      <ConfirmDialog
+        open={clearDataOpen}
+        onOpenChange={(open) => !clearingData && setClearDataOpen(open)}
+        title="Clear all application data?"
+        description="This permanently deletes application records on the production server, including products, customers, orders, sellers, and activity history. Database tables, admin accounts, roles, permissions, store settings, and global Bakong configuration will remain."
+        confirmLabel="Clear production data"
+        onConfirm={handleClearApplicationData}
       />
     </DashboardLayout>
   )

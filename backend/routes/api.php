@@ -151,6 +151,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Database Seeder Execution
     Route::post('/seed-all', [AdminMaintenanceController::class, 'seedAll']);
     Route::post('/database/seed', [AdminMaintenanceController::class, 'seedAll']);
+    Route::post('/database/clear-application-data', [AdminMaintenanceController::class, 'clearApplicationData']);
     // Admin Orders & Sales Mutations
     Route::prefix('orders')->group(function () {
         Route::patch('/{id}', [AdminOrderController::class, 'update']);
