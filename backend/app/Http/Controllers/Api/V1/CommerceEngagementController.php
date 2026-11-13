@@ -698,7 +698,7 @@ class CommerceEngagementController extends Controller
                 'merchant_city' => $payment->merchant_city
                     ?: $this->bakongSetting('company_city', 'bakong.merchant_city', 'Phnom Penh'),
                 'amount_usd' => (float) $order->total_amount,
-                'amount_khr' => (int) round((float) $order->total_amount * 4100),
+                'amount_khr' => (int) round((float) $order->total_amount * $this->bakongExchangeRate()),
                 'order_number' => $order->order_number,
                 'transaction_reference' => $payment->transaction_reference,
                 'expires_in_seconds' => $this->bakongQrExpirySeconds(),
@@ -911,6 +911,13 @@ class CommerceEngagementController extends Controller
         ));
     }
 
+    protected function bakongExchangeRate(): float
+    {
+        $rate = (float) StoreSetting::get('usd_to_khr_rate', 4100);
+
+        return $rate > 0 ? $rate : 4100.0;
+    }
+
     protected function bakongQrExpirySeconds(): int
     {
         $minutes = (int) StoreSetting::get(
@@ -1019,7 +1026,7 @@ class CommerceEngagementController extends Controller
         $amountStr = (fmod($amountUsd, 1.0) === 0.0)
             ? (string) ((int) round($amountUsd))
             : number_format($amountUsd, 2, '.', '');
-        $amountKhr = (int) round($amountUsd * 4100);
+        $amountKhr = (int) round($amountUsd * $this->bakongExchangeRate());
 
         // Tag 29: Individual Merchant Account Information
         // Sub-tag 00: Bakong Account ID only (e.g., username@abaa or username@bakong)
@@ -1382,12 +1389,18 @@ class CommerceEngagementController extends Controller
             }
 
             try {
-                $verificationResponse = Http::timeout(12)
+                $verificationResponse = Http::connectTimeout(5)
+                    ->timeout(15)
                     ->withToken($apiToken)
                     ->post(rtrim($this->bakongApiUrl(), '/').'/v1/check_transaction_by_md5', [
                         'md5' => $payment->khqr_md5,
                     ]);
             } catch (\Throwable $e) {
+                Log::warning('Bakong payment verification request failed.', [
+                    'order_number' => $order->order_number,
+                    'payment_id' => $payment->id,
+                    'error' => $e->getMessage(),
+                ]);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Bakong verification is temporarily unavailable. Please try again.',
@@ -1399,10 +1412,18 @@ class CommerceEngagementController extends Controller
             $expectedMerchant = strtolower((string) ($payment->merchant_account
                 ?: $this->bakongSetting('bakong_account_id', 'bakong.account_id')));
             $paidMerchant = strtolower((string) ($transaction['toAccountId'] ?? ''));
-            $amountMatches = is_array($transaction)
-                && abs((float) ($transaction['amount'] ?? -1) - (float) $order->total_amount) < 0.01;
-            $currencyMatches = is_array($transaction)
-                && strtoupper((string) ($transaction['currency'] ?? '')) === strtoupper((string) $order->currency);
+            $transactionCurrency = strtoupper((string) ($transaction['currency'] ?? ''));
+            $transactionAmount = (float) ($transaction['amount'] ?? -1);
+            $expectedUsd = (float) $order->total_amount;
+            $expectedKhr = (float) round($expectedUsd * $this->bakongExchangeRate());
+            $amountMatches = is_array($transaction) && (
+                ($transactionCurrency === 'USD' && abs($transactionAmount - $expectedUsd) < 0.01)
+                || ($transactionCurrency === 'KHR' && abs($transactionAmount - $expectedKhr) < 1)
+            );
+            // A buyer may settle a USD-denominated KHQR in KHR through a
+            // connected bank. Accept the exact USD amount or its configured
+            // KHR equivalent, but never accept an arbitrary amount.
+            $currencyMatches = in_array($transactionCurrency, ['USD', 'KHR'], true);
             $merchantMatches = $expectedMerchant !== '' && $paidMerchant !== '' && hash_equals($expectedMerchant, $paidMerchant);
 
             if (! $verificationResponse->successful()
@@ -1411,9 +1432,23 @@ class CommerceEngagementController extends Controller
                 || ! $currencyMatches
                 || ! $merchantMatches
             ) {
+                Log::notice('Bakong payment verification did not match checkout.', [
+                    'order_number' => $order->order_number,
+                    'payment_id' => $payment->id,
+                    'http_status' => $verificationResponse->status(),
+                    'response_code' => $verificationPayload['responseCode'] ?? null,
+                    'response_message' => $verificationPayload['responseMessage'] ?? null,
+                    'transaction_currency' => $transactionCurrency ?: null,
+                    'transaction_amount' => $transactionAmount >= 0 ? $transactionAmount : null,
+                    'amount_matches' => $amountMatches,
+                    'merchant_matches' => $merchantMatches,
+                ]);
+
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Bakong has not confirmed the exact payment for this order yet.',
+                    'message' => $transactionCurrency === ''
+                        ? 'Bakong has not confirmed this payment yet. Please wait a few seconds and try again.'
+                        : 'Bakong payment amount or merchant account does not match this order.',
                 ], 422);
             }
 

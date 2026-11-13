@@ -37,6 +37,8 @@ const CSRF_REQUEST_TIMEOUT_MS = 10000
 type ApiRequestConfig = AxiosRequestConfig & {
   /** Retry a mutation against the direct Railway API when the custom API edge gives no response. */
   retryOnNetworkFailure?: boolean
+  /** Use the direct Railway API first, then fall back to the custom API domain. */
+  preferPublicApi?: boolean
 }
 
 const PUBLIC_AUTH_PATHS = [
@@ -253,28 +255,53 @@ apiClient.interceptors.response.use(
  * Type-safe API helper methods
  */
 export const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.get<T>(url, config).then((res) => res.data),
-
-  post: async <T>(url: string, data?: any, config?: ApiRequestConfig): Promise<T> => {
-    await initCsrf()
-    const { retryOnNetworkFailure = false, ...requestConfig } = config || {}
+  get: async <T>(url: string, config?: ApiRequestConfig): Promise<T> => {
+    const { retryOnNetworkFailure = false, preferPublicApi = false, ...requestConfig } = config || {}
+    const primaryBaseUrl = preferPublicApi ? PUBLIC_API_BASE_URL : API_BASE_URL
+    const fallbackBaseUrl = preferPublicApi ? API_BASE_URL : PUBLIC_API_BASE_URL
 
     try {
-      return await apiClient.post<T>(url, data, requestConfig).then((res) => res.data)
+      return await apiClient
+        .get<T>(url, { ...requestConfig, baseURL: primaryBaseUrl })
+        .then((res) => res.data)
     } catch (error) {
       const noResponse = Boolean(
         error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 0
       )
 
-      if (!retryOnNetworkFailure || !noResponse || PUBLIC_API_BASE_URL === API_BASE_URL) {
+      if (!retryOnNetworkFailure || !noResponse || primaryBaseUrl === fallbackBaseUrl) {
+        throw error
+      }
+
+      return apiClient
+        .get<T>(url, { ...requestConfig, baseURL: fallbackBaseUrl })
+        .then((res) => res.data)
+    }
+  },
+
+  post: async <T>(url: string, data?: any, config?: ApiRequestConfig): Promise<T> => {
+    await initCsrf()
+    const { retryOnNetworkFailure = false, preferPublicApi = false, ...requestConfig } = config || {}
+    const primaryBaseUrl = preferPublicApi ? PUBLIC_API_BASE_URL : API_BASE_URL
+    const fallbackBaseUrl = preferPublicApi ? API_BASE_URL : PUBLIC_API_BASE_URL
+
+    try {
+      return await apiClient
+        .post<T>(url, data, { ...requestConfig, baseURL: primaryBaseUrl })
+        .then((res) => res.data)
+    } catch (error) {
+      const noResponse = Boolean(
+        error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 0
+      )
+
+      if (!retryOnNetworkFailure || !noResponse || primaryBaseUrl === fallbackBaseUrl) {
         throw error
       }
 
       // Checkout sends an idempotency key, so retrying the same payload is safe
       // when the first request was processed but its response was lost at the edge.
       return apiClient
-        .post<T>(url, data, { ...requestConfig, baseURL: PUBLIC_API_BASE_URL })
+        .post<T>(url, data, { ...requestConfig, baseURL: fallbackBaseUrl })
         .then((res) => res.data)
     }
   },

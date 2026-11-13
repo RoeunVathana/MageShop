@@ -998,6 +998,48 @@ export function CartPage() {
     if (!qrModalData) return
     setVerifyingQrPayment(true)
 
+    const showPaymentSuccess = (confirmationData: any) => {
+      const confirmedReceipt = confirmationData?.receipt_number || qrModalData.receipt_number
+      const confirmedTxn = confirmationData?.transaction_reference || qrModalData.transaction_reference
+      const confirmedAmount = Number(
+        confirmationData?.order?.total_amount ?? confirmationData?.total_amount ?? qrModalData.amount_usd
+      )
+      const confirmedAmountKhr = Math.round(confirmedAmount * (usdToKhrRate || 4100))
+
+      addRecentOrder(qrModalData.order_number)
+      clearCart()
+
+      setPaymentSuccessData({
+        order_number: qrModalData.order_number,
+        receipt_number: confirmedReceipt,
+        transaction_reference: confirmedTxn,
+        payment_method: 'BAKONG KHQR (INSTANT SCAN)',
+        payment_status: confirmationData?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
+        amount_usd: confirmedAmount,
+        amount_khr: confirmedAmountKhr,
+        discount: qrModalData.discount,
+        points_earned: qrModalData.points_earned,
+        customer_name: qrModalData.customer_name,
+        customer_email: qrModalData.customer_email,
+        customer_phone: qrModalData.customer_phone,
+        delivery_address: qrModalData.delivery_address,
+        email_report_sent: confirmationData?.email_status === 'sent',
+        telegram_admin_notified: Boolean(confirmationData?.telegram_admin_notified),
+        paid_at: confirmationData?.order?.updated_at || confirmationData?.updated_at || new Date().toLocaleString(),
+        items: qrModalData.items,
+      })
+
+      setQrModalData(null)
+      toast({
+        title: t('✅ Payment Successful!', '✅ ការទូទាត់ប្រាក់ជោគជ័យ!'),
+        description: t(
+          `Receipt emailed to ${qrModalData.customer_email} & Telegram Admin notified!`,
+          `វិក្កយបត្រត្រូវបានផ្ញើទៅកាន់អ៊ីមែល និង Telegram Admin រួចរាល់!`
+        ),
+        type: 'success',
+      })
+    }
+
     try {
       let res: any = null
       let lastError: unknown = null
@@ -1018,8 +1060,9 @@ export function CartPage() {
               // retry the same request against the direct Railway API so the
               // customer sees the real payment state instead of a generic
               // "No response" failure.
-              timeout: 20000,
+              timeout: 45000,
               retryOnNetworkFailure: true,
+              preferPublicApi: true,
             }
           )
           break
@@ -1042,44 +1085,36 @@ export function CartPage() {
       }
 
       const confirmationData = res?.data ?? res
-      const confirmedReceipt = confirmationData?.receipt_number || qrModalData.receipt_number
-      const confirmedTxn = confirmationData?.transaction_reference || qrModalData.transaction_reference
-      const confirmedAmount = Number(confirmationData?.order?.total_amount ?? qrModalData.amount_usd)
-      const confirmedAmountKhr = Math.round(confirmedAmount * 4100)
-
-      addRecentOrder(qrModalData.order_number)
-      clearCart()
-
-      setPaymentSuccessData({
-        order_number: qrModalData.order_number,
-        receipt_number: confirmedReceipt,
-        transaction_reference: confirmedTxn,
-        payment_method: 'BAKONG KHQR (INSTANT SCAN)',
-        payment_status: confirmationData?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
-        amount_usd: confirmedAmount,
-        amount_khr: confirmedAmountKhr,
-        discount: qrModalData.discount,
-        points_earned: qrModalData.points_earned,
-        customer_name: qrModalData.customer_name,
-        customer_email: qrModalData.customer_email,
-        customer_phone: qrModalData.customer_phone,
-        delivery_address: qrModalData.delivery_address,
-        email_report_sent: confirmationData?.email_status === 'sent',
-        telegram_admin_notified: Boolean(confirmationData?.telegram_admin_notified),
-        paid_at: confirmationData?.order?.updated_at || new Date().toLocaleString(),
-        items: qrModalData.items,
-      })
-
-      setQrModalData(null)
-      toast({
-        title: t('✅ Payment Successful!', '✅ ការទូទាត់ប្រាក់ជោគជ័យ!'),
-        description: t(
-          `Receipt emailed to ${qrModalData.customer_email} & Telegram Admin notified!`,
-          `វិក្កយបត្រត្រូវបានផ្ញើទៅកាន់អ៊ីមែល និង Telegram Admin រួចរាល់!`
-        ),
-        type: 'success',
-      })
+      showPaymentSuccess(confirmationData)
     } catch (error) {
+      const apiError = error && typeof error === 'object'
+        ? error as { code?: number; message?: string }
+        : null
+
+      // If the confirmation request timed out after the backend completed the
+      // Bakong verification, recover the paid state from the idempotent order
+      // tracking endpoint instead of showing a false payment failure.
+      if (apiError?.code === 0 && qrModalData) {
+        try {
+          const statusResponse = await api.get<any>(
+            `/orders/track/${encodeURIComponent(qrModalData.order_number)}`,
+            {
+              timeout: 15000,
+              retryOnNetworkFailure: true,
+              preferPublicApi: true,
+            }
+          )
+          const statusData = statusResponse?.data ?? statusResponse
+          if (statusData?.payment_status === 'paid') {
+            showPaymentSuccess(statusData)
+            return
+          }
+        } catch {
+          // Keep the original network error below when the status check also
+          // cannot reach the API.
+        }
+      }
+
       setPaymentFailedData({
         order_number: qrModalData.order_number,
         amount_usd: qrModalData.amount_usd,
