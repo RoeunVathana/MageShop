@@ -66,6 +66,8 @@ async function bootstrap(): Promise<void> {
       || (request.path === '/api/v1/wishlist/toggle' && config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') === 'true')
       || (request.path === '/api/v1/support/tickets' && config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') === 'true')
       || (request.path === '/api/v1/support/chat' && config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') === 'true')
+      || (request.path === '/api/v1/admin/api-tokens' && config.get<string>('NEST_DIRECT_API_TOKENS', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/admin/api-tokens/') && config.get<string>('NEST_DIRECT_API_TOKENS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/delivery/orders/') && config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') === 'true')
       || (request.path === '/api/v1/delivery/broadcast-gps' && config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/operations/orders/') && config.get<string>('NEST_DIRECT_OPERATIONS_MUTATIONS', 'false') === 'true')

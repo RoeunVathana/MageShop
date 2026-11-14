@@ -122,6 +122,10 @@ Laravel settings payload.
 support ticket, and support chat contracts. Email/Telegram notifications remain
 Laravel-backed until their external side effects are covered by parity tests.
 
+`NEST_DIRECT_API_TOKENS=true` enables guarded admin Sanctum-compatible token
+listing, issuance, revocation, and regeneration. It remains disabled until
+admin audit-log parity is verified.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

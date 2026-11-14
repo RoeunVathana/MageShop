@@ -80,6 +80,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestApiTokens(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -233,6 +238,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') !== 'true') return false;
     if (request.path === '/api/v1/loyalty/summary' || request.path === '/api/v1/wishlist') return request.method === 'GET';
     return ['/api/v1/wishlist/toggle', '/api/v1/support/tickets', '/api/v1/support/chat'].includes(request.path) && request.method === 'POST';
+  }
+
+  private shouldUseNestApiTokens(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_API_TOKENS', 'false') !== 'true') return false;
+    if (!request.headers.authorization && !request.headers.cookie) return false;
+    if (request.path === '/api/v1/admin/api-tokens') return ['GET', 'POST'].includes(request.method);
+    return /^\/api\/v1\/admin\/api-tokens\/\d+(\/regenerate)?$/.test(request.path) && ['POST', 'DELETE'].includes(request.method);
   }
 
   private shouldUseNestCatalogAdmin(request: Request): boolean {
