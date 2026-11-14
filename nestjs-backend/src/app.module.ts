@@ -9,10 +9,12 @@ import { LaravelCompatibilityProxy } from './proxy/laravel-compatibility.proxy';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { SanctumGuard } from './auth/sanctum.guard';
+import { OrderController } from './orders/order.controller';
+import { OrderService } from './orders/order.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, HealthController],
-  providers: [AuthService, CatalogService, DatabaseService, LaravelCompatibilityProxy, SanctumGuard],
+  controllers: [AuthController, CatalogController, HealthController, OrderController],
+  providers: [AuthService, CatalogService, DatabaseService, LaravelCompatibilityProxy, OrderService, SanctumGuard],
 })
 export class AppModule {}
