@@ -106,14 +106,24 @@ export class OperationsService {
       WHERE p.seller_id=$1 AND o.status <> 'cancelled'
     `, [sellerId]);
     const orders = await this.database.query<Record<string, unknown>>(`
-      SELECT DISTINCT o.* FROM orders o JOIN order_items oi ON oi.order_id=o.id JOIN products p ON p.id=oi.product_id
+      SELECT DISTINCT o.*, customer.id AS customer_id, customer.name AS customer_name, customer.email AS customer_email
+      FROM orders o
+      JOIN order_items oi ON oi.order_id=o.id
+      JOIN products p ON p.id=oi.product_id
+      LEFT JOIN users customer ON customer.id=o.user_id
       WHERE p.seller_id=$1 AND o.status <> 'cancelled' ORDER BY o.created_at DESC LIMIT 12
     `, [sellerId]);
     const orderIds = orders.rows.map((row) => row.id);
     const items = orderIds.length ? await this.database.query<Record<string, unknown>>('SELECT oi.*, p.name AS product_name, p.slug AS product_slug, p.image_url AS product_image_url FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=ANY($1::int[]) AND p.seller_id=$2 ORDER BY oi.id', [orderIds, sellerId]) : { rows: [] } as { rows: Record<string, unknown>[] };
     const itemMap = new Map<number, Record<string, unknown>[]>();
-    for (const item of items.rows) itemMap.set(Number(item.order_id), [...(itemMap.get(Number(item.order_id)) ?? []), item]);
-    return { status: 'ok', data: { application: application.rows[0] ?? null, store: { name: application.rows[0]?.store_name ?? null, slug: application.rows[0]?.slug ?? null, status: application.rows[0]?.status ?? (this.auth.hasAnyRole(user, ['SELLER', 'SELLER_STAFF']) ? 'approved' : 'pending') }, stats: { gross_revenue: Number(sales.rows[0]?.gross_revenue ?? 0), pending_orders: Number(sales.rows[0]?.pending_orders ?? 0), active_listings: Number(products.rows[0]?.active ?? 0), total_listings: Number(products.rows[0]?.total ?? 0), payout_balance: 0 }, orders: orders.rows.map((order) => ({ ...order, items: itemMap.get(Number(order.id)) ?? [] })) } };
+    for (const item of items.rows) {
+      const normalized = {
+        ...item,
+        product: item.product_id ? { id: item.product_id, name: item.product_name, slug: item.product_slug, image_url: item.product_image_url } : null,
+      };
+      itemMap.set(Number(item.order_id), [...(itemMap.get(Number(item.order_id)) ?? []), normalized]);
+    }
+    return { status: 'ok', data: { application: application.rows[0] ?? null, store: { name: application.rows[0]?.store_name ?? null, slug: application.rows[0]?.slug ?? null, status: application.rows[0]?.status ?? (this.auth.hasAnyRole(user, ['SELLER', 'SELLER_STAFF']) ? 'approved' : 'pending') }, stats: { gross_revenue: Number(sales.rows[0]?.gross_revenue ?? 0), pending_orders: Number(sales.rows[0]?.pending_orders ?? 0), active_listings: Number(products.rows[0]?.active ?? 0), total_listings: Number(products.rows[0]?.total ?? 0), payout_balance: 0 }, orders: orders.rows.map((order) => ({ ...order, customer: order.customer_id ? { id: order.customer_id, name: order.customer_name, email: order.customer_email } : null, items: itemMap.get(Number(order.id)) ?? [] })) } };
   }
 
   private async driverRows(): Promise<{ data: Array<Record<string, unknown>> }> {
