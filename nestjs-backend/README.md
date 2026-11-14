@@ -46,8 +46,9 @@ do not need new accounts or new tokens. Google OAuth, Firebase sign-in, OTP
 recovery, and avatar uploads continue through Laravel until their parity tests
 are complete.
 
-`NEST_DIRECT_ORDERS=true` enables the NestJS order-tracking reader for the
-authenticated `/api/v1/orders/track/:orderNumber` endpoint. It is read-only.
+`NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
+reader, and pending/confirmed order cancellation routes. It remains disabled
+by default until response and cancellation side-effect parity is verified.
 
 `NEST_DIRECT_CHECKOUT=true` is reserved for a later parity-verified rollout.
 The current NestJS checkout writer is intentionally disabled by default and
@@ -71,6 +72,10 @@ by parity tests.
 account CRUD for admin global accounts and approved seller-owned accounts. It
 is disabled by default until account-setting synchronization and seller payout
 authorization are verified against production-shaped data.
+
+`NEST_DIRECT_INVENTORY=true` enables the NestJS inventory reader and guarded
+atomic stock-adjustment path. It is disabled by default until stock movement
+history and inventory role parity are verified against production-shaped data.
 
 ## Migration rule
 

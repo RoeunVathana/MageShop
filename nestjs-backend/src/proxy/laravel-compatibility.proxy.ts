@@ -85,6 +85,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestInventory(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -146,11 +151,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
   }
 
   private shouldUseNestOrders(request: Request): boolean {
-    if (request.method !== 'GET' || !this.database.enabled || this.config.get<string>('NEST_DIRECT_ORDERS', 'false') !== 'true') {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ORDERS', 'false') !== 'true') {
       return false;
     }
-
-    return request.path.startsWith('/api/v1/orders/track/');
+    if (request.method === 'GET') {
+      return request.path.startsWith('/api/v1/orders/track/') || request.path === '/api/v1/orders';
+    }
+    return request.method === 'POST' && /^\/api\/v1\/orders\/[^/]+\/cancel$/.test(request.path);
   }
 
   private shouldUseNestCheckout(request: Request): boolean {
@@ -185,6 +192,19 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     return /^\/api\/v1\/payment-accounts(?:\/\d+)?(?:\/default)?$/.test(request.path)
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_PAYMENT_ACCOUNTS', 'false') === 'true';
+  }
+
+  private shouldUseNestInventory(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_INVENTORY', 'false') !== 'true') {
+      return false;
+    }
+    if (request.method === 'GET') {
+      if (request.headers.authorization || request.headers.cookie) return false;
+      return request.path === '/api/v1/inventory'
+        || /^\/api\/v1\/inventory\/\d+$/.test(request.path)
+        || /^\/api\/v1\/inventory\/\d+\/movements$/.test(request.path);
+    }
+    return request.method === 'POST' && /^\/api\/v1\/inventory\/\d+\/adjust$/.test(request.path);
   }
 
   onModuleDestroy(): void {

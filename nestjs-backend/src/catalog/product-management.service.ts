@@ -112,7 +112,7 @@ export class ProductManagementService {
       await this.syncCategories(client, productId, categoryIds, input.category_id);
       await this.syncAttributes(client, productId, input.attributes);
       await this.createInventory(client, productId, initialStock, user.id);
-      if (input.product_type === 'variable') await this.syncVariants(client, productId, input.variants, true);
+      if (input.product_type === 'variable') await this.syncVariants(client, productId, input.variants, input.selling_price ?? 0, true);
       return productId;
     });
     return { status: 'success', data: await this.resource(await this.findProduct(String(created)), user) };
@@ -127,6 +127,10 @@ export class ProductManagementService {
     await this.database.transaction(async (client) => {
       const brandId = input.brand_id !== undefined || input.brand !== undefined ? await this.resolveBrand(client, input.brand_id, input.brand) : existing.brand_id;
       const categoryId = input.category_id === undefined ? existing.category_id : input.category_id;
+        if (input.sku !== undefined && input.sku !== null) {
+          const duplicate = await client.query<{ id: number }>('SELECT id FROM products WHERE UPPER(sku)=UPPER($1) AND id<>$2 LIMIT 1', [input.sku.toUpperCase(), productId]);
+          if (duplicate.rows[0]) throw new UnprocessableEntityException({ status: 'error', message: 'The product SKU has already been taken.' });
+        }
       await this.ensureCategory(client, categoryId);
       const categoryIds = input.category_ids === undefined && input.category_id === undefined ? undefined : await this.categoryIds(client, categoryId, input.category_ids);
       if (input.attributes !== undefined) await this.ensureRequiredAttributes(client, categoryId, input.attributes);
@@ -162,7 +166,7 @@ export class ProductManagementService {
       }
       if (categoryIds !== undefined) await this.syncCategories(client, productId, categoryIds, categoryId);
       if (input.attributes !== undefined) await this.syncAttributes(client, productId, input.attributes);
-      if (input.variants !== undefined) await this.syncVariants(client, productId, input.variants, false);
+      if (input.variants !== undefined) await this.syncVariants(client, productId, input.variants, input.selling_price ?? Number(existing.selling_price ?? existing.price ?? 0), false);
     });
     return { status: 'success', data: await this.resource(await this.findProduct(String(productId)), user) };
   }
@@ -293,7 +297,7 @@ export class ProductManagementService {
     if (quantity > 0) await client.query(`INSERT INTO inventory_movements (product_id, variant_id, user_id, created_by, quantity_change, type, movement_type, before_quantity, after_quantity, reason, created_at, updated_at) VALUES ($1,NULL,$2,$2,$3,'stock_in','STOCK_IN',0,$3,'Initial stock on product creation',NOW(),NOW())`, [productId, userId, quantity]);
   }
 
-  private async syncVariants(client: PoolClient, productId: number, variants: Array<Record<string, unknown>> | undefined, creating: boolean): Promise<void> {
+  private async syncVariants(client: PoolClient, productId: number, variants: Array<Record<string, unknown>> | undefined, parentPrice: number, creating: boolean): Promise<void> {
     if (!variants) return;
     const keep: number[] = [];
     let total = 0;
@@ -305,7 +309,7 @@ export class ProductManagementService {
       const duplicate = await client.query<{ id: number }>('SELECT id FROM product_variants WHERE sku=$1 AND ($2::bigint IS NULL OR id<>$2) UNION ALL SELECT id FROM products WHERE sku=$1 AND id<>$3 LIMIT 1', [sku, variantId, productId]);
       if (duplicate.rows[0]) throw new UnprocessableEntityException({ status: 'error', message: `Variant SKU '${sku}' already exists in catalog.` });
       const stock = Math.max(0, this.numberOr(item.stock_quantity ?? item.initial_stock, 0));
-      const price = this.numberOr(item.selling_price, 0);
+      const price = this.numberOr(item.selling_price, parentPrice);
       const cost = this.numberOr(item.cost_price, 0);
       let id = variantId;
       if (id && !creating) {

@@ -27,10 +27,12 @@ import { PaymentConfirmationController } from './payments/payment-confirmation.c
 import { PaymentConfirmationService } from './payments/payment-confirmation.service';
 import { PaymentAccountsController } from './payment-accounts/payment-accounts.controller';
 import { PaymentAccountsService } from './payment-accounts/payment-accounts.service';
+import { InventoryController } from './inventory/inventory.controller';
+import { InventoryService } from './inventory/inventory.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
-  providers: [AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
+  controllers: [AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
+  providers: [AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
 })
 export class AppModule {}
