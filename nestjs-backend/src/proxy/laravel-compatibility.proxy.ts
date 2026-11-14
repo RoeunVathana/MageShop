@@ -271,9 +271,10 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
 
   private shouldUseNestDeliverySettings(request: Request): boolean {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_DELIVERY_SETTINGS', 'false') !== 'true') return false;
-    if (request.path === '/api/v1/delivery/settings') return ['GET', 'POST'].includes(request.method);
-    if (request.path === '/api/v1/delivery/toggle-free' || request.path === '/api/v1/delivery/methods') return request.method === 'POST';
-    return request.path.startsWith('/api/v1/delivery/methods/') && ['PATCH', 'DELETE'].includes(request.method);
+    const path = request.path.replace('/api/v1/admin/delivery', '/api/v1/delivery');
+    if (path === '/api/v1/delivery/settings') return ['GET', 'POST'].includes(request.method);
+    if (path === '/api/v1/delivery/toggle-free' || path === '/api/v1/delivery/methods') return request.method === 'POST';
+    return path.startsWith('/api/v1/delivery/methods/') && ['PATCH', 'DELETE'].includes(request.method);
   }
 
   private shouldUseNestEngagement(request: Request): boolean {
