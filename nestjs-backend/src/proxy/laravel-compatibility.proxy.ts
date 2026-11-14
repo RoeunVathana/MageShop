@@ -70,6 +70,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestDeliverySettings(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -210,6 +215,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_MEDIA', 'false') !== 'true') return false;
     if (request.path === '/api/v1/admin/media/upload') return request.method === 'POST' && Boolean(request.headers.authorization || request.headers.cookie);
     return request.method === 'GET' && request.path.startsWith('/api/v1/media/');
+  }
+
+  private shouldUseNestDeliverySettings(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_DELIVERY_SETTINGS', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/delivery/settings') return ['GET', 'POST'].includes(request.method);
+    if (request.path === '/api/v1/delivery/toggle-free' || request.path === '/api/v1/delivery/methods') return request.method === 'POST';
+    return request.path.startsWith('/api/v1/delivery/methods/') && ['PATCH', 'DELETE'].includes(request.method);
   }
 
   private shouldUseNestCatalogAdmin(request: Request): boolean {

@@ -114,6 +114,10 @@ uses the same Laravel `APP_KEY` for encrypted Bakong token compatibility.
 serving from the NestJS media root. Keep it disabled until the deployment uses
 the intended shared or durable object storage location.
 
+`NEST_DIRECT_DELIVERY_SETTINGS=true` enables delivery pricing and method CRUD;
+it remains disabled until the checkout fee calculation is verified against the
+Laravel settings payload.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

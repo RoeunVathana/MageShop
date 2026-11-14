@@ -45,10 +45,12 @@ import { StoreSettingsController } from './store-settings/store-settings.control
 import { StoreSettingsService } from './store-settings/store-settings.service';
 import { MediaController } from './media/media.controller';
 import { MediaService } from './media/media.service';
+import { DeliverySettingsController } from './delivery/delivery-settings.controller';
+import { DeliverySettingsService } from './delivery/delivery-settings.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminBannerController, AdminCouponController, AdminOrderController, AdminSecurityController, AdminSellerController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerController, SellerOperationsController, StoreSettingsController, UserAuthController],
-  providers: [AdminOrderService, AdminSecurityService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard, SellerService, StoreSettingsService],
+  controllers: [AdminBannerController, AdminCouponController, AdminOrderController, AdminSecurityController, AdminSellerController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerController, SellerOperationsController, StoreSettingsController, UserAuthController],
+  providers: [AdminOrderService, AdminSecurityService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard, SellerService, StoreSettingsService],
 })
 export class AppModule {}
