@@ -318,11 +318,66 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
         $orderNumber = $checkoutRes->json('data.order.order_number');
         $this->assertNotEmpty($orderNumber);
 
-        // Confirm cash on hand paid when courier arrives at location
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        $driver = User::factory()->create();
+        $driver->assignRole('DELIVERY_DRIVER');
+        $order->update(['driver_id' => $driver->id]);
+
+        // Only the assigned courier can confirm cash on hand at the doorstep.
+        Sanctum::actingAs($driver);
         $confirmRes = $this->postJson("/api/v1/orders/track/{$orderNumber}/confirm-payment");
         $confirmRes->assertStatus(200)
             ->assertJsonPath('data.payment_status', 'paid')
             ->assertJsonPath('data.amount_due_on_arrival', 0);
         $this->assertSame(5, (int) $user->fresh()->loyalty_points);
+    }
+
+    public function test_delivery_status_completion_settles_cod_and_is_idempotent(): void
+    {
+        $buyer = User::factory()->create(['loyalty_points' => 0]);
+        $driver = User::factory()->create();
+        $driver->assignRole('COURIER');
+
+        Sanctum::actingAs($buyer);
+        $product = Product::firstOrFail();
+        $checkoutRes = $this->postJson('/api/v1/orders/checkout', [
+            'items' => [[
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => 12.00,
+                'quantity' => 1,
+            ]],
+            'payment_method' => 'cash_on_delivery',
+            'customer_name' => 'Delivery Flow Buyer',
+            'customer_phone' => '+855 12 333 444',
+            'delivery_address' => 'BKK1, Phnom Penh',
+        ]);
+
+        $checkoutRes->assertStatus(201);
+        $orderNumber = (string) $checkoutRes->json('data.order.order_number');
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        $order->update(['driver_id' => $driver->id]);
+
+        Sanctum::actingAs($driver);
+        foreach (['shipped', 'out_for_delivery', 'delivered'] as $status) {
+            $response = $this->postJson("/api/v1/delivery/orders/{$orderNumber}/status", [
+                'status' => $status,
+            ]);
+
+            $response->assertStatus(200)->assertJsonPath('status', 'ok');
+        }
+
+        $response->assertJsonPath('data.payment_status', 'paid')
+            ->assertJsonPath('data.amount_due_on_arrival', 0);
+
+        // A retried delivery callback must not award points twice or fail.
+        $retry = $this->postJson("/api/v1/delivery/orders/{$orderNumber}/status", [
+            'status' => 'delivered',
+        ]);
+        $retry->assertStatus(200)
+            ->assertJsonPath('data.payment_status', 'paid');
+
+        $this->assertSame(5, (int) $buyer->fresh()->loyalty_points);
+        $this->assertSame('completed', (string) Payment::where('order_id', $order->id)->value('status'));
     }
 }

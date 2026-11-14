@@ -32,6 +32,8 @@ class RoleSeeder extends Seeder
             ['name' => 'LOGISTICS_MANAGER', 'slug' => 'logistics_manager', 'description' => 'Oversees delivery dispatch, carrier fleets, routes, and performance.'],
             ['name' => 'DISPATCHER', 'slug' => 'dispatcher', 'description' => 'Assigns parcels to delivery drivers and monitors live transit.'],
             ['name' => 'DELIVERY_DRIVER', 'slug' => 'delivery_driver', 'description' => 'Fulfills delivery packages, broadcasts GPS location, collects proof.'],
+            ['name' => 'COURIER', 'slug' => 'courier', 'description' => 'Courier role for assigned delivery routes and cash handover confirmation.'],
+            ['name' => 'DELIVERY', 'slug' => 'delivery', 'description' => 'Legacy delivery operator role kept compatible with assigned routes and cash handovers.'],
             ['name' => 'SELLER', 'slug' => 'seller', 'description' => 'Multi-vendor merchant store owner managing storefront and products.'],
             ['name' => 'SELLER_STAFF', 'slug' => 'seller_staff', 'description' => 'Staff member assisting an authorized marketplace vendor.'],
             ['name' => 'CUSTOMER', 'slug' => 'customer', 'description' => 'Verified retail customer purchasing goods and managing personal profile.'],
@@ -141,6 +143,27 @@ class RoleSeeder extends Seeder
         if ($customer) {
             $custPermSlugs = ['products.view', 'orders.view', 'delivery.tracking.view'];
             $customer->permissions()->sync(array_values(array_map(fn ($s) => $permModels[$s]->id, array_filter($custPermSlugs, fn ($s) => isset($permModels[$s])))));
+        }
+
+        // Delivery and order workflow permissions. API guards also enforce the
+        // role names, while this matrix keeps the dashboard role editor honest.
+        $deliveryPermissions = [
+            'order_manager' => ['orders.view', 'orders.update', 'delivery.tracking.view'],
+            'logistics_manager' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.tracking.view'],
+            'dispatcher' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.tracking.view'],
+            'delivery_driver' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
+            'courier' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
+            'delivery' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
+        ];
+
+        foreach ($deliveryPermissions as $roleSlug => $permissionSlugs) {
+            $role = $roleModels[$roleSlug] ?? null;
+            if ($role) {
+                $role->permissions()->syncWithoutDetaching(array_values(array_map(
+                    fn ($slug) => $permModels[$slug]->id,
+                    array_filter($permissionSlugs, fn ($slug) => isset($permModels[$slug]))
+                )));
+            }
         }
 
         // Optional first-admin bootstrap. Configure the credentials in the deployment environment.

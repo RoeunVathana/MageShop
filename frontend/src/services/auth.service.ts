@@ -118,8 +118,10 @@ export const authService = {
     return (
       roleNames.includes('DELIVERY_DRIVER') ||
       roleNames.includes('COURIER') ||
+      roleNames.includes('DELIVERY') ||
       roleNames.includes('LOGISTICS_MANAGER') ||
       roleNames.includes('DISPATCHER') ||
+      roleNames.includes('ORDER_MANAGER') ||
       roleNames.includes('STAFF') ||
       roleNames.includes('OPERATIONS_MANAGER')
     )

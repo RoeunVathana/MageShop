@@ -204,7 +204,7 @@ class OperationsController extends Controller
         return User::query()
             ->select(['users.id', 'users.name', 'users.email', 'users.phone_number', 'users.status'])
             ->where('status', 'active')
-            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['delivery_driver', 'courier']))
+            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['delivery_driver', 'courier', 'delivery']))
             ->with('roles')
             ->withCount(['assignedOrders as assigned_orders_count' => function ($query) {
                 $query->whereIn('status', ['shipped', 'out_for_delivery']);

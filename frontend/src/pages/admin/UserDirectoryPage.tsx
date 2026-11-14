@@ -68,6 +68,26 @@ const AVAILABLE_ROLES = [
     description: 'Access to Delivery Fleet dashboard, order dispatch queue, and real-time GPS tracking.',
   },
   {
+    slug: 'courier',
+    name: 'COURIER',
+    title: 'Courier / Delivery Operator',
+    department: 'Logistics & Delivery',
+    badge: 'Courier / GPS',
+    color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    icon: Truck,
+    description: 'Access assigned delivery routes, live GPS tracking, and cash handover confirmation.',
+  },
+  {
+    slug: 'delivery',
+    name: 'DELIVERY',
+    title: 'Legacy Delivery Operator',
+    department: 'Logistics & Delivery',
+    badge: 'Courier / GPS',
+    color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    icon: Truck,
+    description: 'Backward-compatible delivery role for assigned routes and cash handover confirmation.',
+  },
+  {
     slug: 'staff',
     name: 'STAFF',
     title: 'Operations Staff',
@@ -274,7 +294,7 @@ export function UserDirectoryPage() {
     const matched = AVAILABLE_ROLES.find((r) => r.slug === currentSlug || r.name === member.role)
     setTargetRole(matched ? matched.slug : 'staff')
 
-    if (matched?.slug === 'delivery_driver') {
+    if (matched?.slug === 'delivery_driver' || matched?.slug === 'courier' || matched?.slug === 'delivery') {
       setTargetPermissions(['delivery.update', 'delivery.tracking.view', 'orders.view'])
     } else if (matched?.slug === 'staff') {
       setTargetPermissions(['orders.view', 'orders.update', 'inventory.adjust', 'products.create'])
@@ -635,6 +655,8 @@ export function UserDirectoryPage() {
               >
                 <option value="all">All Roles</option>
                 <option value="delivery_driver">Delivery Driver / Courier</option>
+                <option value="courier">Courier / Delivery Operator</option>
+                <option value="delivery">Legacy Delivery Operator</option>
                 <option value="staff">Staff Operations</option>
                 <option value="seller">Merchant Seller</option>
                 <option value="warehouse">Warehouse Manager</option>
@@ -1114,6 +1136,8 @@ export function UserDirectoryPage() {
                     className="w-full h-10 px-3 rounded-xl border bg-background text-xs font-bold focus:ring-2 focus:ring-indigo-500/30 uppercase"
                   >
                     <option value="delivery_driver">Delivery Driver / Courier (Live GPS)</option>
+                    <option value="courier">Courier / Delivery Operator (Live GPS)</option>
+                    <option value="delivery">Legacy Delivery Operator (Live GPS)</option>
                     <option value="staff">Operations Staff</option>
                     <option value="seller">Merchant Seller</option>
                     <option value="warehouse_manager">Warehouse Manager</option>

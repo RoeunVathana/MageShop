@@ -96,7 +96,7 @@ export function DeliveryDashboard() {
   const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
   const canManagePricing = authService.isAdmin(currentUser)
   const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
-  const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
+  const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')

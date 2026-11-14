@@ -43,6 +43,8 @@ class RolePermissionController extends Controller
             ['name' => 'ORDER_MANAGER', 'slug' => 'order_manager', 'description' => 'Manages order lifecycle, fulfillment queues, customer cancellations, and statuses.'],
             ['name' => 'DISPATCHER', 'slug' => 'dispatcher', 'description' => 'Assigns parcels to delivery drivers and monitors live transit.'],
             ['name' => 'DELIVERY_DRIVER', 'slug' => 'delivery_driver', 'description' => 'Express delivery courier broadcasting live GPS and confirming drop-offs.'],
+            ['name' => 'COURIER', 'slug' => 'courier', 'description' => 'Courier completing assigned delivery routes and cash handovers.'],
+            ['name' => 'DELIVERY', 'slug' => 'delivery', 'description' => 'Legacy delivery operator completing assigned routes and cash handovers.'],
             ['name' => 'LOGISTICS_MANAGER', 'slug' => 'logistics_manager', 'description' => 'Oversees delivery dispatch, fleet routing, and driver assignment.'],
             ['name' => 'SELLER', 'slug' => 'seller', 'description' => 'Multi-vendor merchant store owner managing products and orders.'],
             ['name' => 'SELLER_STAFF', 'slug' => 'seller_staff', 'description' => 'Staff member assisting an authorized marketplace vendor.'],

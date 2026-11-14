@@ -1347,6 +1347,7 @@ class CommerceEngagementController extends Controller
                     'DISPATCHER',
                     'DELIVERY_DRIVER',
                     'COURIER',
+                    'DELIVERY',
                 ]);
             if (! $canConfirmHandover) {
                 abort(403, 'Only authorized delivery staff can confirm cash handover.');
@@ -1798,7 +1799,7 @@ class CommerceEngagementController extends Controller
             ->orderBy('id', 'desc')
             ->take(30);
 
-        if ($user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
+        if ($user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
             $ordersQuery->where('driver_id', $user->id);
         }
 
@@ -1870,6 +1871,63 @@ class CommerceEngagementController extends Controller
     }
 
     /**
+     * Settle cash collected by a delivery driver or courier exactly once.
+     */
+    protected function settleCashOnDeliveryHandover(Order $order): array
+    {
+        $settledOrder = null;
+        $payment = null;
+        $newPointsBalance = null;
+
+        DB::transaction(function () use (&$settledOrder, &$payment, &$newPointsBalance, $order): void {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $lockedPayment = Payment::where('order_id', $lockedOrder->id)
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            $lockedOrder->status = 'delivered';
+            $lockedOrder->payment_status = 'paid';
+            $lockedOrder->save();
+
+            if ($lockedPayment) {
+                $lockedPayment->status = 'completed';
+                $lockedPayment->verified_at = $lockedPayment->verified_at ?: now();
+                $lockedPayment->save();
+            }
+
+            $customer = $lockedOrder->user()->lockForUpdate()->first();
+            if ($customer) {
+                $earnedAlready = DB::table('loyalty_transactions')
+                    ->where('order_id', $lockedOrder->id)
+                    ->where('type', 'earned')
+                    ->exists();
+
+                if (! $earnedAlready) {
+                    $pointsEarned = (int) ($lockedOrder->points_earned ?? self::POINTS_PER_PURCHASE);
+                    $customer->increment('loyalty_points', $pointsEarned);
+                    DB::table('loyalty_transactions')->insert([
+                        'user_id' => $customer->id,
+                        'order_id' => $lockedOrder->id,
+                        'type' => 'earned',
+                        'points' => $pointsEarned,
+                        'description' => "Earned +{$pointsEarned} points from Order #{$lockedOrder->order_number}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $newPointsBalance = (int) $customer->fresh()->loyalty_points;
+            }
+
+            $settledOrder = $lockedOrder->fresh()->load('items');
+            $payment = $lockedPayment?->fresh();
+        });
+
+        return [$settledOrder ?: $order->fresh()->load('items'), $payment, $newPointsBalance];
+    }
+
+    /**
      * Update delivery progress status (e.g. out_for_delivery, delivered).
      */
     public function updateDeliveryStatus(Request $request, string $orderNumber): JsonResponse
@@ -1904,14 +1962,35 @@ class CommerceEngagementController extends Controller
                 'message' => 'Verify the online payment before marking this order delivered.',
             ], 422);
         }
-        $order->status = $status;
+
+        // COD handover is a payment event as well as a delivery event. Keep
+        // this path consistent with confirmArrivalPayment so drivers/staff
+        // using the delivery dashboard cannot mark an order paid without
+        // awarding points and preparing the receipt exactly once.
         if ($status === 'delivered' && in_array($order->payment_method, ['cash_on_delivery', 'cash_on_hand'], true)) {
-            $order->payment_status = 'paid';
-            Payment::where('order_id', $order->id)->update([
-                'status' => 'completed',
-                'verified_at' => now(),
+            [$order, $payment, $newPointsBalance] = $this->settleCashOnDeliveryHandover($order);
+            $receipt = $payment ? $this->prepareCheckoutReceipt($order, $payment, false) : null;
+            if ($payment) {
+                $this->scheduleCheckoutReceiptDelivery($order, $payment);
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => "Order #{$order->order_number} delivered and cash payment confirmed.",
+                'data' => [
+                    'order' => $order,
+                    'payment_status' => 'paid',
+                    'amount_due_on_arrival' => 0.00,
+                    'receipt_number' => $receipt?->receipt_number ?: $this->fallbackReceiptNumber($order->order_number),
+                    'transaction_reference' => $payment?->transaction_reference,
+                    'email_status' => $receipt?->email_status ?? 'pending',
+                    'email_sent_to' => $order->customer_email,
+                    'new_loyalty_points' => $newPointsBalance,
+                ],
             ]);
         }
+
+        $order->status = $status;
         $order->save();
 
         return response()->json([
@@ -1977,7 +2056,7 @@ class CommerceEngagementController extends Controller
 
         $isStaff = method_exists($user, 'hasAnyRole')
             && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'CUSTOMER_SUPPORT', 'LOGISTICS_MANAGER', 'DISPATCHER']);
-        $isAssignedDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER'])
+        $isAssignedDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'])
             && (int) $order->driver_id === (int) $user->id;
         if (! $isStaff && ! $isAssignedDriver && ((int) $order->user_id !== (int) $user->id)) {
             abort(403, 'You do not have access to this order.');
@@ -1991,7 +2070,7 @@ class CommerceEngagementController extends Controller
         }
 
         $user = $request->user('sanctum') ?? $request->user();
-        $isDriver = $user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER']);
+        $isDriver = $user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
         $isSupervisor = $user && $user->hasRole([
             'SUPER_ADMIN',
             'ADMIN',
@@ -2028,7 +2107,7 @@ class CommerceEngagementController extends Controller
         }
 
         $allowed = method_exists($user, 'hasAnyRole')
-            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY_DRIVER', 'COURIER']);
+            && $user->hasAnyRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
         if (! $allowed) {
             abort(403, 'Delivery staff privileges are required for this operation.');
         }
@@ -2041,7 +2120,7 @@ class CommerceEngagementController extends Controller
             abort(401, 'Authentication is required for delivery operations.');
         }
 
-        $isDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER']);
+        $isDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
         $isSupervisor = $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
         if ($isDriver && ! $isSupervisor && (int) $order->driver_id !== (int) $user->id) {
             abort(403, 'This order is not assigned to your delivery route.');

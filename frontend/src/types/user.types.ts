@@ -5,6 +5,8 @@ export type UserRole =
   | 'SELLER'
   | 'CUSTOMER'
   | 'DELIVERY_DRIVER'
+  | 'COURIER'
+  | 'DELIVERY'
   | 'SELLER_STAFF'
   | 'ORDER_MANAGER'
   | 'CUSTOMER_SUPPORT'

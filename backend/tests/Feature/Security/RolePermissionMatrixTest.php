@@ -18,7 +18,7 @@ class RolePermissionMatrixTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_all_17_roles_are_seeded(): void
+    public function test_all_delivery_and_operations_roles_are_seeded(): void
     {
         $expectedRoles = [
             'SUPER_ADMIN',
@@ -35,6 +35,8 @@ class RolePermissionMatrixTest extends TestCase
             'LOGISTICS_MANAGER',
             'DISPATCHER',
             'DELIVERY_DRIVER',
+            'COURIER',
+            'DELIVERY',
             'SELLER',
             'SELLER_STAFF',
             'CUSTOMER',
