@@ -62,6 +62,11 @@ lists. Delivery mutations and payment settlement remain on Laravel until
 their role-transition, cash-handover, receipt, and notification parity tests
 are complete.
 
+`NEST_DIRECT_DELIVERY_MUTATIONS=true` and
+`NEST_DIRECT_OPERATIONS_MUTATIONS=true` enable the NestJS GPS/status/driver
+assignment writes. They remain disabled until COD settlement, loyalty points,
+receipt delivery, and driver authorization are verified end to end.
+
 `NEST_DIRECT_PAYMENT_CONFIRM=true` is also disabled by default. Its Bakong
 confirmation path validates the exact merchant, currency, amount, expiry, and
 transaction reuse before settling the shared order ledger, but it must remain

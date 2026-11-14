@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { SanctumGuard } from '../auth/sanctum.guard';
 import type { AuthenticatedRequest } from '../auth/auth.types';
@@ -19,4 +19,12 @@ export class OperationsController {
   async drivers(@Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> {
     return this.operations.drivers(request.authUserId as number);
   }
+
+  @Post('orders/:orderNumber/assign-driver')
+  @UseGuards(SanctumGuard)
+  async assignDriver(@Param('orderNumber') orderNumber: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.operations.assignDriver(orderNumber, body, request.authUserId as number); }
+
+  @Get('seller-dashboard')
+  @UseGuards(SanctumGuard)
+  async sellerDashboard(@Query() query: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.operations.sellerDashboard(query, request.authUserId as number); }
 }

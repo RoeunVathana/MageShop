@@ -70,7 +70,17 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestDeliveryMutations(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestOperationsReads(request)) {
+        next();
+        return;
+      }
+
+      if (this.shouldUseNestOperationsMutations(request)) {
         next();
         return;
       }
@@ -184,11 +194,26 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       && this.config.get<string>('NEST_DIRECT_DELIVERY_READS', 'false') === 'true';
   }
 
+  private shouldUseNestDeliveryMutations(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') !== 'true') return false;
+    if (!request.headers.authorization && !request.headers.cookie) return false;
+    if (/^\/api\/v1\/delivery\/orders\/[^/]+\/(location|status)$/.test(request.path)) return ['PATCH', 'POST'].includes(request.method);
+    return request.path === '/api/v1/delivery/broadcast-gps' && request.method === 'POST';
+  }
+
   private shouldUseNestOperationsReads(request: Request): boolean {
     return request.method === 'GET'
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_OPERATIONS_READS', 'false') === 'true'
-      && ['/api/v1/operations/overview', '/api/v1/operations/drivers'].includes(request.path);
+      && ['/api/v1/operations/overview', '/api/v1/operations/drivers', '/api/v1/operations/seller-dashboard'].includes(request.path);
+  }
+
+  private shouldUseNestOperationsMutations(request: Request): boolean {
+    return request.method === 'POST'
+      && /^\/api\/v1\/operations\/orders\/[^/]+\/assign-driver$/.test(request.path)
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_OPERATIONS_MUTATIONS', 'false') === 'true'
+      && Boolean(request.headers.authorization || request.headers.cookie);
   }
 
   private shouldUseNestPaymentConfirmation(request: Request): boolean {
