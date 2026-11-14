@@ -75,6 +75,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestEngagement(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -222,6 +227,12 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (request.path === '/api/v1/delivery/settings') return ['GET', 'POST'].includes(request.method);
     if (request.path === '/api/v1/delivery/toggle-free' || request.path === '/api/v1/delivery/methods') return request.method === 'POST';
     return request.path.startsWith('/api/v1/delivery/methods/') && ['PATCH', 'DELETE'].includes(request.method);
+  }
+
+  private shouldUseNestEngagement(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/loyalty/summary' || request.path === '/api/v1/wishlist') return request.method === 'GET';
+    return ['/api/v1/wishlist/toggle', '/api/v1/support/tickets', '/api/v1/support/chat'].includes(request.path) && request.method === 'POST';
   }
 
   private shouldUseNestCatalogAdmin(request: Request): boolean {

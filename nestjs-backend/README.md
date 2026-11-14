@@ -118,6 +118,10 @@ the intended shared or durable object storage location.
 it remains disabled until the checkout fee calculation is verified against the
 Laravel settings payload.
 
+`NEST_DIRECT_ENGAGEMENT=true` enables the NestJS loyalty summary, wishlist,
+support ticket, and support chat contracts. Email/Telegram notifications remain
+Laravel-backed until their external side effects are covered by parity tests.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.
