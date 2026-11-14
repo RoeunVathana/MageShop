@@ -45,6 +45,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestAuth(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -72,6 +77,20 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       '/api/v1/categories',
       '/api/v1/brands',
       '/api/v1/products',
+    ].includes(request.path);
+  }
+
+  private shouldUseNestAuth(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_AUTH', 'false') !== 'true') {
+      return false;
+    }
+
+    return [
+      '/api/v1/auth/login',
+      '/api/v1/auth/register',
+      '/api/v1/auth/me',
+      '/api/v1/auth/logout',
+      '/api/v1/auth/logout-all',
     ].includes(request.path);
   }
 

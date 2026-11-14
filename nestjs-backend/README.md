@@ -28,6 +28,18 @@ The gateway listens on `http://localhost:8080` and forwards requests to
 the contract test suite proves parity for authentication, catalog, checkout,
 Bakong confirmation, delivery operations, admin CRUD, email, and uploads.
 
+## Direct-module feature flags
+
+`NEST_DIRECT_CATALOG=true` enables the NestJS PostgreSQL reader for public
+categories, brands, and products when `DATABASE_URL` is configured. Authenticated
+catalog requests remain on Laravel until NestJS role guards are enabled.
+
+`NEST_DIRECT_AUTH=true` enables the NestJS implementation of registration,
+login, current-user lookup, logout, and logout-all. It uses the existing
+`personal_access_tokens`, `users`, `roles`, and `permissions` tables, so users
+do not need new accounts or new tokens. All other auth flows continue through
+Laravel until their parity tests are complete.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.
