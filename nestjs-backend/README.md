@@ -60,6 +60,13 @@ chat/history, webhook deduplication, and staff stock/sales endpoints. Both
 flags are disabled by default; keep the extended flag off until Telegram API,
 LLM fallback, webhook response, and staff-permission parity tests pass.
 
+`NEST_DIRECT_ADMIN_MAINTENANCE=true` enables the guarded application-data
+clear endpoint at `/api/v1/admin/database/clear-application-data`. It requires
+the exact `CLEAR_ALL_APPLICATION_DATA` confirmation and preserves admin users,
+roles, permissions, store settings, and Bakong configuration. Seeder and DNS
+maintenance remain Laravel-backed until their provider-specific parity checks
+are complete.
+
 `NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
 reader, and pending/confirmed order cancellation routes. It remains disabled
 by default until response and cancellation side-effect parity is verified.

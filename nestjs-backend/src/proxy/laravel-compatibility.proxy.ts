@@ -50,6 +50,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestAdminMaintenance(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalog(request)) {
         next();
         return;
@@ -418,6 +423,14 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (!request.headers.authorization && !request.headers.cookie) return false;
     if (/^\/api\/v1\/orders\/[^/]+\/receipt$/.test(request.path)) return request.method === 'GET';
     return /^\/api\/v1\/admin\/orders\/[^/]+\/resend-receipt$/.test(request.path) && request.method === 'POST';
+  }
+
+  private shouldUseNestAdminMaintenance(request: Request): boolean {
+    return request.method === 'POST'
+      && request.path === '/api/v1/admin/database/clear-application-data'
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_ADMIN_MAINTENANCE', 'false') === 'true'
+      && Boolean(request.headers.authorization || request.headers.cookie);
   }
 
   onModuleDestroy(): void {
