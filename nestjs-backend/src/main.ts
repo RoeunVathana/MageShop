@@ -32,6 +32,13 @@ async function bootstrap(): Promise<void> {
     '/api/v1/auth/logout',
     '/api/v1/auth/logout-all',
     '/api/v1/user/profile',
+    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/verify-otp',
+    '/api/v1/auth/reset-password',
+    '/api/v1/auth/google/firebase',
+    '/api/v1/auth/avatar',
+    '/api/v1/auth/profile/avatar',
+    '/api/v1/user/avatar',
   ]);
   app.use((request: Request, response: Response, next: NextFunction) => {
     const databaseConfigured = Boolean(config.get<string>('DATABASE_URL', '').trim());
@@ -74,7 +81,7 @@ async function bootstrap(): Promise<void> {
     )
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
       && databaseConfigured;
-    if (directBodyRoute) {
+    if (directBodyRoute && String(request.headers['content-type'] ?? '').toLowerCase().includes('application/json')) {
       json()(request, response, next);
       return;
     }

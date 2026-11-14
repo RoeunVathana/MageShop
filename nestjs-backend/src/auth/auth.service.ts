@@ -217,7 +217,7 @@ export class AuthService {
     }
   }
 
-  private async findUser(userId: number): Promise<AuthUser> {
+  async findUser(userId: number): Promise<AuthUser> {
     const result = await this.database.query<UserRow>(`
       SELECT id, name, email, phone_number, avatar_url, address, password,
              loyalty_points, status, email_verified_at
@@ -269,18 +269,18 @@ export class AuthService {
     return user;
   }
 
-  private async createToken(userId: number): Promise<string> {
+  async createToken(userId: number, name = 'auth-token'): Promise<string> {
     const secret = randomBytes(30).toString('hex');
     const tokenHash = createHash('sha256').update(secret).digest('hex');
     const inserted = await this.database.query<{ id: number }>(`
       INSERT INTO personal_access_tokens (tokenable_type, tokenable_id, name, token, abilities, created_at, updated_at)
-      VALUES ('App\\Models\\User', $1, 'auth-token', $2, '["*"]', NOW(), NOW())
+      VALUES ('App\\Models\\User', $1, $3, $2, '["*"]', NOW(), NOW())
       RETURNING id
-    `, [userId, tokenHash]);
+    `, [userId, tokenHash, name]);
     return `${inserted.rows[0]?.id}|${secret}`;
   }
 
-  private async attachCustomerRole(userId: number): Promise<void> {
+  async attachCustomerRole(userId: number): Promise<void> {
     const role = await this.database.query<{ id: number }>(
       "SELECT id FROM roles WHERE LOWER(slug) = 'customer' OR UPPER(name) = 'CUSTOMER' ORDER BY id LIMIT 1",
     );

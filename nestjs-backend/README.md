@@ -39,12 +39,15 @@ attribute, and brand CRUD paths. It is disabled by default until role and
 transaction parity is verified against production-shaped data.
 
 `NEST_DIRECT_AUTH=true` enables the NestJS implementation of registration,
-login, current-user lookup, profile/password updates, logout, and logout-all,
-including the legacy `/api/v1/user` aliases. It uses the existing
-`personal_access_tokens`, `users`, `roles`, and `permissions` tables, so users
-do not need new accounts or new tokens. Google OAuth, Firebase sign-in, OTP
-recovery, and avatar uploads continue through Laravel until their parity tests
-are complete.
+login, current-user lookup, profile/password updates, logout, logout-all,
+password-recovery OTP, Google OAuth redirect/callback, Firebase Google sign-in,
+and avatar uploads, including the legacy `/api/v1/user` aliases. It uses the
+existing `personal_access_tokens`, `users`, `roles`, `permissions`,
+`password_reset_otps`, and `social_accounts` tables, so users do not need new
+accounts or new tokens. Email recovery requires a configured Resend-compatible
+API key (`RESEND_API_KEY`/`MAIL_PASSWORD` or the corresponding stored mail
+password); the flag remains disabled by default until the provider and
+redirect URI are verified in staging.
 
 `NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
 reader, and pending/confirmed order cancellation routes. It remains disabled

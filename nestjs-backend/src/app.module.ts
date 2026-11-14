@@ -13,6 +13,7 @@ import { HealthController } from './health/health.controller';
 import { LaravelCompatibilityProxy } from './proxy/laravel-compatibility.proxy';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { AuthRecoveryService } from './auth/auth-recovery.service';
 import { SanctumGuard } from './auth/sanctum.guard';
 import { UserAuthController } from './auth/user-auth.controller';
 import { OrderController } from './orders/order.controller';
@@ -55,6 +56,6 @@ import { ApiTokenService } from './api-tokens/api-token.service';
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
   controllers: [AdminBannerController, AdminCouponController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerController, SellerOperationsController, StoreSettingsController, UserAuthController],
-  providers: [AdminOrderService, AdminSecurityService, ApiTokenService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard, SellerService, StoreSettingsService],
+  providers: [AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard, SellerService, StoreSettingsService],
 })
 export class AppModule {}

@@ -263,10 +263,10 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     }
 
     if (request.method === 'GET') {
-      return ['/api/v1/auth/me', '/api/v1/user', '/api/v1/user/profile'].includes(request.path);
+      return ['/api/v1/auth/me', '/api/v1/user', '/api/v1/user/profile', '/api/v1/auth/google/redirect', '/api/v1/auth/google/callback'].includes(request.path);
     }
     if (request.method === 'POST') {
-      return ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/profile', '/api/v1/auth/logout', '/api/v1/auth/logout-all', '/api/v1/user/profile'].includes(request.path);
+      return ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/profile', '/api/v1/auth/logout', '/api/v1/auth/logout-all', '/api/v1/user/profile', '/api/v1/auth/forgot-password', '/api/v1/auth/verify-otp', '/api/v1/auth/reset-password', '/api/v1/auth/google/firebase', '/api/v1/auth/avatar', '/api/v1/auth/profile/avatar', '/api/v1/user/avatar'].includes(request.path);
     }
     if (request.method === 'PUT') {
       return ['/api/v1/auth/profile', '/api/v1/auth/password', '/api/v1/user/profile'].includes(request.path);
