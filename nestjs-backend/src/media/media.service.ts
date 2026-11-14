@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, extname, join, normalize, relative, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -13,8 +14,22 @@ export interface UploadedMediaFile { originalname: string; mimetype: string; siz
 export class MediaService {
   private readonly extensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico', 'avif', 'mp4', 'webm', 'mov', 'pdf', 'doc', 'docx', 'xlsx', 'csv']);
   private readonly mediaRoles = ['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF'];
+  private readonly s3: S3Client | null;
+  private readonly bucket: string;
 
-  constructor(private readonly auth: AuthService, private readonly config: ConfigService, private readonly database: DatabaseService) {}
+  constructor(private readonly auth: AuthService, private readonly config: ConfigService, private readonly database: DatabaseService) {
+    const accessKeyId = config.get<string>('AWS_ACCESS_KEY_ID', '').trim();
+    const secretAccessKey = config.get<string>('AWS_SECRET_ACCESS_KEY', '').trim();
+    this.bucket = config.get<string>('AWS_BUCKET', '').trim();
+    this.s3 = accessKeyId && secretAccessKey && this.bucket
+      ? new S3Client({
+        region: config.get<string>('AWS_DEFAULT_REGION', 'auto'),
+        endpoint: config.get<string>('AWS_ENDPOINT', '').trim() || undefined,
+        forcePathStyle: config.get<string>('AWS_USE_PATH_STYLE_ENDPOINT', 'false') === 'true',
+        credentials: { accessKeyId, secretAccessKey },
+      })
+      : null;
+  }
 
   async uploadAvatar(file: UploadedMediaFile | undefined, userId: number): Promise<Record<string, unknown>> {
     if (!file?.buffer?.length) throw new UnprocessableEntityException({ status: 'error', message: 'The avatar field is required.' });
@@ -24,7 +39,7 @@ export class MediaService {
     this.rejectExecutablePayload(file.buffer);
     const filename = `avatar_${userId}_${Date.now()}_${randomBytes(4).toString('hex')}.${extension}`;
     const key = `avatars/${filename}`;
-    await this.persist(key, file.buffer);
+    await this.persist(key, file.buffer, file.mimetype);
     const baseUrl = this.config.get<string>('PUBLIC_API_URL', this.config.get<string>('APP_URL', 'http://localhost:8080')).replace(/\/$/, '');
     const url = `${baseUrl}/api/v1/media/${key}`;
     await this.database.query('UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2', [url, userId]);
@@ -49,34 +64,69 @@ export class MediaService {
     const key = folder ? `${folder}/${filename}` : filename;
     const root = this.storageRoot();
     const target = resolve(root, key);
-    if (!this.isWithin(root, target)) throw new UnprocessableEntityException({ status: 'error', message: 'The upload path is invalid.' });
-    await this.persist(key, file.buffer);
+    if (!this.s3 && !this.isWithin(root, target)) throw new UnprocessableEntityException({ status: 'error', message: 'The upload path is invalid.' });
+    await this.persist(key, file.buffer, file.mimetype);
     const baseUrl = this.config.get<string>('PUBLIC_API_URL', this.config.get<string>('APP_URL', 'http://localhost:8080')).replace(/\/$/, '');
     const url = `${baseUrl}/api/v1/media/${key}`;
-    return { success: true, message: 'Media successfully uploaded to cloud storage', data: { key, url, cloud_url: url, original_name: basename(file.originalname), mime_type: file.mimetype, size: file.size, disk: 'public' } };
+    return { success: true, message: 'Media successfully uploaded to cloud storage', data: { key, url, cloud_url: url, original_name: basename(file.originalname), mime_type: file.mimetype, size: file.size, disk: this.s3 ? 's3' : 'public' } };
   }
 
   async file(pathValue: string): Promise<{ bytes: Buffer; contentType: string }> {
-    const path = this.safePath(pathValue);
-    const file = await readFile(path.absolute);
-    const extension = extname(path.relative).slice(1).toLowerCase();
-    return { bytes: file, contentType: this.contentType(extension) };
+    const relativePath = this.safeRelativePath(pathValue);
+    const extension = extname(relativePath).slice(1).toLowerCase();
+    let bytes: Buffer;
+    if (this.s3) {
+      try {
+        bytes = await this.readCloud(relativePath);
+      } catch {
+        bytes = await this.readLegacy(relativePath);
+      }
+    } else {
+      try {
+        bytes = await readFile(resolve(this.storageRoot(), relativePath));
+      } catch {
+        bytes = await this.readLegacy(relativePath);
+      }
+    }
+    return { bytes, contentType: this.contentType(extension) };
   }
 
   private storageRoot(): string { return resolve(this.config.get<string>('MEDIA_ROOT', join(process.cwd(), 'storage', 'app', 'public'))); }
-  private async persist(key: string, bytes: Buffer): Promise<void> {
+  private async persist(key: string, bytes: Buffer, contentType = 'application/octet-stream'): Promise<void> {
+    if (this.s3) {
+      await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: bytes, ContentType: contentType }));
+      return;
+    }
     const root = this.storageRoot();
     const target = resolve(root, key);
     if (!this.isWithin(root, target)) throw new UnprocessableEntityException({ status: 'error', message: 'The upload path is invalid.' });
     await mkdir(join(root, key.split('/').slice(0, -1).join('/')), { recursive: true });
     await writeFile(target, bytes, { flag: 'wx' });
   }
+  private async readCloud(key: string): Promise<Buffer> {
+    if (!this.s3) throw new Error('Cloud storage is not configured.');
+    const result = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const body = result.Body;
+    if (!body) throw new Error('Cloud storage returned an empty object.');
+    if (body instanceof Uint8Array) return Buffer.from(body);
+    const chunks: Buffer[] = [];
+    for await (const chunk of body as AsyncIterable<Uint8Array>) chunks.push(Buffer.from(chunk));
+    return Buffer.concat(chunks);
+  }
+  private async readLegacy(key: string): Promise<Buffer> {
+    const origin = this.config.get<string>('LARAVEL_API_ORIGIN', '').replace(/\/$/, '');
+    if (origin) {
+      const response = await fetch(`${origin}/api/v1/media/${key.split('/').map(encodeURIComponent).join('/')}`);
+      if (response.ok) return Buffer.from(await response.arrayBuffer());
+    }
+    throw new NotFoundException({ status: 'error', message: 'Media file not found.' });
+  }
   private rejectExecutablePayload(bytes: Buffer): void {
     const head = bytes.subarray(0, 8192).toString('utf8');
     if (/(<\?php|<\?=|<script\b|javascript\s*:|onload\s*=|onerror\s*=)/i.test(head)) throw new UnprocessableEntityException({ status: 'error', message: 'Security violation: uploaded file contains executable script or polyglot payload.' });
   }
   private safeFolder(value: unknown): string { const folder = String(value ?? 'uploads').trim().replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\/+|\/+$/g, ''); if (folder && !/^[a-zA-Z0-9_\-/]+$/.test(folder)) throw new UnprocessableEntityException({ status: 'error', message: 'The folder field is invalid.' }); return folder || 'uploads'; }
-  private safePath(value: string): { absolute: string; relative: string } { const relativePath = String(value ?? '').replace(/\\/g, '/').replace(/\0/g, '').replace(/^\/+/, ''); const extension = extname(relativePath).slice(1).toLowerCase(); if (!relativePath || relativePath.split('/').some((part) => !part || part === '.' || part === '..') || !this.extensions.has(extension) || basename(relativePath).startsWith('.')) throw new UnprocessableEntityException({ status: 'error', message: 'Access to requested file type is forbidden by security policy.' }); const root = this.storageRoot(); const absolute = resolve(root, normalize(relativePath)); if (!this.isWithin(root, absolute)) throw new UnprocessableEntityException({ status: 'error', message: 'The media path is invalid.' }); return { absolute, relative: relativePath }; }
+  private safeRelativePath(value: string): string { const relativePath = String(value ?? '').replace(/\\/g, '/').replace(/\0/g, '').replace(/^\/+/, ''); const extension = extname(relativePath).slice(1).toLowerCase(); if (!relativePath || relativePath.split('/').some((part) => !part || part === '.' || part === '..') || !this.extensions.has(extension) || basename(relativePath).startsWith('.')) throw new UnprocessableEntityException({ status: 'error', message: 'Access to requested file type is forbidden by security policy.' }); const root = this.storageRoot(); const absolute = resolve(root, normalize(relativePath)); if (!this.s3 && !this.isWithin(root, absolute)) throw new UnprocessableEntityException({ status: 'error', message: 'The media path is invalid.' }); return relativePath; }
   private isWithin(root: string, target: string): boolean { const rootPath = resolve(root); return target === rootPath || relative(rootPath, target) !== '' && !relative(rootPath, target).startsWith('..') && !relative(rootPath, target).includes(':'); }
   private contentType(extension: string): string { const types: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', ico: 'image/x-icon', avif: 'image/avif', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', csv: 'text/csv' }; return types[extension] ?? 'application/octet-stream'; }
 }
