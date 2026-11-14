@@ -50,6 +50,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestSellers(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -157,6 +162,14 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     }
     if (!request.path.startsWith('/api/v1/admin/banners')) return false;
     if (!adminWrites || (!request.headers.authorization && !request.headers.cookie)) return false;
+    return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);
+  }
+
+  private shouldUseNestSellers(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_SELLERS', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/sellers/stores') return request.method === 'GET';
+    if (!request.path.startsWith('/api/v1/admin/sellers')) return false;
+    if (!request.headers.authorization && !request.headers.cookie) return false;
     return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);
   }
 

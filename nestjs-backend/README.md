@@ -97,6 +97,11 @@ and `NEST_DIRECT_BANNER_ADMIN=true` enables guarded admin banner CRUD, toggling,
 and reorder operations. Both remain disabled until cache headers and storefront
 media behavior are verified against Laravel.
 
+`NEST_DIRECT_SELLERS=true` enables public approved-store reads and guarded admin
+seller application listing, approval, rejection, status changes, editing, and
+deletion. Seller application submission and account creation remain Laravel-backed
+until the optional-authentication and notification parity tests are complete.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

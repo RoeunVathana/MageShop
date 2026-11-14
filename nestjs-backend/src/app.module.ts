@@ -36,10 +36,13 @@ import { AdminSecurityService } from './admin-security/admin-security.service';
 import { AdminBannerController } from './banners/admin-banner.controller';
 import { BannerController } from './banners/banner.controller';
 import { BannerService } from './banners/banner.service';
+import { AdminSellerController } from './sellers/admin-seller.controller';
+import { SellerController } from './sellers/seller.controller';
+import { SellerService } from './sellers/seller.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminBannerController, AdminOrderController, AdminSecurityController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerOperationsController, UserAuthController],
-  providers: [AdminOrderService, AdminSecurityService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
+  controllers: [AdminBannerController, AdminOrderController, AdminSecurityController, AdminSellerController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerController, SellerOperationsController, UserAuthController],
+  providers: [AdminOrderService, AdminSecurityService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard, SellerService],
 })
 export class AppModule {}
