@@ -4,10 +4,11 @@ import { randomBytes } from 'node:crypto';
 import { AuthService } from '../auth/auth.service';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { ReceiptService } from '../receipts/receipt.service';
 
 @Injectable()
 export class EngagementService {
-  constructor(private readonly database: DatabaseService, private readonly auth: AuthService) {}
+  constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly receipts: ReceiptService) {}
 
   async loyalty(request: AuthenticatedRequest): Promise<Record<string, unknown>> {
     const userId = await this.optionalUserId(request);
@@ -15,6 +16,45 @@ export class EngagementService {
     const points = userId ? Number((await this.database.query<{ loyalty_points: number | string }>('SELECT loyalty_points FROM users WHERE id=$1 LIMIT 1', [userId])).rows[0]?.loyalty_points ?? 0) : 0;
     const required = Number(settings.get('loyalty_points_for_free_item') ?? 100);
     return { status: 'ok', data: { loyalty_points: points, can_redeem_free_item: points >= required } };
+  }
+
+  async redeemFreeItem(body: Record<string, unknown>, request: AuthenticatedRequest): Promise<Record<string, unknown>> {
+    const productId = this.integer(body.product_id, 'product_id');
+    const userId = request.authUserId ?? (await this.optionalUserId(request));
+    if (!userId) throw new UnprocessableEntityException({ status: 'error', message: 'Authentication is required to redeem loyalty points.' });
+    const customerName = this.optional(body.customer_name, 120);
+    const customerPhone = this.optional(body.customer_phone, 40);
+    const address = this.optional(body.delivery_address, 500);
+    const settings = await this.readSettings(['loyalty_free_item_max_price', 'loyalty_points_for_free_item']);
+    const maxPrice = Number(settings.get('loyalty_free_item_max_price') ?? 30);
+    const pointsRequired = Number(settings.get('loyalty_points_for_free_item') ?? 100);
+    const result = await this.database.transaction(async (client) => {
+      const user = (await client.query<{ id: number; name: string; email: string; phone_number: string | null; address: string | null; loyalty_points: number | string }>('SELECT id,name,email,phone_number,address,loyalty_points FROM users WHERE id=$1 LIMIT 1 FOR UPDATE', [userId])).rows[0];
+      if (!user) throw new UnprocessableEntityException({ status: 'error', message: 'Authenticated user was not found.' });
+      const product = (await client.query<{ id: number; name: string; sku: string | null; price: number | string | null; selling_price: number | string | null; discount_price: number | string | null; is_active: boolean }>('SELECT id,name,sku,price,selling_price,discount_price,is_active FROM products WHERE id=$1 LIMIT 1 FOR UPDATE', [productId])).rows[0];
+      if (!product || !product.is_active) throw new UnprocessableEntityException({ status: 'error', message: 'Selected free reward product was not found.' });
+      const base = Number(product.selling_price ?? product.price ?? 0);
+      const effective = product.discount_price !== null && Number(product.discount_price) > 0 ? Number(product.discount_price) : base;
+      if (effective > maxPrice) throw new UnprocessableEntityException({ status: 'error', message: `Product '${product.name}' ($${effective}) exceeds the $${maxPrice.toFixed(2)} max price for 100-point free exchange.` });
+      if (Number(user.loyalty_points ?? 0) < pointsRequired) throw new UnprocessableEntityException({ status: 'error', message: `Insufficient points. You have ${Number(user.loyalty_points ?? 0)} points, but ${pointsRequired} points are required to exchange for a free item.` });
+      const inventory = (await client.query<{ quantity_on_hand: number | string; quantity_reserved: number | string }>('SELECT quantity_on_hand,quantity_reserved FROM inventories WHERE product_id=$1 LIMIT 1 FOR UPDATE', [productId])).rows[0];
+      if (inventory && Number(inventory.quantity_on_hand) - Number(inventory.quantity_reserved) < 1) throw new UnprocessableEntityException({ status: 'error', message: `Insufficient stock for ${product.name}.` });
+      const orderNumber = `RWD-${this.datePart()}-${randomBytes(3).toString('hex').toUpperCase().slice(0, 5)}`;
+      const order = (await client.query<{ id: number }>(`
+        INSERT INTO orders (order_number,user_id,status,subtotal,discount,coupon_code,points_earned,points_redeemed,free_reward_product_id,shipping_fee,tax,total_amount,currency,payment_status,payment_method,customer_name,customer_email,customer_phone,delivery_address,created_at,updated_at)
+        VALUES ($1,$2,'pending',$3,$3,'100PT-FREE-REWARD',0,$4,$5,0,0,0,'USD','paid','loyalty_points',$6,$7,$8,$9,NOW(),NOW()) RETURNING id
+      `, [orderNumber, user.id, effective, pointsRequired, product.id, customerName ?? user.name, user.email, customerPhone ?? user.phone_number, address ?? user.address])).rows[0];
+      if (!order) throw new Error('Loyalty redemption did not return an order ID.');
+      await client.query('INSERT INTO order_items (order_id,product_id,product_name,product_sku,quantity,unit_price,total_price,created_at,updated_at) VALUES ($1,$2,$3,$4,1,0,0,NOW(),NOW())', [order.id, product.id, `[FREE 100-PT EXCHANGE] ${product.name}`, product.sku]);
+      const newPoints = Number(user.loyalty_points) - pointsRequired;
+      await client.query('UPDATE users SET loyalty_points=$1,updated_at=NOW() WHERE id=$2', [newPoints, user.id]);
+      await client.query("INSERT INTO loyalty_transactions (user_id,order_id,type,points,description,created_at,updated_at) VALUES ($1,$2,'redeemed',$3,$4,NOW(),NOW())", [user.id, order.id, -pointsRequired, `Exchanged ${pointsRequired} points for FREE product: ${product.name}`]);
+      return { orderId: order.id, orderNumber, productName: product.name, newPoints };
+    });
+    void this.receipts.sendOrderConfirmation(result.orderId).catch(() => undefined);
+    const order = await this.database.query<Record<string, unknown>>('SELECT * FROM orders WHERE id=$1 LIMIT 1', [result.orderId]);
+    const items = await this.database.query<Record<string, unknown>>('SELECT * FROM order_items WHERE order_id=$1 ORDER BY id', [result.orderId]);
+    return { status: 'ok', message: `Congratulations! You exchanged ${pointsRequired} points for '${result.productName}' ($0.00 FREE)!`, data: { order: { ...(order.rows[0] ?? {}), items: items.rows }, points_redeemed: pointsRequired, new_loyalty_points: result.newPoints, tracking_url: `/track-order/${result.orderNumber}` } };
   }
 
   async wishlist(request: AuthenticatedRequest): Promise<Record<string, unknown>> {

@@ -4,6 +4,7 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
+import { ReceiptService } from '../receipts/receipt.service';
 
 interface ProductRow {
   id: number;
@@ -28,6 +29,9 @@ interface MerchantAccount {
   account_id: string;
   merchant_name: string;
   merchant_city: string;
+  user_id?: number | null;
+  source?: string;
+  seller_id?: number | null;
 }
 
 @Injectable()
@@ -38,6 +42,7 @@ export class CheckoutService {
   constructor(
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly receipts: ReceiptService,
   ) {}
 
   async create(body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
@@ -152,7 +157,7 @@ export class CheckoutService {
     const paymentStatus = isCash ? 'cash_on_delivery' : (isQr ? 'pending_qr' : 'paid');
     const orderNumber = `ORD-${this.datePart()}-${randomBytes(3).toString('hex').toUpperCase().slice(0, 5)}`;
     const transactionReference = `TXN-${randomBytes(6).toString('hex').toUpperCase()}`;
-    const merchant = isQr ? await this.merchantAccount() : null;
+    const merchant = isQr ? await this.merchantAccount(products.rows) : null;
     if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id))) {
       throw new ServiceUnavailableException({ status: 'error', message: 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.' });
     }
@@ -191,6 +196,13 @@ export class CheckoutService {
       return id;
     });
 
+    // Receipt delivery is deliberately detached from the order transaction.
+    // External mail/Telegram failures must never turn a successful checkout
+    // into an internal API error or roll back the payment ledger.
+    const notification = isQr
+      ? this.receipts.sendOrderConfirmation(orderId)
+      : this.receipts.generateAndSend(orderId, true);
+    void notification.catch(() => undefined);
     const orderPayload = await this.orderPayload(orderId);
     const receipt = await this.database.query<{ receipt_number: string; email_status: string }>('SELECT receipt_number, email_status FROM receipts WHERE order_id = $1 LIMIT 1', [orderId]);
     const receiptRow = receipt.rows[0];
@@ -238,9 +250,20 @@ export class CheckoutService {
     return result.rows[0]?.receipt_number ?? null;
   }
 
-  private async merchantAccount(): Promise<MerchantAccount | null> {
-    const account = await this.database.query<MerchantAccount>('SELECT account_id, merchant_name, merchant_city FROM merchant_payment_accounts WHERE user_id IS NULL AND is_active = TRUE ORDER BY is_default DESC, id DESC LIMIT 1');
-    if (account.rows[0]) return account.rows[0];
+  private async merchantAccount(products: ProductRow[]): Promise<MerchantAccount | null> {
+    const sellerIds = [...new Set(products.map((product) => product.seller_id).filter((id): id is number => id !== null))];
+    const hasAdminOwnedProduct = products.some((product) => product.seller_id === null);
+    const accounts = await this.database.query<MerchantAccount>(`SELECT account_id, merchant_name, merchant_city, user_id
+      FROM merchant_payment_accounts
+      WHERE is_active = TRUE AND currency IN ('USD', 'BOTH')
+        AND (user_id IS NULL OR user_id = ANY($1::int[]))
+      ORDER BY is_default DESC, id DESC`, [sellerIds]);
+    if (!hasAdminOwnedProduct && sellerIds.length === 1) {
+      const sellerAccount = accounts.rows.find((account) => Number(account.user_id) === sellerIds[0]);
+      if (sellerAccount) return { ...sellerAccount, source: 'seller', seller_id: sellerIds[0] };
+    }
+    const adminAccount = accounts.rows.find((account) => account.user_id === null || account.user_id === undefined);
+    if (adminAccount) return { ...adminAccount, source: 'admin', seller_id: null };
     const settings = await this.database.query<{ setting_key: string; setting_value: string }>("SELECT setting_key, setting_value FROM store_settings WHERE setting_key IN ('bakong_account_id', 'bakong_merchant_name', 'company_city')");
     const values = new Map(settings.rows.map((setting) => [setting.setting_key, setting.setting_value]));
     return { account_id: values.get('bakong_account_id') ?? '', merchant_name: values.get('bakong_merchant_name') ?? 'TYUSHOP', merchant_city: values.get('company_city') ?? 'Phnom Penh' };

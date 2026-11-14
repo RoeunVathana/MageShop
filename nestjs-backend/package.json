@@ -16,8 +16,10 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.0.11",
+    "@types/pdfkit": "^0.17.7",
     "bcryptjs": "^3.0.2",
     "http-proxy": "^1.18.1",
+    "pdfkit": "^0.20.2",
     "pg": "^8.13.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"

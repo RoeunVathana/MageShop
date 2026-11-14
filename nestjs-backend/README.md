@@ -121,13 +121,19 @@ the intended shared or durable object storage location.
 it remains disabled until the checkout fee calculation is verified against the
 Laravel settings payload.
 
-`NEST_DIRECT_ENGAGEMENT=true` enables the NestJS loyalty summary, wishlist,
-support ticket, and support chat contracts. Email/Telegram notifications remain
-Laravel-backed until their external side effects are covered by parity tests.
+`NEST_DIRECT_ENGAGEMENT=true` enables the NestJS loyalty summary, 100-point
+free-item redemption, wishlist, support ticket, and support chat contracts.
+Email/Telegram notifications remain non-fatal side effects and require staging
+verification before enabling the flag in production.
 
 `NEST_DIRECT_API_TOKENS=true` enables guarded admin Sanctum-compatible token
 listing, issuance, revocation, and regeneration. It remains disabled until
 admin audit-log parity is verified.
+
+`NEST_DIRECT_RECEIPTS=true` enables authenticated receipt JSON/HTML/PDF reads,
+admin receipt resend, and non-blocking receipt email/Telegram side effects for
+NestJS checkout and Bakong settlement. It requires durable media storage and a
+configured Resend-compatible mail key before staging rollout.
 
 ## Migration rule
 

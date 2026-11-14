@@ -6,6 +6,7 @@ import type { PoolClient } from 'pg';
 import { AuthService } from '../auth/auth.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { ReceiptService } from '../receipts/receipt.service';
 
 interface OrderRow {
   id: number;
@@ -54,6 +55,7 @@ export class PaymentConfirmationService {
     private readonly config: ConfigService,
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly receipts: ReceiptService,
   ) {}
 
   async confirm(orderNumber: string, userId: number): Promise<Record<string, unknown>> {
@@ -136,6 +138,10 @@ export class PaymentConfirmationService {
 
     const result = await this.database.transaction(async (client) => this.settle(client, order, payment, isQr, gatewayPayload, gatewayReference));
     if (result.alreadyConfirmed) return this.alreadyConfirmed(order);
+
+    // Keep settlement authoritative and fast. Receipt PDF/email and Telegram
+    // delivery are retried as non-fatal side effects after the ledger commit.
+    void this.receipts.notifyPayment(order.id).catch(() => undefined);
 
     return {
       status: 'ok',

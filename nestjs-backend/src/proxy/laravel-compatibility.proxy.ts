@@ -150,6 +150,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestReceipts(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -237,7 +242,7 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
   private shouldUseNestEngagement(request: Request): boolean {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') !== 'true') return false;
     if (request.path === '/api/v1/loyalty/summary' || request.path === '/api/v1/wishlist') return request.method === 'GET';
-    return ['/api/v1/wishlist/toggle', '/api/v1/support/tickets', '/api/v1/support/chat'].includes(request.path) && request.method === 'POST';
+    return ['/api/v1/wishlist/toggle', '/api/v1/support/tickets', '/api/v1/support/chat', '/api/v1/loyalty/redeem-free-item'].includes(request.path) && request.method === 'POST';
   }
 
   private shouldUseNestApiTokens(request: Request): boolean {
@@ -366,6 +371,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (request.path === '/api/v1/admin/security/users') return ['GET', 'POST'].includes(request.method);
     if (/^\/api\/v1\/admin\/security\/users\/\d+$/.test(request.path)) return ['PATCH', 'DELETE'].includes(request.method);
     return /^\/api\/v1\/admin\/security\/users\/\d+\/(email|password)$/.test(request.path) && request.method === 'PATCH';
+  }
+
+  private shouldUseNestReceipts(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_RECEIPTS', 'false') !== 'true') return false;
+    if (!request.headers.authorization && !request.headers.cookie) return false;
+    if (/^\/api\/v1\/orders\/[^/]+\/receipt$/.test(request.path)) return request.method === 'GET';
+    return /^\/api\/v1\/admin\/orders\/[^/]+\/resend-receipt$/.test(request.path) && request.method === 'POST';
   }
 
   onModuleDestroy(): void {
