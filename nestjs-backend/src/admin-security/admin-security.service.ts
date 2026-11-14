@@ -1,8 +1,10 @@
 import * as bcrypt from 'bcryptjs';
 import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { ParsedQs } from 'qs';
 
 import { AuthService } from '../auth/auth.service';
+import { AuthRecoveryService } from '../auth/auth-recovery.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
 
@@ -42,6 +44,8 @@ export class AdminSecurityService {
   constructor(
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly recovery: AuthRecoveryService,
+    private readonly config: ConfigService,
   ) {}
 
   async roles(userId: number): Promise<Record<string, unknown>> {
@@ -171,6 +175,127 @@ export class AdminSecurityService {
     return { status: 'success', message: 'User password has been securely updated.' };
   }
 
+  async sendUserOtp(id: number, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const user = await this.findUser(id);
+    await this.recovery.requestPasswordOtp(user.email);
+    return { status: 'success', message: `6-digit OTP code has been dispatched to ${user.email}.` };
+  }
+
+  async indexOtps(query: ParsedQs, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const values: unknown[] = [];
+    const filters: string[] = [];
+    const email = this.text(query.email);
+    if (email) { values.push(`%${email}%`); filters.push(`email ILIKE $${values.length}`); }
+    const status = this.text(query.status);
+    if (status === 'active') filters.push('is_used = false AND expires_at > NOW()');
+    if (status === 'used') filters.push('is_used = true');
+    if (status === 'expired') filters.push('is_used = false AND expires_at <= NOW()');
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const count = await this.database.query<{ total: number | string }>(`SELECT COUNT(*)::int AS total FROM password_reset_otps ${where}`, values);
+    const perPage = Math.min(100, Math.max(5, this.number(query.per_page) ?? 20));
+    const page = Math.max(1, this.number(query.page) ?? 1);
+    const pageValues = [...values, perPage, (page - 1) * perPage];
+    const rows = await this.database.query<Record<string, unknown>>(`SELECT id, email, attempts, is_used, expires_at, cooldown_until, created_at FROM password_reset_otps ${where} ORDER BY id DESC LIMIT $${pageValues.length - 1} OFFSET $${pageValues.length}`, pageValues);
+    const data = rows.rows.map((row) => {
+      const expires = new Date(String(row.expires_at));
+      const cooldown = row.cooldown_until ? new Date(String(row.cooldown_until)) : null;
+      const expired = expires.getTime() <= Date.now();
+      return { id: row.id, email: row.email, attempts: Number(row.attempts ?? 0), is_used: Boolean(row.is_used), is_expired: expired, status: row.is_used ? 'used' : (expired ? 'expired' : 'active'), expires_at: row.expires_at, cooldown_until: row.cooldown_until, is_cooling_down: Boolean(cooldown && cooldown.getTime() > Date.now()), created_at: row.created_at };
+    });
+    const total = Number(count.rows[0]?.total ?? 0);
+    return { status: 'success', data, meta: { total, current_page: page, last_page: Math.max(1, Math.ceil(total / perPage)), per_page: perPage } };
+  }
+
+  async dispatchOtp(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const email = this.email(body.email);
+    await this.recovery.requestPasswordOtp(email);
+    return { status: 'success', message: `OTP code dispatched successfully to ${email}.` };
+  }
+
+  async invalidateOtp(id: number, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const record = await this.database.query<{ email: string }>('SELECT email FROM password_reset_otps WHERE id=$1 LIMIT 1', [id]);
+    if (!record.rows[0]) throw new NotFoundException({ status: 'error', message: 'OTP record not found.' });
+    await this.database.query('UPDATE password_reset_otps SET is_used=true, updated_at=NOW() WHERE id=$1', [id]);
+    return { status: 'success', message: `OTP for ${record.rows[0].email} has been invalidated.` };
+  }
+
+  async resendOtp(id: number, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const record = await this.database.query<{ email: string }>('SELECT email FROM password_reset_otps WHERE id=$1 LIMIT 1', [id]);
+    if (!record.rows[0]) throw new NotFoundException({ status: 'error', message: 'OTP record not found.' });
+    await this.recovery.requestPasswordOtp(record.rows[0].email);
+    return { status: 'success', message: `New OTP verification code sent to ${record.rows[0].email}.` };
+  }
+
+  async emailSettings(actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const settings = await this.settings(['mail_mailer', 'mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name']);
+    return { status: 'success', data: this.emailSettingsData(settings) };
+  }
+
+  async updateEmailSettings(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const allowed = ['mail_mailer', 'mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name'];
+    const values: Record<string, string> = {};
+    for (const key of allowed) if (body[key] !== undefined && body[key] !== null) {
+      const value = this.text(body[key]);
+      if (key === 'mail_port' && (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 65535)) throw new UnprocessableEntityException({ status: 'error', message: 'The mail_port field is invalid.' });
+      if (key === 'mail_mailer' && !['smtp', 'sendmail', 'mailgun', 'ses', 'postmark', 'log'].includes(value)) throw new UnprocessableEntityException({ status: 'error', message: 'The mail_mailer field is invalid.' });
+      if (key === 'mail_from_address' && value && !/^\S+@\S+\.\S+$/.test(value)) throw new UnprocessableEntityException({ status: 'error', message: 'The mail_from_address field is invalid.' });
+      values[key] = key === 'mail_encryption' && ['none', 'null'].includes(value) ? '' : value;
+    }
+    await this.saveSettings(values);
+    return { status: 'success', message: 'Email and SMTP configuration updated successfully.', data: this.emailSettingsData(await this.settings(Object.keys(values).length ? Object.keys(values) : allowed)) };
+  }
+
+  async testEmail(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const email = this.email(body.test_email);
+    await this.recovery.sendTestEmail(email);
+    return { status: 'success', message: `Test OTP email successfully sent to ${email}.`, data: { recipient: email, timestamp: new Date().toISOString() } };
+  }
+
+  async telegramSettings(actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    return { status: 'success', data: this.telegramSettingsData(await this.settings(['telegram_bot_token', 'telegram_bot_username', 'telegram_admin_chat_id', 'telegram_webhook_secret', 'telegram_mini_app_url', 'telegram_webhook_url'])) };
+  }
+
+  async updateTelegramSettings(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const values: Record<string, string> = {};
+    for (const key of ['telegram_bot_token', 'telegram_bot_username', 'telegram_admin_chat_id', 'telegram_webhook_secret', 'telegram_mini_app_url', 'telegram_webhook_url']) {
+      if (body[key] !== undefined && body[key] !== null && this.text(body[key])) values[key] = this.text(body[key]);
+    }
+    await this.saveSettings(values);
+    const settings = await this.settings(['telegram_bot_token', 'telegram_bot_username', 'telegram_admin_chat_id', 'telegram_webhook_secret', 'telegram_mini_app_url', 'telegram_webhook_url']);
+    let webhookStatus: string | null = null;
+    if (this.boolean(body.register_webhook, false)) webhookStatus = await this.registerWebhook(this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', ''), this.setting(settings, 'telegram_webhook_url', '', `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/telegram/webhook`), this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', ''));
+    const data = this.telegramSettingsData(settings);
+    data.webhook_status = webhookStatus;
+    return { status: 'success', message: webhookStatus ? `Telegram API Token saved (${webhookStatus}).` : 'Telegram API Token & Bot configuration saved successfully.', data };
+  }
+
+  async testTelegram(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeUserAdmin(actorId);
+    const settings = await this.settings(['telegram_bot_token', 'telegram_admin_chat_id']);
+    const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
+    if (!token) throw new UnprocessableEntityException({ status: 'error', message: 'Telegram Bot API Token Key is not configured yet.' });
+    const me = await this.telegramRequest(token, 'getMe');
+    if (!me.ok || !(me.body as { ok?: boolean }).ok) throw new UnprocessableEntityException({ status: 'error', message: `Telegram API rejected token: ${String((me.body as { description?: string }).description ?? 'Invalid Bot Token')}` });
+    const result = (me.body as { result?: { username?: string; first_name?: string } }).result ?? {};
+    const chatId = this.text(body.chat_id) || this.setting(settings, 'telegram_admin_chat_id', '', '');
+    let messageSent = false;
+    if (chatId) {
+      const message = await this.telegramRequest(token, 'sendMessage', { chat_id: chatId, text: `TYUSHOP Telegram API Token Verified!\nBot: @${result.username ?? 'UnknownBot'} (${result.first_name ?? 'TYUSHOP Bot'})\nTime: ${new Date().toISOString()}` });
+      messageSent = message.ok && Boolean((message.body as { ok?: boolean }).ok);
+    }
+    return { status: 'success', message: messageSent ? `Connected to @${result.username ?? 'UnknownBot'} and sent a test message to Chat ID ${chatId}.` : `Telegram API token verified! Connected to @${result.username ?? 'UnknownBot'}.`, data: { bot_username: result.username ?? 'UnknownBot', bot_name: result.first_name ?? 'TYUSHOP Bot', message_sent: messageSent, chat_id: chatId } };
+  }
+
   async assignRoles(id: number, body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
     const actor = await this.authorizeRoleAdmin(actorId);
     const target = await this.findUser(id);
@@ -220,6 +345,32 @@ export class AdminSecurityService {
 
   private async authorizeRoleAdmin(userId: number): Promise<AuthUser> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.roleAdminRoles)) throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Administrator role management privileges required.' }); return user; }
   private async authorizeUserAdmin(userId: number): Promise<AuthUser> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.userAdminRoles)) throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Administrator credentials and security privileges required.' }); return user; }
+  private async settings(keys: string[]): Promise<Map<string, string>> { const result = await this.database.query<{ setting_key: string; setting_value: string | null }>('SELECT setting_key, setting_value FROM store_settings WHERE setting_key=ANY($1::text[])', [keys]); return new Map(result.rows.map((row) => [row.setting_key, row.setting_value ?? ''])); }
+  private async saveSettings(values: Record<string, string>): Promise<void> { if (!Object.keys(values).length) return; await this.database.transaction(async (client) => { for (const [key, value] of Object.entries(values)) await client.query(`INSERT INTO store_settings (store_id, setting_key, setting_value, created_at, updated_at) VALUES ('primary',$1,$2,NOW(),NOW()) ON CONFLICT (setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value, updated_at=NOW()`, [key, value]); }); }
+  private emailSettingsData(settings: Map<string, string>): Record<string, unknown> {
+    const value = (key: string, env: string, fallback: string): string => this.setting(settings, key, env, fallback);
+    const mailer = value('mail_mailer', 'MAIL_MAILER', 'smtp');
+    return { mail_mailer: mailer === 'resend' ? 'smtp' : mailer, mail_host: value('mail_host', 'MAIL_HOST', 'smtp.resend.com'), mail_port: Number(value('mail_port', 'MAIL_PORT', '587')), mail_username: value('mail_username', 'MAIL_USERNAME', 'resend'), mail_password_set: Boolean(value('mail_password', 'MAIL_PASSWORD', '')), mail_encryption: value('mail_encryption', 'MAIL_ENCRYPTION', 'tls'), mail_from_address: value('mail_from_address', 'MAIL_FROM_ADDRESS', 'noreply@tyushop.blog'), mail_from_name: value('mail_from_name', 'MAIL_FROM_NAME', 'TYUSHOP') };
+  }
+  private telegramSettingsData(settings: Map<string, string>): Record<string, unknown> {
+    const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
+    const defaultUrl = `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/telegram/webhook`;
+    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot'), telegram_admin_chat_id: this.setting(settings, 'telegram_admin_chat_id', 'TELEGRAM_ADMIN_CHAT_ID', ''), telegram_webhook_secret: this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', 'tyushop_sec_token_99182a'), telegram_mini_app_url: this.setting(settings, 'telegram_mini_app_url', 'TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'), telegram_webhook_url: this.setting(settings, 'telegram_webhook_url', '', defaultUrl) };
+  }
+  private setting(settings: Map<string, string>, key: string, env: string, fallback: string): string { return String(settings.get(key) || this.config.get<string>(env, fallback) || '').trim(); }
+  private async registerWebhook(token: string, url: string, secret: string): Promise<string> {
+    if (!token || !url) return 'Webhook registration skipped: token or URL is missing';
+    try {
+      const result = await this.telegramRequest(token, 'setWebhook', { url, secret_token: secret });
+      return String((result.body as { description?: string }).description ?? (result.ok ? 'Webhook registered' : 'Webhook registration failed'));
+    } catch (error) {
+      return `Webhook request error: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+  private async telegramRequest(token: string, method: string, body?: Record<string, unknown>): Promise<{ ok: boolean; body: unknown }> {
+    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000);
+    try { const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: body ? 'POST' : 'GET', headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, signal: controller.signal }); return { ok: response.ok, body: await response.json().catch(() => ({})) }; } catch (error) { throw new UnprocessableEntityException({ status: 'error', message: `Telegram connection test failed: ${error instanceof Error ? error.message : String(error)}` }); } finally { clearTimeout(timeout); }
+  }
   private async findUser(id: number): Promise<UserRow> { const result = await this.database.query<UserRow>('SELECT id, name, email, phone_number, password, status, email_verified_at, created_at, updated_at FROM users WHERE id=$1 LIMIT 1', [id]); if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'User not found.' }); return result.rows[0]; }
   private async userResources(rows: UserRow[]): Promise<Array<Record<string, unknown>>> { const roles = await this.rolesFor(rows.map((row) => row.id)); return rows.map((row) => ({ id: row.id, name: row.name, email: row.email, phone_number: row.phone_number, status: row.status, is_email_verified: row.email_verified_at !== null, email_verified_at: row.email_verified_at, created_at: row.created_at, roles: roles.get(row.id) ?? [] })); }
   private async rolesFor(userIds: number[]): Promise<Map<number, RoleRow[]>> { const map = new Map<number, RoleRow[]>(); if (!userIds.length) return map; const result = await this.database.query<RoleRow & { user_id: number }>('SELECT ru.user_id, r.id, r.name, r.slug, r.description FROM role_user ru JOIN roles r ON r.id=ru.role_id WHERE ru.user_id=ANY($1::bigint[]) ORDER BY r.id', [userIds]); for (const role of result.rows) map.set(role.user_id, [...(map.get(role.user_id) ?? []), { id: role.id, name: role.name, slug: role.slug, description: role.description }]); return map; }

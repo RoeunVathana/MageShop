@@ -95,9 +95,9 @@ default until order notifications, receipts, delivery transitions, and payment
 settlement side effects are covered by parity tests.
 
 `NEST_DIRECT_ADMIN_SECURITY=true` enables guarded admin user CRUD, role/permission
-reads, role assignment, and administrator password/email changes. OTP delivery,
-SMTP settings, and security logs remain Laravel-backed until their external side
-effects are covered by parity tests.
+reads, role assignment (including by email), administrator password/email changes,
+OTP history/actions, email settings/test delivery, and Telegram settings/tests.
+Security logs remain Laravel-backed until their audit-event parity is covered.
 
 `NEST_DIRECT_BANNER_READS=true` enables public active-banner reads/click tracking,
 and `NEST_DIRECT_BANNER_ADMIN=true` enables guarded admin banner CRUD, toggling,

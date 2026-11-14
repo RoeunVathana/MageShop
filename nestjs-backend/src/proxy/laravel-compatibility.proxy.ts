@@ -384,6 +384,7 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (/^\/api\/v1\/admin\/users\/\d+\/roles$/.test(request.path)) return ['POST', 'PUT', 'PATCH'].includes(request.method);
     if (request.path === '/api/v1/admin/security/users') return ['GET', 'POST'].includes(request.method);
     if (/^\/api\/v1\/admin\/security\/users\/\d+$/.test(request.path)) return ['PATCH', 'DELETE'].includes(request.method);
+    if (request.path.startsWith('/api/v1/admin/security/')) return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);
     return /^\/api\/v1\/admin\/security\/users\/\d+\/(email|password)$/.test(request.path) && request.method === 'PATCH';
   }
 

@@ -98,6 +98,16 @@ export class AuthRecoveryService {
     }
   }
 
+  async sendTestEmail(toValue: unknown): Promise<void> {
+    const to = this.email(toValue);
+    const otp = String(randomInt(100000, 1000000));
+    await this.sendEmail(
+      to,
+      'TYUSHOP — SMTP & OTP Delivery Test',
+      `TYUSHOP SMTP Live Verification Test\n\nYour test OTP verification code is: ${otp}\n\nTimestamp: ${new Date().toISOString()}\n\nIf you received this message, your mail configuration is operational.`,
+    );
+  }
+
   async verifyPasswordOtp(emailValue: unknown, otpValue: unknown): Promise<string> {
     const email = this.email(emailValue);
     const otp = String(otpValue ?? '').trim();
