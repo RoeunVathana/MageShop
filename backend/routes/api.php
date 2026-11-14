@@ -177,6 +177,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/roles', [RolePermissionController::class, 'indexRoles']);
     Route::get('/permissions', [RolePermissionController::class, 'indexPermissions']);
     Route::get('/staff', [RolePermissionController::class, 'indexStaff']);
+    // Resolve the target account by email before applying the same role
+    // governance checks used by the numeric user-id endpoint.
+    Route::post('/users/roles/by-email', [RolePermissionController::class, 'assignRolesByEmail']);
     Route::post('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
     Route::put('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);
     Route::patch('/users/{user}/roles', [RolePermissionController::class, 'assignRoles']);

@@ -95,4 +95,57 @@ class RolePermissionMatrixTest extends TestCase
                 'status' => 'error',
             ]);
     }
+
+    public function test_super_admin_can_assign_admin_role_by_email(): void
+    {
+        $superAdminRole = Role::where('name', 'SUPER_ADMIN')->first();
+        $adminRole = Role::where('name', 'ADMIN')->first();
+
+        $superAdmin = User::create([
+            'name' => 'Root Administrator',
+            'email' => 'root.admin@megacommerce.internal',
+            'password' => 'Pass123!',
+        ]);
+        $superAdmin->roles()->attach($superAdminRole->id);
+
+        $targetUser = User::create([
+            'name' => 'New Platform Administrator',
+            'email' => 'new.admin@megacommerce.internal',
+            'password' => 'Pass123!',
+        ]);
+
+        $response = $this->actingAs($superAdmin, 'sanctum')->postJson('/api/v1/admin/users/roles/by-email', [
+            'email' => strtoupper($targetUser->email),
+            'role' => 'ADMIN',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.email', $targetUser->email)
+            ->assertJsonPath('data.roles.0.slug', 'admin');
+
+        $this->assertTrue($targetUser->fresh()->hasRole($adminRole->name));
+    }
+
+    public function test_role_assignment_by_email_returns_not_found_for_unknown_account(): void
+    {
+        $superAdminRole = Role::where('name', 'SUPER_ADMIN')->first();
+        $superAdmin = User::create([
+            'name' => 'Root Administrator',
+            'email' => 'root.lookup@megacommerce.internal',
+            'password' => 'Pass123!',
+        ]);
+        $superAdmin->roles()->attach($superAdminRole->id);
+
+        $response = $this->actingAs($superAdmin, 'sanctum')->postJson('/api/v1/admin/users/roles/by-email', [
+            'email' => 'missing.user@megacommerce.internal',
+            'role' => 'ADMIN',
+        ]);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'No user account was found for that email address.',
+            ]);
+    }
 }

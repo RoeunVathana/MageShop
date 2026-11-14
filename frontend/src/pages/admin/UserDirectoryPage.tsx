@@ -209,6 +209,8 @@ export function UserDirectoryPage() {
   const [targetRole, setTargetRole] = useState('staff')
   const [targetPermissions, setTargetPermissions] = useState<string[]>([])
   const [isAssigningRole, setIsAssigningRole] = useState(false)
+  const [isEmailRoleModalOpen, setIsEmailRoleModalOpen] = useState(false)
+  const [roleAssignmentEmail, setRoleAssignmentEmail] = useState('')
 
   // Add Member Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -329,6 +331,50 @@ export function UserDirectoryPage() {
       toast({
         title: 'Role Assignment Failed',
         description: err?.message || 'Could not update user roles in the database.',
+        type: 'error',
+      })
+    } finally {
+      setIsAssigningRole(false)
+    }
+  }
+
+  // Assign a role to an existing account when the administrator only has the
+  // account email. The backend performs the final role-governance check.
+  const handleSaveRoleByEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const email = roleAssignmentEmail.trim().toLowerCase()
+
+    if (!email) {
+      toast({
+        title: 'Email Required',
+        description: 'Enter the email address of an existing user account.',
+        type: 'error',
+      })
+      return
+    }
+
+    setIsAssigningRole(true)
+    try {
+      const response: any = await authService.assignRolesByEmail(email, {
+        role: targetRole,
+        roles: [targetRole.toUpperCase()],
+      })
+      const roleObj = AVAILABLE_ROLES.find((role) => role.slug === targetRole)
+      const assignedName = response?.data?.name || email
+
+      toast({
+        title: '🎉 Role Assigned Successfully',
+        description: `${assignedName} is now assigned the "${roleObj?.title || targetRole}" role.`,
+        type: 'success',
+      })
+
+      setIsEmailRoleModalOpen(false)
+      setRoleAssignmentEmail('')
+      fetchUsers()
+    } catch (err: any) {
+      toast({
+        title: 'Role Assignment Failed',
+        description: err?.message || 'Could not find or update this user account.',
         type: 'error',
       })
     } finally {
@@ -574,6 +620,19 @@ export function UserDirectoryPage() {
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Enroll Member</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setRoleAssignmentEmail('')
+                setTargetRole('admin')
+                setIsEmailRoleModalOpen(true)
+              }}
+              className="rounded-xl h-9 text-xs font-bold gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Assign by Email</span>
             </Button>
           </div>
         </div>
@@ -967,6 +1026,93 @@ export function UserDirectoryPage() {
                   >
                     <Save className="w-4 h-4" />
                     <span>{isAssigningRole ? 'Assigning...' : 'Save Role & Permissions'}</span>
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Assign a role to an existing account by email */}
+        {isEmailRoleModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
+              <div className="flex items-start justify-between border-b pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-foreground">Assign Role by Email</h2>
+                    <p className="text-xs text-muted-foreground font-semibold">
+                      Apply a role to an existing TYUSHOP account.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEmailRoleModalOpen(false)}
+                  className="rounded-full w-8 h-8 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <XCircle className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleSaveRoleByEmail} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-foreground">
+                    Existing Account Email
+                  </label>
+                  <Input
+                    type="email"
+                    required
+                    autoFocus
+                    placeholder="user@example.com"
+                    value={roleAssignmentEmail}
+                    onChange={(e) => setRoleAssignmentEmail(e.target.value)}
+                    className="rounded-xl h-11 text-sm font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-foreground">
+                    Role to Assign
+                  </label>
+                  <select
+                    value={targetRole}
+                    onChange={(e) => setTargetRole(e.target.value)}
+                    className="w-full h-11 px-3 rounded-xl border bg-background text-sm font-bold focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    {AVAILABLE_ROLES.map((role) => (
+                      <option key={role.slug} value={role.slug}>
+                        {role.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="rounded-2xl border border-amber-300/60 bg-amber-50/70 dark:bg-amber-950/20 px-3.5 py-3 text-[11px] leading-5 text-amber-900 dark:text-amber-200">
+                  Only SUPER_ADMIN can grant ADMIN or SUPER_ADMIN. Other administrators will receive a clear permission error.
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsEmailRoleModalOpen(false)}
+                    disabled={isAssigningRole}
+                    className="rounded-xl h-10 text-xs font-bold"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isAssigningRole}
+                    className="rounded-xl h-10 px-5 text-xs font-black gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>{isAssigningRole ? 'Assigning...' : 'Assign Role'}</span>
                   </Button>
                 </div>
               </form>

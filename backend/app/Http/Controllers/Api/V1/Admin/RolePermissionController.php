@@ -121,9 +121,46 @@ class RolePermissionController extends Controller
     public function assignRoles(Request $request, $id): JsonResponse
     {
         $this->authorizeRoleAdmin($request, true);
-        $this->ensureDefaultRoles();
 
         $targetUser = $id instanceof User ? $id : User::findOrFail($id);
+
+        return $this->applyRoles($request, $targetUser);
+    }
+
+    /**
+     * Assign or update roles by the target user's email address.
+     *
+     * This is intentionally a separate route so the frontend can assign a
+     * role to an existing account without exposing or requiring the account's
+     * numeric database identifier.
+     */
+    public function assignRolesByEmail(Request $request): JsonResponse
+    {
+        $this->authorizeRoleAdmin($request, true);
+
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $email = strtolower(trim($validated['email']));
+        $targetUser = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if (! $targetUser) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No user account was found for that email address.',
+            ], 404);
+        }
+
+        return $this->applyRoles($request, $targetUser);
+    }
+
+    /**
+     * Apply the requested roles and optional permission grants to a user.
+     */
+    protected function applyRoles(Request $request, User $targetUser): JsonResponse
+    {
+        $this->ensureDefaultRoles();
 
         $actor = Auth::guard('web')->user() ?? $request->user('sanctum') ?? $request->user();
         $isSuperAdmin = $actor?->hasRole('SUPER_ADMIN') ?? false;

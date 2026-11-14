@@ -167,6 +167,27 @@ export const authService = {
   },
 
   /**
+   * Assign or update roles for an existing user selected by email address.
+   */
+  assignRolesByEmail: async (
+    email: string,
+    payload: {
+      role?: string
+      roles?: string[]
+      role_slugs?: string[]
+      role_ids?: number[]
+      permissions?: string[]
+      permission_ids?: number[]
+    }
+  ): Promise<any> => {
+    const res = await api.post('/admin/users/roles/by-email', {
+      email: email.trim().toLowerCase(),
+      ...payload,
+    })
+    return res
+  },
+
+  /**
    * Persist authenticated user and token.
    */
   saveSession: (user: User, token?: string): void => {
