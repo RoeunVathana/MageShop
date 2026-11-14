@@ -19,10 +19,12 @@ import { OperationsController } from './operations/operations.controller';
 import { OperationsService } from './operations/operations.service';
 import { PaymentConfirmationController } from './payments/payment-confirmation.controller';
 import { PaymentConfirmationService } from './payments/payment-confirmation.service';
+import { PaymentAccountsController } from './payment-accounts/payment-accounts.controller';
+import { PaymentAccountsService } from './payment-accounts/payment-accounts.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentConfirmationController],
-  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentConfirmationService, SanctumGuard],
+  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController],
+  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, SanctumGuard],
 })
 export class AppModule {}

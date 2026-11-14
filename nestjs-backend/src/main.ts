@@ -24,28 +24,23 @@ async function bootstrap(): Promise<void> {
 
   // Keep the raw stream available for the Laravel fallback. Parse JSON only
   // for auth routes that are explicitly owned by NestJS during migration.
-  const directJsonPaths = new Set([
+  const directAuthPaths = new Set([
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/logout',
     '/api/v1/auth/logout-all',
-    '/api/v1/orders/checkout',
-    '/api/v1/orders/track',
   ]);
   app.use((request: Request, response: Response, next: NextFunction) => {
     const databaseConfigured = Boolean(config.get<string>('DATABASE_URL', '').trim());
-    const directBodyRoute = (directJsonPaths.has(request.path)
-      || /^\/api\/v1\/orders\/track\/[^/]+\/confirm-payment$/.test(request.path))
+    const directBodyRoute = (
+      (directAuthPaths.has(request.path) && config.get<string>('NEST_DIRECT_AUTH', 'false') === 'true')
+      || (request.path === '/api/v1/orders/checkout' && config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/orders/track/') && request.path.endsWith('/confirm-payment') && config.get<string>('NEST_DIRECT_PAYMENT_CONFIRM', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/payment-accounts') && config.get<string>('NEST_DIRECT_PAYMENT_ACCOUNTS', 'false') === 'true')
+    )
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
-      && databaseConfigured
-      && (
-        config.get<string>('NEST_DIRECT_AUTH', 'false') === 'true'
-        || (request.path === '/api/v1/orders/checkout' && config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true')
-        || (request.path.startsWith('/api/v1/orders/track/') && request.path.endsWith('/confirm-payment') && config.get<string>('NEST_DIRECT_PAYMENT_CONFIRM', 'false') === 'true')
-      );
-    if (
-      directBodyRoute
-    ) {
+      && databaseConfigured;
+    if (directBodyRoute) {
       json()(request, response, next);
       return;
     }

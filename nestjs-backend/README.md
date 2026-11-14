@@ -61,6 +61,11 @@ transaction reuse before settling the shared order ledger, but it must remain
 off until the Laravel receipt/PDF/email/Telegram delivery behavior is covered
 by parity tests.
 
+`NEST_DIRECT_PAYMENT_ACCOUNTS=true` enables the shared PostgreSQL merchant
+account CRUD for admin global accounts and approved seller-owned accounts. It
+is disabled by default until account-setting synchronization and seller payout
+authorization are verified against production-shaped data.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.
