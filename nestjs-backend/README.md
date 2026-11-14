@@ -55,6 +55,12 @@ lists. Delivery mutations and payment settlement remain on Laravel until
 their role-transition, cash-handover, receipt, and notification parity tests
 are complete.
 
+`NEST_DIRECT_PAYMENT_CONFIRM=true` is also disabled by default. Its Bakong
+confirmation path validates the exact merchant, currency, amount, expiry, and
+transaction reuse before settling the shared order ledger, but it must remain
+off until the Laravel receipt/PDF/email/Telegram delivery behavior is covered
+by parity tests.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

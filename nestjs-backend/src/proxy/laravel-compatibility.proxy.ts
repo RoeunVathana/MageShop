@@ -70,6 +70,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestPaymentConfirmation(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -141,6 +146,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_OPERATIONS_READS', 'false') === 'true'
       && ['/api/v1/operations/overview', '/api/v1/operations/drivers'].includes(request.path);
+  }
+
+  private shouldUseNestPaymentConfirmation(request: Request): boolean {
+    return request.method === 'POST'
+      && /^\/api\/v1\/orders\/track\/[^/]+\/confirm-payment$/.test(request.path)
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_PAYMENT_CONFIRM', 'false') === 'true';
   }
 
   onModuleDestroy(): void {

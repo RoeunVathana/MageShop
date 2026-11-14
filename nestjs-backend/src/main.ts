@@ -30,15 +30,18 @@ async function bootstrap(): Promise<void> {
     '/api/v1/auth/logout',
     '/api/v1/auth/logout-all',
     '/api/v1/orders/checkout',
+    '/api/v1/orders/track',
   ]);
   app.use((request: Request, response: Response, next: NextFunction) => {
     const databaseConfigured = Boolean(config.get<string>('DATABASE_URL', '').trim());
-    const directBodyRoute = directJsonPaths.has(request.path)
+    const directBodyRoute = (directJsonPaths.has(request.path)
+      || /^\/api\/v1\/orders\/track\/[^/]+\/confirm-payment$/.test(request.path))
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
       && databaseConfigured
       && (
         config.get<string>('NEST_DIRECT_AUTH', 'false') === 'true'
         || (request.path === '/api/v1/orders/checkout' && config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true')
+        || (request.path.startsWith('/api/v1/orders/track/') && request.path.endsWith('/confirm-payment') && config.get<string>('NEST_DIRECT_PAYMENT_CONFIRM', 'false') === 'true')
       );
     if (
       directBodyRoute
