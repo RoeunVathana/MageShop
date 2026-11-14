@@ -205,11 +205,22 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
   }
 
   private shouldUseNestTelegram(request: Request): boolean {
-    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_TELEGRAM', 'false') !== 'true') return false;
+    if (!this.database.enabled) return false;
+    const extended = this.config.get<string>('NEST_DIRECT_TELEGRAM_EXTENDED', 'false') === 'true';
+    if (this.config.get<string>('NEST_DIRECT_TELEGRAM', 'false') !== 'true' && !extended) return false;
     if (request.path === '/api/v1/telegram/auth') return request.method === 'POST';
     if (request.path === '/api/v1/telegram/profile') return request.method === 'GET' && Boolean(request.headers.authorization || request.headers.cookie);
     if (request.path === '/api/v1/telegram/products' || request.path === '/api/v1/telegram/categories') return request.method === 'GET';
-    return /^\/api\/v1\/telegram\/products\/[^/]+$/.test(request.path) && request.method === 'GET';
+    if (/^\/api\/v1\/telegram\/products\/[^/]+$/.test(request.path)) return request.method === 'GET';
+    if (!extended) return false;
+    if (request.path === '/api/v1/telegram/webhook') return request.method === 'POST';
+    if (request.path === '/api/v1/telegram/ai/chat') return request.method === 'POST';
+    if (/^\/api\/v1\/telegram\/ai\/history\/\d+$/.test(request.path)) return request.method === 'GET';
+    if (!request.path.startsWith('/api/v1/telegram/admin/')) return false;
+    return Boolean(request.headers.authorization || request.headers.cookie)
+      && ((request.path === '/api/v1/telegram/admin/stock' && request.method === 'GET')
+        || (request.path === '/api/v1/telegram/admin/stock-adjust' && request.method === 'POST')
+        || (request.path === '/api/v1/telegram/admin/sales-summary' && request.method === 'GET'));
   }
 
   private shouldUseNestBanners(request: Request): boolean {

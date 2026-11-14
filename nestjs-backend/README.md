@@ -55,8 +55,10 @@ production health-check source.
 
 `NEST_DIRECT_TELEGRAM=true` enables Telegram Mini App HMAC authentication,
 profile linking, product/SKU/category reads, and tab-filtered catalog reads.
-AI chat/history, webhooks, and admin stock actions remain Laravel-backed until
-their bot and permission parity tests are complete.
+`NEST_DIRECT_TELEGRAM_EXTENDED=true` additionally exposes the NestJS AI
+chat/history, webhook deduplication, and staff stock/sales endpoints. Both
+flags are disabled by default; keep the extended flag off until Telegram API,
+LLM fallback, webhook response, and staff-permission parity tests pass.
 
 `NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
 reader, and pending/confirmed order cancellation routes. It remains disabled

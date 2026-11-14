@@ -79,7 +79,7 @@ async function bootstrap(): Promise<void> {
       || (request.path === '/api/v1/support/chat' && config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') === 'true')
       || (request.path === '/api/v1/loyalty/redeem-free-item' && config.get<string>('NEST_DIRECT_ENGAGEMENT', 'false') === 'true')
       || (request.path === '/api/v1/admin/api-tokens' && config.get<string>('NEST_DIRECT_API_TOKENS', 'false') === 'true')
-      || (request.path.startsWith('/api/v1/telegram/') && config.get<string>('NEST_DIRECT_TELEGRAM', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/telegram/') && (config.get<string>('NEST_DIRECT_TELEGRAM', 'false') === 'true' || config.get<string>('NEST_DIRECT_TELEGRAM_EXTENDED', 'false') === 'true'))
       || (request.path.startsWith('/api/v1/admin/api-tokens/') && config.get<string>('NEST_DIRECT_API_TOKENS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/admin/orders/') && request.path.endsWith('/resend-receipt') && config.get<string>('NEST_DIRECT_RECEIPTS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/delivery/orders/') && config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') === 'true')
