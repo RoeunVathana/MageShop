@@ -45,6 +45,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestTelegram(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalog(request)) {
         next();
         return;
@@ -197,6 +202,14 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     return this.config.get<string>('NEST_DIRECT_HEALTH', 'false') === 'true'
       && ['/api/v1/health', '/api/v1/health/ready'].includes(request.path)
       && request.method === 'GET';
+  }
+
+  private shouldUseNestTelegram(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_TELEGRAM', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/telegram/auth') return request.method === 'POST';
+    if (request.path === '/api/v1/telegram/profile') return request.method === 'GET' && Boolean(request.headers.authorization || request.headers.cookie);
+    if (request.path === '/api/v1/telegram/products' || request.path === '/api/v1/telegram/categories') return request.method === 'GET';
+    return /^\/api\/v1\/telegram\/products\/[^/]+$/.test(request.path) && request.method === 'GET';
   }
 
   private shouldUseNestBanners(request: Request): boolean {

@@ -54,10 +54,13 @@ import { ApiTokenController } from './api-tokens/api-token.controller';
 import { ApiTokenService } from './api-tokens/api-token.service';
 import { ReceiptController } from './receipts/receipt.controller';
 import { ReceiptService } from './receipts/receipt.service';
+import { TelegramProductsController } from './telegram/telegram-products.controller';
+import { TelegramAuthController } from './telegram/telegram-auth.controller';
+import { TelegramAuthService } from './telegram/telegram-auth.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminBannerController, AdminCouponController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, ReceiptController, SellerController, SellerOperationsController, StoreSettingsController, UserAuthController],
-  providers: [AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, ReceiptService, SanctumGuard, SellerService, StoreSettingsService],
+  controllers: [AdminBannerController, AdminCouponController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, ReceiptController, SellerController, SellerOperationsController, StoreSettingsController, TelegramAuthController, TelegramProductsController, UserAuthController],
+  providers: [AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, ReceiptService, SanctumGuard, SellerService, StoreSettingsService, TelegramAuthService],
 })
 export class AppModule {}

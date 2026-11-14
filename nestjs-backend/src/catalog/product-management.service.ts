@@ -210,7 +210,7 @@ export class ProductManagementService {
 
   private async findProduct(idOrSlug: string): Promise<ProductRow> {
     const numeric = /^\d+$/.test(idOrSlug);
-    const result = await this.database.query<ProductRow>(`SELECT ${this.productColumns()} FROM products p LEFT JOIN brands b ON b.id=p.brand_id LEFT JOIN categories c ON c.id=p.category_id LEFT JOIN categories cp ON cp.id=c.parent_id LEFT JOIN inventories i ON i.product_id=p.id AND i.variant_id IS NULL WHERE ${numeric ? 'p.id=$1' : 'p.slug=$1'} LIMIT 1`, [numeric ? Number(idOrSlug) : idOrSlug]);
+    const result = await this.database.query<ProductRow>(`SELECT ${this.productColumns()} FROM products p LEFT JOIN brands b ON b.id=p.brand_id LEFT JOIN categories c ON c.id=p.category_id LEFT JOIN categories cp ON cp.id=c.parent_id LEFT JOIN inventories i ON i.product_id=p.id AND i.variant_id IS NULL WHERE ${numeric ? 'p.id=$1' : '(p.slug=$1 OR UPPER(p.sku)=UPPER($1))'} LIMIT 1`, [numeric ? Number(idOrSlug) : idOrSlug]);
     const product = result.rows[0];
     if (!product) throw new NotFoundException({ status: 'error', message: 'Product not found.' });
     return product;
