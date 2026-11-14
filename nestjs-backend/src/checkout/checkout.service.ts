@@ -160,10 +160,21 @@ export class CheckoutService {
     const orderNumber = `ORD-${this.datePart()}-${randomBytes(3).toString('hex').toUpperCase().slice(0, 5)}`;
     const transactionReference = `TXN-${randomBytes(6).toString('hex').toUpperCase()}`;
     const merchant = isQr ? await this.merchantAccount(products.rows) : null;
-    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id) || !(await this.bakongPaymentReady()))) {
+    const paymentSettings = isQr ? await this.settings([
+      'bakong_api_enabled',
+      'bakong_api_token_encrypted',
+      'bakong_api_url',
+      'bakong_account_id',
+      'bakong_merchant_name',
+      'bakong_merchant_city',
+      'company_city',
+      'usd_to_khr_rate',
+      'payment_qr_expires_minutes',
+    ]) : new Map<string, string>();
+    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id) || !(await this.bakongPaymentReady(paymentSettings)))) {
       throw new ServiceUnavailableException({ status: 'error', message: 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.' });
     }
-    const qr = isQr ? this.buildQr(orderNumber, totalAmount, transactionReference, merchant as MerchantAccount) : null;
+    const qr = isQr ? this.buildQr(orderNumber, totalAmount, transactionReference, merchant as MerchantAccount, paymentSettings) : null;
     const customerEmailValue = customerEmail || user.email;
     const pointsEarned = this.pointsPerPurchase;
     const newPoints = Math.max(0, user.loyalty_points - pointsRedeemed + (paymentStatus === 'paid' ? pointsEarned : 0));
@@ -233,9 +244,21 @@ export class CheckoutService {
 
   private async existingResponse(orderId: number): Promise<Record<string, unknown>> {
     const order = await this.orderPayload(orderId);
-    const payment = await this.database.query<{ transaction_reference: string; khqr_string: string | null; khqr_md5: string | null; merchant_account: string | null; merchant_name: string | null; merchant_city: string | null }>('SELECT transaction_reference, khqr_string, khqr_md5, merchant_account, merchant_name, merchant_city FROM payments WHERE order_id = $1 ORDER BY id DESC LIMIT 1', [orderId]);
+    const payment = await this.database.query<{ transaction_reference: string; khqr_string: string | null; khqr_md5: string | null; merchant_account: string | null; merchant_name: string | null; merchant_city: string | null; created_at: Date | string }>('SELECT transaction_reference, khqr_string, khqr_md5, merchant_account, merchant_name, merchant_city, created_at FROM payments WHERE order_id = $1 ORDER BY id DESC LIMIT 1', [orderId]);
     const record = payment.rows[0];
-    const qr = record?.khqr_string && record.khqr_md5 ? { qr_string: record.khqr_string, md5: record.khqr_md5, merchant_account: record.merchant_account, merchant_name: record.merchant_name, merchant_city: record.merchant_city, amount_usd: Number(order.total_amount), amount_khr: Math.round(Number(order.total_amount) * 4100), order_number: order.order_number, transaction_reference: record.transaction_reference, expires_in_seconds: 600 } : null;
+    const paymentSettings = record?.khqr_string && record.khqr_md5 ? await this.settings(['usd_to_khr_rate', 'payment_qr_expires_minutes']) : new Map<string, string>();
+    const qr = record?.khqr_string && record.khqr_md5 ? {
+      qr_string: record.khqr_string,
+      md5: record.khqr_md5,
+      merchant_account: record.merchant_account,
+      merchant_name: record.merchant_name,
+      merchant_city: record.merchant_city,
+      amount_usd: Number(order.total_amount),
+      amount_khr: Math.round(Number(order.total_amount) * this.exchangeRate(paymentSettings)),
+      order_number: order.order_number,
+      transaction_reference: record.transaction_reference,
+      expires_in_seconds: this.qrExpirySeconds(paymentSettings),
+    } : null;
     return { status: 'ok', message: qr ? `Bakong KHQR is ready for Order #${order.order_number}.` : `Checkout already processed for Order #${order.order_number}.`, data: { order, receipt_number: await this.receipt(orderId), transaction_reference: record?.transaction_reference, email_status: 'pending', email_sent_to: order.customer_email, telegram_admin_notified: false, qr_payment: qr, payment_mode: order.payment_status === 'cash_on_delivery' ? 'cash_on_delivery' : (qr ? 'awaiting_qr_scan' : 'pay_now'), amount_due_on_arrival: order.payment_status === 'cash_on_delivery' ? Number(order.total_amount) : 0, points_earned: Number(order.points_earned ?? 0), points_redeemed: Number(order.points_redeemed ?? 0), new_loyalty_points: 0, tracking_url: `/track-order/${order.order_number}` } };
   }
 
@@ -266,9 +289,13 @@ export class CheckoutService {
     }
     const adminAccount = accounts.rows.find((account) => account.user_id === null || account.user_id === undefined);
     if (adminAccount) return { ...adminAccount, source: 'admin', seller_id: null };
-    const settings = await this.database.query<{ setting_key: string; setting_value: string }>("SELECT setting_key, setting_value FROM store_settings WHERE setting_key IN ('bakong_account_id', 'bakong_merchant_name', 'company_city')");
+    const settings = await this.database.query<{ setting_key: string; setting_value: string }>("SELECT setting_key, setting_value FROM store_settings WHERE setting_key IN ('bakong_account_id', 'bakong_merchant_name', 'bakong_merchant_city', 'company_city')");
     const values = new Map(settings.rows.map((setting) => [setting.setting_key, setting.setting_value]));
-    return { account_id: values.get('bakong_account_id') ?? '', merchant_name: values.get('bakong_merchant_name') ?? 'TYUSHOP', merchant_city: values.get('company_city') ?? 'Phnom Penh' };
+    return {
+      account_id: values.get('bakong_account_id') ?? this.config.get<string>('BAKONG_ACCOUNT_ID', ''),
+      merchant_name: values.get('bakong_merchant_name') ?? this.config.get<string>('BAKONG_MERCHANT_NAME', 'TYUSHOP'),
+      merchant_city: values.get('bakong_merchant_city') ?? values.get('company_city') ?? this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh'),
+    };
   }
 
   private async shippingFee(subtotal: number, methodId: string): Promise<number> {
@@ -297,22 +324,31 @@ export class CheckoutService {
     return new Map(result.rows.map((setting) => [setting.setting_key, setting.setting_value]));
   }
 
-  private buildQr(orderNumber: string, amount: number, transaction: string, merchant: MerchantAccount): Record<string, unknown> {
+  private exchangeRate(settings: Map<string, string>): number {
+    const value = Number(settings.get('usd_to_khr_rate') ?? 4100);
+    return Number.isFinite(value) && value > 0 ? value : 4100;
+  }
+
+  private qrExpirySeconds(settings: Map<string, string>): number {
+    const minutes = Number(settings.get('payment_qr_expires_minutes') ?? this.config.get<string>('PAYMENT_QR_EXPIRES_MINUTES', '10'));
+    return Math.max(60, Math.min(3600, (Number.isFinite(minutes) ? minutes : 10) * 60));
+  }
+
+  private buildQr(orderNumber: string, amount: number, transaction: string, merchant: MerchantAccount, settings: Map<string, string>): Record<string, unknown> {
     const amountText = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
     const tag29Value = `00${merchant.account_id.length.toString().padStart(2, '0')}${merchant.account_id}`;
     const tag29 = `29${tag29Value.length.toString().padStart(2, '0')}${tag29Value}`;
     const tag62Value = `01${orderNumber.length.toString().padStart(2, '0')}${orderNumber}`;
     const tag62 = `62${tag62Value.length.toString().padStart(2, '0')}${tag62Value}`;
     const now = Date.now();
-    const tag99Value = `0013${now}0113${now + 600000}`;
+    const tag99Value = `0013${now}0113${now + this.qrExpirySeconds(settings) * 1000}`;
     const tag99 = `99${tag99Value.length.toString().padStart(2, '0')}${tag99Value}`;
     const payload = `000201010212${tag29}52045999530384054${amountText.length.toString().padStart(2, '0')}${amountText}5802KH59${merchant.merchant_name.length.toString().padStart(2, '0')}${merchant.merchant_name}60${merchant.merchant_city.length.toString().padStart(2, '0')}${merchant.merchant_city}${tag62}${tag99}6304`;
     const qrString = `${payload}${this.crc(payload)}`;
-    return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, merchant_source: merchant.source ?? 'admin', seller_id: merchant.seller_id ?? null, amount_usd: amount, amount_khr: Math.round(amount * 4100), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: 600 };
+    return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, merchant_source: merchant.source ?? 'admin', seller_id: merchant.seller_id ?? null, amount_usd: amount, amount_khr: Math.round(amount * this.exchangeRate(settings)), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: this.qrExpirySeconds(settings) };
   }
 
-  private async bakongPaymentReady(): Promise<boolean> {
-    const settings = await this.settings(['bakong_api_enabled', 'bakong_api_token_encrypted']);
+  private async bakongPaymentReady(settings: Map<string, string>): Promise<boolean> {
     const enabledValue = settings.get('bakong_api_enabled') ?? this.config.get<string>('BAKONG_API_ENABLED', 'true');
     if (!['true', '1', 'yes', 'on'].includes(String(enabledValue).toLowerCase())) return false;
     const encrypted = String(settings.get('bakong_api_token_encrypted') ?? '').trim();
