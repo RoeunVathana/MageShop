@@ -192,7 +192,7 @@ export class AuthService {
 
     const tokenHash = createHash('sha256').update(secret).digest('hex');
     const result = await this.database.query<TokenRow>(`
-      SELECT id, user_id, token, expires_at
+      SELECT id, tokenable_id AS user_id, token, expires_at
       FROM personal_access_tokens
       WHERE id = $1 AND token = $2
         AND (expires_at IS NULL OR expires_at > NOW())
@@ -211,9 +211,9 @@ export class AuthService {
 
   async revokeOtherTokens(userId: number, currentTokenId: number | undefined): Promise<void> {
     if (currentTokenId) {
-      await this.database.query('DELETE FROM personal_access_tokens WHERE user_id = $1 AND id <> $2', [userId, currentTokenId]);
+      await this.database.query('DELETE FROM personal_access_tokens WHERE tokenable_id = $1 AND id <> $2', [userId, currentTokenId]);
     } else {
-      await this.database.query('DELETE FROM personal_access_tokens WHERE user_id = $1', [userId]);
+      await this.database.query('DELETE FROM personal_access_tokens WHERE tokenable_id = $1', [userId]);
     }
   }
 

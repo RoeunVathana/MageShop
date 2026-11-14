@@ -25,7 +25,7 @@ export class MediaController {
   }
 
   @Get('media/*path')
-  async show(@Param('path') path: string, @Res() response: Response): Promise<void> {
+  async show(@Param('path') path: string | string[], @Res() response: Response): Promise<void> {
     const result = await this.media.file(path);
     response.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     response.setHeader('X-Content-Type-Options', 'nosniff');
