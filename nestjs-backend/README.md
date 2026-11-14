@@ -34,6 +34,10 @@ Bakong confirmation, delivery operations, admin CRUD, email, and uploads.
 categories, brands, and products when `DATABASE_URL` is configured. Authenticated
 catalog requests remain on Laravel until NestJS role guards are enabled.
 
+`NEST_DIRECT_CATALOG_ADMIN=true` enables the guarded NestJS category, category
+attribute, and brand CRUD paths. It is disabled by default until role and
+transaction parity is verified against production-shaped data.
+
 `NEST_DIRECT_AUTH=true` enables the NestJS implementation of registration,
 login, current-user lookup, profile/password updates, logout, and logout-all,
 including the legacy `/api/v1/user` aliases. It uses the existing

@@ -40,6 +40,11 @@ async function bootstrap(): Promise<void> {
       || (request.path === '/api/v1/orders/checkout' && config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true')
       || (request.path.startsWith('/api/v1/orders/track/') && request.path.endsWith('/confirm-payment') && config.get<string>('NEST_DIRECT_PAYMENT_CONFIRM', 'false') === 'true')
       || (request.path.startsWith('/api/v1/payment-accounts') && config.get<string>('NEST_DIRECT_PAYMENT_ACCOUNTS', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/admin/categories') && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/admin/category-attributes') && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/admin/brands') && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
+      || (request.path === '/api/v1/products' && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/products/') && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
     )
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
       && databaseConfigured;

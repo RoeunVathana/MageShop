@@ -3,6 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogService } from './catalog/catalog.service';
+import { CatalogAdminController } from './catalog/catalog-admin.controller';
+import { CatalogDetailController } from './catalog/catalog-detail.controller';
+import { CatalogManagementService } from './catalog/catalog-management.service';
+import { ProductAdminController } from './catalog/product-admin.controller';
+import { ProductManagementService } from './catalog/product-management.service';
 import { DatabaseService } from './database/database.service';
 import { HealthController } from './health/health.controller';
 import { LaravelCompatibilityProxy } from './proxy/laravel-compatibility.proxy';
@@ -25,7 +30,7 @@ import { PaymentAccountsService } from './payment-accounts/payment-accounts.serv
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, UserAuthController],
-  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, SanctumGuard],
+  controllers: [AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
+  providers: [AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
 })
 export class AppModule {}

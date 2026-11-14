@@ -45,6 +45,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestCatalogAdmin(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestAuth(request)) {
         next();
         return;
@@ -107,7 +112,20 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       '/api/v1/categories',
       '/api/v1/brands',
       '/api/v1/products',
-    ].includes(request.path);
+    ].includes(request.path)
+      || /^\/api\/v1\/categories\/[^/]+(?:\/attributes)?$/.test(request.path)
+      || /^\/api\/v1\/brands\/[^/]+$/.test(request.path)
+      || /^\/api\/v1\/products\/[^/]+$/.test(request.path);
+  }
+
+  private shouldUseNestCatalogAdmin(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') !== 'true') {
+      return false;
+    }
+    return (/^\/api\/v1\/admin\/(?:categories(?:\/\d+(?:\/attributes)?)?|category-attributes\/\d+|brands(?:\/\d+)?)$/.test(request.path)
+      || request.path === '/api/v1/products'
+      || /^\/api\/v1\/products\/\d+$/.test(request.path))
+      && ['POST', 'PATCH', 'DELETE'].includes(request.method);
   }
 
   private shouldUseNestAuth(request: Request): boolean {
