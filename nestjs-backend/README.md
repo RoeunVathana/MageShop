@@ -49,6 +49,12 @@ must not be enabled in production until Bakong verification, receipt PDF/email
 delivery, Telegram reporting, seller merchant routing, stock locking, and
 payment confirmation tests all pass against the shared database.
 
+`NEST_DIRECT_DELIVERY_READS=true` and `NEST_DIRECT_OPERATIONS_READS=true` are
+read-only migration flags for delivery queues, staff overview, and driver
+lists. Delivery mutations and payment settlement remain on Laravel until
+their role-transition, cash-handover, receipt, and notification parity tests
+are complete.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

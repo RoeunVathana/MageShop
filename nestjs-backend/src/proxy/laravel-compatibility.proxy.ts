@@ -60,6 +60,16 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestDeliveryReads(request)) {
+        next();
+        return;
+      }
+
+      if (this.shouldUseNestOperationsReads(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -117,6 +127,20 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       && request.path === '/api/v1/orders/checkout'
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true';
+  }
+
+  private shouldUseNestDeliveryReads(request: Request): boolean {
+    return request.method === 'GET'
+      && request.path === '/api/v1/delivery/orders'
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_DELIVERY_READS', 'false') === 'true';
+  }
+
+  private shouldUseNestOperationsReads(request: Request): boolean {
+    return request.method === 'GET'
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_OPERATIONS_READS', 'false') === 'true'
+      && ['/api/v1/operations/overview', '/api/v1/operations/drivers'].includes(request.path);
   }
 
   onModuleDestroy(): void {

@@ -13,10 +13,14 @@ import { OrderController } from './orders/order.controller';
 import { OrderService } from './orders/order.service';
 import { CheckoutController } from './checkout/checkout.controller';
 import { CheckoutService } from './checkout/checkout.service';
+import { DeliveryController } from './delivery/delivery.controller';
+import { DeliveryService } from './delivery/delivery.service';
+import { OperationsController } from './operations/operations.controller';
+import { OperationsService } from './operations/operations.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, CheckoutController, HealthController, OrderController],
-  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, LaravelCompatibilityProxy, OrderService, SanctumGuard],
+  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController],
+  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, SanctumGuard],
 })
 export class AppModule {}

@@ -96,6 +96,11 @@ export class AuthService {
     return this.findUser(userId);
   }
 
+  hasAnyRole(user: AuthUser, roles: readonly string[]): boolean {
+    const expected = new Set(roles.map((role) => role.toUpperCase()));
+    return user.roles.some((role) => expected.has(role.name.toUpperCase()) || expected.has(role.slug.toUpperCase()));
+  }
+
   async authenticate(authorization: string | undefined): Promise<{ userId: number; tokenId: number } | null> {
     const value = authorization?.trim() ?? '';
     if (!/^Bearer\s+[^|]+\|.+$/i.test(value)) return null;
