@@ -29,12 +29,19 @@ async function bootstrap(): Promise<void> {
     '/api/v1/auth/register',
     '/api/v1/auth/logout',
     '/api/v1/auth/logout-all',
+    '/api/v1/orders/checkout',
   ]);
   app.use((request: Request, response: Response, next: NextFunction) => {
-    if (
-      config.get<string>('NEST_DIRECT_AUTH', 'false') === 'true'
-      && directJsonPaths.has(request.path)
+    const databaseConfigured = Boolean(config.get<string>('DATABASE_URL', '').trim());
+    const directBodyRoute = directJsonPaths.has(request.path)
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
+      && databaseConfigured
+      && (
+        config.get<string>('NEST_DIRECT_AUTH', 'false') === 'true'
+        || (request.path === '/api/v1/orders/checkout' && config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true')
+      );
+    if (
+      directBodyRoute
     ) {
       json()(request, response, next);
       return;

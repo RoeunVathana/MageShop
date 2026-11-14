@@ -40,6 +40,15 @@ login, current-user lookup, logout, and logout-all. It uses the existing
 do not need new accounts or new tokens. All other auth flows continue through
 Laravel until their parity tests are complete.
 
+`NEST_DIRECT_ORDERS=true` enables the NestJS order-tracking reader for the
+authenticated `/api/v1/orders/track/:orderNumber` endpoint. It is read-only.
+
+`NEST_DIRECT_CHECKOUT=true` is reserved for a later parity-verified rollout.
+The current NestJS checkout writer is intentionally disabled by default and
+must not be enabled in production until Bakong verification, receipt PDF/email
+delivery, Telegram reporting, seller merchant routing, stock locking, and
+payment confirmation tests all pass against the shared database.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

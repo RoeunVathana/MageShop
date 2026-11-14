@@ -11,10 +11,12 @@ import { AuthService } from './auth/auth.service';
 import { SanctumGuard } from './auth/sanctum.guard';
 import { OrderController } from './orders/order.controller';
 import { OrderService } from './orders/order.service';
+import { CheckoutController } from './checkout/checkout.controller';
+import { CheckoutService } from './checkout/checkout.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, HealthController, OrderController],
-  providers: [AuthService, CatalogService, DatabaseService, LaravelCompatibilityProxy, OrderService, SanctumGuard],
+  controllers: [AuthController, CatalogController, CheckoutController, HealthController, OrderController],
+  providers: [AuthService, CatalogService, CheckoutService, DatabaseService, LaravelCompatibilityProxy, OrderService, SanctumGuard],
 })
 export class AppModule {}

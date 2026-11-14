@@ -55,6 +55,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestCheckout(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -105,6 +110,13 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     }
 
     return request.path.startsWith('/api/v1/orders/track/');
+  }
+
+  private shouldUseNestCheckout(request: Request): boolean {
+    return request.method === 'POST'
+      && request.path === '/api/v1/orders/checkout'
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_CHECKOUT', 'false') === 'true';
   }
 
   onModuleDestroy(): void {
