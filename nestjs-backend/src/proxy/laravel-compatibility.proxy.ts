@@ -115,13 +115,16 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       return false;
     }
 
-    return [
-      '/api/v1/auth/login',
-      '/api/v1/auth/register',
-      '/api/v1/auth/me',
-      '/api/v1/auth/logout',
-      '/api/v1/auth/logout-all',
-    ].includes(request.path);
+    if (request.method === 'GET') {
+      return ['/api/v1/auth/me', '/api/v1/user', '/api/v1/user/profile'].includes(request.path);
+    }
+    if (request.method === 'POST') {
+      return ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/profile', '/api/v1/auth/logout', '/api/v1/auth/logout-all', '/api/v1/user/profile'].includes(request.path);
+    }
+    if (request.method === 'PUT') {
+      return ['/api/v1/auth/profile', '/api/v1/auth/password', '/api/v1/user/profile'].includes(request.path);
+    }
+    return false;
   }
 
   private shouldUseNestOrders(request: Request): boolean {

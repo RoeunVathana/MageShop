@@ -9,6 +9,7 @@ import { LaravelCompatibilityProxy } from './proxy/laravel-compatibility.proxy';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { SanctumGuard } from './auth/sanctum.guard';
+import { UserAuthController } from './auth/user-auth.controller';
 import { OrderController } from './orders/order.controller';
 import { OrderService } from './orders/order.service';
 import { CheckoutController } from './checkout/checkout.controller';
@@ -24,7 +25,7 @@ import { PaymentAccountsService } from './payment-accounts/payment-accounts.serv
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController],
+  controllers: [AuthController, CatalogController, CheckoutController, DeliveryController, HealthController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, UserAuthController],
   providers: [AuthService, CatalogService, CheckoutService, DatabaseService, DeliveryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, SanctumGuard],
 })
 export class AppModule {}

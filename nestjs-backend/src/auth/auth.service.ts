@@ -96,6 +96,88 @@ export class AuthService {
     return this.findUser(userId);
   }
 
+  async updateProfile(userId: number, payload: Record<string, unknown>): Promise<AuthUser> {
+    const current = await this.userForMutation(userId);
+    const name = this.requiredString(payload.name, 'name', 255);
+    const email = this.email(payload.email);
+    const phone = this.optionalProfileString(payload.phone_number, 'phone_number', 50);
+    const avatarUrl = this.optionalProfileString(payload.avatar_url, 'avatar_url', 2048);
+    const address = this.optionalProfileString(payload.address, 'address', 1000);
+    const newPassword = payload.new_password === undefined || payload.new_password === null || String(payload.new_password) === ''
+      ? undefined
+      : this.profilePassword(payload.new_password, 'new_password');
+
+    const duplicate = await this.database.query<{ id: number; email: string | null; phone_number: string | null }>(`
+      SELECT id, email, phone_number
+      FROM users
+      WHERE id <> $1
+        AND (LOWER(email) = LOWER($2) OR ($3::text IS NOT NULL AND phone_number = $3))
+      LIMIT 1
+    `, [userId, email, phone ?? null]);
+    if (duplicate.rows[0]) {
+      const errors: Record<string, string[]> = {};
+      if (duplicate.rows[0].email?.toLowerCase() === email.toLowerCase()) errors.email = ['The email has already been taken.'];
+      if (phone && duplicate.rows[0].phone_number === phone) errors.phone_number = ['The phone number has already been taken.'];
+      throw new UnprocessableEntityException({ status: 'error', message: 'The given data was invalid.', errors });
+    }
+
+    let passwordHash = current.password;
+    if (newPassword !== undefined) {
+      const currentPassword = this.requiredString(payload.current_password, 'current_password', 255);
+      const compatibleHash = current.password.startsWith('$2y$') ? `$2a$${current.password.slice(4)}` : current.password;
+      if (!(await bcrypt.compare(currentPassword, compatibleHash))) {
+        throw new UnprocessableEntityException({
+          status: 'error',
+          message: 'Current password is incorrect.',
+          errors: { current_password: ['The provided current password does not match your account password.'] },
+        });
+      }
+      passwordHash = await bcrypt.hash(newPassword, 12);
+    }
+
+    await this.database.query(`
+      UPDATE users
+      SET name = $1, email = $2, phone_number = $3, avatar_url = $4,
+          address = $5, password = $6, updated_at = NOW()
+      WHERE id = $7
+    `, [
+      name,
+      email,
+      phone === undefined ? current.phone_number : phone,
+      avatarUrl === undefined ? current.avatar_url : avatarUrl,
+      address === undefined ? current.address : address,
+      passwordHash,
+      userId,
+    ]);
+
+    return this.findUser(userId);
+  }
+
+  async updatePassword(userId: number, payload: Record<string, unknown>): Promise<void> {
+    const current = await this.userForMutation(userId);
+    const currentPassword = this.requiredString(payload.current_password, 'current_password', 255);
+    const newPassword = this.profilePassword(payload.new_password, 'new_password');
+    const confirmation = this.requiredString(payload.new_password_confirmation, 'new_password_confirmation', 255);
+    if (newPassword !== confirmation) {
+      throw new UnprocessableEntityException({
+        status: 'error',
+        message: 'The password confirmation does not match.',
+        errors: { new_password: ['The password confirmation does not match.'] },
+      });
+    }
+
+    const compatibleHash = current.password.startsWith('$2y$') ? `$2a$${current.password.slice(4)}` : current.password;
+    if (!(await bcrypt.compare(currentPassword, compatibleHash))) {
+      throw new UnprocessableEntityException({
+        status: 'error',
+        message: 'Current password is incorrect.',
+        errors: { current_password: ['The provided current password does not match.'] },
+      });
+    }
+
+    await this.database.query('UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2', [await bcrypt.hash(newPassword, 12), userId]);
+  }
+
   hasAnyRole(user: AuthUser, roles: readonly string[]): boolean {
     const expected = new Set(roles.map((role) => role.toUpperCase()));
     return user.roles.some((role) => expected.has(role.name.toUpperCase()) || expected.has(role.slug.toUpperCase()));
@@ -176,6 +258,17 @@ export class AuthService {
     };
   }
 
+  private async userForMutation(userId: number): Promise<UserRow> {
+    const result = await this.database.query<UserRow>(`
+      SELECT id, name, email, phone_number, avatar_url, address, password,
+             loyalty_points, status, email_verified_at
+      FROM users WHERE id = $1 LIMIT 1
+    `, [userId]);
+    const user = result.rows[0];
+    if (!user) throw new UnauthorizedException({ status: 'error', message: 'Unauthenticated.' });
+    return user;
+  }
+
   private async createToken(userId: number): Promise<string> {
     const secret = randomBytes(30).toString('hex');
     const tokenHash = createHash('sha256').update(secret).digest('hex');
@@ -226,5 +319,23 @@ export class AuthService {
       throw new UnprocessableEntityException({ status: 'error', message: 'The password must be at least 8 characters and include uppercase, lowercase, and a number.' });
     }
     return password;
+  }
+
+  private profilePassword(value: unknown, field: string): string {
+    const password = this.requiredString(value, field, 255);
+    if (password.length < 8) {
+      throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` });
+    }
+    return password;
+  }
+
+  private optionalProfileString(value: unknown, field: string, maxLength: number): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null || String(value).trim() === '') return null;
+    const text = String(value).trim();
+    if (text.length > maxLength) {
+      throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` });
+    }
+    return text;
   }
 }

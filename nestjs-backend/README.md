@@ -35,10 +35,12 @@ categories, brands, and products when `DATABASE_URL` is configured. Authenticate
 catalog requests remain on Laravel until NestJS role guards are enabled.
 
 `NEST_DIRECT_AUTH=true` enables the NestJS implementation of registration,
-login, current-user lookup, logout, and logout-all. It uses the existing
+login, current-user lookup, profile/password updates, logout, and logout-all,
+including the legacy `/api/v1/user` aliases. It uses the existing
 `personal_access_tokens`, `users`, `roles`, and `permissions` tables, so users
-do not need new accounts or new tokens. All other auth flows continue through
-Laravel until their parity tests are complete.
+do not need new accounts or new tokens. Google OAuth, Firebase sign-in, OTP
+recovery, and avatar uploads continue through Laravel until their parity tests
+are complete.
 
 `NEST_DIRECT_ORDERS=true` enables the NestJS order-tracking reader for the
 authenticated `/api/v1/orders/track/:orderNumber` endpoint. It is read-only.

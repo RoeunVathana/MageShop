@@ -27,8 +27,11 @@ async function bootstrap(): Promise<void> {
   const directAuthPaths = new Set([
     '/api/v1/auth/login',
     '/api/v1/auth/register',
+    '/api/v1/auth/profile',
+    '/api/v1/auth/password',
     '/api/v1/auth/logout',
     '/api/v1/auth/logout-all',
+    '/api/v1/user/profile',
   ]);
   app.use((request: Request, response: Response, next: NextFunction) => {
     const databaseConfigured = Boolean(config.get<string>('DATABASE_URL', '').trim());

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Req, UseGuards } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import type { AuthenticatedRequest } from './auth.types';
@@ -35,6 +35,33 @@ export class AuthController {
       status: 'success',
       data: { user: await this.auth.me(request.authUserId as number) },
     };
+  }
+
+  @Put('profile')
+  @UseGuards(SanctumGuard)
+  async updateProfilePut(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> {
+    return this.profileResponse(body, request);
+  }
+
+  @Post('profile')
+  @UseGuards(SanctumGuard)
+  async updateProfilePost(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> {
+    return this.profileResponse(body, request);
+  }
+
+  private async profileResponse(body: Record<string, unknown>, request: AuthenticatedRequest): Promise<Record<string, unknown>> {
+    return {
+      status: 'success',
+      message: 'Profile updated successfully.',
+      data: { user: await this.auth.updateProfile(request.authUserId as number, body) },
+    };
+  }
+
+  @Put('password')
+  @UseGuards(SanctumGuard)
+  async updatePassword(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, string>> {
+    await this.auth.updatePassword(request.authUserId as number, body);
+    return { status: 'success', message: 'Password updated successfully.' };
   }
 
   @Post('logout')
