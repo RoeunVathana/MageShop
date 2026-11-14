@@ -55,6 +55,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestAdminDns(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalog(request)) {
         next();
         return;
@@ -430,6 +435,14 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       && request.path === '/api/v1/admin/database/clear-application-data'
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_ADMIN_MAINTENANCE', 'false') === 'true'
+      && Boolean(request.headers.authorization || request.headers.cookie);
+  }
+
+  private shouldUseNestAdminDns(request: Request): boolean {
+    return request.method === 'POST'
+      && request.path === '/api/v1/admin/dns/porkbun-configure'
+      && this.database.enabled
+      && this.config.get<string>('NEST_DIRECT_ADMIN_DNS', 'false') === 'true'
       && Boolean(request.headers.authorization || request.headers.cookie);
   }
 

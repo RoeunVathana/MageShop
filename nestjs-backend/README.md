@@ -67,6 +67,10 @@ roles, permissions, store settings, and Bakong configuration. Seeder and DNS
 maintenance remain Laravel-backed until their provider-specific parity checks
 are complete.
 
+`NEST_DIRECT_ADMIN_DNS=true` enables the guarded Porkbun DNS configuration
+endpoint. It is disabled by default because it performs external DNS writes;
+never enable it without a controlled provider test and scoped credentials.
+
 `NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
 reader, and pending/confirmed order cancellation routes. It remains disabled
 by default until response and cancellation side-effect parity is verified.

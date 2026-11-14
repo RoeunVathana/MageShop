@@ -87,6 +87,7 @@ async function bootstrap(): Promise<void> {
       || (request.path.startsWith('/api/v1/admin/api-tokens/') && config.get<string>('NEST_DIRECT_API_TOKENS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/admin/orders/') && request.path.endsWith('/resend-receipt') && config.get<string>('NEST_DIRECT_RECEIPTS', 'false') === 'true')
       || (request.path === '/api/v1/admin/database/clear-application-data' && config.get<string>('NEST_DIRECT_ADMIN_MAINTENANCE', 'false') === 'true')
+      || (request.path === '/api/v1/admin/dns/porkbun-configure' && config.get<string>('NEST_DIRECT_ADMIN_DNS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/delivery/orders/') && config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') === 'true')
       || (request.path === '/api/v1/delivery/broadcast-gps' && config.get<string>('NEST_DIRECT_DELIVERY_MUTATIONS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/operations/orders/') && config.get<string>('NEST_DIRECT_OPERATIONS_MUTATIONS', 'false') === 'true')
