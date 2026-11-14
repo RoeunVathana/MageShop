@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'node:crypto';
+import { createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
 import { AuthService } from '../auth/auth.service';
@@ -89,7 +89,7 @@ export class PaymentConfirmationService {
       const paymentSettings = await this.settings([
         'bakong_api_enabled',
         'bakong_api_url',
-        'bakong_api_token',
+        'bakong_api_token_encrypted',
         'bakong_account_id',
         'usd_to_khr_rate',
         'payment_qr_expires_minutes',
@@ -264,7 +264,28 @@ export class PaymentConfirmationService {
   }
 
   private bakongToken(settings: Map<string, string>): string {
-    return String(settings.get('bakong_api_token') ?? this.config.get<string>('BAKONG_API_TOKEN', '') ?? '').trim().replace(/^["']|["']$/g, '').replace(/\\$/g, '');
+    const encrypted = String(settings.get('bakong_api_token_encrypted') ?? '').trim();
+    if (encrypted) {
+      try {
+        return this.decryptLaravel(encrypted);
+      } catch {
+        // If an old APP_KEY is still present, fall back to the process secret
+        // rather than sending a malformed token to Bakong.
+      }
+    }
+    return String(this.config.get<string>('BAKONG_API_TOKEN', '') ?? '').trim().replace(/^["']|["']$/g, '').replace(/\\$/g, '');
+  }
+
+  private decryptLaravel(payload: string): string {
+    const rawKey = this.config.get<string>('APP_KEY', '').trim();
+    if (!rawKey) return '';
+    const key = rawKey.startsWith('base64:') ? Buffer.from(rawKey.slice(7), 'base64') : Buffer.from(rawKey);
+    if (key.length !== 32) return '';
+    const parsed = JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as { iv: string; value: string; mac: string };
+    const expected = createHmac('sha256', key).update(parsed.iv + parsed.value).digest('hex');
+    if (!parsed.mac || parsed.mac.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.mac), Buffer.from(expected))) return '';
+    const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(parsed.iv, 'base64'));
+    return Buffer.concat([decipher.update(Buffer.from(parsed.value, 'base64')), decipher.final()]).toString('utf8').trim();
   }
 
   private bakongUrl(settings: Map<string, string>): string {
