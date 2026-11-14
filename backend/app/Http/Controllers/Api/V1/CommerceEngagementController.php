@@ -630,6 +630,7 @@ class CommerceEngagementController extends Controller
         if ($initiateQr) {
             // Prepare receipt number while waiting for customer to scan & confirm QR payment
             $receipt = $this->prepareCheckoutReceipt($order, $payment, false);
+            $this->scheduleOrderConfirmationDelivery($order, $payment);
         } else {
             // Immediately dispatch Customer Payment Report Email & Telegram Admin Report
             $receipt = $this->prepareCheckoutReceipt($order, $payment, true);
@@ -952,6 +953,24 @@ class CommerceEngagementController extends Controller
     }
 
     /**
+     * Send an order confirmation after the response lifecycle completes so
+     * SMTP work cannot turn a committed checkout into an API failure.
+     */
+    protected function scheduleOrderConfirmationDelivery(Order $order, ?Payment $payment): void
+    {
+        app()->terminating(function () use ($order, $payment): void {
+            try {
+                app(PaymentReceiptPdfService::class)->sendOrderConfirmation($order, $payment);
+            } catch (\Throwable $exception) {
+                Log::error('Deferred order confirmation email failed.', [
+                    'order_number' => $order->order_number,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    /**
      * Deliver the receipt and admin notification after the payment response
      * has been sent. SMTP, PDF rendering, and Telegram are external services;
      * none of them should make a successfully verified payment look failed.
@@ -1152,6 +1171,10 @@ class CommerceEngagementController extends Controller
             'unit_price' => 0.00,
             'total_price' => 0.00,
         ]);
+
+        // Loyalty redemptions are successful orders too; send the customer
+        // the same order details and live tracking key as regular checkout.
+        $this->scheduleOrderConfirmationDelivery($order, null);
 
         $newPoints = $availablePoints - self::POINTS_FOR_FREE_ITEM;
         if ($user) {

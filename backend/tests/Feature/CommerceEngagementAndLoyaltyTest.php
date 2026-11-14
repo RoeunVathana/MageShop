@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PaymentReceiptMail;
 use App\Models\Product;
 use App\Models\MerchantPaymentAccount;
 use App\Models\Order;
@@ -10,6 +11,7 @@ use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -94,6 +96,46 @@ class CommerceEngagementAndLoyaltyTest extends TestCase
             ->assertJsonPath('data.new_loyalty_points', 15);
 
         $this->assertSame(15, (int) $user->fresh()->loyalty_points);
+    }
+
+    public function test_successful_checkout_emails_customer_report_with_tracking_key(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'order.customer@example.com',
+        ]);
+        Sanctum::actingAs($user);
+        $product = Product::firstOrFail();
+
+        $response = $this->postJson('/api/v1/orders/checkout', [
+            'items' => [[
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => 12.00,
+                'quantity' => 1,
+            ]],
+            'payment_method' => 'cash_on_delivery',
+            'customer_name' => 'Order Customer',
+            'customer_email' => $user->email,
+            'customer_phone' => '+855 12 444 555',
+            'delivery_address' => 'BKK1, Phnom Penh',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.email_sent_to', $user->email)
+            ->assertJsonPath('data.email_status', 'sent');
+
+        $orderNumber = (string) $response->json('data.order.order_number');
+        Mail::assertSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) use ($orderNumber, $user): bool {
+            $content = $mail->content();
+            $trackingUrl = (string) ($content->with['trackingUrl'] ?? '');
+
+            return $mail->order->order_number === $orderNumber
+                && $mail->order->customer_email === $user->email
+                && ($content->with['trackingKey'] ?? null) === $orderNumber
+                && str_ends_with($trackingUrl, '/track-order/'.$orderNumber);
+        });
     }
 
     public function test_single_seller_checkout_uses_the_sellers_default_bakong_account(): void

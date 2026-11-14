@@ -2,6 +2,7 @@
 
 namespace App\Services\Receipt;
 
+use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentReceiptMail;
 use App\Models\Order;
 use App\Models\Payment;
@@ -88,6 +89,11 @@ class PaymentReceiptPdfService
             'receipt' => $receipt,
             'payment' => $payment,
             'store' => $store,
+            'trackingKey' => (string) $order->order_number,
+            'trackingUrl' => rtrim(
+                (string) config('app.frontend_url', config('app.url', 'https://www.tyushop.blog')),
+                '/'
+            ).'/track-order/'.rawurlencode((string) $order->order_number),
         ])->render();
     }
 
@@ -149,6 +155,38 @@ class PaymentReceiptPdfService
             }
         } catch (\Throwable $e) {
             Log::error("Failed to send payment receipt email for order #{$order->order_number}: {$e->getMessage()}");
+            $receipt->update([
+                'email_status' => 'failed',
+            ]);
+        }
+
+        return $receipt;
+    }
+
+    /**
+     * Send the initial order report before a pending Bakong payment is
+     * verified. The final payment receipt is sent separately after success.
+     */
+    public function sendOrderConfirmation(Order $order, ?Payment $payment = null): Receipt
+    {
+        $this->applyDynamicMailSettings();
+        $order->loadMissing('items', 'customer');
+        $receipt = $this->getOrCreateReceipt($order, $payment);
+
+        try {
+            $recipientEmail = $order->shipping_email ?: $order->customer_email;
+            if (! empty($recipientEmail)) {
+                Mail::to($recipientEmail)->send(
+                    new OrderConfirmationMail($order, $receipt, $payment)
+                );
+
+                $receipt->update([
+                    'email_status' => 'sent',
+                    'sent_at' => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Failed to send order confirmation email for order #{$order->order_number}: {$e->getMessage()}");
             $receipt->update([
                 'email_status' => 'failed',
             ]);

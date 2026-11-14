@@ -117,7 +117,7 @@
                 @endif
             </td>
             <td style="text-align: right; vertical-align: top;">
-                <div class="receipt-badge">Official Payment Receipt</div>
+                <div class="receipt-badge">Official Order Receipt</div>
                 <div style="font-size: 16px; font-weight: bold; margin-top: 8px;">#{{ $receipt->receipt_number }}</div>
                 <div style="color: #6b7280; font-size: 12px;">Date: {{ $order->created_at->format('M d, Y H:i') }} UTC</div>
                 <div style="color: #6b7280; font-size: 12px;">Order Ref: <strong>#{{ $order->order_number }}</strong></div>
@@ -140,12 +140,14 @@
             </td>
             <td>
                 <div class="info-box-title">Payment & Fulfillment</div>
-                <div>Payment Method: <strong>{{ strtoupper($order->payment_method) }} (Bakong KHQR)</strong></div>
-                <div>Payment Status: <strong style="color: #059669;">PAID</strong></div>
+                <div>Payment Method: <strong>{{ strtoupper(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}</strong></div>
+                <div>Payment Status: <strong style="color: {{ in_array(strtolower((string) ($order->payment_status ?? 'pending')), ['paid', 'completed'], true) ? '#059669' : '#d97706' }};">{{ strtoupper($order->payment_status ?? 'PENDING') }}</strong></div>
+                <div>Delivery Status: <strong>{{ strtoupper(str_replace('_', ' ', $order->status ?? 'PENDING')) }}</strong></div>
                 <div>Delivery Method: {{ $order->shipping_method }}</div>
                 @if($order->tracking_number)
                 <div>Carrier Tracking: <code>{{ $order->tracking_number }}</code></div>
                 @endif
+                <div>Tracking Key: <code>{{ $trackingKey ?? $order->order_number }}</code></div>
             </td>
         </tr>
     </table>
@@ -196,14 +198,20 @@
 
     @if($payment)
     <div class="payment-box">
-        <div class="info-box-title">Bakong KHQR Transaction Details</div>
+        <div class="info-box-title">{{ $payment->payment_method === 'bakong_khqr' ? 'Bakong KHQR Transaction Details' : 'Payment Details' }}</div>
         <div>Transaction Reference: <code>{{ $payment->transaction_reference }}</code></div>
         @if($payment->bakong_hash)
         <div>NBC Bakong Hash: <code>{{ $payment->bakong_hash }}</code></div>
         @endif
-        <div>Settled Amount: <strong>${{ number_format($payment->amount, 2) }} {{ $payment->currency }}</strong> at {{ $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : 'N/A' }}</div>
+        <div>Recorded Amount: <strong>${{ number_format($payment->amount, 2) }} {{ $payment->currency }}</strong> at {{ $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : 'N/A' }}</div>
     </div>
     @endif
+
+    <div class="payment-box">
+        <div class="info-box-title">Live Delivery Tracking</div>
+        <div>Tracking Key: <code>{{ $trackingKey ?? $order->order_number }}</code></div>
+        <div>Open: <a href="{{ $trackingUrl ?? '#' }}">{{ $trackingUrl ?? 'Tracking unavailable' }}</a></div>
+    </div>
 
     <div class="footer">
         <div>{{ $store['receipt_footer_message'] ?? 'Thank you for shopping with TYUSHOP Flagship.' }}</div>

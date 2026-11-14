@@ -53,16 +53,22 @@ class PaymentReceiptMail extends Mailable
 
     public function content(): Content
     {
+        $trackingKey = (string) $this->order->order_number;
+        $trackingUrl = rtrim(
+            (string) config('app.frontend_url', config('app.url', 'https://www.tyushop.blog')),
+            '/'
+        ).'/track-order/'.rawurlencode($trackingKey);
+
         return new Content(
-            'emails.receipt',
-            null,
-            null,
-            null,
-            [
+            view: 'emails.receipt',
+            with: [
                 'order' => $this->order,
-                'receipt' => $receipt = $this->receipt,
+                'receipt' => $this->receipt,
                 'payment' => $this->payment,
                 'store' => StoreSetting::getAll(),
+                'isOrderConfirmation' => false,
+                'trackingKey' => $trackingKey,
+                'trackingUrl' => $trackingUrl,
             ]
         );
     }
