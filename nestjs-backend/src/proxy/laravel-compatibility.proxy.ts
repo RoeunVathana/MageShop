@@ -95,6 +95,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestAdminSecurity(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -222,6 +227,16 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     }
     if (/^\/api\/v1\/admin\/orders\/\d+$/.test(request.path)) return ['GET', 'PATCH', 'DELETE'].includes(request.method);
     return /^\/api\/v1\/admin\/orders\/\d+\/(status|payment-status)$/.test(request.path) && request.method === 'PATCH';
+  }
+
+  private shouldUseNestAdminSecurity(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ADMIN_SECURITY', 'false') !== 'true') return false;
+    if (!request.headers.authorization && !request.headers.cookie) return false;
+    if (['/api/v1/admin/roles', '/api/v1/admin/permissions', '/api/v1/admin/staff', '/api/v1/admin/users'].includes(request.path)) return request.method === 'GET';
+    if (/^\/api\/v1\/admin\/users\/\d+\/roles$/.test(request.path)) return ['POST', 'PUT', 'PATCH'].includes(request.method);
+    if (request.path === '/api/v1/admin/security/users') return ['GET', 'POST'].includes(request.method);
+    if (/^\/api\/v1\/admin\/security\/users\/\d+$/.test(request.path)) return ['PATCH', 'DELETE'].includes(request.method);
+    return /^\/api\/v1\/admin\/security\/users\/\d+\/(email|password)$/.test(request.path) && request.method === 'PATCH';
   }
 
   onModuleDestroy(): void {

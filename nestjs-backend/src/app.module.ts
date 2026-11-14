@@ -31,10 +31,12 @@ import { InventoryController } from './inventory/inventory.controller';
 import { InventoryService } from './inventory/inventory.service';
 import { AdminOrderController } from './admin-orders/admin-order.controller';
 import { AdminOrderService } from './admin-orders/admin-order.service';
+import { AdminSecurityController } from './admin-security/admin-security.controller';
+import { AdminSecurityService } from './admin-security/admin-security.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminOrderController, AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
-  providers: [AdminOrderService, AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
+  controllers: [AdminOrderController, AdminSecurityController, AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
+  providers: [AdminOrderService, AdminSecurityService, AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
 })
 export class AppModule {}

@@ -82,6 +82,11 @@ status/payment updates, deletion, and dashboard statistics. It remains off by
 default until order notifications, receipts, delivery transitions, and payment
 settlement side effects are covered by parity tests.
 
+`NEST_DIRECT_ADMIN_SECURITY=true` enables guarded admin user CRUD, role/permission
+reads, role assignment, and administrator password/email changes. OTP delivery,
+SMTP settings, and security logs remain Laravel-backed until their external side
+effects are covered by parity tests.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.
