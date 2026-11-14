@@ -13,6 +13,7 @@ node_modules
 node_modules/
 vendor
 vendor/
+nestjs-backend/dist/
 /public/hot
 /public/storage
 .phpunit.result.cache
