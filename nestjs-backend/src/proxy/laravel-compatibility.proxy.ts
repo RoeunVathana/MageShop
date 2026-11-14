@@ -203,6 +203,8 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
   private shouldUseNestSellers(request: Request): boolean {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_SELLERS', 'false') !== 'true') return false;
     if (request.path === '/api/v1/sellers/stores') return request.method === 'GET';
+    if (request.path === '/api/v1/sellers/apply') return request.method === 'POST';
+    if (request.path === '/api/v1/sellers/my-application') return request.method === 'GET' && Boolean(request.headers.authorization || request.headers.cookie);
     if (!request.path.startsWith('/api/v1/admin/sellers')) return false;
     if (!request.headers.authorization && !request.headers.cookie) return false;
     return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);

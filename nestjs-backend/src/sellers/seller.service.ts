@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
@@ -35,6 +36,67 @@ export class SellerService {
   private readonly statuses = ['pending', 'approved', 'rejected', 'suspended'];
 
   constructor(private readonly database: DatabaseService, private readonly auth: AuthService) {}
+
+  async apply(body: Record<string, unknown>, authorization?: string): Promise<Record<string, unknown>> {
+    const authenticated = await this.auth.authenticate(authorization);
+    let userId = authenticated?.userId;
+
+    if (!userId) {
+      const email = this.email(body.email);
+      const name = this.limitRequired(body.name, 'name', 255);
+      const password = this.limitRequired(body.password, 'password', 255);
+      if (password.length < 6) throw new UnprocessableEntityException({ status: 'error', message: 'The password field is invalid.' });
+
+      const existing = await this.database.query<{ id: number; password: string }>('SELECT id, password FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1', [email]);
+      if (existing.rows[0]) {
+        const compatibleHash = existing.rows[0].password?.startsWith('$2y$') ? `$2a$${existing.rows[0].password.slice(4)}` : existing.rows[0].password;
+        if (!compatibleHash || !(await bcrypt.compare(password, compatibleHash))) {
+          throw new UnprocessableEntityException({ status: 'error', message: 'An account with this email already exists. Please log in first or verify your credentials.' });
+        }
+        userId = existing.rows[0].id;
+      } else {
+        const inserted = await this.database.query<{ id: number }>(`
+          INSERT INTO users (name, email, password, status, loyalty_points, email_verified_at, created_at, updated_at)
+          VALUES ($1, LOWER($2), $3, 'active', 0, NOW(), NOW(), NOW()) RETURNING id
+        `, [name, email, await bcrypt.hash(password, 12)]);
+        userId = inserted.rows[0]?.id;
+        if (userId) await this.auth.attachCustomerRole(userId);
+      }
+    }
+
+    if (!userId) throw new UnprocessableEntityException({ status: 'error', message: 'Unable to identify the applicant.' });
+    const input = this.applicationInput(body);
+    const baseSlug = this.slug(input.store_name ?? '') || `store-${userId}`;
+    const slug = await this.uniqueSlug(baseSlug, userId);
+    const existing = await this.database.query<{ id: number }>('SELECT id FROM seller_applications WHERE user_id=$1 LIMIT 1', [userId]);
+    let applicationId: number;
+    if (existing.rows[0]) {
+      applicationId = existing.rows[0].id;
+      await this.database.query(`
+        UPDATE seller_applications SET store_name=$1, slug=$2, category=$3, description=$4, phone=$5,
+          telegram_username=$6, city=$7, address=$8, bank_name=$9, bakong_account_id=$10,
+          logo_url=$11, banner_url=$12, status='pending', rejection_reason=NULL, updated_at=NOW()
+        WHERE id=$13
+      `, [input.store_name, slug, input.category ?? 'General Merchandise', input.description, input.phone, input.telegram_username, input.city ?? 'Phnom Penh', input.address, input.bank_name ?? 'ABA Bank', input.bakong_account_id, input.logo_url, input.banner_url, applicationId]);
+    } else {
+      const inserted = await this.database.query<{ id: number }>(`
+        INSERT INTO seller_applications (user_id, store_name, slug, category, description, phone, telegram_username, city, address, bank_name, bakong_account_id, logo_url, banner_url, status, rejection_reason, created_at, updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pending',NULL,NOW(),NOW()) RETURNING id
+      `, [userId, input.store_name, slug, input.category ?? 'General Merchandise', input.description, input.phone, input.telegram_username, input.city ?? 'Phnom Penh', input.address, input.bank_name ?? 'ABA Bank', input.bakong_account_id, input.logo_url, input.banner_url]);
+      applicationId = inserted.rows[0]?.id ?? 0;
+    }
+    if (!applicationId) throw new Error('Seller application was not saved.');
+    const application = await this.find(applicationId);
+    return { status: 'success', message: 'Seller member application submitted successfully! Our administrative team will review your application within 2-4 hours.', data: this.application(application) };
+  }
+
+  async myApplication(authorization?: string): Promise<Record<string, unknown>> {
+    const authenticated = await this.auth.authenticate(authorization);
+    if (!authenticated) return { status: 'unauthenticated', data: null };
+    const application = await this.database.query<SellerApplicationRow>('SELECT * FROM seller_applications WHERE user_id=$1 LIMIT 1', [authenticated.userId]);
+    const user = await this.auth.me(authenticated.userId);
+    return { status: 'ok', data: application.rows[0] ?? null, is_seller: this.auth.hasAnyRole(user, ['SELLER', 'SUPER_ADMIN', 'ADMIN']) };
+  }
 
   async publicStores(query: Record<string, unknown>): Promise<Record<string, unknown>> {
     const perPage = 20;
@@ -154,6 +216,37 @@ export class SellerService {
   private application(row: SellerApplicationRow): Record<string, unknown> {
     const { user_name, user_email, user_created_at, ...application } = row;
     return { ...application, user: row.user_name ? { id: row.user_id, name: user_name, email: user_email, created_at: user_created_at } : null };
+  }
+
+  private async uniqueSlug(baseSlug: string, userId: number): Promise<string> {
+    let slug = baseSlug;
+    for (let counter = 1; ; counter += 1) {
+      const conflict = await this.database.query<{ id: number }>('SELECT id FROM seller_applications WHERE slug=$1 AND user_id<>$2 LIMIT 1', [slug, userId]);
+      if (!conflict.rows[0]) return slug;
+      slug = `${baseSlug}-${counter}`;
+    }
+  }
+
+  private applicationInput(body: Record<string, unknown>): Record<string, string | null> {
+    return {
+      store_name: this.limitRequired(body.store_name, 'store_name', 255),
+      phone: this.limitRequired(body.phone, 'phone', 50),
+      category: this.limitNullable(body.category, 100, 'category'),
+      description: this.limitNullable(body.description, 2000, 'description'),
+      telegram_username: this.limitNullable(body.telegram_username, 100, 'telegram_username'),
+      city: this.limitNullable(body.city, 100, 'city'),
+      address: this.limitNullable(body.address, 500, 'address'),
+      bank_name: this.limitNullable(body.bank_name, 100, 'bank_name'),
+      bakong_account_id: this.limitNullable(body.bakong_account_id, 100, 'bakong_account_id'),
+      logo_url: this.limitNullable(body.logo_url, 1000, 'logo_url'),
+      banner_url: this.limitNullable(body.banner_url, 1000, 'banner_url'),
+    };
+  }
+
+  private email(value: unknown): string {
+    const email = this.text(value).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255) throw new UnprocessableEntityException({ status: 'error', message: 'The email field is invalid.' });
+    return email;
   }
 
   private text(value: unknown): string { return value === undefined || value === null ? '' : String(value).trim(); }

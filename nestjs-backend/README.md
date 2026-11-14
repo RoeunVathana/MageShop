@@ -102,8 +102,9 @@ media behavior are verified against Laravel.
 
 `NEST_DIRECT_SELLERS=true` enables public approved-store reads and guarded admin
 seller application listing, approval, rejection, status changes, editing, and
-deletion. Seller application submission and account creation remain Laravel-backed
-until the optional-authentication and notification parity tests are complete.
+deletion, plus seller application submission and authenticated status lookup.
+Keep it disabled until optional-authentication, account-creation, and notification
+parity tests are complete.
 
 `NEST_DIRECT_COUPONS=true` enables active-coupon/validation reads plus guarded
 admin and seller coupon CRUD. Checkout remains Laravel-backed until its payment,

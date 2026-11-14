@@ -59,6 +59,7 @@ async function bootstrap(): Promise<void> {
       || (request.path.startsWith('/api/v1/admin/users/') && request.path.endsWith('/roles') && config.get<string>('NEST_DIRECT_ADMIN_SECURITY', 'false') === 'true')
       || (request.path.startsWith('/api/v1/admin/banners') && config.get<string>('NEST_DIRECT_BANNER_ADMIN', 'false') === 'true')
       || (request.path.startsWith('/api/v1/admin/sellers') && config.get<string>('NEST_DIRECT_SELLERS', 'false') === 'true')
+      || (request.path === '/api/v1/sellers/apply' && config.get<string>('NEST_DIRECT_SELLERS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/coupons') && config.get<string>('NEST_DIRECT_COUPONS', 'false') === 'true')
       || (request.path.startsWith('/api/v1/admin/coupons') && config.get<string>('NEST_DIRECT_COUPONS', 'false') === 'true')
       || (request.path === '/api/v1/store-settings' && config.get<string>('NEST_DIRECT_STORE_SETTINGS', 'false') === 'true')
