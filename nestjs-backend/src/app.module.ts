@@ -21,7 +21,7 @@ import { CheckoutController } from './checkout/checkout.controller';
 import { CheckoutService } from './checkout/checkout.service';
 import { DeliveryController } from './delivery/delivery.controller';
 import { DeliveryService } from './delivery/delivery.service';
-import { OperationsController } from './operations/operations.controller';
+import { OperationsController, SellerOperationsController } from './operations/operations.controller';
 import { OperationsService } from './operations/operations.service';
 import { PaymentConfirmationController } from './payments/payment-confirmation.controller';
 import { PaymentConfirmationService } from './payments/payment-confirmation.service';
@@ -33,10 +33,13 @@ import { AdminOrderController } from './admin-orders/admin-order.controller';
 import { AdminOrderService } from './admin-orders/admin-order.service';
 import { AdminSecurityController } from './admin-security/admin-security.controller';
 import { AdminSecurityService } from './admin-security/admin-security.service';
+import { AdminBannerController } from './banners/admin-banner.controller';
+import { BannerController } from './banners/banner.controller';
+import { BannerService } from './banners/banner.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminOrderController, AdminSecurityController, AuthController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, UserAuthController],
-  providers: [AdminOrderService, AdminSecurityService, AuthService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
+  controllers: [AdminBannerController, AdminOrderController, AdminSecurityController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, DeliveryController, HealthController, InventoryController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, SellerOperationsController, UserAuthController],
+  providers: [AdminOrderService, AdminSecurityService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, DatabaseService, DeliveryService, InventoryService, LaravelCompatibilityProxy, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, SanctumGuard],
 })
 export class AppModule {}

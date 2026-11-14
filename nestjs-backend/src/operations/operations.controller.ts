@@ -28,3 +28,12 @@ export class OperationsController {
   @UseGuards(SanctumGuard)
   async sellerDashboard(@Query() query: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.operations.sellerDashboard(query, request.authUserId as number); }
 }
+
+@Controller('api/v1/seller')
+export class SellerOperationsController {
+  constructor(private readonly operations: OperationsService) {}
+
+  @Get('dashboard')
+  @UseGuards(SanctumGuard)
+  async dashboard(@Query() query: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.operations.sellerDashboard(query, request.authUserId as number); }
+}

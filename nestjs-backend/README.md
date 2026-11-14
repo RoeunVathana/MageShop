@@ -92,6 +92,11 @@ reads, role assignment, and administrator password/email changes. OTP delivery,
 SMTP settings, and security logs remain Laravel-backed until their external side
 effects are covered by parity tests.
 
+`NEST_DIRECT_BANNER_READS=true` enables public active-banner reads/click tracking,
+and `NEST_DIRECT_BANNER_ADMIN=true` enables guarded admin banner CRUD, toggling,
+and reorder operations. Both remain disabled until cache headers and storefront
+media behavior are verified against Laravel.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

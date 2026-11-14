@@ -45,6 +45,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestBanners(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -143,6 +148,18 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       || /^\/api\/v1\/products\/[^/]+$/.test(request.path);
   }
 
+  private shouldUseNestBanners(request: Request): boolean {
+    if (!this.database.enabled) return false;
+    const publicReads = this.config.get<string>('NEST_DIRECT_BANNER_READS', 'false') === 'true';
+    const adminWrites = this.config.get<string>('NEST_DIRECT_BANNER_ADMIN', 'false') === 'true';
+    if (request.path === '/api/v1/banners' || /^\/api\/v1\/banners\/\d+(\/click)?$/.test(request.path)) {
+      return publicReads && (request.method === 'GET' || (request.method === 'POST' && request.path.endsWith('/click')));
+    }
+    if (!request.path.startsWith('/api/v1/admin/banners')) return false;
+    if (!adminWrites || (!request.headers.authorization && !request.headers.cookie)) return false;
+    return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);
+  }
+
   private shouldUseNestCatalogAdmin(request: Request): boolean {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') !== 'true') {
       return false;
@@ -205,7 +222,7 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     return request.method === 'GET'
       && this.database.enabled
       && this.config.get<string>('NEST_DIRECT_OPERATIONS_READS', 'false') === 'true'
-      && ['/api/v1/operations/overview', '/api/v1/operations/drivers', '/api/v1/operations/seller-dashboard'].includes(request.path);
+      && ['/api/v1/operations/overview', '/api/v1/operations/drivers', '/api/v1/operations/seller-dashboard', '/api/v1/seller/dashboard'].includes(request.path);
   }
 
   private shouldUseNestOperationsMutations(request: Request): boolean {
