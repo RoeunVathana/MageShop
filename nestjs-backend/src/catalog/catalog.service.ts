@@ -270,10 +270,10 @@ export class CatalogService {
 
   private categoryResource(row: CategoryRow): Record<string, unknown> {
     return {
-      id: row.id,
+      id: Number(row.id),
       name: row.name,
       slug: row.slug,
-      parent_id: row.parent_id,
+      parent_id: row.parent_id === null ? null : Number(row.parent_id),
       parent_name: row.parent_name,
       icon: row.icon,
       image_url: row.image_url,
@@ -291,7 +291,7 @@ export class CatalogService {
 
   private brandResource(row: BrandRow): Record<string, unknown> {
     return {
-      id: row.id,
+      id: Number(row.id),
       name: row.name,
       slug: row.slug,
       logo_url: row.logo_url,
@@ -313,13 +313,13 @@ export class CatalogService {
   private productResource(row: ProductRow): Record<string, unknown> {
     const availableStock = Math.max(0, Number(row.quantity_on_hand ?? row.stock_quantity ?? 0) - Number(row.quantity_reserved ?? 0));
     return {
-      id: row.id,
+      id: Number(row.id),
       name: row.name,
-      brand_id: row.brand_id,
-      seller_id: row.seller_id,
+      brand_id: row.brand_id === null ? null : Number(row.brand_id),
+      seller_id: row.seller_id === null ? null : Number(row.seller_id),
       brand: row.brand ?? row.brand_record_name,
       brand_record: row.brand_record_id ? {
-        id: row.brand_record_id,
+        id: Number(row.brand_record_id),
         name: row.brand_record_name,
         slug: row.brand_record_slug,
         logo_url: row.brand_record_logo_url,
@@ -350,10 +350,10 @@ export class CatalogService {
       dimensions: row.dimensions,
       specifications: row.specifications,
       category: row.category_id ? {
-        id: row.category_id,
+        id: Number(row.category_id),
         name: row.category_name,
         slug: row.category_slug,
-        parent_id: row.category_parent_id,
+        parent_id: row.category_parent_id === null ? null : Number(row.category_parent_id),
         parent_name: row.category_parent_name,
       } : null,
       categories: [],
