@@ -1,6 +1,7 @@
 import { ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
-import { createHash, randomBytes } from 'node:crypto';
+import { ConfigService } from '@nestjs/config';
+import { createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
@@ -40,6 +41,7 @@ export class CheckoutService {
   private readonly pointsForFreeItem = 100;
 
   constructor(
+    private readonly config: ConfigService,
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
     private readonly receipts: ReceiptService,
@@ -158,7 +160,7 @@ export class CheckoutService {
     const orderNumber = `ORD-${this.datePart()}-${randomBytes(3).toString('hex').toUpperCase().slice(0, 5)}`;
     const transactionReference = `TXN-${randomBytes(6).toString('hex').toUpperCase()}`;
     const merchant = isQr ? await this.merchantAccount(products.rows) : null;
-    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id))) {
+    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id) || !(await this.bakongPaymentReady()))) {
       throw new ServiceUnavailableException({ status: 'error', message: 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.' });
     }
     const qr = isQr ? this.buildQr(orderNumber, totalAmount, transactionReference, merchant as MerchantAccount) : null;
@@ -306,7 +308,32 @@ export class CheckoutService {
     const tag99 = `99${tag99Value.length.toString().padStart(2, '0')}${tag99Value}`;
     const payload = `000201010212${tag29}52045999530384054${amountText.length.toString().padStart(2, '0')}${amountText}5802KH59${merchant.merchant_name.length.toString().padStart(2, '0')}${merchant.merchant_name}60${merchant.merchant_city.length.toString().padStart(2, '0')}${merchant.merchant_city}${tag62}${tag99}6304`;
     const qrString = `${payload}${this.crc(payload)}`;
-    return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, amount_usd: amount, amount_khr: Math.round(amount * 4100), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: 600 };
+    return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, merchant_source: merchant.source ?? 'admin', seller_id: merchant.seller_id ?? null, amount_usd: amount, amount_khr: Math.round(amount * 4100), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: 600 };
+  }
+
+  private async bakongPaymentReady(): Promise<boolean> {
+    const settings = await this.settings(['bakong_api_enabled', 'bakong_api_token_encrypted']);
+    const enabledValue = settings.get('bakong_api_enabled') ?? this.config.get<string>('BAKONG_API_ENABLED', 'true');
+    if (!['true', '1', 'yes', 'on'].includes(String(enabledValue).toLowerCase())) return false;
+    const encrypted = String(settings.get('bakong_api_token_encrypted') ?? '').trim();
+    if (encrypted && this.decryptLaravel(encrypted)) return true;
+    return Boolean(String(this.config.get<string>('BAKONG_API_TOKEN', '') ?? '').trim().replace(/^['"]|['"]$/g, '').replace(/\\$/g, ''));
+  }
+
+  private decryptLaravel(payload: string): string {
+    try {
+      const rawKey = this.config.get<string>('APP_KEY', '').trim();
+      if (!rawKey) return '';
+      const key = rawKey.startsWith('base64:') ? Buffer.from(rawKey.slice(7), 'base64') : Buffer.from(rawKey);
+      if (key.length !== 32) return '';
+      const parsed = JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as { iv: string; value: string; mac: string };
+      const expected = createHmac('sha256', key).update(parsed.iv + parsed.value).digest('hex');
+      if (!parsed.mac || parsed.mac.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.mac), Buffer.from(expected))) return '';
+      const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(parsed.iv, 'base64'));
+      return Buffer.concat([decipher.update(Buffer.from(parsed.value, 'base64')), decipher.final()]).toString('utf8').trim();
+    } catch {
+      return '';
+    }
   }
 
   private crc(data: string): string {

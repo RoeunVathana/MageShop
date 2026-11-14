@@ -49,6 +49,10 @@ API key (`RESEND_API_KEY`/`MAIL_PASSWORD` or the corresponding stored mail
 password); the flag remains disabled by default until the provider and
 redirect URI are verified in staging.
 
+`NEST_DIRECT_HEALTH=true` enables the basic and short-lived cached dependency
+readiness endpoints. It is disabled by default while Laravel remains the
+production health-check source.
+
 `NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
 reader, and pending/confirmed order cancellation routes. It remains disabled
 by default until response and cancellation side-effect parity is verified.

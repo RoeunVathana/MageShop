@@ -190,6 +190,14 @@ export class AdminSecurityService {
     return { status: 'success', message: `Roles successfully assigned to ${target.name}.`, data: { user_id: id, name: target.name, email: target.email, roles: roles.get(id) ?? [] } };
   }
 
+  async assignRolesByEmail(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeRoleAdmin(actorId);
+    const email = this.email(body.email);
+    const result = await this.database.query<{ id: number }>('SELECT id FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1', [email]);
+    if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'No user account was found for that email address.' });
+    return this.assignRoles(result.rows[0].id, body, actorId);
+  }
+
   private async resolveRoleIds(body: Record<string, unknown>): Promise<number[]> {
     const ids = this.array(body.role_ids).map((value) => this.id(value)).filter((value): value is number => value !== null);
     const names = [...this.array(body.roles), ...this.array(body.role_slugs), ...([body.role].filter((value) => value !== undefined))].map((value) => this.text(value).toLowerCase().replace(/ /g, '_')).filter(Boolean);

@@ -276,12 +276,19 @@ export class AuthRecoveryService {
     if (!apiKey) throw new Error('No email delivery API key is configured.');
     const from = await this.setting('mail_from_address', this.config.get<string>('MAIL_FROM_ADDRESS', 'no-reply@tyushop.blog'));
     const fromName = await this.setting('mail_from_name', this.config.get<string>('MAIL_FROM_NAME', 'TYUSHOP'));
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: `${fromName} <${from}>`, to: [to], subject, text }),
-    });
-    if (!response.ok) throw new Error(`Email provider returned HTTP ${response.status}.`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ from: `${fromName} <${from}>`, to: [to], subject, text }),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Email provider returned HTTP ${response.status}.`);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async setting(key: string, fallback: string): Promise<string> {

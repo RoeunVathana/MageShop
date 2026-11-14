@@ -40,6 +40,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestHealth(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalog(request)) {
         next();
         return;
@@ -186,6 +191,12 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
       || /^\/api\/v1\/categories\/[^/]+(?:\/attributes)?$/.test(request.path)
       || /^\/api\/v1\/brands\/[^/]+$/.test(request.path)
       || /^\/api\/v1\/products\/[^/]+$/.test(request.path);
+  }
+
+  private shouldUseNestHealth(request: Request): boolean {
+    return this.config.get<string>('NEST_DIRECT_HEALTH', 'false') === 'true'
+      && ['/api/v1/health', '/api/v1/health/ready'].includes(request.path)
+      && request.method === 'GET';
   }
 
   private shouldUseNestBanners(request: Request): boolean {
@@ -369,6 +380,7 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ADMIN_SECURITY', 'false') !== 'true') return false;
     if (!request.headers.authorization && !request.headers.cookie) return false;
     if (['/api/v1/admin/roles', '/api/v1/admin/permissions', '/api/v1/admin/staff', '/api/v1/admin/users'].includes(request.path)) return request.method === 'GET';
+    if (request.path === '/api/v1/admin/users/roles/by-email') return request.method === 'POST';
     if (/^\/api\/v1\/admin\/users\/\d+\/roles$/.test(request.path)) return ['POST', 'PUT', 'PATCH'].includes(request.method);
     if (request.path === '/api/v1/admin/security/users') return ['GET', 'POST'].includes(request.method);
     if (/^\/api\/v1\/admin\/security\/users\/\d+$/.test(request.path)) return ['PATCH', 'DELETE'].includes(request.method);
