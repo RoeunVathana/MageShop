@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { AnnouncementBar } from './AnnouncementBar'
 import { Header } from './Header'
 import { Navbar } from './Navbar'
@@ -10,6 +10,7 @@ import { SupportWidget } from '@/components/storefront/SupportWidget'
 import { cn } from '@/lib/utils'
 
 export function StorefrontLayout() {
+  const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
@@ -58,7 +59,9 @@ export function StorefrontLayout() {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full">
-        <Outlet />
+        <div key={location.pathname} className="page-enter min-w-0">
+          <Outlet />
+        </div>
       </main>
 
       {/* Footer */}

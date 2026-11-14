@@ -232,7 +232,7 @@ export function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="min-h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2 sm:h-14 sm:px-5 sm:py-0 lg:px-6">
+        <header className="dashboard-topbar min-h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2 sm:h-14 sm:px-5 sm:py-0 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Button
               variant="ghost"
@@ -347,8 +347,10 @@ export function DashboardLayout({
         </header>
 
         {/* Page Content Area with Generous Whitespace (Full Width) */}
-        <main className="flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {children}
+        <main className="dashboard-content page-enter flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div key={location.pathname} className="min-w-0">
+            {children}
+          </div>
         </main>
       </div>
     </div>

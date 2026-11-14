@@ -632,6 +632,129 @@ html[lang="km"] .bilingual-badge {
   }
 }
 
+/* Shared motion language: short, calm transitions make route changes and
+   surfaces feel alive without turning the storefront into a noisy animation. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer utilities {
+  .page-enter {
+    animation: page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .surface-card,
+  .product-card {
+    will-change: transform, box-shadow;
+  }
+
+  .surface-card {
+    transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  }
+
+  .surface-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px hsl(222 47% 11% / 0.08);
+  }
+
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-bottom-nav > div {
+    height: 4rem;
+  }
+}
+
+/* Keep content comfortable on narrow phones and prevent nested dashboard
+   scroll areas from forcing users to pan horizontally. */
+@media (max-width: 1023px) {
+  .dashboard-content {
+    overflow-y: visible !important;
+    padding: 0.875rem !important;
+    padding-bottom: 5.5rem !important;
+  }
+
+  .dashboard-topbar {
+    padding-inline: 0.75rem !important;
+  }
+
+  .dashboard-topbar .language-switcher-trigger {
+    max-width: 7rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .container {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .surface-card {
+    border-radius: 1.25rem;
+  }
+
+  .page-title {
+    font-size: clamp(1.6rem, 7vw, 2rem);
+    line-height: 1.25;
+  }
+
+  .product-card {
+    border-radius: 1.15rem;
+  }
+
+  .dashboard-topbar {
+    min-height: 3.5rem;
+    gap: 0.25rem !important;
+  }
+
+  .dashboard-topbar .language-switcher-trigger {
+    max-width: 5.5rem;
+    padding-inline: 0.5rem !important;
+  }
+
+  .dashboard-topbar .theme-toggle {
+    display: none;
+  }
+
+  .dashboard-shell .dashboard-table-scroll {
+    margin-inline: -0.25rem;
+    width: calc(100% + 0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Smooth modern scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

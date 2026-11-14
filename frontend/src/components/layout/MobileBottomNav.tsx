@@ -18,7 +18,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Mobile Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+      className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 md:hidden bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
     >
       <div className="grid grid-cols-5 h-16 px-1">
         {items.map((item) => {
@@ -33,7 +33,7 @@ export function MobileBottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                'relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors',
+                'relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-all duration-200 active:scale-95',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
