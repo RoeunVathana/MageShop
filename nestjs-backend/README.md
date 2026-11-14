@@ -102,6 +102,18 @@ seller application listing, approval, rejection, status changes, editing, and
 deletion. Seller application submission and account creation remain Laravel-backed
 until the optional-authentication and notification parity tests are complete.
 
+`NEST_DIRECT_COUPONS=true` enables active-coupon/validation reads plus guarded
+admin and seller coupon CRUD. Checkout remains Laravel-backed until its payment,
+stock, loyalty, receipt, and notification side effects pass parity tests.
+
+`NEST_DIRECT_STORE_SETTINGS=true` enables public/admin store settings and
+Bakong configuration reads/writes. It remains disabled until the NestJS process
+uses the same Laravel `APP_KEY` for encrypted Bakong token compatibility.
+
+`NEST_DIRECT_MEDIA=true` enables guarded multipart uploads and public media
+serving from the NestJS media root. Keep it disabled until the deployment uses
+the intended shared or durable object storage location.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

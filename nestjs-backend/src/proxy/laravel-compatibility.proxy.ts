@@ -55,6 +55,21 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestCoupons(request)) {
+        next();
+        return;
+      }
+
+      if (this.shouldUseNestStoreSettings(request)) {
+        next();
+        return;
+      }
+
+      if (this.shouldUseNestMedia(request)) {
+        next();
+        return;
+      }
+
       if (this.shouldUseNestCatalogAdmin(request)) {
         next();
         return;
@@ -171,6 +186,30 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
     if (!request.path.startsWith('/api/v1/admin/sellers')) return false;
     if (!request.headers.authorization && !request.headers.cookie) return false;
     return ['GET', 'POST', 'PATCH', 'DELETE'].includes(request.method);
+  }
+
+  private shouldUseNestCoupons(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_COUPONS', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/coupons' || request.path === '/api/v1/coupons/validate') return request.method === 'GET' || request.method === 'POST';
+    if (request.path.startsWith('/api/v1/coupons/') || request.path.startsWith('/api/v1/admin/coupons')) {
+      if (!request.headers.authorization && !request.headers.cookie) return false;
+      return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+    }
+    return false;
+  }
+
+  private shouldUseNestStoreSettings(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_STORE_SETTINGS', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/store-settings') return ['GET', 'PATCH', 'POST'].includes(request.method);
+    if (request.path === '/api/v1/store-settings/currency') return request.method === 'POST';
+    if (request.path === '/api/v1/admin/store-settings') return ['GET', 'PATCH'].includes(request.method);
+    return request.path === '/api/v1/admin/store-settings/currency' && request.method === 'POST';
+  }
+
+  private shouldUseNestMedia(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_MEDIA', 'false') !== 'true') return false;
+    if (request.path === '/api/v1/admin/media/upload') return request.method === 'POST' && Boolean(request.headers.authorization || request.headers.cookie);
+    return request.method === 'GET' && request.path.startsWith('/api/v1/media/');
   }
 
   private shouldUseNestCatalogAdmin(request: Request): boolean {
