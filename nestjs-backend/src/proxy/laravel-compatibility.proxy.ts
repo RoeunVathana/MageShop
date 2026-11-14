@@ -90,6 +90,11 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         return;
       }
 
+      if (this.shouldUseNestAdminOrders(request)) {
+        next();
+        return;
+      }
+
       const origin = this.config.get<string>('LARAVEL_API_ORIGIN', 'https://api.tyushop.blog');
       this.proxy.web(request, response, {
         target: origin,
@@ -205,6 +210,18 @@ export class LaravelCompatibilityProxy implements OnModuleDestroy {
         || /^\/api\/v1\/inventory\/\d+\/movements$/.test(request.path);
     }
     return request.method === 'POST' && /^\/api\/v1\/inventory\/\d+\/adjust$/.test(request.path);
+  }
+
+  private shouldUseNestAdminOrders(request: Request): boolean {
+    if (!this.database.enabled || this.config.get<string>('NEST_DIRECT_ADMIN_ORDERS', 'false') !== 'true') {
+      return false;
+    }
+    if (!request.headers.authorization && !request.headers.cookie) return false;
+    if (request.path === '/api/v1/admin/stats' || request.path === '/api/v1/admin/overview' || request.path === '/api/v1/admin/orders') {
+      return request.method === 'GET';
+    }
+    if (/^\/api\/v1\/admin\/orders\/\d+$/.test(request.path)) return ['GET', 'PATCH', 'DELETE'].includes(request.method);
+    return /^\/api\/v1\/admin\/orders\/\d+\/(status|payment-status)$/.test(request.path) && request.method === 'PATCH';
   }
 
   onModuleDestroy(): void {

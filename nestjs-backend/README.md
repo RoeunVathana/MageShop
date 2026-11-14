@@ -77,6 +77,11 @@ authorization are verified against production-shaped data.
 atomic stock-adjustment path. It is disabled by default until stock movement
 history and inventory role parity are verified against production-shaped data.
 
+`NEST_DIRECT_ADMIN_ORDERS=true` enables the guarded admin order list, details,
+status/payment updates, deletion, and dashboard statistics. It remains off by
+default until order notifications, receipts, delivery transitions, and payment
+settlement side effects are covered by parity tests.
+
 ## Migration rule
 
 The frontend API URL and PostgreSQL data remain unchanged during the rewrite.

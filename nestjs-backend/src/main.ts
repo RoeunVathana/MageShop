@@ -47,6 +47,7 @@ async function bootstrap(): Promise<void> {
       || (request.path === '/api/v1/products' && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
       || (request.path.startsWith('/api/v1/products/') && config.get<string>('NEST_DIRECT_CATALOG_ADMIN', 'false') === 'true')
       || (request.path.startsWith('/api/v1/inventory/') && request.path.endsWith('/adjust') && config.get<string>('NEST_DIRECT_INVENTORY', 'false') === 'true')
+      || (request.path.startsWith('/api/v1/admin/orders') && config.get<string>('NEST_DIRECT_ADMIN_ORDERS', 'false') === 'true')
     )
       && ['POST', 'PUT', 'PATCH'].includes(request.method)
       && databaseConfigured;
