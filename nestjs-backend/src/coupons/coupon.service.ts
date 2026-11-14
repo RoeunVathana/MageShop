@@ -28,7 +28,7 @@ export class CouponService {
     const pointsPerPurchase = Number(settings.get('loyalty_points_per_purchase') ?? 5);
     const pointsForFreeItem = Number(settings.get('loyalty_points_for_free_item') ?? 100);
     const freeItemMaxPrice = Number(settings.get('loyalty_free_item_max_price') ?? 30);
-    return { status: 'ok', data: rows.rows.map((row) => this.resource(row)), loyalty_rules: { points_per_purchase: pointsPerPurchase, points_for_free_item: pointsForFreeItem, free_item_max_price: freeItemMaxPrice, description: `Earn ${pointsPerPurchase} points on every purchase! Collect ${pointsForFreeItem} points to redeem any item priced up to $${freeItemMaxPrice}.` } };
+    return { status: 'ok', data: rows.rows.map((row) => this.resource(row)), loyalty_rules: { points_per_purchase: pointsPerPurchase, points_for_free_item: pointsForFreeItem, free_item_max_price: freeItemMaxPrice, description: `Earn ${pointsPerPurchase} points on every purchase! Collect ${pointsForFreeItem} points to redeem any item priced up to $${freeItemMaxPrice} for FREE.` } };
   }
 
   async validate(codeValue: unknown, subtotalValue: unknown): Promise<Record<string, unknown>> {
