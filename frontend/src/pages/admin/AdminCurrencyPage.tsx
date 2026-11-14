@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { storeSettingsService } from '@/services/storeSettings.service'
+import { API_BASE_URL } from '@/lib/api'
 
 const PRESET_RATES = [
   { label: '4,000 ៛ (Fixed Base)', rate: 4000 },
@@ -66,7 +67,7 @@ export function AdminCurrencyPage() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const googleCallbackUrl = 'https://api.tyushop.blog/api/v1/auth/google/callback'
+  const googleCallbackUrl = `${API_BASE_URL}/auth/google/callback`
 
   // Sync initial state from context or backend
   useEffect(() => {
@@ -663,7 +664,7 @@ export function AdminCurrencyPage() {
                   </Button>
 
                   <a
-                    href="https://api.tyushop.blog/api/v1/auth/google/redirect"
+                    href={`${API_BASE_URL}/auth/google/redirect`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground py-2 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"

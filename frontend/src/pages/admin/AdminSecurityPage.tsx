@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Pagination } from '@/components/common/Pagination'
+import { API_BASE_URL } from '@/lib/api'
 import {
   securityService,
   type ApiToken,
@@ -68,7 +69,7 @@ export function AdminSecurityPage() {
     telegram_admin_chat_id: '',
     telegram_webhook_secret: 'tyushop_sec_token_99182a',
     telegram_mini_app_url: 'https://tyushop.blog/telegram-app',
-    telegram_webhook_url: 'https://mageshop-production.up.railway.app/api/v1/telegram/webhook',
+    telegram_webhook_url: `${API_BASE_URL}/telegram/webhook`,
   })
   const [botTokenInput, setBotTokenInput] = useState('')
   const [showBotTokenMask, setShowBotTokenMask] = useState(false)
@@ -757,7 +758,7 @@ export function AdminSecurityPage() {
                           onChange={(e) =>
                             setTelegramSettings({ ...telegramSettings, telegram_webhook_url: e.target.value })
                           }
-                          placeholder="https://mageshop-production.up.railway.app/api/v1/telegram/webhook"
+                          placeholder={`${API_BASE_URL}/telegram/webhook`}
                           className="w-full px-3 py-2 text-xs font-mono rounded-lg border bg-background text-foreground"
                         />
                       </div>

@@ -16,6 +16,7 @@ import { useHealth, useHealthDetails } from '@/hooks/useHealth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { API_BASE_URL } from '@/lib/api'
 
 export function DiagnosticsPage() {
   const { data: health, isLoading: healthLoading, isError: healthError, refetch: refetchHealth } = useHealth()
@@ -135,7 +136,7 @@ export function DiagnosticsPage() {
             </div>
             <div>
               <div className="text-sm font-bold truncate">
-                Base: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}
+                Base: {API_BASE_URL}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Mode: <strong className="text-foreground">{import.meta.env.MODE || 'development'}</strong>

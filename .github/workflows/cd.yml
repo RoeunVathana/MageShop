@@ -28,7 +28,7 @@ jobs:
           if [ -n "${RAILWAY_TOKEN:-}" ]; then
             echo "Installing Railway CLI and triggering production deployment..."
             npm install -g @railway/cli
-            railway redeploy --service MageShop -y || echo "Railway trigger handled via GitHub App"
+            railway redeploy --service nestjs-api -y || echo "Railway NestJS trigger handled via GitHub App"
             railway redeploy --service frontend -y || echo "Railway trigger handled via GitHub App"
           else
             echo "RAILWAY_TOKEN secret not set; relying on Railway GitHub App auto-deploy."
@@ -42,10 +42,7 @@ jobs:
       - name: Probe Live Backend Health Endpoint
         id: probe_health
         run: |
-          URLS=(
-            "https://mageshop-production.up.railway.app/api/v1/health"
-            "https://api.tyushop.blog/api/v1/health"
-          )
+          URLS=("https://nestjs-api-production-b0523d97.up.railway.app/api/v1/health")
           SUCCESS=false
           for url in "${URLS[@]}"; do
             echo "Checking: $url"
@@ -66,10 +63,7 @@ jobs:
 
       - name: Probe Live Product Catalog & Loyalty API
         run: |
-          URLS=(
-            "https://mageshop-production.up.railway.app/api/v1/products"
-            "https://api.tyushop.blog/api/v1/products"
-          )
+          URLS=("https://nestjs-api-production-b0523d97.up.railway.app/api/v1/products")
           for url in "${URLS[@]}"; do
             echo "Querying: $url"
             RESPONSE=$(curl -s --max-time 10 "$url" || true)
@@ -81,10 +75,7 @@ jobs:
 
       - name: Probe Live Universal Brands API
         run: |
-          URLS=(
-            "https://mageshop-production.up.railway.app/api/v1/brands"
-            "https://api.tyushop.blog/api/v1/brands"
-          )
+          URLS=("https://nestjs-api-production-b0523d97.up.railway.app/api/v1/brands")
           for url in "${URLS[@]}"; do
             echo "Querying: $url"
             RESPONSE=$(curl -s --max-time 10 "$url" || true)
@@ -132,10 +123,10 @@ jobs:
           {
             echo "## 🚀 MegaCommerce Production Deployment Status"
             echo ""
-            echo "| Service | Edge Target | Production Fallback | Status |"
+            echo "| Service | Public Target | Internal Compatibility Upstream | Status |"
             echo "| :--- | :--- | :--- | :--- |"
             echo "| **Storefront** | \`https://tyushop.blog\` | \`https://frontend-production-97470.up.railway.app\` | ✅ Verified Live |"
-            echo "| **Backend API** | \`https://api.tyushop.blog\` | \`https://mageshop-production.up.railway.app\` | ✅ Verified Live |"
+            echo "| **Backend API** | \`https://nestjs-api-production-b0523d97.up.railway.app\` | Laravel upstream is private to the NestJS gateway | ✅ Verified Live |"
             echo "| **Cloud S3 Storage** | \`megacommerce-media-k3okax\` | \`https://t3.storageapi.dev\` | ☁️ Active |"
             echo "| **n8n Automation** | \`https://n8n.tyushop.blog\` | \`https://n8n-production-91dc6.up.railway.app\` | ✅ Verified Live |"
             echo "| **PgBouncer Pool** | PostgreSQL 18 SSL | \`pgbouncer.railway.internal:5432\` | 🛡️ Active (1000 conns) |"

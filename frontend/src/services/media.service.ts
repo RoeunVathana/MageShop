@@ -1,4 +1,4 @@
-import { api } from '@/lib/api'
+import { api, API_ORIGIN } from '@/lib/api'
 
 export interface UploadMediaResponse {
   key: string
@@ -72,11 +72,7 @@ export const mediaService = {
     }
     // If it's a relative backend media route, prefix with backend host
     if (url.startsWith('/api/v1/')) {
-      const isRailway = typeof window !== 'undefined' && window.location.hostname.includes('railway.app')
-      const backendRoot = isRailway
-        ? 'https://mageshop-production.up.railway.app'
-        : (import.meta.env.VITE_API_BASE_URL || 'https://api.tyushop.blog/api/v1').replace(/\/api\/v1\/?$/, '')
-      return `${backendRoot}${url}`
+      return `${API_ORIGIN}${url}`
     }
     return url
   },

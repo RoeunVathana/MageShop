@@ -1,34 +1,25 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiErrorResponse } from '@/types/api.types'
 
-const getApiBaseUrl = (): string => {
-  // Keep local development usable even when the PHP API is not running on the
-  // same machine. A local API can still be selected explicitly with
-  // VITE_API_BASE_URL=http://localhost:8000/api/v1.
-  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+const DEFAULT_NESTJS_API_BASE_URL = 'https://nestjs-api-production-b0523d97.up.railway.app/api/v1'
 
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return configuredBaseUrl || 'https://api.tyushop.blog/api/v1'
-    }
-    if (host.includes('railway.app')) {
-      return 'https://mageshop-production.up.railway.app/api/v1'
-    }
-    return 'https://api.tyushop.blog/api/v1'
-  }
-  return configuredBaseUrl || 'https://api.tyushop.blog/api/v1'
+const normalizeBaseUrl = (value: string): string => value.replace(/\/+$/, '')
+
+const getApiBaseUrl = (): string => {
+  // The deployed NestJS API is the single browser-facing API. Local development
+  // can still override it with VITE_API_BASE_URL when required.
+  return normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL?.trim() || DEFAULT_NESTJS_API_BASE_URL)
 }
 
-const API_BASE_URL = getApiBaseUrl()
-// Public catalog reads use the Railway service URL directly. The custom API
-// domain adds several seconds of edge latency for uncached product requests,
-// while authenticated and mutating requests continue using API_BASE_URL.
-const PUBLIC_API_BASE_URL =
-  import.meta.env.VITE_PUBLIC_API_BASE_URL?.trim() ||
-  'https://mageshop-production.up.railway.app/api/v1'
-// Sanctum csrf cookie endpoint is at the backend root: https://api.tyushop.blog/sanctum/csrf-cookie
-const BACKEND_ROOT = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
+export const API_BASE_URL = getApiBaseUrl()
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
+// Public catalog reads must use the same NestJS origin as authenticated and
+// mutating requests. Keeping one origin prevents silent Laravel bypasses.
+export const PUBLIC_API_BASE_URL = normalizeBaseUrl(
+  import.meta.env.VITE_PUBLIC_API_BASE_URL?.trim() || API_BASE_URL,
+)
+// Sanctum csrf cookie endpoint is served through the NestJS gateway.
+const BACKEND_ROOT = API_ORIGIN
 let csrfReady = false
 let csrfRequest: Promise<void> | null = null
 let isRedirectingToLogin = false

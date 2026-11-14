@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -157,8 +158,7 @@ export const telegramApi = {
 
   // Receipt Download URL
   getReceiptDownloadUrl: (orderNumber: string, format = 'pdf') => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-    return `${baseUrl}/orders/${orderNumber}/receipt?format=${format}`;
+    return `${API_BASE_URL}/orders/${orderNumber}/receipt?format=${format}`;
   },
 };
 

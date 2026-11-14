@@ -16,7 +16,7 @@ REPORT_FILE="${REPORT_FILE:-heal-report.md}"
 
 # name|railway-service|health-url|expected-body-substring
 SERVICES=(
-  "Backend API|MageShop|https://mageshop-production.up.railway.app/api/v1/health/ready|"
+  "Backend API|nestjs-api|https://nestjs-api-production-b0523d97.up.railway.app/api/v1/health/ready|"
   "Storefront|frontend|https://frontend-production-97470.up.railway.app/|"
 )
 

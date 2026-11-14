@@ -36,6 +36,7 @@ import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { adminOrderService, type AdminOrder } from '@/services/adminOrder.service'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { API_BASE_URL } from '@/lib/api'
 
 const ORDER_STATUSES = [
   { value: 'all', label: 'All Orders', labelKm: 'ទាំងអស់' },
@@ -551,7 +552,7 @@ export function AdminOrderListPage() {
 
                               {/* View / Print PDF Receipt */}
                               <a
-                                href={`https://api.tyushop.blog/api/v1/orders/${order.id}/receipt`}
+                                href={`${API_BASE_URL}/orders/${order.id}/receipt`}
                                 target="_blank"
                                 rel="noreferrer"
                                 title={t('Official PDF Receipt', 'បង្កាន់ដៃ PDF ផ្លូវការ')}
@@ -898,7 +899,7 @@ export function AdminOrderListPage() {
                   )}
 
                   <a
-                    href={`https://api.tyushop.blog/api/v1/orders/${selectedOrder.id}/receipt`}
+                    href={`${API_BASE_URL}/orders/${selectedOrder.id}/receipt`}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full sm:w-auto"

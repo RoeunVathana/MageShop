@@ -1,4 +1,4 @@
-import { api, publicApiClient } from '@/lib/api'
+import { api, publicApiClient, API_BASE_URL } from '@/lib/api'
 import { cachedRead } from '@/lib/read-cache'
 
 export interface StoreCurrencySettings {
@@ -76,7 +76,7 @@ export const storeSettingsService = {
       telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       google_client_id: data.google_client_id,
       google_client_secret: data.google_client_secret,
-      google_callback_url: data.google_callback_url || 'https://api.tyushop.blog/api/v1/auth/google/callback',
+      google_callback_url: data.google_callback_url || `${API_BASE_URL}/auth/google/callback`,
       google_is_configured: data.google_is_configured,
       bakong_account_id: data.bakong_account_id || 'roeun_vathana1@bkrt',
       bakong_merchant_name: data.bakong_merchant_name || 'Tyushop',
