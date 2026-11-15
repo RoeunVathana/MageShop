@@ -59,6 +59,27 @@ Application-data clearing preserves the admin account, roles, permissions,
 store settings, and Bakong configuration. Remote seed maintenance is disabled
 unless `ALLOW_REMOTE_SEEDING=true`; do not enable it casually in production.
 
+## Test data seeding
+
+The NestJS seed is idempotent and can repair a partially cleared catalog. It
+always upserts the Laravel catalog definitions (categories, brands, products,
+inventory, galleries, banners, and store settings). Set `SEED_TEST_DATA=true`
+for a controlled test environment to add stable fixtures for coupons, seller
+application/payment account, paid/pending/COD orders, receipts, inventory
+history, loyalty, wishlist, support, Telegram, delivery tracking, and payment
+dashboard screens. This never truncates tables or removes roles and
+permissions. Run it with:
+
+```powershell
+$env:SEED_TEST_DATA = 'true'
+npm run build
+npm run seed
+```
+
+For demo login accounts, also set `SEED_DEMO_DATA=true` and provide the four
+`DEMO_*` credentials in `.env`. Keep both flags disabled in a production
+environment unless the data is intentionally for testing.
+
 ## Verification
 
 Build and smoke-test the API before deployment:

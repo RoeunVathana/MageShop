@@ -25,11 +25,22 @@ interface SeedOptions {
 }
 
 interface SeedCounts {
+  users: number;
   roles: number;
   permissions: number;
   categories: number;
   brands: number;
   products: number;
+  inventories: number;
+  inventory_movements: number;
+  orders: number;
+  order_items: number;
+  payments: number;
+  coupons: number;
+  seller_applications: number;
+  merchant_payment_accounts: number;
+  support_tickets: number;
+  wishlists: number;
   banners: number;
   store_settings: number;
   seeder_runs: number;
@@ -42,33 +53,30 @@ export class SeedService {
   async run(options: SeedOptions = {}): Promise<Record<string, unknown>> {
     const started = Date.now();
     const force = options.resetHistory === true || this.config.get<string>('FORCE_RESEED', 'false') === 'true';
+    let hadCommerceSeedHistory = false;
     const counts = await this.database.transaction(async (client) => {
       if (force) await client.query('TRUNCATE TABLE seeder_runs');
+      hadCommerceSeedHistory = await this.hasSeederRun(client, SEEDER_NAMES.commerce);
 
       const roleIds = await this.seedRolesAndPermissions(client);
       await this.seedEnvironmentSettings(client);
       await this.seedBrands(client);
 
-      const commerceRan = force || !(await this.hasSeederRun(client, SEEDER_NAMES.commerce));
-      if (commerceRan) {
-        await this.seedCommerce(client);
-        await this.recordSeederRun(client, SEEDER_NAMES.commerce);
-      }
+      // These seeders are idempotent. Run them on every maintenance/CLI seed
+      // so a previous data cleanup or a partial deployment can repopulate the
+      // catalog without requiring a destructive reset of protected tables.
+      await this.seedCommerce(client);
+      await this.recordSeederRun(client, SEEDER_NAMES.commerce);
 
-      const universalRan = force || !(await this.hasSeederRun(client, SEEDER_NAMES.universal));
-      if (universalRan) {
-        await this.seedUniversalCategories(client);
-        await this.recordSeederRun(client, SEEDER_NAMES.universal);
-      }
+      await this.seedUniversalCategories(client);
+      await this.recordSeederRun(client, SEEDER_NAMES.universal);
 
-      const bannerRan = force || !(await this.hasSeederRun(client, SEEDER_NAMES.banner));
-      if (bannerRan) {
-        await this.seedBanners(client);
-        await this.recordSeederRun(client, SEEDER_NAMES.banner);
-      }
+      await this.seedBanners(client);
+      await this.recordSeederRun(client, SEEDER_NAMES.banner);
 
       await this.seedProductGalleries(client);
       await this.seedMasterAdmin(client, roleIds);
+      await this.seedDemoData(client);
 
       return this.tableCounts(client);
     });
@@ -79,7 +87,9 @@ export class SeedService {
       forced: force,
       duration_seconds: Math.round((Date.now() - started) / 10) / 100,
       summary_counts: counts,
-      demo_data: this.config.get<string>('SEED_DEMO_DATA', 'false') === 'true',
+      demo_data: this.enabled('SEED_DEMO_DATA'),
+      test_fixtures: this.enabled('SEED_TEST_DATA') || this.enabled('SEED_DEMO_DATA'),
+      repaired_existing_catalog: hadCommerceSeedHistory,
     };
   }
 
@@ -180,7 +190,6 @@ export class SeedService {
     for (const setting of Object.entries(DEFAULT_STORE_SETTINGS)) await this.insertSetting(client, setting[0], setting[1]);
     const categoryIds = await this.seedCategories(client, BASE_CATEGORIES);
     await this.seedProducts(client, categoryIds);
-    await this.seedDemoData(client);
   }
 
   private async seedUniversalCategories(client: PoolClient): Promise<void> {
@@ -325,15 +334,216 @@ export class SeedService {
   }
 
   private async seedDemoData(client: PoolClient): Promise<void> {
-    if (this.config.get<string>('SEED_DEMO_DATA', 'false') !== 'true') return;
-    const adminEmail = this.config.get<string>('DEMO_ADMIN_EMAIL', '').trim().toLowerCase();
-    const adminPassword = this.config.get<string>('DEMO_ADMIN_PASSWORD', '');
-    const customerEmail = this.config.get<string>('DEMO_CUSTOMER_EMAIL', '').trim().toLowerCase();
-    const customerPassword = this.config.get<string>('DEMO_CUSTOMER_PASSWORD', '');
-    if (!adminEmail || !adminPassword || !customerEmail || !customerPassword) throw new Error('SEED_DEMO_DATA=true requires DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, DEMO_CUSTOMER_EMAIL, and DEMO_CUSTOMER_PASSWORD.');
-    await this.seedDemoUser(client, adminEmail, adminPassword, 'MegaCommerce Store Manager', '+85512999001', 'admin');
-    const customerId = await this.seedDemoUser(client, customerEmail, customerPassword, 'Sopheap Seng', '+85512888002', 'customer');
-    if (customerId) await this.seedDemoOrders(client, customerId);
+    if (!this.enabled('SEED_DEMO_DATA') && !this.enabled('SEED_TEST_DATA')) return;
+
+    let customerId: number | null = null;
+    if (this.enabled('SEED_DEMO_DATA')) {
+      const adminEmail = this.config.get<string>('DEMO_ADMIN_EMAIL', '').trim().toLowerCase();
+      const adminPassword = this.config.get<string>('DEMO_ADMIN_PASSWORD', '');
+      const customerEmail = this.config.get<string>('DEMO_CUSTOMER_EMAIL', '').trim().toLowerCase();
+      const customerPassword = this.config.get<string>('DEMO_CUSTOMER_PASSWORD', '');
+      if (!adminEmail || !adminPassword || !customerEmail || !customerPassword) {
+        throw new Error('SEED_DEMO_DATA=true requires DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, DEMO_CUSTOMER_EMAIL, and DEMO_CUSTOMER_PASSWORD.');
+      }
+      await this.seedDemoUser(client, adminEmail, adminPassword, 'MegaCommerce Store Manager', '+85512999001', 'admin');
+      customerId = await this.seedDemoUser(client, customerEmail, customerPassword, 'Sopheap Seng', '+85512888002', 'customer');
+    } else {
+      const existing = await client.query<{ id: number }>(`
+        SELECT u.id
+        FROM users u
+        LEFT JOIN role_user ru ON ru.user_id = u.id
+        LEFT JOIN roles r ON r.id = ru.role_id
+        WHERE u.status = 'active'
+        ORDER BY CASE WHEN r.slug = 'customer' THEN 0 ELSE 1 END, u.id
+        LIMIT 1
+      `);
+      customerId = existing.rows[0]?.id ?? null;
+    }
+
+    if (customerId) {
+      await this.seedTestFixtures(client, customerId);
+      if (this.enabled('SEED_DEMO_DATA')) await this.seedDemoOrders(client, customerId);
+    }
+  }
+
+  /**
+   * Populate the records used by storefront, seller, delivery, support,
+   * inventory, payments, and dashboard screens. All records use stable seed
+   * keys and are safe to refresh; normal application data is never truncated.
+   */
+  private async seedTestFixtures(client: PoolClient, userId: number): Promise<void> {
+    const product = (await client.query<{ id: number; name: string; sku: string; price: number | string; discount_price: number | string | null }>(`
+      SELECT id, name, sku, COALESCE(selling_price, price) AS price, discount_price
+      FROM products WHERE is_active = TRUE ORDER BY id LIMIT 1
+    `)).rows[0];
+    if (!product) return;
+
+    const user = (await client.query<{ email: string; name: string }>('SELECT email, name FROM users WHERE id=$1 LIMIT 1', [userId])).rows[0];
+    if (!user) return;
+
+    await this.seedFixtureSettings(client);
+    await this.seedFixtureCoupons(client);
+    await this.seedFixtureGlobalMerchantAccount(client);
+
+    const fixtureRoles = await client.query<{ id: number }>(`SELECT id FROM roles WHERE slug = ANY($1::text[])`, [['seller', 'delivery_driver', 'customer']]);
+    for (const role of fixtureRoles.rows) {
+      await client.query('INSERT INTO role_user (user_id, role_id, created_at, updated_at) VALUES ($1,$2,NOW(),NOW()) ON CONFLICT (user_id,role_id) DO NOTHING', [userId, role.id]);
+    }
+
+    const sellerApplication = await client.query<{ id: number }>(`
+      INSERT INTO seller_applications (user_id, store_name, slug, category, description, phone, telegram_username, city, address, bank_name, bakong_account_id, status, approved_at, created_at, updated_at)
+      VALUES ($1,'TYUSHOP Demo Store','tyushop-demo-store','Electronics','Seeded seller account for dashboard and checkout testing.','+855 12 888 002','@tyushop_demo','Phnom Penh','#182 Norodom Boulevard, Phnom Penh','Bakong',$2,'approved',NOW(),NOW(),NOW())
+      ON CONFLICT (slug) DO UPDATE SET user_id=EXCLUDED.user_id, store_name=EXCLUDED.store_name, description=EXCLUDED.description, phone=EXCLUDED.phone, bakong_account_id=EXCLUDED.bakong_account_id, status='approved', approved_at=COALESCE(seller_applications.approved_at, NOW()), updated_at=NOW()
+      RETURNING id
+    `, [userId, this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt')]);
+    const sellerApplicationId = sellerApplication.rows[0]?.id ?? null;
+
+    // Give the fixture account one seller-owned product so seller dashboard,
+    // payout account selection, and multi-vendor checkout can be tested.
+    await client.query('UPDATE products SET seller_id=$1, updated_at=NOW() WHERE id=$2 AND (seller_id IS NULL OR seller_id=$1)', [userId, product.id]);
+    if (sellerApplicationId) await this.seedFixtureMerchantAccount(client, userId, sellerApplicationId);
+
+    await client.query(`
+      INSERT INTO inventory_movements (product_id,user_id,quantity_change,type,before_quantity,after_quantity,reason,reference_id,movement_type,created_by,reference,idempotency_key,created_at,updated_at)
+      VALUES ($1,$2,10,'restock',30,40,'Seeded receiving movement','SEED-PO-001','restock',$2,'SEED-PO-001','seed-inventory-movement-001',NOW(),NOW())
+      ON CONFLICT (idempotency_key) DO NOTHING
+    `, [product.id, userId]);
+
+    const paidOrderId = await this.seedFixtureOrder(client, userId, product, 'ORD-SEED-PAID-001', 'shipped', 'paid', 'bakong_khqr', 19.00, '12 mins', 'Seeded paid order for admin, seller, receipt, and delivery testing.');
+    await this.seedFixtureOrder(client, userId, product, 'ORD-SEED-PENDING-001', 'pending', 'pending_qr', 'bakong_khqr', 22.00, '30 mins', 'Seeded pending KHQR order for payment verification testing.');
+    await this.seedFixtureOrder(client, userId, product, 'ORD-SEED-COD-001', 'confirmed', 'cash_on_delivery', 'cash_on_delivery', 24.99, '45 mins', 'Seeded cash-on-delivery order for courier handover testing.');
+
+    await client.query('INSERT INTO wishlists (user_id, product_id, created_at, updated_at) VALUES ($1,$2,NOW(),NOW()) ON CONFLICT (user_id,product_id) DO NOTHING', [userId, product.id]);
+    if (paidOrderId) {
+      await client.query(`
+        INSERT INTO loyalty_transactions (user_id, order_id, type, points, description, created_at, updated_at)
+        SELECT $1,$2,'earned',5,'Seeded loyalty reward transaction',NOW(),NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM loyalty_transactions WHERE order_id=$2 AND type='earned')
+      `, [userId, paidOrderId]);
+    }
+
+    await client.query(`
+      INSERT INTO support_tickets (ticket_number,user_id,name,email,subject,category,order_number,message,status,admin_reply,created_at,updated_at)
+      VALUES ('TKT-SEED-001',$1,$2,$3,'Where is my seeded order?','order','ORD-SEED-PAID-001','Seeded support ticket for customer-support dashboard testing.','open',NULL,NOW(),NOW())
+      ON CONFLICT (ticket_number) DO UPDATE SET user_id=EXCLUDED.user_id, name=EXCLUDED.name, email=EXCLUDED.email, order_number=EXCLUDED.order_number, status='open', updated_at=NOW()
+    `, [userId, user.name, user.email]);
+
+    await this.seedFixtureTelegram(client, userId);
+    await client.query('UPDATE users SET loyalty_points=GREATEST(COALESCE(loyalty_points,0),105), updated_at=NOW() WHERE id=$1', [userId]);
+  }
+
+  private async seedFixtureSettings(client: PoolClient): Promise<void> {
+    const accountId = this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt').trim();
+    const merchantName = this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop').trim();
+    const merchantCity = this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh').trim();
+    const apiUrl = this.config.get<string>('BAKONG_API_URL', 'https://api-bakong.nbc.gov.kh').replace(/\\/g, '').trim();
+    const values: Array<[string, string]> = [
+      ['bakong_api_enabled', 'true'],
+      ['bakong_account_id', accountId],
+      ['bakong_merchant_name', merchantName],
+      ['bakong_merchant_city', merchantCity],
+      ['company_city', merchantCity],
+      ['bakong_api_url', apiUrl],
+      ['payment_qr_expires_minutes', this.config.get<string>('PAYMENT_QR_EXPIRES_MINUTES', '10')],
+      ['usd_to_khr_rate', '4100'],
+      ['delivery_is_free', 'true'],
+      ['delivery_free_threshold', '0'],
+      ['delivery_default_fee', '1.50'],
+      ['delivery_methods', JSON.stringify([
+        { id: 'standard-express', name: 'Standard Express (Phnom Penh 1–2h)', price: 1.5, eta: '1–2 Hours', is_active: true, is_default: true },
+        { id: 'nationwide-provincial', name: 'Nationwide Provincial Delivery', price: 2.5, eta: '24–48 Hours', is_active: true, is_default: false },
+        { id: 'vip-same-day', name: 'VIP Instant Same-Day Delivery', price: 3.5, eta: '30–45 Mins', is_active: true, is_default: false },
+      ])],
+    ];
+    for (const [key, value] of values) await this.insertSetting(client, key, value);
+  }
+
+  private async seedFixtureCoupons(client: PoolClient): Promise<void> {
+    const coupons = [
+      ['WELCOME10', '10% OFF welcome coupon', 'percentage', 10, 10, 100],
+      ['MEGA20', '20% OFF orders above $50', 'percentage', 20, 50, 150],
+      ['KHQR5', '$5 OFF Bakong checkout', 'fixed', 5, 15, 5],
+      ['VIP30', '30% VIP discount', 'percentage', 30, 100, 250],
+    ] as const;
+    for (const [code, description, type, value, minimum, maximum] of coupons) {
+      await client.query(`
+        INSERT INTO coupons (code,description,discount_type,discount_value,min_order_amount,max_discount_amount,is_active,created_at,updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,true,NOW(),NOW())
+        ON CONFLICT (code) DO UPDATE SET description=EXCLUDED.description, discount_type=EXCLUDED.discount_type, discount_value=EXCLUDED.discount_value, min_order_amount=EXCLUDED.min_order_amount, max_discount_amount=EXCLUDED.max_discount_amount, is_active=true, updated_at=NOW()
+      `, [code, description, type, value, minimum, maximum]);
+    }
+  }
+
+  private async seedFixtureMerchantAccount(client: PoolClient, userId: number, sellerApplicationId: number): Promise<void> {
+    const accountId = this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt').trim();
+    const existing = await client.query<{ id: number }>('SELECT id FROM merchant_payment_accounts WHERE user_id=$1 AND seller_application_id=$2 LIMIT 1', [userId, sellerApplicationId]);
+    if (existing.rows[0]?.id) {
+      await client.query('UPDATE merchant_payment_accounts SET account_id=$1, merchant_name=$2, merchant_city=$3, currency=\'USD\', is_active=true, is_default=true, updated_at=NOW() WHERE id=$4', [accountId, this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh'), existing.rows[0].id]);
+      return;
+    }
+    await client.query(`
+      INSERT INTO merchant_payment_accounts (user_id,seller_application_id,account_type,bank_name,account_id,merchant_name,merchant_city,currency,is_default,is_active,verified_at,created_at,updated_at)
+      VALUES ($1,$2,'bakong','Bakong',$3,$4,$5,'USD',true,true,NOW(),NOW(),NOW())
+    `, [userId, sellerApplicationId, accountId, this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh')]);
+  }
+
+  private async seedFixtureGlobalMerchantAccount(client: PoolClient): Promise<void> {
+    const accountId = this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt').trim();
+    const existing = await client.query<{ id: number }>('SELECT id FROM merchant_payment_accounts WHERE user_id IS NULL AND seller_application_id IS NULL ORDER BY is_default DESC, id DESC LIMIT 1');
+    const values = [accountId, this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh')];
+    if (existing.rows[0]?.id) {
+      await client.query('UPDATE merchant_payment_accounts SET account_id=$1, merchant_name=$2, merchant_city=$3, currency=\'USD\', is_active=true, is_default=true, updated_at=NOW() WHERE id=$4', [...values, existing.rows[0].id]);
+      return;
+    }
+    await client.query(`
+      INSERT INTO merchant_payment_accounts (user_id,seller_application_id,account_type,bank_name,account_id,merchant_name,merchant_city,currency,is_default,is_active,verified_at,created_at,updated_at)
+      VALUES (NULL,NULL,'bakong','Bakong',$1,$2,$3,'USD',true,true,NOW(),NOW(),NOW())
+    `, values);
+  }
+
+  private async seedFixtureOrder(client: PoolClient, userId: number, product: { id: number; name: string; sku: string; price: number | string; discount_price: number | string | null }, orderNumber: string, status: string, paymentStatus: string, paymentMethod: string, total: number, eta: string, notes: string): Promise<number | null> {
+    const email = (await client.query<{ email: string }>('SELECT email FROM users WHERE id=$1 LIMIT 1', [userId])).rows[0]?.email ?? 'demo.customer@tyushop.blog';
+    const order = await client.query<{ id: number }>(`
+      INSERT INTO orders (order_number,user_id,driver_id,status,subtotal,discount,coupon_code,points_earned,points_redeemed,shipping_fee,tax,total_amount,currency,payment_status,payment_method,customer_name,customer_email,customer_phone,delivery_address,notes,dest_lat,dest_lng,current_lat,current_lng,driver_name,driver_phone,driver_vehicle,estimated_arrival,created_at,updated_at)
+      VALUES ($1,$2,$2,$3,$4,0,NULL,5,0,0,0,$4,'USD',$5,$6,'Demo Customer',$7,'+855 12 888 002','BKK1, Street 310, Chamkarmon, Phnom Penh, Cambodia',$8,11.5564,104.9282,11.5510,104.9315,'Sokha Chan (TYUSHOP Express GPS Courier)','+855 12 889 900','Honda PCX Electric • PP 1AB-9988',$9,NOW(),NOW())
+      ON CONFLICT (order_number) DO UPDATE SET user_id=EXCLUDED.user_id,driver_id=EXCLUDED.driver_id,status=EXCLUDED.status,subtotal=EXCLUDED.subtotal,total_amount=EXCLUDED.total_amount,payment_status=EXCLUDED.payment_status,payment_method=EXCLUDED.payment_method,customer_email=EXCLUDED.customer_email,notes=EXCLUDED.notes,estimated_arrival=EXCLUDED.estimated_arrival,updated_at=NOW()
+      RETURNING id
+    `, [orderNumber, userId, status, total, paymentStatus, paymentMethod, email, notes, eta]);
+    const orderId = order.rows[0]?.id;
+    if (!orderId) return null;
+
+    await client.query('DELETE FROM receipts WHERE order_id=$1', [orderId]);
+    await client.query('DELETE FROM payments WHERE order_id=$1', [orderId]);
+    await client.query('DELETE FROM order_items WHERE order_id=$1', [orderId]);
+    const unitPrice = Number(product.discount_price ?? product.price);
+    await client.query('INSERT INTO order_items (order_id,product_id,product_name,product_sku,quantity,unit_price,total_price,created_at,updated_at) VALUES ($1,$2,$3,$4,1,$5,$5,NOW(),NOW())', [orderId, product.id, product.name, product.sku, unitPrice]);
+    const transaction = `SEED-TXN-${orderNumber.replace(/[^A-Z0-9]/g, '')}`;
+    const payment = await client.query<{ id: number }>(`
+      INSERT INTO payments (order_id,transaction_reference,payment_method,amount,currency,status,khqr_string,khqr_md5,merchant_account,merchant_name,merchant_city,verified_at,created_at,updated_at)
+      VALUES ($1,$2,$3,$4,'USD',$5,NULL,NULL,$6,$7,$8,$9,NOW(),NOW()) RETURNING id
+    `, [orderId, transaction, paymentMethod, total, paymentStatus === 'paid' ? 'completed' : (paymentMethod === 'cash_on_delivery' ? 'pending_arrival' : 'pending_qr'), this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'), this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh'), paymentStatus === 'paid' ? new Date() : null]);
+    const paymentId = payment.rows[0]?.id;
+    if (paymentId) await client.query('INSERT INTO receipts (order_id,payment_id,receipt_number,email_status,issued_at,created_at,updated_at) VALUES ($1,$2,$3,\'sent\',NOW(),NOW(),NOW())', [orderId, paymentId, `REC-SEED-${orderNumber.replace(/[^A-Z0-9]/g, '')}`]);
+    return orderId;
+  }
+
+  private async seedFixtureTelegram(client: PoolClient, userId: number): Promise<void> {
+    const account = await client.query<{ id: number }>(`
+      INSERT INTO telegram_accounts (user_id,telegram_user_id,telegram_username,first_name,last_name,language_code,is_bot_admin,linked_at,created_at,updated_at)
+      VALUES ($1,990000001,'tyushop_demo','Demo','Customer','en',false,NOW(),NOW(),NOW())
+      ON CONFLICT (telegram_user_id) DO UPDATE SET user_id=EXCLUDED.user_id,telegram_username=EXCLUDED.telegram_username,updated_at=NOW()
+      RETURNING id
+    `, [userId]);
+    const accountId = account.rows[0]?.id;
+    if (!accountId) return;
+    const existingSession = await client.query<{ id: number }>(`SELECT id FROM telegram_chat_sessions WHERE telegram_account_id=$1 AND context_data->>'seeded'='true' LIMIT 1`, [accountId]);
+    const sessionId = existingSession.rows[0]?.id ?? (await client.query<{ id: number }>(`INSERT INTO telegram_chat_sessions (telegram_account_id,session_type,context_data,created_at,updated_at) VALUES ($1,'customer',$2,NOW(),NOW()) RETURNING id`, [accountId, JSON.stringify({ seeded: true, route: '/products' })])).rows[0]?.id;
+    if (sessionId) {
+      await client.query('DELETE FROM telegram_ai_messages WHERE session_id=$1', [sessionId]);
+      await client.query(`INSERT INTO telegram_ai_messages (session_id,sender,message,created_at,updated_at) VALUES ($1,'assistant','Welcome to the TYUSHOP demo support session.',NOW(),NOW())`, [sessionId]);
+    }
+    await client.query(`DELETE FROM telegram_notifications WHERE chat_id=990000001 AND notification_type='seed_demo'`);
+    await client.query(`INSERT INTO telegram_notifications (user_id,chat_id,notification_type,delivery_status,payload,sent_at,created_at,updated_at) VALUES ($1,990000001,'seed_demo','sent',$2,NOW(),NOW(),NOW())`, [userId, JSON.stringify({ seeded: true })]);
   }
 
   private async seedDemoUser(client: PoolClient, email: string, password: string, name: string, phone: string, roleSlug: string): Promise<number | null> {
@@ -397,7 +607,7 @@ export class SeedService {
   }
 
   private async tableCounts(client: PoolClient): Promise<SeedCounts> {
-    const names: Array<keyof SeedCounts> = ['roles', 'permissions', 'categories', 'brands', 'products', 'banners', 'store_settings', 'seeder_runs'];
+    const names: Array<keyof SeedCounts> = ['users', 'roles', 'permissions', 'categories', 'brands', 'products', 'inventories', 'inventory_movements', 'orders', 'order_items', 'payments', 'coupons', 'seller_applications', 'merchant_payment_accounts', 'support_tickets', 'wishlists', 'banners', 'store_settings', 'seeder_runs'];
     const counts = {} as SeedCounts;
     for (const name of names) {
       const result = await client.query<{ count: string }>(`SELECT COUNT(*)::int AS count FROM ${name}`);
@@ -412,5 +622,9 @@ export class SeedService {
 
   private slug(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  private enabled(key: string): boolean {
+    return ['true', '1', 'yes', 'on'].includes(this.config.get<string>(key, 'false').trim().toLowerCase());
   }
 }

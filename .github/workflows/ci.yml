@@ -132,7 +132,7 @@ jobs:
       - name: Build Production Frontend Assets
         working-directory: frontend
         env:
-          VITE_API_BASE_URL: https://nestjs-api-production-b0523d97.up.railway.app/api/v1
+          VITE_API_BASE_URL: https://api.tyushop.blog/api/v1
           VITE_APP_URL: https://tyushop.blog
         run: npm run build
 

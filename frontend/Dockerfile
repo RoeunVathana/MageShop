@@ -8,7 +8,7 @@ RUN if [ -d "/app/frontend" ]; then cp -r /app/frontend/* /app/ && rm -rf /app/f
 
 RUN npm install
 
-ARG VITE_API_BASE_URL="https://nestjs-api-production-b0523d97.up.railway.app/api/v1"
+ARG VITE_API_BASE_URL="https://api.tyushop.blog/api/v1"
 ARG VITE_APP_URL="https://tyushop.blog"
 ARG FRONTEND_BUILD_ID="20261115-nest-api-cutover"
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL

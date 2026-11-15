@@ -1,7 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiErrorResponse } from '@/types/api.types'
 
-const DEFAULT_NESTJS_API_BASE_URL = 'https://nestjs-api-production-b0523d97.up.railway.app/api/v1'
+const DEFAULT_NESTJS_API_BASE_URL = 'https://api.tyushop.blog/api/v1'
 
 const normalizeBaseUrl = (value: string): string => value.replace(/\/+$/, '')
 

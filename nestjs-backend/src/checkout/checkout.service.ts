@@ -360,16 +360,17 @@ export class CheckoutService {
     const amountText = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
     const tag29Value = `00${merchant.account_id.length.toString().padStart(2, '0')}${merchant.account_id}`;
     const tag29 = `29${tag29Value.length.toString().padStart(2, '0')}${tag29Value}`;
-    // KHQR dynamic individual payloads follow the NBC order: 29, 52, 53,
-    // 54, 58, 59, 60, 99, then the optional additional-data template 62.
-    // Tag 99 contains one 13-digit creation timestamp (not a creation and
-    // expiry pair). The previous payload put 62 before 99 and encoded two
-    // timestamps, which caused bank scanners to reject the QR as invalid.
-    const tag99Value = `0013${Date.now()}`;
-    const tag99 = `99${tag99Value.length.toString().padStart(2, '0')}${tag99Value}`;
+    // Keep the payload byte-for-byte compatible with the Laravel checkout
+    // implementation. Dynamic KHQR requires both creation and expiration
+    // timestamps in tag 99; a single timestamp can be rendered as a QR image
+    // but is rejected by the Bakong scanner as an invalid code.
     const tag62Value = `01${orderNumber.length.toString().padStart(2, '0')}${orderNumber}`;
     const tag62 = `62${tag62Value.length.toString().padStart(2, '0')}${tag62Value}`;
-    const payload = `000201010212${tag29}52045999530384054${amountText.length.toString().padStart(2, '0')}${amountText}5802KH59${merchant.merchant_name.length.toString().padStart(2, '0')}${merchant.merchant_name}60${merchant.merchant_city.length.toString().padStart(2, '0')}${merchant.merchant_city}${tag99}${tag62}6304`;
+    const creationMs = String(Date.now());
+    const expirationMs = String(Date.now() + this.qrExpirySeconds(settings) * 1000);
+    const tag99Value = `0013${creationMs}0113${expirationMs}`;
+    const tag99 = `99${tag99Value.length.toString().padStart(2, '0')}${tag99Value}`;
+    const payload = `000201010212${tag29}52045999530384054${amountText.length.toString().padStart(2, '0')}${amountText}5802KH59${merchant.merchant_name.length.toString().padStart(2, '0')}${merchant.merchant_name}60${merchant.merchant_city.length.toString().padStart(2, '0')}${merchant.merchant_city}${tag62}${tag99}6304`;
     const qrString = `${payload}${this.crc(payload)}`;
     return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, merchant_source: merchant.source ?? 'admin', seller_id: merchant.seller_id ?? null, amount_usd: amount, amount_khr: Math.round(amount * this.exchangeRate(settings)), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: this.qrExpirySeconds(settings) };
   }
