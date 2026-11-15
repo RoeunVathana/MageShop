@@ -918,7 +918,9 @@ class TelegramService
             $receipt = $receipt ?: $order->receipt;
 
             $totalUsd = number_format((float) $order->total_amount, 2);
-            $totalKhr = number_format((float) round((float) $order->total_amount * 4100));
+            $rate = (float) StoreSetting::get('usd_to_khr_rate', 4100);
+            $rate = $rate > 0 ? $rate : 4100;
+            $totalKhr = number_format((float) round((float) $order->total_amount * $rate));
             $methodLabel = strtoupper(str_replace('_', ' ', (string) ($order->payment_method ?: 'BAKONG KHQR')));
             $isPaid = ($order->payment_status === 'paid');
             $statusBadge = $isPaid ? '✅ PAID & VERIFIED' : '💵 CASH ON DELIVERY (COD)';
@@ -956,7 +958,7 @@ class TelegramService
             $lines[] = '';
             $lines[] = '🎁 Loyalty Points: +'.((int) ($order->points_earned ?? 5)).' pts';
             $lines[] = '🚚 GPS Tracking: https://tyushop.blog/track-order/'.$order->order_number;
-            $lines[] = '🕒 Time: '.now()->format('Y-m-d H:i:s');
+            $lines[] = '🕒 Time: '.now('Asia/Phnom_Penh')->format('Y-m-d H:i:s');
 
             $messageText = implode("\n", $lines);
 
@@ -982,7 +984,9 @@ class TelegramService
 
             $dispatched = false;
             foreach ($targetChatIds as $chatId) {
-                $resp = $this->sendMessage($chatId, $messageText);
+                $resp = $this->sendMessage($chatId, $messageText, [
+                    'disable_web_page_preview' => true,
+                ]);
                 if ($resp && ! empty($resp['ok'])) {
                     $dispatched = true;
                 }

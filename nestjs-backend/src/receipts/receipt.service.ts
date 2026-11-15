@@ -138,6 +138,8 @@ export class ReceiptService {
     const receipt = await this.ensureReceipt(order.id);
     const items = await this.items(order.id);
     const payment = await this.payment(order.id);
+    const paymentStatus = String(payment?.status ?? order.payment_status ?? '').toLowerCase();
+    if (!['paid', 'completed', 'verified'].includes(paymentStatus)) return false;
     const delivered = order.customer_email ? await this.sendEmail(order, receipt, payment, true, items) : false;
     if (order.customer_email) await this.updateEmailStatus(receipt.id, delivered ? 'sent' : 'failed', delivered);
     return this.notifyTelegram(order, receipt, payment);
@@ -226,13 +228,14 @@ export class ReceiptService {
     const itemLines = items.length
       ? items.map((item) => {
         const itemTotal = Number(item.total_price ?? 0);
-        const itemAmount = order.currency === 'USD' ? `$${itemTotal.toFixed(2)}` : `${itemTotal.toFixed(2)} ${order.currency ?? 'USD'}`;
+        const itemCurrency = String(order.currency ?? 'USD').toUpperCase();
+        const itemAmount = itemCurrency === 'USD' ? `$${itemTotal.toFixed(2)}` : `${itemTotal.toFixed(2)} ${itemCurrency}`;
         return `• ${String(item.quantity ?? 0)}x ${String(item.product_name ?? 'Product')} — ${itemAmount}`;
       }).join('\n')
       : '• No order items recorded';
     const customerPhone = String(order['customer_phone'] ?? '-');
     const deliveryAddress = String(order['delivery_address'] ?? '-');
-    const trackingUrl = `https://www.tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
+    const trackingUrl = `https://tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
     const issuedAt = this.reportTimestamp(order.updated_at ?? order.created_at ?? Date.now());
     const currency = String(order.currency ?? 'USD').toUpperCase();
     const totalText = currency === 'USD' ? `$${amount.toFixed(2)} USD` : `${amount.toFixed(2)} ${currency}`;
@@ -255,41 +258,33 @@ export class ReceiptService {
       '📦 ORDER ITEMS',
       itemLines,
       '',
-      `🎁 Loyalty Points: +${Number(order['points_earned'] ?? 0)} pts`,
+      `🎁 Loyalty Points: +${Number(order['points_earned'] ?? 5)} pts`,
       `🚚 GPS Tracking: ${trackingUrl}`,
       `🕒 Time: ${issuedAt}`,
     ].join('\n');
-    const photo = this.config.get<string>('TELEGRAM_REPORT_IMAGE_URL', 'https://tyushop.blog/logo.png');
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        const caption = message.length <= 1024
-          ? message
-          : `🚨 TYUSHOP — PAYMENT & ORDER REPORT\n🧾 Order ID: #${order.order_number}\n📄 Receipt No: #${receipt.receipt_number}\n📌 Status: ${paymentStatus}`;
-        const photoResponse = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, photo, caption }),
-          signal: controller.signal,
-        });
-        if (photoResponse.ok && message.length <= 1024) return true;
-        if (photoResponse.ok && message.length > 1024) {
-          const fullReportResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
-            signal: controller.signal,
-          });
-          return fullReportResponse.ok;
-        }
-        const fallbackResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        const messageResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
           signal: controller.signal,
         });
-        return fallbackResponse.ok;
+        if (messageResponse.ok) return true;
+
+        // Keep the report deliverable if Telegram rejects the text request
+        // but a configured branding image is available.
+        const photo = this.config.get<string>('TELEGRAM_REPORT_IMAGE_URL', 'https://tyushop.blog/logo.png');
+        if (!photo) return false;
+        const photoResponse = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, photo, caption: message.slice(0, 1024) }),
+          signal: controller.signal,
+        });
+        return photoResponse.ok;
       } finally { clearTimeout(timeout); }
     } catch { return false; }
   }
