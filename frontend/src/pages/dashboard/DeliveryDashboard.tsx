@@ -1147,8 +1147,8 @@ export function DeliveryDashboard() {
           <div className="lg:col-span-7 space-y-6">
             <Card className="rounded-2xl border-2 border-indigo-500/30 overflow-hidden bg-white dark:bg-slate-900 shadow-xl">
               {/* Map Header Bar */}
-              <div className="bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2">
+              <div className="gps-map-header bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="gps-map-coordinates flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <span className="font-mono font-bold text-emerald-400">
                     TARGET: {destLat.toFixed(4)}° N, {destLng.toFixed(4)}° E
@@ -1156,7 +1156,7 @@ export function DeliveryDashboard() {
                   <span className="text-slate-400">|</span>
                   <span className="font-bold text-slate-200">#{selectedOrder.order_number}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="gps-map-actions flex items-center gap-2">
                   <Badge className="bg-indigo-600 text-white text-[10px]">
                     ETA ~{selectedOrder.estimated_arrival || '—'}
                   </Badge>
@@ -1172,12 +1172,13 @@ export function DeliveryDashboard() {
               </div>
 
               {/* Dynamic OpenStreetMap Embed */}
-              <div className="relative h-80 sm:h-96 w-full bg-slate-950">
+              <div className="gps-map-viewport relative aspect-[4/3] min-h-[18rem] sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem] w-full bg-slate-950">
                 {mapEmbedUrl ? (
                   <iframe
                     title="Staff Fleet Location Live Map"
                     src={mapEmbedUrl}
-                    className="w-full h-full border-0 opacity-85 contrast-110"
+                    loading="lazy"
+                    className="gps-map-frame w-full h-full border-0 opacity-85 contrast-110"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
@@ -1186,19 +1187,19 @@ export function DeliveryDashboard() {
                 )}
 
                 {/* Destination Pin Overlay */}
-                <div className="absolute top-4 left-4 right-4 pointer-events-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-2xl border border-emerald-500/40 shadow-xl flex items-center gap-3">
+                <div className="gps-map-top-overlay absolute top-4 left-4 right-4 pointer-events-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="gps-map-destination-card bg-slate-900/90 backdrop-blur-md text-white p-3 rounded-2xl border border-emerald-500/40 shadow-xl flex items-center gap-3 max-w-full sm:max-w-[62%]">
                     <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                       <MapPin className="w-4 h-4" />
                     </div>
-                    <div className="text-xs min-w-0">
-                      <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <div className="min-w-0 text-xs">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5 font-bold text-emerald-400">
                         <span>Customer Location Target</span>
-                        <span className="text-[10px] text-slate-300 font-normal">
+                        <span className="text-[10px] text-slate-300 font-normal break-words">
                           ({selectedOrder.customer_name})
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-300 truncate max-w-xs mt-0.5 font-medium">
+                      <p className="mt-0.5 max-w-full truncate text-[11px] font-medium text-slate-300 sm:max-w-xs">
                         {selectedOrder.delivery_address}
                       </p>
                     </div>
@@ -1208,7 +1209,7 @@ export function DeliveryDashboard() {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="pointer-events-auto self-start sm:self-auto px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
+                    className="gps-map-navigation pointer-events-auto self-start sm:self-auto px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
                   >
                     <span>Google Maps Navigation</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -1217,19 +1218,19 @@ export function DeliveryDashboard() {
 
                 {/* Active Delivering Telemetry Banner */}
                 {isContinuousDelivering && (
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white/40 flex items-center gap-2.5 text-xs font-bold animate-pulse pointer-events-none z-10">
+                  <div className="gps-map-live-banner absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl border-2 border-white/40 flex items-center gap-2.5 text-xs font-bold animate-pulse pointer-events-none z-10">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                     <span>DELIVERING ACTIVE • LIVE GPS STREAMING TO CUSTOMER</span>
                   </div>
                 )}
 
                 {/* Warehouse Origin Pin at Bottom */}
-                <div className="absolute bottom-4 left-4 right-4 pointer-events-none flex items-center justify-between text-xs">
-                  <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
+                <div className="gps-map-bottom-overlay absolute bottom-4 left-4 right-4 pointer-events-none flex items-center justify-between text-xs">
+                  <div className="gps-map-origin bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
                     <Package className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Origin: TYUSHOP Central Hub (Phnom Penh)</span>
                   </div>
-                  <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold shadow-md">
+                  <div className="gps-map-status bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold shadow-md">
                     Courier GPS: {selectedOrder.current_lat == null || selectedOrder.current_lng == null ? 'Waiting' : 'Connected'}
                   </div>
                 </div>

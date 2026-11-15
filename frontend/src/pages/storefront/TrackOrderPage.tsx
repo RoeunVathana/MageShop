@@ -250,8 +250,8 @@ export function TrackOrderPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden border-2 border-primary/20 shadow-xl">
             {/* Top Telemetry Bar */}
-            <div className="bg-slate-900 text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
+            <div className="gps-telemetry-bar bg-slate-900 text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="gps-telemetry-primary flex items-center gap-2">
                 <Compass className="w-4 h-4 text-emerald-400 animate-spin" />
                 <span className="font-mono font-bold text-emerald-400">
                   GPS: {liveLat}° N, {liveLng}° E
@@ -259,7 +259,7 @@ export function TrackOrderPage() {
                 <span className="text-slate-400">|</span>
                 <span className="text-slate-200">{t('Order #', 'លេខកូដ #')}{tracking?.order_number || activeOrderNum}</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="gps-telemetry-secondary flex items-center gap-3">
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
                    {t('Speed', 'ល្បឿន')}: {tracking?.gps?.speed_kmh ?? '—'} km/h
                 </span>
@@ -275,13 +275,14 @@ export function TrackOrderPage() {
             </div>
 
             {/* Interactive Map Viewport + Animated Courier Overlay */}
-            <div className="relative h-80 sm:h-96 w-full bg-slate-950 overflow-hidden">
+            <div className="gps-map-viewport relative aspect-[4/3] min-h-[18rem] sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem] w-full bg-slate-950 overflow-hidden">
               {/* Dynamic OpenStreetMap Embed Centered on Customer Delivery Destination */}
               {hasMapCoordinates ? (
                 <iframe
                   title="TYUSHOP Real-Time Delivery GPS Map"
                   src={osmEmbedUrl}
-                  className="w-full h-full border-0 opacity-85 contrast-110"
+                  loading="lazy"
+                  className="gps-map-frame w-full h-full border-0 opacity-85 contrast-110"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
@@ -290,27 +291,27 @@ export function TrackOrderPage() {
               )}
 
               {/* Animated Route Vector & Live Courier Pin Overlay */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
+              <div className="gps-map-track-overlay absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
                 {/* Destination Pin (Top Left/Center) */}
-                <div className="flex items-center justify-between">
-                  <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl border border-emerald-500/40 shadow-lg flex items-center gap-2.5">
+                <div className="gps-map-track-top flex items-center justify-between gap-3">
+                  <div className="gps-map-track-destination bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl border border-emerald-500/40 shadow-lg flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
                       <MapPin className="w-4 h-4" />
                     </div>
-                    <div className="text-xs">
-                      <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <div className="min-w-0 text-xs">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5 font-bold text-emerald-400">
                         <span>{t('Customer Destination', 'ទីតាំងទទួលរបស់អតិថិជន')}</span>
                         <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                           {dstLat.toFixed(4)}° N, {dstLng.toFixed(4)}° E
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-300 max-w-xs truncate font-medium">
+                      <div className="gps-map-track-address max-w-xs truncate text-[11px] font-medium text-slate-300">
                          {tracking?.delivery_address || t('Delivery address unavailable', 'មិនមានអាសយដ្ឋានដឹកជញ្ជូន')}
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl border border-amber-500/40 shadow-lg text-xs">
+                  <div className="gps-map-track-reward bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl border border-amber-500/40 shadow-lg text-xs">
                     <div className="text-[10px] uppercase text-amber-300 font-bold">{t('Loyalty Reward', 'រង្វាន់ពិន្ទុ')}</div>
                     <div className="font-bold flex items-center gap-1">
                       <Award className="w-3.5 h-3.5 text-amber-400" />
@@ -320,7 +321,7 @@ export function TrackOrderPage() {
                 </div>
 
                 {/* Live Moving Courier Track Bar on Map */}
-                <div className="my-auto mx-4 sm:mx-12 relative">
+                <div className="gps-map-route-progress my-auto mx-4 sm:mx-12 relative">
                   <div className="h-3 rounded-full bg-slate-900/80 border border-white/20 p-0.5 backdrop-blur">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-primary to-emerald-400 transition-all duration-700"
@@ -341,12 +342,12 @@ export function TrackOrderPage() {
                 </div>
 
                 {/* Warehouse Origin Pin (Bottom Right) */}
-                <div className="flex items-center justify-between">
-                  <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/15 text-[11px] flex items-center gap-2">
+                <div className="gps-map-track-bottom flex items-center justify-between gap-3">
+                  <div className="gps-map-origin bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/15 text-[11px] flex items-center gap-2">
                     <Package className="w-3.5 h-3.5 text-indigo-400" />
                     <span>{t('Origin: TYUSHOP Phnom Penh Fulfillment Hub', 'ចេញពី៖ មជ្ឈមណ្ឌលចែកចាយ TYUSHOP រាជធានីភ្នំពេញ')}</span>
                   </div>
-                  <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-1.5">
+                  <div className="gps-map-status bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     {t('Arriving in ~', 'មកដល់ក្នុងរង្វង់ ~')}{etaMins} {t('mins', 'នាទី')}
                   </div>

@@ -172,6 +172,8 @@ html.khmer-mode body {
   font-size: 1rem;
   line-height: 1.78 !important;
   font-weight: 400;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
 }
 
 /* One consistent Khmer rhythm across storefront, auth, dashboard, and
@@ -180,6 +182,13 @@ html.khmer-mode body {
 html[lang="km"] :where(p, li, label, th, td, dt, dd, button, [role="button"], a),
 html.khmer-mode :where(p, li, label, th, td, dt, dd, button, [role="button"], a) {
   line-height: 1.65;
+}
+
+/* Khmer is clearer with a little more vertical breathing room, but controls
+   should remain compact. This keeps buttons and pills easy to scan on phones. */
+html[lang="km"] :where(button, [role="button"], input, select),
+html.khmer-mode :where(button, [role="button"], input, select) {
+  line-height: 1.45 !important;
 }
 
 html[lang="km"] :where(h1, h2, h3, h4, h5, h6),
@@ -523,6 +532,43 @@ html.khmer-mode .dashboard-shell .text-xs {
 html[lang="km"] .dashboard-shell,
 html.khmer-mode .dashboard-shell {
   font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang', 'Plus Jakarta Sans', sans-serif !important;
+  line-height: 1.55;
+}
+
+/* Navigation labels are allowed to wrap naturally. Keeping only the label
+   flexible prevents long Khmer words from pushing icons and badges outside
+   the sidebar or mobile drawer. */
+html[lang="km"] .dashboard-shell .dashboard-nav-link,
+html.khmer-mode .dashboard-shell .dashboard-nav-link {
+  font-size: 0.96rem !important;
+  line-height: 1.45 !important;
+  min-height: 3rem;
+}
+
+html[lang="km"] .dashboard-shell .dashboard-nav-label,
+html.khmer-mode .dashboard-shell .dashboard-nav-label {
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere;
+}
+
+html[lang="km"] .dashboard-shell .dashboard-nav-badge,
+html.khmer-mode .dashboard-shell .dashboard-nav-badge {
+  font-size: 0.7rem !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+}
+
+html[lang="km"] .dashboard-breadcrumb,
+html.khmer-mode .dashboard-breadcrumb {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+html[lang="km"] .dashboard-breadcrumb-role,
+html.khmer-mode .dashboard-breadcrumb-role {
+  line-height: 1.45;
 }
 
 .dashboard-shell table {
@@ -631,6 +677,211 @@ html.khmer-mode .dashboard-shell .dashboard-data-table {
   word-break: keep-all;
   overflow-wrap: normal;
   line-height: 1.2;
+}
+
+/* Responsive GPS map surfaces. The iframe must own the full media frame while
+   readable overlay cards stack inside it on narrow screens instead of forcing
+   horizontal page scrolling. */
+.gps-map-viewport {
+  min-width: 0;
+  isolation: isolate;
+}
+
+.gps-map-frame {
+  display: block;
+  min-width: 0;
+  min-height: 100%;
+}
+
+.gps-map-destination-card,
+.gps-map-track-destination,
+.gps-map-track-reward,
+.gps-map-origin,
+.gps-map-status {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gps-map-live-banner {
+  max-width: calc(100% - 2rem);
+  text-align: center;
+}
+
+.gps-map-origin,
+.gps-map-status {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .gps-map-header {
+    align-items: flex-start;
+    padding: 0.7rem 0.75rem !important;
+    gap: 0.55rem !important;
+  }
+
+  .gps-map-coordinates {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+  }
+
+  .gps-map-coordinates .font-mono {
+    max-width: 100%;
+    font-size: 0.62rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .gps-map-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .gps-map-actions > * {
+    min-width: 0;
+  }
+
+  .gps-map-viewport {
+    min-height: 19rem;
+  }
+
+  .gps-map-top-overlay {
+    top: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    gap: 0.55rem;
+  }
+
+  .gps-map-destination-card {
+    width: 100%;
+    padding: 0.65rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .gps-map-destination-card .text-xs {
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .gps-map-destination-card p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .gps-map-navigation {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .gps-map-live-banner {
+    left: 0.75rem;
+    right: 0.75rem;
+    transform: none;
+    max-width: none;
+    justify-content: center;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.62rem !important;
+    line-height: 1.35 !important;
+    white-space: normal;
+  }
+
+  .gps-map-bottom-overlay {
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .gps-map-origin,
+  .gps-map-status {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.65rem;
+    line-height: 1.35;
+  }
+
+  .gps-telemetry-bar {
+    align-items: flex-start;
+    padding: 0.7rem 0.75rem !important;
+  }
+
+  .gps-telemetry-primary {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+  }
+
+  .gps-telemetry-primary .font-mono {
+    max-width: 100%;
+    font-size: 0.62rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .gps-telemetry-secondary {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.35rem !important;
+  }
+
+  .gps-telemetry-secondary > span {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .gps-map-track-overlay {
+    padding: 0.75rem !important;
+  }
+
+  .gps-map-track-top,
+  .gps-map-track-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .gps-map-track-destination,
+  .gps-map-track-reward {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.65rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .gps-map-track-destination .text-xs,
+  .gps-map-track-reward .text-xs {
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .gps-map-track-address {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .gps-map-route-progress {
+    margin-inline: 0 !important;
+  }
+
+  .gps-map-route-progress .bg-primary {
+    max-width: 100%;
+  }
 }
 
 /* Storefront highlight cards: keep the title and status chip readable in
@@ -812,6 +1063,27 @@ html[lang="km"] .bilingual-badge {
 
   .dashboard-topbar .theme-toggle {
     display: none;
+  }
+
+  .dashboard-topbar .dashboard-breadcrumb {
+    gap: 0.25rem;
+    max-width: 9.5rem;
+  }
+
+  .dashboard-topbar .dashboard-breadcrumb-role {
+    max-width: 7rem;
+  }
+
+  .dashboard-topbar .dashboard-breadcrumb-page {
+    display: none;
+  }
+
+  html[lang="km"] .dashboard-topbar .dashboard-breadcrumb {
+    font-size: 0.72rem;
+  }
+
+  html[lang="km"] .dashboard-topbar .dashboard-breadcrumb-role {
+    max-width: 6.5rem;
   }
 
   .dashboard-shell .dashboard-table-scroll {

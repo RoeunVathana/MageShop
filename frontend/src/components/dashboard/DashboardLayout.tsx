@@ -71,6 +71,22 @@ const DASHBOARD_ROLES_KM: Record<string, string> = {
   'Warehouse Hub': 'មជ្ឈមណ្ឌលឃ្លាំង',
 }
 
+const DASHBOARD_PAGE_LABELS_KM: Record<string, string> = {
+  dashboard: 'ទិដ្ឋភាពទូទៅ',
+  admin: 'គ្រប់គ្រង',
+  seller: 'អ្នកលក់',
+  staff: 'បុគ្គលិក',
+  delivery: 'ដឹកជញ្ជូន',
+  warehouse: 'ឃ្លាំង',
+  products: 'មុខទំនិញ',
+  orders: 'ការបញ្ជាទិញ',
+  users: 'អ្នកប្រើប្រាស់',
+  vendors: 'អ្នកលក់',
+  settings: 'ការកំណត់',
+  inventory: 'សារពើភ័ណ្ឌ',
+  profile: 'ប្រវត្តិរូប',
+}
+
 interface DashboardLayoutProps {
   roleTitle: string
   roleTitleKm?: string
@@ -95,6 +111,13 @@ export function DashboardLayout({
   const { toast } = useToast()
   const { t, language } = useShopEngagement()
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser())
+  const localizedRoleTitle = language === 'KM'
+    ? roleTitleKm || DASHBOARD_ROLES_KM[roleTitle] || roleTitle
+    : roleTitle
+  const currentPageKey = location.pathname.split('/').filter(Boolean).pop() || 'dashboard'
+  const localizedPageTitle = language === 'KM'
+    ? DASHBOARD_PAGE_LABELS_KM[currentPageKey] || currentPageKey
+    : currentPageKey === 'dashboard' ? 'Overview' : currentPageKey
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -143,7 +166,7 @@ export function DashboardLayout({
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
           <div className="flex items-center gap-2.5 mt-1.5 min-w-0">
-            <span className={cn('text-sm font-bold truncate min-w-0', roleColor)} title={roleTitle}>{t(roleTitle, roleTitleKm || DASHBOARD_ROLES_KM[roleTitle] || roleTitle)}</span>
+            <span className={cn('text-sm font-bold truncate min-w-0', roleColor)} title={localizedRoleTitle}>{localizedRoleTitle}</span>
             <Badge
               variant="outline"
               className="shrink-0 text-[11px] rounded-md border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1 px-2 py-1"
@@ -173,7 +196,7 @@ export function DashboardLayout({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Icon className="w-5 h-5 shrink-0" />
-                  <span className="min-w-0 flex-1 leading-7 whitespace-normal break-keep">{displayLabel}</span>
+                  <span className="dashboard-nav-label min-w-0 flex-1 leading-7 whitespace-normal">{displayLabel}</span>
                 </div>
                 {displayBadge && (
                   <span className="dashboard-nav-badge shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-4 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -229,7 +252,7 @@ export function DashboardLayout({
 
             <div className="py-3.5 border-b border-slate-200 dark:border-slate-800">
               <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">{t('Workspace', 'កន្លែងធ្វើការ')}</p>
-              <p className={cn('text-sm font-bold mt-1', roleColor)}>{roleTitle}</p>
+              <p className={cn('text-sm font-bold mt-1', roleColor)}>{localizedRoleTitle}</p>
             </div>
 
             <nav className="flex-1 py-5 space-y-1.5 overflow-y-auto">
@@ -252,7 +275,7 @@ export function DashboardLayout({
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="w-5 h-5" />
-                      <span className="min-w-0 flex-1 leading-7 break-keep">{displayLabel}</span>
+                      <span className="dashboard-nav-label min-w-0 flex-1 leading-7">{displayLabel}</span>
                     </div>
                     {displayBadge && (
                       <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-4 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -291,15 +314,15 @@ export function DashboardLayout({
             </Button>
 
             {/* Breadcrumb */}
-            <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <div className="dashboard-breadcrumb flex min-w-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <Link to="/" className="shrink-0 hover:text-indigo-600 transition-colors">
                 {t('Home', 'ទំព័រដើម')}
               </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="max-w-[12rem] truncate font-semibold text-slate-800 dark:text-slate-200">{roleTitle}</span>
+              <span className="dashboard-breadcrumb-role max-w-[12rem] truncate font-semibold text-slate-800 dark:text-slate-200">{localizedRoleTitle}</span>
               <ChevronRight className="w-3.5 h-3.5 hidden sm:inline" />
-              <span className="capitalize hidden max-w-[10rem] truncate sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
-                {location.pathname.split('/').pop() || 'Overview'}
+              <span className="dashboard-breadcrumb-page capitalize hidden max-w-[10rem] truncate sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
+                {localizedPageTitle}
               </span>
             </div>
           </div>
