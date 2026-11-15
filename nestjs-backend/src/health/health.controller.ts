@@ -2,12 +2,13 @@ import { Controller, Get, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 import { DatabaseService } from '../database/database.service';
+import { RedisService } from '../redis/redis.service';
 
 @Controller()
 export class HealthController {
   private readinessCache: { expiresAt: number; payload: Record<string, unknown>; statusCode: number } | null = null;
 
-  constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService, private readonly redis: RedisService) {}
 
   @Get('/up')
   up(): { status: string; service: string; runtime: string } {
@@ -54,7 +55,8 @@ export class HealthController {
         databaseLatency = Date.now() - start;
       }
     }
-    const healthy = databaseStatus === 'healthy';
+    const redis = await this.redis.ping();
+    const healthy = databaseStatus === 'healthy' && (!this.redis.configured || redis.status === 'healthy');
     const result = {
       payload: {
         status: healthy ? 'ok' : 'degraded',
@@ -62,8 +64,8 @@ export class HealthController {
         version: '1.0.0-nestjs',
         timestamp: new Date().toISOString(),
         dependencies: {
-          database: { driver: 'postgres', status: databaseStatus, latency_ms: databaseLatency, error: databaseError },
-          redis: { status: 'skipped_or_idle', latency_ms: 0, message: 'Redis is optional for this NestJS API.' },
+          database: { driver: 'postgres', status: databaseStatus, latency_ms: databaseLatency, error: databaseError, pool: this.database.poolStats },
+          redis,
           storage: { status: 'available' },
         },
       } as Record<string, unknown>,

@@ -5,6 +5,7 @@ import { createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual 
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
+import { N8nService } from '../n8n/n8n.service';
 import { ReceiptService } from '../receipts/receipt.service';
 
 interface ProductRow {
@@ -44,6 +45,7 @@ export class CheckoutService {
     private readonly config: ConfigService,
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly n8n: N8nService,
     private readonly receipts: ReceiptService,
   ) {}
 
@@ -229,6 +231,14 @@ export class CheckoutService {
       : this.receipts.generateAndSend(orderId, true);
     void notification.catch(() => undefined);
     const orderPayload = await this.orderPayload(orderId);
+    void this.n8n.dispatch('order.created', {
+      order_number: orderNumber,
+      order_id: orderId,
+      payment_method: paymentMethod,
+      payment_status: paymentStatus,
+      total_amount: totalAmount,
+      customer_email: customerEmailValue,
+    });
     const receipt = await this.database.query<{ receipt_number: string; email_status: string }>('SELECT receipt_number, email_status FROM receipts WHERE order_id = $1 LIMIT 1', [orderId]);
     const receiptRow = receipt.rows[0];
     return {

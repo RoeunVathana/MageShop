@@ -6,6 +6,7 @@ import type { PoolClient } from 'pg';
 import { AuthService } from '../auth/auth.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { N8nService } from '../n8n/n8n.service';
 import { ReceiptService } from '../receipts/receipt.service';
 
 interface OrderRow {
@@ -55,6 +56,7 @@ export class PaymentConfirmationService {
     private readonly config: ConfigService,
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly n8n: N8nService,
     private readonly receipts: ReceiptService,
   ) {}
 
@@ -143,12 +145,22 @@ export class PaymentConfirmationService {
     // delivery are retried as non-fatal side effects after the ledger commit.
     void this.receipts.notifyPayment(order.id).catch(() => undefined);
 
+    const settledOrder = await this.orderPayload(order.id);
+    void this.n8n.dispatch('payment.confirmed', {
+      order_number: order.order_number,
+      order_id: order.id,
+      transaction_reference: result.transactionReference,
+      payment_status: 'paid',
+      total_amount: Number(order.total_amount),
+      customer_email: order.customer_email,
+    });
+
     return {
       status: 'ok',
       message: `Payment verified & confirmed for Order #${orderNumber}! Receipt emailed to customer and report sent to Telegram Admin.`,
       data: {
         order_number: order.order_number,
-        order: await this.orderPayload(order.id),
+        order: settledOrder,
         receipt_number: result.receiptNumber,
         transaction_reference: result.transactionReference,
         email_status: 'pending',

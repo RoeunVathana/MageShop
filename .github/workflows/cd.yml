@@ -24,41 +24,44 @@ jobs:
       - name: Trigger Railway Redeployment (If Secret Provided)
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
-          if [ -n "${RAILWAY_TOKEN:-}" ]; then
-            echo "Installing Railway CLI and triggering production deployment..."
+          if [ -n "${RAILWAY_TOKEN:-}" ] && [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
+            echo "Installing Railway CLI and deploying NestJS + frontend..."
             npm install -g @railway/cli
-            railway redeploy --service nestjs-api -y || echo "Railway NestJS trigger handled via GitHub App"
-            railway redeploy --service frontend -y || echo "Railway trigger handled via GitHub App"
+            railway up ./nestjs-backend --path-as-root --project "$RAILWAY_PROJECT_ID" --service nestjs-api --environment production --detach --yes --message "CI/CD deploy NestJS API"
+            railway up --project "$RAILWAY_PROJECT_ID" --service frontend --environment production --detach --yes --message "CI/CD deploy frontend"
           else
-            echo "RAILWAY_TOKEN secret not set; relying on Railway GitHub App auto-deploy."
+            echo "RAILWAY_TOKEN or RAILWAY_PROJECT_ID is not set; relying on Railway GitHub App auto-deploy."
           fi
 
       - name: Wait For Production Containers To Settle
         run: |
-          echo "Allowing edge routes and background workers 10 seconds to settle..."
-          sleep 10
+          echo "Allowing edge routes and background workers 20 seconds to settle..."
+          sleep 20
 
       - name: Probe Live Backend Health Endpoint
         id: probe_health
         run: |
-          URLS=("https://nestjs-api-production-b0523d97.up.railway.app/api/v1/health")
+          URLS=("https://api.tyushop.blog/api/v1/health/ready" "https://nestjs-api-production-b0523d97.up.railway.app/api/v1/health/ready")
           SUCCESS=false
-          for url in "${URLS[@]}"; do
-            echo "Checking: $url"
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
-            echo "Response: $HTTP_CODE"
-            if [ "$HTTP_CODE" -eq 200 ]; then
-              BODY=$(curl -s --max-time 10 "$url")
+          for attempt in {1..12}; do
+            for url in "${URLS[@]}"; do
+              echo "Checking (attempt $attempt): $url"
+              BODY=$(curl -fsS --max-time 10 "$url" || true)
               echo "Body: $BODY"
-              SUCCESS=true
-              echo "endpoint=$url" >> "$GITHUB_OUTPUT"
-              break
-            fi
+              if echo "$BODY" | jq -e '.status == "ok" and .dependencies.database.status == "healthy" and (.dependencies.redis.status == "healthy" or .dependencies.redis.status == "unconfigured")' >/dev/null 2>&1; then
+                SUCCESS=true
+                echo "endpoint=$url" >> "$GITHUB_OUTPUT"
+                break 2
+              fi
+            done
+            sleep 5
           done
 
           if [ "$SUCCESS" != "true" ]; then
-            echo "::warning::Backend health probe did not return 200 within timeout."
+            echo "::error::NestJS readiness probe did not pass within timeout."
+            exit 1
           fi
 
       - name: Probe Live Product Catalog & Loyalty API
