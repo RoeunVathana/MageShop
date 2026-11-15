@@ -937,9 +937,9 @@ export function UserDirectoryPage() {
         {/* Interactive Role & Permission Assignment Modal */}
         {selectedMemberForRole && (
           <DashboardModal onClose={() => setSelectedMemberForRole(null)}>
-            <div className="dashboard-modal-panel relative w-full max-w-xl bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
+            <div className="dashboard-modal-panel relative flex min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-3xl border bg-card p-5 shadow-2xl sm:p-6 animate-in fade-in-0 zoom-in-95 duration-200">
               {/* Modal Header */}
-              <div className="flex items-start justify-between border-b pb-4">
+              <div className="flex shrink-0 items-start justify-between border-b pb-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
@@ -965,7 +965,8 @@ export function UserDirectoryPage() {
                 </Button>
               </div>
 
-              <form onSubmit={handleSaveRole} className="space-y-4">
+              <form onSubmit={handleSaveRole} className="flex min-h-0 flex-1 flex-col overflow-hidden pt-5">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
                 {/* 1. Select Role */}
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground">
@@ -1051,9 +1052,10 @@ export function UserDirectoryPage() {
                     })}
                   </div>
                 </div>
+                </div>
 
                 {/* Modal Actions */}
-                <div className="flex items-center justify-end gap-2 pt-4 border-t">
+                <div className="flex shrink-0 items-center justify-end gap-2 border-t bg-card pt-4">
                   <Button
                     type="button"
                     variant="ghost"
