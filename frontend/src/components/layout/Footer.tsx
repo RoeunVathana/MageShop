@@ -80,7 +80,7 @@ export function Footer() {
           </Link>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
             {t(
-              'TYUSHOP is a modern multi-vendor e-commerce platform connecting buyers with verified sellers, powered by high-performance Laravel and React architecture.',
+              'TYUSHOP is a modern multi-vendor e-commerce platform connecting buyers with verified sellers, powered by a high-performance NestJS and React architecture.',
               'TYUSHOP គឺជាផ្សារពាណិជ្ជកម្មអេឡិចត្រូនិចទំនើបឈានមុខគេនៅកម្ពុជា ដែលតភ្ជាប់អ្នកទិញជាមួយអ្នកលក់ទំនិញសុទ្ធ ១០០% ជាមួយការទូទាត់បាគង KHQR និងដឹកជញ្ជូនរហ័ស។'
             )}
           </p>

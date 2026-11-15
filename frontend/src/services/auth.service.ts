@@ -216,7 +216,7 @@ export const authService = {
   },
 
   /**
-   * Initialize CSRF cookie from Laravel Sanctum.
+   * Initialize the NestJS-compatible Sanctum CSRF cookie.
    */
   initializeCsrf: async (): Promise<void> => {
     return initCsrf()

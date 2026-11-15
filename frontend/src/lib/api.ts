@@ -14,11 +14,11 @@ const getApiBaseUrl = (): string => {
 export const API_BASE_URL = getApiBaseUrl()
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '')
 // Public catalog reads must use the same NestJS origin as authenticated and
-// mutating requests. Keeping one origin prevents silent Laravel bypasses.
+// mutating requests. Keeping one NestJS origin prevents silent API bypasses.
 export const PUBLIC_API_BASE_URL = normalizeBaseUrl(
   import.meta.env.VITE_PUBLIC_API_BASE_URL?.trim() || API_BASE_URL,
 )
-// Sanctum csrf cookie endpoint is served through the NestJS gateway.
+// Sanctum CSRF cookie endpoint is served by NestJS.
 const BACKEND_ROOT = API_ORIGIN
 let csrfReady = false
 let csrfRequest: Promise<void> | null = null
@@ -74,7 +74,7 @@ const clearExpiredSessionAndRedirect = (): void => {
 }
 
 /**
- * First-Party Sanctum Cookie-Based Axios Instance
+ * First-Party authenticated Axios instance
  * In accordance with OWASP ASVS and Module 1 Security requirements:
  * - Credentials and session cookies are HttpOnly and managed by the browser.
  * - No authentication tokens are ever stored in localStorage or sessionStorage.
@@ -125,7 +125,7 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
             .join(' ')
         : ''
 
-      // Laravel responses can put a useful message in `errors`, `error`, or
+      // API responses can put a useful message in `errors`, `error`, or
       // a nested data envelope. Keep the first actionable server explanation
       // instead of replacing every failed CRUD action with a generic toast.
       const message = [
@@ -135,7 +135,7 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
         data?.data?.message,
       ].find((value): value is string => typeof value === 'string' && value.trim().length > 0)
 
-      // Laravel often uses the generic message "The given data was invalid."
+      // The API may use the generic message "The given data was invalid."
       // for 422 responses. Prefer the field-level explanation in that case so
       // upload and CRUD forms show the real failing key to the user.
       const isGenericValidationMessage =
@@ -168,7 +168,7 @@ export function normalizeApiError(error: unknown): ApiErrorResponse {
 }
 
 /**
- * Initialize CSRF cookie for Laravel Sanctum SPA authentication before mutating requests.
+ * Initialize the NestJS-compatible CSRF cookie before mutating requests.
  */
 export async function initCsrf(): Promise<void> {
   if (csrfReady) return

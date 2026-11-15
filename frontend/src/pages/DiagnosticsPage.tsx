@@ -49,7 +49,7 @@ export function DiagnosticsPage() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">System Diagnostics</h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Real-time connectivity and health telemetry between React and Laravel API.
+                Real-time connectivity and health telemetry between React and the NestJS API.
               </p>
             </div>
           </div>
@@ -72,7 +72,7 @@ export function DiagnosticsPage() {
           <CardContent className="p-6 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Laravel API
+                NestJS API
               </span>
               {isConnected ? (
                 <Badge variant="success" className="text-xs gap-1">
@@ -153,7 +153,7 @@ export function DiagnosticsPage() {
             <Server className="w-4 h-4 text-primary" /> Dependency Health Telemetry
           </CardTitle>
           <CardDescription className="text-xs">
-            Live telemetry breakdown reported by Laravel health controller.
+            Live telemetry breakdown reported by the NestJS health controller.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
