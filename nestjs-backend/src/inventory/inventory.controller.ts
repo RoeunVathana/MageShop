@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { InventoryService } from './inventory.service';
 
 @Controller('api/v1/inventory')
+@UseGuards(SanctumGuard)
 export class InventoryController {
   constructor(private readonly inventory: InventoryService) {}
 
@@ -25,7 +26,6 @@ export class InventoryController {
   }
 
   @Post(':productId/adjust')
-  @UseGuards(SanctumGuard)
   async adjust(@Param('productId', ParseIntPipe) productId: number, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> {
     return this.inventory.adjust(productId, body, request.authUserId as number);
   }
