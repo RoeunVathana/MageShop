@@ -100,7 +100,7 @@ export class StoreSettingsService {
 
   private applyAdminDefaults(data: Record<string, unknown>): void {
     this.applyPublicDefaults(data);
-    data.google_callback_url = this.config.get<string>('GOOGLE_REDIRECT_URI') || `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/auth/google/callback`;
+    data.google_callback_url = this.config.get<string>('GOOGLE_REDIRECT_URI') || `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/auth/google/callback`;
     const configuredClient = this.config.get<string>('GOOGLE_CLIENT_ID', '');
     if (!data.google_client_id && configuredClient !== 'your-google-client-id') data.google_client_id = configuredClient;
     data.google_is_configured = Boolean(data.google_client_id && (data.google_client_secret || this.config.get<string>('GOOGLE_CLIENT_SECRET', '')));

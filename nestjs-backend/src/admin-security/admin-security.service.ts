@@ -273,7 +273,7 @@ export class AdminSecurityService {
     await this.saveSettings(values);
     const settings = await this.settings(['telegram_bot_token', 'telegram_bot_username', 'telegram_admin_chat_id', 'telegram_webhook_secret', 'telegram_mini_app_url', 'telegram_webhook_url']);
     let webhookStatus: string | null = null;
-    if (this.boolean(body.register_webhook, false)) webhookStatus = await this.registerWebhook(this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', ''), this.setting(settings, 'telegram_webhook_url', '', `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/telegram/webhook`), this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', ''));
+    if (this.boolean(body.register_webhook, false)) webhookStatus = await this.registerWebhook(this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', ''), this.setting(settings, 'telegram_webhook_url', '', `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/telegram/webhook`), this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', ''));
     const data = this.telegramSettingsData(settings);
     data.webhook_status = webhookStatus;
     return { status: 'success', message: webhookStatus ? `Telegram API Token saved (${webhookStatus}).` : 'Telegram API Token & Bot configuration saved successfully.', data };
@@ -354,7 +354,7 @@ export class AdminSecurityService {
   }
   private telegramSettingsData(settings: Map<string, string>): Record<string, unknown> {
     const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
-    const defaultUrl = `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/telegram/webhook`;
+    const defaultUrl = `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/telegram/webhook`;
     return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot'), telegram_admin_chat_id: this.setting(settings, 'telegram_admin_chat_id', 'TELEGRAM_ADMIN_CHAT_ID', ''), telegram_webhook_secret: this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', 'tyushop_sec_token_99182a'), telegram_mini_app_url: this.setting(settings, 'telegram_mini_app_url', 'TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'), telegram_webhook_url: this.setting(settings, 'telegram_webhook_url', '', defaultUrl) };
   }
   private setting(settings: Map<string, string>, key: string, env: string, fallback: string): string { return String(settings.get(key) || this.config.get<string>(env, fallback) || '').trim(); }

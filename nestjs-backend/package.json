@@ -2,7 +2,7 @@
   "name": "mageshop-nestjs-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Safe NestJS compatibility gateway for the MageShop Laravel API migration.",
+  "description": "NestJS backend for the MageShop API.",
   "license": "UNLICENSED",
   "scripts": {
     "build": "tsc -p tsconfig.json --incremental false --pretty false",

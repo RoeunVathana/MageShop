@@ -10,11 +10,11 @@ export class HealthController {
   constructor(private readonly database: DatabaseService) {}
 
   @Get('/up')
-  up(): { status: string; service: string; migrationMode: string } {
+  up(): { status: string; service: string; runtime: string } {
     return {
       status: 'ok',
-      service: 'mageshop-nestjs-compatibility-gateway',
-      migrationMode: 'laravel-upstream',
+      service: 'mageshop-nestjs-api',
+      runtime: 'nestjs',
     };
   }
 
@@ -59,11 +59,11 @@ export class HealthController {
       payload: {
         status: healthy ? 'ok' : 'degraded',
         application: 'MegaCommerce API',
-        version: '1.0.0-nestjs-compatibility',
+        version: '1.0.0-nestjs',
         timestamp: new Date().toISOString(),
         dependencies: {
           database: { driver: 'postgres', status: databaseStatus, latency_ms: databaseLatency, error: databaseError },
-          redis: { status: 'skipped_or_idle', latency_ms: 0, message: 'Redis is optional in the compatibility gateway.' },
+          redis: { status: 'skipped_or_idle', latency_ms: 0, message: 'Redis is optional for this NestJS API.' },
           storage: { status: 'available' },
         },
       } as Record<string, unknown>,

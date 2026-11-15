@@ -1,17 +1,9 @@
-# MageShop NestJS migration
+# MageShop NestJS backend
 
-This directory is the first, safe phase of the Laravel-to-NestJS migration.
-It is intentionally a compatibility gateway: Laravel remains the source of
-truth, while NestJS accepts the same paths, headers, cookies, request bodies,
-file uploads, and API responses and forwards them to the Laravel API.
-
-## Why this is safe
-
-- The existing Laravel service and production database are not changed.
-- The React frontend does not need to change while the migration is tested.
-- A failed NestJS deployment cannot corrupt orders, payments, roles, or files.
-- The `/up` endpoint proves the NestJS process is alive; proxied API responses
-  still come from the existing Laravel contract.
+This directory contains the production API for MageShop. The application is
+implemented in NestJS and reads and writes the shared PostgreSQL database
+directly. Laravel is not part of the request path and is not required to run
+the API.
 
 ## Local run
 
@@ -23,144 +15,49 @@ npm run build
 npm start
 ```
 
-The gateway listens on `http://localhost:8080` and forwards requests to
-`LARAVEL_API_ORIGIN`. Do not point production traffic at this service until
-the contract test suite proves parity for authentication, catalog, checkout,
-Bakong confirmation, delivery operations, admin CRUD, email, and uploads.
+The server listens on `http://localhost:8080` by default. Configure
+`DATABASE_URL`, `PUBLIC_API_URL`, and the required integration credentials in
+the environment before using protected features.
 
-## Direct-module feature flags
+## Runtime architecture
 
-`NEST_DIRECT_CATALOG=true` enables the NestJS PostgreSQL reader for public
-categories, brands, and products when `DATABASE_URL` is configured. Authenticated
-catalog requests remain on Laravel until NestJS role guards are enabled.
+- NestJS controllers expose the `/api/v1` API, health endpoints, media routes,
+  authentication, catalog, checkout, payments, delivery, seller, and admin
+  operations.
+- PostgreSQL is the source of truth for users, roles, permissions, catalog,
+  orders, inventory, settings, and payment records.
+- S3-compatible object storage is used for uploaded media when
+  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET`, and the related
+  endpoint/region settings are configured. Local storage is used only when S3
+  is not configured.
+- Bakong, Telegram, email, Google/Firebase, and DNS are external integrations
+  configured through environment variables and/or the admin settings APIs.
 
-`NEST_DIRECT_CATALOG_ADMIN=true` enables the guarded NestJS category, category
-attribute, and brand CRUD paths. It is disabled by default until role and
-transaction parity is verified against production-shaped data.
+## Authentication and roles
 
-`NEST_DIRECT_AUTH=true` enables the NestJS implementation of registration,
-login, current-user lookup, profile/password updates, logout, logout-all,
-password-recovery OTP, Google OAuth redirect/callback, Firebase Google sign-in,
-and avatar uploads, including the legacy `/api/v1/user` aliases. It uses the
-existing `personal_access_tokens`, `users`, `roles`, `permissions`,
-`password_reset_otps`, and `social_accounts` tables, so users do not need new
-accounts or new tokens. Email recovery requires a configured Resend-compatible
-API key (`RESEND_API_KEY`/`MAIL_PASSWORD` or the corresponding stored mail
-password); the flag remains disabled by default until the provider and
-redirect URI are verified in staging.
+Authentication is compatible with the existing Sanctum token records, so
+existing accounts can continue to sign in. Role checks are enforced in NestJS
+for customer, seller, seller staff, delivery, product-management, admin, and
+super-admin operations. Protected routes return `401` for missing credentials
+and `403` when the authenticated role is not allowed.
 
-`NEST_DIRECT_HEALTH=true` enables the basic and short-lived cached dependency
-readiness endpoints. It is disabled by default while Laravel remains the
-production health-check source.
+## Maintenance safety
 
-`NEST_DIRECT_TELEGRAM=true` enables Telegram Mini App HMAC authentication,
-profile linking, product/SKU/category reads, and tab-filtered catalog reads.
-`NEST_DIRECT_TELEGRAM_EXTENDED=true` additionally exposes the NestJS AI
-chat/history, webhook deduplication, and staff stock/sales endpoints. Both
-flags are disabled by default; keep the extended flag off until Telegram API,
-LLM fallback, webhook response, and staff-permission parity tests pass.
+Application-data clearing preserves the admin account, roles, permissions,
+store settings, and Bakong configuration. Remote seed maintenance is disabled
+unless `ALLOW_REMOTE_SEEDING=true`; do not enable it casually in production.
 
-`NEST_DIRECT_ADMIN_MAINTENANCE=true` enables the guarded application-data
-clear endpoint at `/api/v1/admin/database/clear-application-data`. It requires
-the exact `CLEAR_ALL_APPLICATION_DATA` confirmation and preserves admin users,
-roles, permissions, store settings, and Bakong configuration. Seeder and DNS
-maintenance remain Laravel-backed until their provider-specific parity checks
-are complete.
+## Verification
 
-`NEST_DIRECT_ADMIN_DNS=true` enables the guarded Porkbun DNS configuration
-endpoint. It is disabled by default because it performs external DNS writes;
-never enable it without a controlled provider test and scoped credentials.
+Build and smoke-test the API before deployment:
 
-`NEST_DIRECT_ORDERS=true` enables the NestJS customer order list, tracking
-reader, and pending/confirmed order cancellation routes. It remains disabled
-by default until response and cancellation side-effect parity is verified.
+```powershell
+npm run typecheck
+npm run build
+```
 
-`NEST_DIRECT_CHECKOUT=true` is reserved for a later parity-verified rollout.
-The current NestJS checkout writer is intentionally disabled by default and
-must not be enabled in production until Bakong verification, receipt PDF/email
-delivery, Telegram reporting, seller merchant routing, stock locking, and
-payment confirmation tests all pass against the shared database.
-
-`NEST_DIRECT_DELIVERY_READS=true` and `NEST_DIRECT_OPERATIONS_READS=true` are
-read-only migration flags for delivery queues, staff overview, and driver
-lists. Delivery mutations and payment settlement remain on Laravel until
-their role-transition, cash-handover, receipt, and notification parity tests
-are complete.
-
-`NEST_DIRECT_DELIVERY_MUTATIONS=true` and
-`NEST_DIRECT_OPERATIONS_MUTATIONS=true` enable the NestJS GPS/status/driver
-assignment writes. They remain disabled until COD settlement, loyalty points,
-receipt delivery, and driver authorization are verified end to end.
-
-`NEST_DIRECT_PAYMENT_CONFIRM=true` is also disabled by default. Its Bakong
-confirmation path validates the exact merchant, currency, amount, expiry, and
-transaction reuse before settling the shared order ledger, but it must remain
-off until the Laravel receipt/PDF/email/Telegram delivery behavior is covered
-by parity tests.
-
-`NEST_DIRECT_PAYMENT_ACCOUNTS=true` enables the shared PostgreSQL merchant
-account CRUD for admin global accounts and approved seller-owned accounts. It
-is disabled by default until account-setting synchronization and seller payout
-authorization are verified against production-shaped data.
-
-`NEST_DIRECT_INVENTORY=true` enables the NestJS inventory reader and guarded
-atomic stock-adjustment path. It is disabled by default until stock movement
-history and inventory role parity are verified against production-shaped data.
-
-`NEST_DIRECT_ADMIN_ORDERS=true` enables the guarded admin order list, details,
-status/payment updates, deletion, and dashboard statistics. It remains off by
-default until order notifications, receipts, delivery transitions, and payment
-settlement side effects are covered by parity tests.
-
-`NEST_DIRECT_ADMIN_SECURITY=true` enables guarded admin user CRUD, role/permission
-reads, role assignment (including by email), administrator password/email changes,
-OTP history/actions, email settings/test delivery, and Telegram settings/tests.
-Security logs remain Laravel-backed until their audit-event parity is covered.
-
-`NEST_DIRECT_BANNER_READS=true` enables public active-banner reads/click tracking,
-and `NEST_DIRECT_BANNER_ADMIN=true` enables guarded admin banner CRUD, toggling,
-and reorder operations. Both remain disabled until cache headers and storefront
-media behavior are verified against Laravel.
-
-`NEST_DIRECT_SELLERS=true` enables public approved-store reads and guarded admin
-seller application listing, approval, rejection, status changes, editing, and
-deletion, plus seller application submission and authenticated status lookup.
-Keep it disabled until optional-authentication, account-creation, and notification
-parity tests are complete.
-
-`NEST_DIRECT_COUPONS=true` enables active-coupon/validation reads plus guarded
-admin and seller coupon CRUD. Checkout remains Laravel-backed until its payment,
-stock, loyalty, receipt, and notification side effects pass parity tests.
-
-`NEST_DIRECT_STORE_SETTINGS=true` enables public/admin store settings and
-Bakong configuration reads/writes. It remains disabled until the NestJS process
-uses the same Laravel `APP_KEY` for encrypted Bakong token compatibility.
-
-`NEST_DIRECT_MEDIA=true` enables guarded multipart uploads and public media
-serving from the NestJS media root. Keep it disabled until the deployment uses
-the intended shared or durable object storage location.
-
-`NEST_DIRECT_DELIVERY_SETTINGS=true` enables delivery pricing and method CRUD;
-it remains disabled until the checkout fee calculation is verified against the
-Laravel settings payload.
-
-`NEST_DIRECT_ENGAGEMENT=true` enables the NestJS loyalty summary, 100-point
-free-item redemption, wishlist, support ticket, and support chat contracts.
-Email/Telegram notifications remain non-fatal side effects and require staging
-verification before enabling the flag in production.
-
-`NEST_DIRECT_API_TOKENS=true` enables guarded admin Sanctum-compatible token
-listing, issuance, revocation, and regeneration. It remains disabled until
-admin audit-log parity is verified.
-
-`NEST_DIRECT_RECEIPTS=true` enables authenticated receipt JSON/HTML/PDF reads,
-admin receipt resend, and non-blocking receipt email/Telegram side effects for
-NestJS checkout and Bakong settlement. It requires durable media storage and a
-configured Resend-compatible mail key before staging rollout.
-
-## Migration rule
-
-The frontend API URL and PostgreSQL data remain unchanged during the rewrite.
-NestJS modules replace proxy paths one domain at a time only after their
-responses and side effects match Laravel. Laravel remains available as the
-rollback target until the complete parity checklist passes.
+Then check `/up`, `/api/v1/health`, `/api/v1/health/ready`, representative
+public catalog routes, protected-route authentication, media URLs, checkout,
+and payment confirmation with staging credentials. Real Bakong QR settlement,
+Google sign-in, OTP delivery, email delivery, and Telegram notifications still
+require provider credentials and a real device/account test.

@@ -270,7 +270,7 @@ export class AuthRecoveryService {
   private async googleConfig(): Promise<GoogleConfig> {
     const clientId = await this.setting('google_client_id', this.config.get<string>('GOOGLE_CLIENT_ID', ''));
     const clientSecret = await this.setting('google_client_secret', this.config.get<string>('GOOGLE_CLIENT_SECRET', ''));
-    const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI', `${this.config.get<string>('APP_URL', 'https://api.tyushop.blog').replace(/\/$/, '')}/api/v1/auth/google/callback`);
+    const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI', `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/auth/google/callback`);
     if (!clientId || !clientSecret || clientId === 'your-google-client-id' || clientSecret === 'your-google-client-secret') {
       throw new BadRequestException({ status: 'error', message: 'Google OAuth is not configured with valid production credentials yet.' });
     }
