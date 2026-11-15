@@ -100,11 +100,8 @@ export function RegisterPage() {
         type: 'success',
       })
 
-      if (authService.isAdmin(res.data?.user)) {
-        navigate('/dashboard/admin')
-      } else {
-        navigate('/')
-      }
+      const destination = authService.getDashboardPath(res.data?.user)
+      navigate(destination === '/dashboard/customer' ? '/' : destination)
     } catch (popupErr: any) {
       if (popupErr?.code === 'auth/popup-closed-by-user') {
         setLoading(false)

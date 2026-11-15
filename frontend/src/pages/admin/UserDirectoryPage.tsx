@@ -151,6 +151,38 @@ const PERMISSION_OPTIONS = [
   { slug: 'staff.manage', label: 'Manage Staff Privileges', group: 'Admin' },
 ]
 
+const ROLE_TITLES_KM: Record<string, string> = {
+  delivery_driver: 'អ្នកបើកបរដឹកជញ្ជូន / អ្នកនាំសំបុត្រ',
+  courier: 'អ្នកនាំសំបុត្រ / ប្រតិបត្តិករដឹកជញ្ជូន',
+  delivery: 'ប្រតិបត្តិករដឹកជញ្ជូនចាស់',
+  staff: 'បុគ្គលិកប្រតិបត្តិការ',
+  seller: 'អ្នកលក់ពាណិជ្ជករ',
+  warehouse_manager: 'អ្នកគ្រប់គ្រងឃ្លាំង',
+  admin: 'អ្នកគ្រប់គ្រងវេទិកា',
+  customer: 'អតិថិជនលក់រាយ',
+}
+
+const ROLE_DESCRIPTIONS_KM: Record<string, string> = {
+  delivery_driver: 'ចូលប្រើផ្ទាំងគ្រប់គ្រងកងដឹកជញ្ជូន ជួរបញ្ជូនទំនិញ និង GPS ផ្ទាល់។',
+  courier: 'ចូលប្រើផ្លូវដឹកជញ្ជូនដែលបានកំណត់ GPS ផ្ទាល់ និងការបញ្ជាក់ប្រគល់សាច់ប្រាក់។',
+  delivery: 'តួនាទីដឹកជញ្ជូនដែលអាចប្រើជាមួយប្រព័ន្ធចាស់ សម្រាប់ផ្លូវ និងការប្រគល់សាច់ប្រាក់។',
+  staff: 'ចូលប្រើប្រព័ន្ធបុគ្គលិក ដំណើរការបញ្ជាទិញ កែស្តុក និងជំនួយអតិថិជន។',
+  seller: 'ចូលប្រើផ្ទាំងអ្នកលក់ បញ្ជីផលិតផល និងការបំពេញការបញ្ជាទិញ។',
+  warehouse_manager: 'គ្រប់គ្រងការទទួលទំនិញ ឯកសារស្តុក និងការត្រួតពិនិត្យចំនួនក្នុងឃ្លាំង។',
+  admin: 'សិទ្ធិគ្រប់គ្រងពេញលេញលើការកំណត់វេទិកា អ្នកប្រើប្រាស់ ហិរញ្ញវត្ថុ និងសុវត្ថិភាព។',
+  customer: 'គណនីអតិថិជនសម្រាប់ទិញទំនិញ និងគ្រប់គ្រងព័ត៌មានផ្ទាល់ខ្លួន។',
+}
+
+const PERMISSION_LABELS_KM: Record<string, string> = {
+  'delivery.update': 'កែប្រែការដឹកជញ្ជូន និងការបែងចែកផ្លូវ',
+  'delivery.tracking.view': 'ផ្សព្វផ្សាយ និងមើល GPS ផ្ទាល់',
+  'orders.view': 'មើលការបញ្ជាទិញរបស់អតិថិជន',
+  'orders.update': 'កែប្រែស្ថានភាពបំពេញការបញ្ជាទិញ',
+  'inventory.adjust': 'កែសម្រួលកម្រិតស្តុកឃ្លាំង',
+  'products.create': 'បង្កើត និងកែប្រែផលិតផលកាតាឡុក',
+  'staff.manage': 'គ្រប់គ្រងសិទ្ធិបុគ្គលិក',
+}
+
 const FALLBACK_MEMBERS: TeamMember[] = [
   {
     id: 1,
@@ -196,6 +228,13 @@ const FALLBACK_MEMBERS: TeamMember[] = [
 export function UserDirectoryPage() {
   const { t } = useShopEngagement()
   const { toast } = useToast()
+
+  const roleTitle = (role: (typeof AVAILABLE_ROLES)[number]) =>
+    t(role.title, ROLE_TITLES_KM[role.slug] || role.title)
+  const roleDescription = (role: (typeof AVAILABLE_ROLES)[number]) =>
+    t(role.description, ROLE_DESCRIPTIONS_KM[role.slug] || role.description)
+  const permissionLabel = (permission: (typeof PERMISSION_OPTIONS)[number]) =>
+    t(permission.label, PERMISSION_LABELS_KM[permission.slug] || permission.label)
 
   const [members, setMembers] = useState<TeamMember[]>(FALLBACK_MEMBERS)
   const [loading, setLoading] = useState(true)
@@ -323,8 +362,8 @@ export function UserDirectoryPage() {
 
       const roleObj = AVAILABLE_ROLES.find((r) => r.slug === targetRole)
       toast({
-        title: '🎉 Role Assigned Successfully',
-        description: `${selectedMemberForRole.name} is now granted the "${roleObj?.title || targetRole}" role with active permissions.`,
+        title: t('🎉 Role Assigned Successfully', '🎉 បានកំណត់តួនាទីដោយជោគជ័យ'),
+        description: `${selectedMemberForRole.name} ${t('is now granted the', 'ត្រូវបានកំណត់ជា')} "${roleObj ? roleTitle(roleObj) : targetRole}" ${t('role with active permissions.', 'ជាមួយសិទ្ធិសកម្ម។')}`,
         type: 'success',
       })
 
@@ -332,8 +371,8 @@ export function UserDirectoryPage() {
       fetchUsers()
     } catch (err: any) {
       toast({
-        title: 'Role Assignment Failed',
-        description: err?.message || 'Could not update user roles in the database.',
+        title: t('Role Assignment Failed', 'បរាជ័យក្នុងការកំណត់តួនាទី'),
+        description: err?.message || t('Could not update user roles in the database.', 'មិនអាចកែប្រែតួនាទីអ្នកប្រើប្រាស់ក្នុងមូលដ្ឋានទិន្នន័យបានទេ។'),
         type: 'error',
       })
     } finally {
@@ -349,8 +388,8 @@ export function UserDirectoryPage() {
 
     if (!email) {
       toast({
-        title: 'Email Required',
-        description: 'Enter the email address of an existing user account.',
+        title: t('Email Required', 'ត្រូវការអ៊ីមែល'),
+        description: t('Enter the email address of an existing user account.', 'សូមបញ្ចូលអ៊ីមែលរបស់គណនីអ្នកប្រើប្រាស់ដែលមានស្រាប់។'),
         type: 'error',
       })
       return
@@ -366,8 +405,8 @@ export function UserDirectoryPage() {
       const assignedName = response?.data?.name || email
 
       toast({
-        title: '🎉 Role Assigned Successfully',
-        description: `${assignedName} is now assigned the "${roleObj?.title || targetRole}" role.`,
+        title: t('🎉 Role Assigned Successfully', '🎉 បានកំណត់តួនាទីដោយជោគជ័យ'),
+        description: `${assignedName} ${t('is now assigned the', 'ត្រូវបានកំណត់ជា')} "${roleObj ? roleTitle(roleObj) : targetRole}" ${t('role.', '។')}`,
         type: 'success',
       })
 
@@ -376,8 +415,8 @@ export function UserDirectoryPage() {
       fetchUsers()
     } catch (err: any) {
       toast({
-        title: 'Role Assignment Failed',
-        description: err?.message || 'Could not find or update this user account.',
+        title: t('Role Assignment Failed', 'បរាជ័យក្នុងការកំណត់តួនាទី'),
+        description: err?.message || t('Could not find or update this user account.', 'រកមិនឃើញ ឬមិនអាចកែប្រែគណនីអ្នកប្រើប្រាស់នេះបានទេ។'),
         type: 'error',
       })
     } finally {
@@ -397,8 +436,8 @@ export function UserDirectoryPage() {
     e.preventDefault()
     if (!formData.name.trim() || !formData.email.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please provide both full name and a valid email address.',
+        title: t('Validation Error', 'កំហុសក្នុងការបំពេញទិន្នន័យ'),
+        description: t('Please provide both full name and a valid email address.', 'សូមបញ្ចូលឈ្មោះពេញ និងអ៊ីមែលដែលត្រឹមត្រូវ។'),
         type: 'error',
       })
       return
@@ -415,8 +454,8 @@ export function UserDirectoryPage() {
       })
 
       toast({
-        title: '🎉 Account Created & Role Assigned',
-        description: `${formData.name} was successfully enrolled as ${formData.role.toUpperCase()}.`,
+        title: t('🎉 Account Created & Role Assigned', '🎉 បានបង្កើតគណនី និងកំណត់តួនាទីដោយជោគជ័យ'),
+        description: `${formData.name} ${t('was successfully enrolled as', 'ត្រូវបានចុះឈ្មោះជា')} ${formData.role.toUpperCase()}.`,
         type: 'success',
       })
 
@@ -432,8 +471,8 @@ export function UserDirectoryPage() {
       fetchUsers()
     } catch (err: any) {
       toast({
-        title: 'Error Enrolling User',
-        description: err?.message || 'Could not register user account.',
+        title: t('Error Enrolling User', 'កំហុសក្នុងការចុះឈ្មោះអ្នកប្រើប្រាស់'),
+        description: err?.message || t('Could not register user account.', 'មិនអាចចុះឈ្មោះគណនីអ្នកប្រើប្រាស់បានទេ។'),
         type: 'error',
       })
     } finally {
@@ -455,8 +494,8 @@ export function UserDirectoryPage() {
     e.preventDefault()
     if (!editingMember || !editFormData.name.trim() || !editFormData.email.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please provide a name and valid email address.',
+        title: t('Validation Error', 'កំហុសក្នុងការបំពេញទិន្នន័យ'),
+        description: t('Please provide a name and valid email address.', 'សូមបញ្ចូលឈ្មោះ និងអ៊ីមែលដែលត្រឹមត្រូវ។'),
         type: 'error',
       })
       return
@@ -472,16 +511,16 @@ export function UserDirectoryPage() {
       })
 
       toast({
-        title: 'User Updated',
-        description: editFormData.name.trim() + ' was updated successfully.',
+        title: t('User Updated', 'បានកែប្រែអ្នកប្រើប្រាស់'),
+        description: editFormData.name.trim() + ` ${t('was updated successfully.', 'ត្រូវបានកែប្រែដោយជោគជ័យ។')}`,
         type: 'success',
       })
       setEditingMember(null)
       fetchUsers()
     } catch (err: any) {
       toast({
-        title: 'Update Failed',
-        description: err?.message || 'Could not update this user account.',
+        title: t('Update Failed', 'បរាជ័យក្នុងការកែប្រែ'),
+        description: err?.message || t('Could not update this user account.', 'មិនអាចកែប្រែគណនីអ្នកប្រើប្រាស់នេះបានទេ។'),
         type: 'error',
       })
     } finally {
@@ -493,8 +532,8 @@ export function UserDirectoryPage() {
     const currentUser = authService.getStoredUser()
     if (currentUser?.id === member.id) {
       toast({
-        title: 'Action Not Allowed',
-        description: 'You cannot delete your own administrator account.',
+        title: t('Action Not Allowed', 'សកម្មភាពមិនត្រូវបានអនុញ្ញាត'),
+        description: t('You cannot delete your own administrator account.', 'អ្នកមិនអាចលុបគណនីអ្នកគ្រប់គ្រងរបស់ខ្លួនបានទេ។'),
         type: 'error',
       })
       return
@@ -510,16 +549,16 @@ export function UserDirectoryPage() {
     try {
       await api.delete('/admin/security/users/' + member.id)
       toast({
-        title: 'User Deleted',
-        description: member.name + ' was removed from the directory.',
+        title: t('User Deleted', 'បានលុបអ្នកប្រើប្រាស់'),
+        description: member.name + ` ${t('was removed from the directory.', 'ត្រូវបានដកចេញពីបញ្ជី។')}`,
         type: 'success',
       })
       fetchUsers()
       setMemberToDelete(null)
     } catch (err: any) {
       toast({
-        title: 'Delete Failed',
-        description: err?.message || 'Could not delete this user account.',
+        title: t('Delete Failed', 'បរាជ័យក្នុងការលុប'),
+        description: err?.message || t('Could not delete this user account.', 'មិនអាចលុបគណនីអ្នកប្រើប្រាស់នេះបានទេ។'),
         type: 'error',
       })
     } finally {
@@ -846,7 +885,7 @@ export function UserDirectoryPage() {
                                 className="h-8 shrink-0 px-2.5 rounded-xl text-xs font-bold gap-1.5"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
-                                <span>Edit</span>
+                                <span>{t('Edit', 'កែប្រែ')}</span>
                               </Button>
                               <Button
                                 size="sm"
@@ -854,18 +893,20 @@ export function UserDirectoryPage() {
                                 className="h-8 shrink-0 px-3 rounded-xl text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                               >
                                 <Shield className="w-3.5 h-3.5" />
-                                <span>Assign Role</span>
+                                <span>{t('Assign Role', 'កំណត់តួនាទី')}</span>
                               </Button>
                               <Button
                                 size="sm"
                                 variant="destructive"
                                 onClick={() => handleDeleteMember(member)}
                                 disabled={submitting || authService.getStoredUser()?.id === member.id}
-                                title={authService.getStoredUser()?.id === member.id ? 'You cannot delete your own account' : 'Delete user'}
+                                title={authService.getStoredUser()?.id === member.id
+                                  ? t('You cannot delete your own account', 'អ្នកមិនអាចលុបគណនីរបស់ខ្លួនបានទេ')
+                                  : t('Delete user', 'លុបអ្នកប្រើប្រាស់')}
                                 className="h-8 shrink-0 px-2.5 rounded-xl text-xs font-bold gap-1.5"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
+                                <span>{t('Delete', 'លុប')}</span>
                               </Button>
                             </div>
                           </td>
@@ -906,10 +947,10 @@ export function UserDirectoryPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-black text-foreground">
-                        Assign Role & Permissions
+                        {t('Assign Role & Permissions', 'កំណត់តួនាទី និងសិទ្ធិ')}
                       </h2>
                       <p className="text-xs text-muted-foreground font-semibold">
-                        Account: <span className="text-foreground font-black">{selectedMemberForRole.name}</span> ({selectedMemberForRole.email})
+                        {t('Account:', 'គណនី៖')} <span className="text-foreground font-black">{selectedMemberForRole.name}</span> ({selectedMemberForRole.email})
                       </p>
                     </div>
                   </div>
@@ -928,7 +969,7 @@ export function UserDirectoryPage() {
                 {/* 1. Select Role */}
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground">
-                    Select Target Operational Role
+                    {t('Select Target Operational Role', 'ជ្រើសរើសតួនាទីប្រតិបត្តិការ')}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {AVAILABLE_ROLES.map((role) => {
@@ -960,11 +1001,11 @@ export function UserDirectoryPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-black text-foreground flex items-center justify-between">
-                              <span>{role.title}</span>
+                              <span>{roleTitle(role)}</span>
                               {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">
-                              {role.description}
+                              {roleDescription(role)}
                             </p>
                           </div>
                         </div>
@@ -976,9 +1017,9 @@ export function UserDirectoryPage() {
                 {/* 2. Granular Permissions Toggles */}
                 <div className="space-y-2 pt-2 border-t">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground flex items-center justify-between">
-                    <span>Granular System Permissions</span>
+                    <span>{t('Granular System Permissions', 'សិទ្ធិប្រព័ន្ធលម្អិត')}</span>
                     <span className="text-[10px] font-semibold text-muted-foreground">
-                      {targetPermissions.length} Active
+                      {t(`${targetPermissions.length} Active`, `${targetPermissions.length} សកម្ម`)}
                     </span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1000,7 +1041,7 @@ export function UserDirectoryPage() {
                             className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                           />
                           <div className="min-w-0">
-                            <span className="block text-xs truncate">{perm.label}</span>
+                            <span className="block text-xs truncate">{permissionLabel(perm)}</span>
                             <span className="text-[9.5px] font-semibold text-muted-foreground font-mono">
                               {perm.slug}
                             </span>
@@ -1020,7 +1061,7 @@ export function UserDirectoryPage() {
                     disabled={isAssigningRole}
                     className="rounded-xl h-10 text-xs font-bold"
                   >
-                    Cancel
+                    {t('Cancel', 'បោះបង់')}
                   </Button>
 
                   <Button
@@ -1029,7 +1070,7 @@ export function UserDirectoryPage() {
                     className="rounded-xl h-10 px-5 text-xs font-black gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
                   >
                     <Save className="w-4 h-4" />
-                    <span>{isAssigningRole ? 'Assigning...' : 'Save Role & Permissions'}</span>
+                    <span>{isAssigningRole ? t('Assigning...', 'កំពុងកំណត់...') : t('Save Role & Permissions', 'រក្សាទុកតួនាទី និងសិទ្ធិ')}</span>
                   </Button>
                 </div>
               </form>
@@ -1047,9 +1088,9 @@ export function UserDirectoryPage() {
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-foreground">Assign Role by Email</h2>
+                    <h2 className="text-lg font-black text-foreground">{t('Assign Role by Email', 'កំណត់តួនាទីតាមអ៊ីមែល')}</h2>
                     <p className="text-xs text-muted-foreground font-semibold">
-                      Apply a role to an existing TYUSHOP account.
+                      {t('Apply a role to an existing TYUSHOP account.', 'កំណត់តួនាទីដល់គណនី TYUSHOP ដែលមានស្រាប់។')}
                     </p>
                   </div>
                 </div>
@@ -1066,7 +1107,7 @@ export function UserDirectoryPage() {
               <form onSubmit={handleSaveRoleByEmail} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground">
-                    Existing Account Email
+                    {t('Existing Account Email', 'អ៊ីមែលគណនីដែលមានស្រាប់')}
                   </label>
                   <Input
                     type="email"
@@ -1081,7 +1122,7 @@ export function UserDirectoryPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground">
-                    Role to Assign
+                    {t('Role to Assign', 'តួនាទីដែលត្រូវកំណត់')}
                   </label>
                   <select
                     value={targetRole}
@@ -1090,14 +1131,14 @@ export function UserDirectoryPage() {
                   >
                     {AVAILABLE_ROLES.map((role) => (
                       <option key={role.slug} value={role.slug}>
-                        {role.title}
+                        {roleTitle(role)}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="rounded-2xl border border-amber-300/60 bg-amber-50/70 dark:bg-amber-950/20 px-3.5 py-3 text-[11px] leading-5 text-amber-900 dark:text-amber-200">
-                  Only SUPER_ADMIN can grant ADMIN or SUPER_ADMIN. Other administrators will receive a clear permission error.
+                  {t('Only SUPER_ADMIN can grant ADMIN or SUPER_ADMIN. Other administrators will receive a clear permission error.', 'មានតែ SUPER_ADMIN ប៉ុណ្ណោះដែលអាចកំណត់ ADMIN ឬ SUPER_ADMIN។ អ្នកគ្រប់គ្រងផ្សេងទៀតនឹងទទួលបានសារបញ្ជាក់អំពីសិទ្ធិ។')}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t">
@@ -1108,7 +1149,7 @@ export function UserDirectoryPage() {
                     disabled={isAssigningRole}
                     className="rounded-xl h-10 text-xs font-bold"
                   >
-                    Cancel
+                    {t('Cancel', 'បោះបង់')}
                   </Button>
                   <Button
                     type="submit"
@@ -1116,7 +1157,7 @@ export function UserDirectoryPage() {
                     className="rounded-xl h-10 px-5 text-xs font-black gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
                   >
                     <Shield className="w-4 h-4" />
-                    <span>{isAssigningRole ? 'Assigning...' : 'Assign Role'}</span>
+                    <span>{isAssigningRole ? t('Assigning...', 'កំពុងកំណត់...') : t('Assign Role', 'កំណត់តួនាទី')}</span>
                   </Button>
                 </div>
               </form>
@@ -1132,10 +1173,10 @@ export function UserDirectoryPage() {
                 <div>
                   <h3 className="text-base font-black text-foreground flex items-center gap-2">
                     <Pencil className="w-5 h-5 text-indigo-600" />
-                    <span>Edit User Account</span>
+                    <span>{t('Edit User Account', 'កែប្រែគណនីអ្នកប្រើប្រាស់')}</span>
                   </h3>
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    Update account details and status. Use Assign Role for permissions.
+                    {t('Update account details and status. Use Assign Role for permissions.', 'កែប្រែព័ត៌មាន និងស្ថានភាពគណនី។ ប្រើ កំណត់តួនាទី ដើម្បីកែសិទ្ធិ។')}
                   </p>
                 </div>
                 <Button
@@ -1150,7 +1191,7 @@ export function UserDirectoryPage() {
 
               <form onSubmit={handleUpdateMember} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground">Full Name</label>
+                  <label className="text-xs font-bold text-foreground">{t('Full Name', 'ឈ្មោះពេញ')}</label>
                   <Input
                     type="text"
                     required
@@ -1162,7 +1203,7 @@ export function UserDirectoryPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-foreground">Email Address</label>
+                    <label className="text-xs font-bold text-foreground">{t('Email Address', 'អាសយដ្ឋានអ៊ីមែល')}</label>
                     <Input
                       type="email"
                       required
@@ -1173,7 +1214,7 @@ export function UserDirectoryPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-foreground">Phone Number</label>
+                    <label className="text-xs font-bold text-foreground">{t('Phone Number', 'លេខទូរស័ព្ទ')}</label>
                     <Input
                       type="text"
                       value={editFormData.phone}
@@ -1184,17 +1225,17 @@ export function UserDirectoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground">Account Status</label>
+                  <label className="text-xs font-bold text-foreground">{t('Account Status', 'ស្ថានភាពគណនី')}</label>
                   <select
                     value={editFormData.status}
                     onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as TeamMember['status'] })}
                     className="w-full h-10 px-3 rounded-xl border bg-background text-xs font-bold focus:ring-2 focus:ring-indigo-500/30"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
-                    <option value="suspended">Suspended</option>
-                    <option value="on_leave">On Leave</option>
+                    <option value="active">{t('Active', 'សកម្ម')}</option>
+                    <option value="inactive">{t('Inactive', 'អសកម្ម')}</option>
+                    <option value="pending">{t('Pending', 'កំពុងរង់ចាំ')}</option>
+                    <option value="suspended">{t('Suspended', 'បានផ្អាក')}</option>
+                    <option value="on_leave">{t('On Leave', 'ឈប់សម្រាក')}</option>
                   </select>
                 </div>
 
@@ -1206,14 +1247,14 @@ export function UserDirectoryPage() {
                     disabled={submitting}
                     className="rounded-xl h-10 text-xs font-bold"
                   >
-                    Cancel
+                    {t('Cancel', 'បោះបង់')}
                   </Button>
                   <Button
                     type="submit"
                     disabled={submitting}
                     className="rounded-xl h-10 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
-                    {submitting ? 'Saving...' : 'Save Changes'}
+                    {submitting ? t('Saving...', 'កំពុងរក្សាទុក...') : t('Save Changes', 'រក្សាទុកការកែប្រែ')}
                   </Button>
                 </div>
               </form>
@@ -1228,7 +1269,7 @@ export function UserDirectoryPage() {
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-foreground flex items-center gap-2">
                   <UserPlus className="w-5 h-5 text-indigo-600" />
-                  <span>Enroll New Team Member</span>
+                  <span>{t('Enroll New Team Member', 'បន្ថែមសមាជិកក្រុមថ្មី')}</span>
                 </h3>
                 <Button
                   variant="ghost"
@@ -1242,7 +1283,7 @@ export function UserDirectoryPage() {
 
               <form onSubmit={handleAddMember} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground">Full Name</label>
+                  <label className="text-xs font-bold text-foreground">{t('Full Name', 'ឈ្មោះពេញ')}</label>
                   <Input
                     type="text"
                     required
@@ -1255,7 +1296,7 @@ export function UserDirectoryPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-foreground">Email Address</label>
+                    <label className="text-xs font-bold text-foreground">{t('Email Address', 'អាសយដ្ឋានអ៊ីមែល')}</label>
                     <Input
                       type="email"
                       required
@@ -1267,7 +1308,7 @@ export function UserDirectoryPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-foreground">Phone Number</label>
+                    <label className="text-xs font-bold text-foreground">{t('Phone Number', 'លេខទូរស័ព្ទ')}</label>
                     <Input
                       type="text"
                       placeholder="+855 12 345 678"
@@ -1279,19 +1320,19 @@ export function UserDirectoryPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-foreground">Role Privilege</label>
+                  <label className="text-xs font-bold text-foreground">{t('Role Privilege', 'សិទ្ធិតួនាទី')}</label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full h-10 px-3 rounded-xl border bg-background text-xs font-bold focus:ring-2 focus:ring-indigo-500/30 uppercase"
                   >
-                    <option value="delivery_driver">Delivery Driver / Courier (Live GPS)</option>
-                    <option value="courier">Courier / Delivery Operator (Live GPS)</option>
-                    <option value="delivery">Legacy Delivery Operator (Live GPS)</option>
-                    <option value="staff">Operations Staff</option>
-                    <option value="seller">Merchant Seller</option>
-                    <option value="warehouse_manager">Warehouse Manager</option>
-                    <option value="admin">Platform Administrator</option>
+                    <option value="delivery_driver">{roleTitle(AVAILABLE_ROLES[0])} (Live GPS)</option>
+                    <option value="courier">{roleTitle(AVAILABLE_ROLES[1])} (Live GPS)</option>
+                    <option value="delivery">{roleTitle(AVAILABLE_ROLES[2])} (Live GPS)</option>
+                    <option value="staff">{roleTitle(AVAILABLE_ROLES[3])}</option>
+                    <option value="seller">{roleTitle(AVAILABLE_ROLES[4])}</option>
+                    <option value="warehouse_manager">{roleTitle(AVAILABLE_ROLES[5])}</option>
+                    <option value="admin">{roleTitle(AVAILABLE_ROLES[6])}</option>
                   </select>
                 </div>
 
@@ -1302,14 +1343,14 @@ export function UserDirectoryPage() {
                     onClick={() => setIsAddModalOpen(false)}
                     className="rounded-xl h-10 text-xs font-bold"
                   >
-                    Cancel
+                    {t('Cancel', 'បោះបង់')}
                   </Button>
                   <Button
                     type="submit"
                     disabled={submitting}
                     className="rounded-xl h-10 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
-                    {submitting ? 'Creating...' : 'Enroll Account'}
+                    {submitting ? t('Creating...', 'កំពុងបង្កើត...') : t('Enroll Account', 'បន្ថែមគណនី')}
                   </Button>
                 </div>
               </form>
@@ -1320,11 +1361,16 @@ export function UserDirectoryPage() {
       <ConfirmDialog
         open={memberToDelete !== null}
         onOpenChange={(open) => !open && setMemberToDelete(null)}
-        title="Delete user account?"
+        title={t('Delete user account?', 'លុបគណនីអ្នកប្រើប្រាស់?')}
+        titleKm="លុបគណនីអ្នកប្រើប្រាស់?"
         description={memberToDelete
-          ? `Delete "${memberToDelete.name}"? This action cannot be undone.`
+          ? t(`Delete "${memberToDelete.name}"? This action cannot be undone.`, `លុប "${memberToDelete.name}"? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។`)
           : ''}
-        confirmLabel="Delete user"
+        descriptionKm={memberToDelete ? `លុប "${memberToDelete.name}"? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។` : ''}
+        confirmLabel={t('Delete user', 'លុបអ្នកប្រើប្រាស់')}
+        confirmLabelKm="លុបអ្នកប្រើប្រាស់"
+        cancelLabel={t('Cancel', 'បោះបង់')}
+        cancelLabelKm="បោះបង់"
         onConfirm={confirmDeleteMember}
       />
     </DashboardLayout>

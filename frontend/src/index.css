@@ -529,24 +529,43 @@ html.khmer-mode .dashboard-shell {
   border-collapse: separate;
   border-spacing: 0;
   line-height: 1.45;
+  table-layout: auto;
+  /* Let the table keep useful column widths; the wrapper below owns the
+     horizontal scroll instead of squeezing every cell into the card width. */
+  width: max-content;
+  min-width: 100%;
 }
 
 .dashboard-shell th,
 .dashboard-shell td {
   vertical-align: middle;
-  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .dashboard-shell th {
   white-space: nowrap;
 }
 
+.dashboard-shell td {
+  min-width: 7rem;
+}
+
+.dashboard-shell td .font-mono,
+.dashboard-shell td [class*="truncate"] {
+  overflow-wrap: anywhere;
+}
+
 .dashboard-shell .dashboard-table-scroll {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+  display: block;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.45) hsl(var(--muted) / 0.55);
@@ -573,7 +592,32 @@ html.khmer-mode .dashboard-shell {
 }
 
 .dashboard-shell .dashboard-data-table {
+  width: max-content !important;
   min-width: 980px;
+  max-width: none;
+}
+
+/* Dashboard tables are intentionally single-line data grids. Long names,
+   emails, Khmer labels, IDs, and action buttons must widen the grid and be
+   reached with the table scrollbar instead of breaking into false-looking
+   multi-line rows. */
+.dashboard-shell .dashboard-data-table th,
+.dashboard-shell .dashboard-data-table td {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.dashboard-shell .dashboard-data-table td > .flex,
+.dashboard-shell .dashboard-data-table td > div.flex {
+  flex-wrap: nowrap;
+  min-width: max-content;
+}
+
+.dashboard-shell .dashboard-data-table td .truncate {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 html[lang="km"] .dashboard-shell .dashboard-data-table,

@@ -104,6 +104,8 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   }, [isAccountOpen])
 
   const isAdmin = authService.isAdmin(currentUser)
+  const dashboardPath = authService.getDashboardPath(currentUser)
+  const isDeliveryUser = dashboardPath === '/dashboard/delivery'
 
   const handleLogout = async () => {
     setIsAccountOpen(false)
@@ -489,12 +491,16 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
                       </Link>
 
                       <Link
-                        to="/dashboard/customer"
+                        to={dashboardPath}
                         onClick={() => setIsAccountOpen(false)}
                         className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                       >
-                        <UserIcon className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{t('My Account & Orders', 'គណនី និងការបញ្ជាទិញ')}</span>
+                        {isDeliveryUser ? (
+                          <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <UserIcon className="w-3.5 h-3.5 text-blue-500" />
+                        )}
+                        <span>{isDeliveryUser ? t('Delivery Dashboard', 'ផ្ទាំងគ្រប់គ្រងការដឹកជញ្ជូន') : t('My Account & Orders', 'គណនី និងការបញ្ជាទិញ')}</span>
                       </Link>
                       <button
                         type="button"

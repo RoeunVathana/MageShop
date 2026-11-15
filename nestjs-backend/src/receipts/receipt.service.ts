@@ -17,6 +17,8 @@ interface OrderRow extends Record<string, unknown> {
   total_amount: number | string;
   currency: string | null;
   status: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
 }
 
 interface ReceiptRow {
@@ -203,13 +205,65 @@ export class ReceiptService {
     const token = await this.setting('telegram_bot_token', this.config.get<string>('TELEGRAM_BOT_TOKEN', ''));
     const chatId = await this.setting('telegram_admin_chat_id', this.config.get<string>('TELEGRAM_ADMIN_CHAT_ID', ''));
     if (!token || !chatId) return false;
-    const message = `✅ ${prefix}\nOrder: ${order.order_number}\nCustomer: ${order.customer_name ?? '-'}\nAmount: ${order.total_amount} ${order.currency ?? 'USD'}\nPayment: ${String(payment?.payment_method ?? '-')}\nReceipt: ${receipt.receipt_number}`;
+    const items = await this.items(order.id);
+    const rate = Number(await this.setting('usd_to_khr_rate', '4100')) || 4100;
+    const amount = Number(order.total_amount ?? 0);
+    const amountKhr = Math.round(amount * rate);
+    const paymentMethod = String(payment?.payment_method ?? '-').replaceAll('_', ' ').toUpperCase();
+    const paymentStatus = ['completed', 'paid'].includes(String(payment?.status ?? order.status).toLowerCase())
+      ? 'PAID & VERIFIED'
+      : String(payment?.status ?? order.status).toUpperCase();
+    const itemLines = items.length
+      ? items.map((item) => `• ${String(item.quantity ?? 0)}x ${String(item.product_name ?? 'Product')} — ${String(item.total_price ?? 0)} ${order.currency ?? 'USD'}`).join('\n')
+      : '• No order items recorded';
+    const customerPhone = String(order['customer_phone'] ?? '-');
+    const deliveryAddress = String(order['delivery_address'] ?? '-');
+    const trackingUrl = `https://www.tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
+    const issuedAt = new Date(String(order.updated_at ?? order.created_at ?? Date.now())).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
+    const message = [
+      `🧾 TYUSHOP — PAYMENT & ORDER REPORT`,
+      '━━━━━━━━━━━━━━━━━━━━',
+      `📄 Order ID: #${order.order_number}`,
+      `🧾 Receipt No: #${receipt.receipt_number}`,
+      `🔁 Transaction: ${String(payment?.transaction_reference ?? '-')}`,
+      `💳 Method: ${paymentMethod}`,
+      `📌 Status: ✅ ${paymentStatus}`,
+      `💰 Total Amount: ${amount.toFixed(2)} ${order.currency ?? 'USD'} (≈ ${amountKhr.toLocaleString()} ៛)`,
+      '',
+      '👤 CUSTOMER INFORMATION',
+      `• Name: ${String(order.customer_name ?? '-')}`,
+      `• Phone: ${customerPhone}`,
+      `• Email: ${String(order.customer_email ?? '-')}`,
+      `• Address: ${deliveryAddress}`,
+      '',
+      '📦 ORDER ITEMS',
+      itemLines,
+      '',
+      `🎁 Loyalty Points: +${Number(order['points_earned'] ?? 0)} pts`,
+      `🚚 GPS Tracking: ${trackingUrl}`,
+      `🕒 Time: ${issuedAt}`,
+      '',
+      `✅ ${prefix}`,
+    ].join('\n');
+    const photo = this.config.get<string>('TELEGRAM_REPORT_IMAGE_URL', 'https://tyushop.blog/logo.png');
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message }), signal: controller.signal });
-        return response.ok;
+        const photoResponse = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, photo, caption: message.slice(0, 1024) }),
+          signal: controller.signal,
+        });
+        if (photoResponse.ok) return true;
+        const fallbackResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: message }),
+          signal: controller.signal,
+        });
+        return fallbackResponse.ok;
       } finally { clearTimeout(timeout); }
     } catch { return false; }
   }

@@ -139,3 +139,29 @@ export function AuthenticatedRoute({ children }: { children: React.ReactNode }) 
   return <>{children}</>
 }
 
+/**
+ * Entry guard for the generic dashboard/account URLs. Operational users may
+ * still have the CUSTOMER role for shopping, but they must land in their
+ * assigned workspace instead of seeing the customer portal by default.
+ */
+export function RoleAwareDashboardRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const user = authService.getStoredUser()
+
+  if (!user || !authService.isAuthenticated()) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  const dashboardPath = authService.getDashboardPath(user)
+  const customerPortalPaths = ['/dashboard/customer', '/account', '/orders']
+  const isCustomerPortalPath = customerPortalPaths.some((path) => (
+    location.pathname === path || location.pathname.startsWith(`${path}/`)
+  ))
+
+  if (dashboardPath !== '/dashboard/customer' && isCustomerPortalPath) {
+    return <Navigate to={dashboardPath} replace />
+  }
+
+  return <>{children}</>
+}
+

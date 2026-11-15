@@ -1,13 +1,16 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 export interface Toast {
   id: string
   title: string
+  titleKm?: string
   description?: string
+  descriptionKm?: string
   type?: ToastType
   duration?: number
 }
@@ -22,15 +25,23 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const { language } = useShopEngagement()
+
+  // Do not leave an already-open notification in the previous language. New
+  // notifications are created after the language switch and use the current
+  // locale from their caller.
+  useEffect(() => {
+    setToasts([])
+  }, [language])
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   const toast = useCallback(
-    ({ title, description, type = 'info', duration = 4000 }: Omit<Toast, 'id'>) => {
+    ({ title, titleKm, description, descriptionKm, type = 'info', duration = 4000 }: Omit<Toast, 'id'>) => {
       const id = Math.random().toString(36).substring(2, 9)
-      const newToast: Toast = { id, title, description, type, duration }
+      const newToast: Toast = { id, title, titleKm, description, descriptionKm, type, duration }
 
       setToasts((prev) => [...prev, newToast])
 
@@ -64,9 +75,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             {t.type === 'info' && <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />}
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">{t.title}</p>
-              {t.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+              <p className="text-sm font-semibold">{language === 'KM' && t.titleKm ? t.titleKm : t.title}</p>
+              {(language === 'KM' && t.descriptionKm ? t.descriptionKm : t.description) && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'KM' && t.descriptionKm ? t.descriptionKm : t.description}
+                </p>
               )}
             </div>
 

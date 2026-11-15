@@ -28,6 +28,14 @@ export interface UpdateProfilePayload {
 const AUTH_TOKEN_KEY = 'tyushop_auth_token'
 const AUTH_USER_KEY = 'tyushop_auth_user'
 
+const roleNamesFor = (user?: User | null): string[] => {
+  const roles = (user as any)?.roles || []
+  return roles
+    .flatMap((role: any) => typeof role === 'string' ? [role] : [role?.name, role?.slug])
+    .filter(Boolean)
+    .map((role: unknown) => String(role).trim().toUpperCase().replace(/[\s-]+/g, '_'))
+}
+
 export const authService = {
   /**
    * Retrieve the currently stored authenticated user.
@@ -62,10 +70,7 @@ export const authService = {
   isAdmin: (user?: User | null): boolean => {
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const roles = (target as any).roles || []
-    const roleNames = roles.map((r: any) =>
-      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
-    )
+    const roleNames = roleNamesFor(target)
     return roleNames.includes('SUPER_ADMIN') || roleNames.includes('ADMIN')
   },
 
@@ -75,10 +80,7 @@ export const authService = {
   isSeller: (user?: User | null): boolean => {
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const roles = (target as any).roles || []
-    const roleNames = roles.map((r: any) =>
-      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
-    )
+    const roleNames = roleNamesFor(target)
     return roleNames.includes('SELLER') || roleNames.includes('SELLER_STAFF')
   },
 
@@ -89,10 +91,7 @@ export const authService = {
     if (authService.isAdmin(user)) return true
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const roles = (target as any).roles || []
-    const roleNames = roles.map((r: any) =>
-      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
-    )
+    const roleNames = roleNamesFor(target)
     return roleNames.some((role: string) => [
       'STAFF',
       'OPERATIONS_MANAGER',
@@ -111,10 +110,7 @@ export const authService = {
     if (authService.isAdmin(user) || authService.isStaff(user)) return true
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const roles = (target as any).roles || []
-    const roleNames = roles.map((r: any) =>
-      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
-    )
+    const roleNames = roleNamesFor(target)
     return (
       roleNames.includes('DELIVERY_DRIVER') ||
       roleNames.includes('COURIER') ||
@@ -134,11 +130,31 @@ export const authService = {
     if (authService.isAdmin(user)) return true
     const target = user !== undefined ? user : authService.getStoredUser()
     if (!target) return false
-    const roles = (target as any).roles || []
-    const roleNames = roles.map((r: any) =>
-      typeof r === 'string' ? r.toUpperCase() : String(r?.name || r?.slug || '').toUpperCase()
-    )
+    const roleNames = roleNamesFor(target)
     return roleNames.includes('WAREHOUSE_MANAGER') || roleNames.includes('INVENTORY_MANAGER')
+  },
+
+  /**
+   * Resolve the first dashboard a signed-in user should land on.  The API can
+   * return roles as strings or role objects, and customer is often included as
+   * a secondary role, so routing must inspect every role instead of assuming
+   * roles[0] is the user's workspace.
+   */
+  getDashboardPath: (user?: User | null): string => {
+    const target = user !== undefined ? user : authService.getStoredUser()
+    if (!target) return '/login'
+
+    const roles = roleNamesFor(target)
+
+    if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) return '/dashboard/admin'
+    if (roles.includes('SELLER') || roles.includes('SELLER_STAFF')) return '/dashboard/seller'
+    if (roles.includes('WAREHOUSE_MANAGER') || roles.includes('INVENTORY_MANAGER')) return '/dashboard/warehouse'
+    if (roles.includes('DELIVERY_DRIVER') || roles.includes('COURIER') || roles.includes('DELIVERY')) return '/dashboard/delivery'
+    if (roles.some((role: string) => ['STAFF', 'OPERATIONS_MANAGER', 'MANAGER', 'ORDER_MANAGER', 'CUSTOMER_SUPPORT', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))) {
+      return '/dashboard/staff'
+    }
+
+    return '/dashboard/customer'
   },
 
   /**

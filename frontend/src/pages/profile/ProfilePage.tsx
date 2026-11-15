@@ -290,6 +290,8 @@ export function ProfilePage() {
   }
 
   const roleName = user?.roles?.[0]?.name || (isAdmin ? 'SUPER_ADMIN' : 'CUSTOMER')
+  const dashboardPath = authService.getDashboardPath(user)
+  const isDeliveryWorkspace = dashboardPath === '/dashboard/delivery'
 
   const content = (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in-50 duration-200">
@@ -297,8 +299,12 @@ export function ProfilePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <Link to={isAdmin ? '/dashboard/admin' : '/dashboard/customer'} className="hover:text-indigo-600 transition-colors">
-              {isAdmin ? t('Admin Workspace', 'កន្លែងគ្រប់គ្រង Admin') : t('Customer Dashboard', 'ទំព័រដើមអតិថិជន')}
+            <Link to={dashboardPath} className="hover:text-indigo-600 transition-colors">
+              {isAdmin
+                ? t('Admin Workspace', 'កន្លែងគ្រប់គ្រង Admin')
+                : isDeliveryWorkspace
+                  ? t('Delivery Dashboard', 'ផ្ទាំងគ្រប់គ្រងការដឹកជញ្ជូន')
+                  : t('Customer Dashboard', 'ទំព័រដើមអតិថិជន')}
             </Link>
             <ChevronRight className="w-3 h-3" />
             <span className="font-semibold text-slate-800 dark:text-slate-200">

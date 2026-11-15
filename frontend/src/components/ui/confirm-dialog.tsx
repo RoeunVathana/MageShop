@@ -9,14 +9,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description: string
+  titleKm?: string
+  descriptionKm?: string
   confirmLabel?: string
   cancelLabel?: string
+  confirmLabelKm?: string
+  cancelLabelKm?: string
   onConfirm: () => void | Promise<void>
 }
 
@@ -26,11 +31,20 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
+  titleKm,
+  descriptionKm,
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
+  confirmLabelKm,
+  cancelLabelKm,
   onConfirm,
 }: ConfirmDialogProps) {
   const [isConfirming, setIsConfirming] = React.useState(false)
+  const { language } = useShopEngagement()
+  const localizedTitle = language === 'KM' && titleKm ? titleKm : title
+  const localizedDescription = language === 'KM' && descriptionKm ? descriptionKm : description
+  const localizedConfirmLabel = language === 'KM' && confirmLabelKm ? confirmLabelKm : confirmLabel
+  const localizedCancelLabel = language === 'KM' && cancelLabelKm ? cancelLabelKm : cancelLabel
 
   const confirm = async () => {
     setIsConfirming(true)
@@ -50,10 +64,10 @@ export function ConfirmDialog({
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300">
               <AlertTriangle className="h-5 w-5" />
             </span>
-            {title}
+            {localizedTitle}
           </DialogTitle>
           <DialogDescription className="pt-2 text-sm leading-6">
-            {description}
+            {localizedDescription}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 pt-2 sm:space-x-0">
@@ -63,7 +77,7 @@ export function ConfirmDialog({
             disabled={isConfirming}
             onClick={() => onOpenChange(false)}
           >
-            {cancelLabel}
+            {localizedCancelLabel}
           </Button>
           <Button
             type="button"
@@ -73,7 +87,7 @@ export function ConfirmDialog({
             className="gap-2"
           >
             {isConfirming && <Loader2 className="h-4 w-4 animate-spin" />}
-            {confirmLabel}
+            {localizedConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

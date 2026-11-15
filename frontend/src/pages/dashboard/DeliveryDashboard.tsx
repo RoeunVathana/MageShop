@@ -96,12 +96,20 @@ export function DeliveryDashboard() {
   const { t } = useShopEngagement()
   const { toast } = useToast()
   const currentUser = authService.getStoredUser()
-  const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
+  const roleNames = (currentUser?.roles || []).map((role: any) =>
+    String(role?.name || role?.slug || role)
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_')
+  )
   const canManagePricing = authService.isAdmin(currentUser)
   const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
   const canEditAssignedDelivery = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
   const isFleetGpsViewer = roleNames.includes('DELIVERY') && !canDispatch
   const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
+  const visibleDeliveryNav = isDriverOnly
+    ? deliveryNav.filter((item) => item.href === '/dashboard/delivery')
+    : deliveryNav
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
@@ -843,7 +851,7 @@ export function DeliveryDashboard() {
       roleTitleKm="ការគ្រប់គ្រងបុគ្គលិក និងកងដឹកជញ្ជូន"
       roleSlug="delivery"
       roleColor="text-indigo-600 dark:text-indigo-400"
-      navItems={deliveryNav}
+      navItems={visibleDeliveryNav}
     >
       <div className="space-y-6">
         {/* Page Header */}
@@ -1316,7 +1324,12 @@ export function DeliveryDashboard() {
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <Truck className="w-4 h-4 text-indigo-600" />
-                <span>Active Location Dispatch Queue ({filteredOrders.length})</span>
+                <span>
+                  {isDriverOnly
+                    ? t('My Assigned Delivery Queue', 'បញ្ជីការដឹកជញ្ជូនដែលបានកំណត់ឱ្យខ្ញុំ')
+                    : t('Active Location Dispatch Queue', 'បញ្ជីចាត់ចែងទីតាំងសកម្ម')}{' '}
+                  ({filteredOrders.length})
+                </span>
               </h2>
               <span className="text-xs text-slate-500">Click order to view map</span>
             </div>

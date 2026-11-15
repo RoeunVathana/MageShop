@@ -89,14 +89,20 @@ export function LanguageSwitcher({
   const handleSelect = (nextLang: 'EN' | 'KM') => {
     setLanguage(nextLang)
     setOpen(false)
-    toast({
-      title: nextLang === 'KM' ? 'បានប្តូរទៅភាសាខ្មែរ 🇰🇭' : 'Switched to English 🇺🇸',
-      description:
-        nextLang === 'KM'
-          ? 'គេហទំព័រត្រូវបានប្តូរទៅជាភាសាខ្មែរដោយជោគជ័យ។'
-          : 'Website language successfully updated to English.',
-      type: 'info',
-    })
+    // Wait until the provider clears old-language notifications, then show
+    // the switch confirmation in the newly selected language.
+    window.setTimeout(() => {
+      toast({
+        title: nextLang === 'KM' ? 'បានប្តូរទៅភាសាខ្មែរ 🇰🇭' : 'Switched to English 🇺🇸',
+        titleKm: 'បានប្តូរទៅភាសាខ្មែរ 🇰🇭',
+        description:
+          nextLang === 'KM'
+            ? 'គេហទំព័រត្រូវបានប្តូរទៅជាភាសាខ្មែរដោយជោគជ័យ។'
+            : 'Website language successfully updated to English.',
+        descriptionKm: 'គេហទំព័រត្រូវបានប្តូរទៅជាភាសាខ្មែរដោយជោគជ័យ។',
+        type: 'info',
+      })
+    }, 0)
   }
 
   const toggleLang = () => {

@@ -110,7 +110,7 @@ export function LoginPage() {
       GOOGLE_AUTH_REQUEST_TIMEOUT_MS,
       t('Google sign-in token timed out. Please try again.', 'ការទទួល token ពី Google ចំណាយពេលយូរពេក។ សូមព្យាយាមម្តងទៀត។')
     )
-    await withTimeout(
+    const response = await withTimeout(
       authService.loginWithFirebase({
         id_token: idToken,
         email: fbUser.email,
@@ -128,12 +128,14 @@ export function LoginPage() {
       type: 'success',
     })
 
-    // Google sign-in returns customers and administrators to the storefront.
-    // Keep an explicitly requested internal destination such as `/cart`.
+    // Keep customers on the storefront while sending operational accounts to
+    // their actual workspace. An explicit safe destination such as `/cart`
+    // always wins.
     // Force a fresh application bootstrap after saving the API token. This
     // avoids leaving the login page in a loading state when the auth event
     // updates providers during a client-side route transition.
-    window.location.replace(postGoogleLoginPath)
+    const defaultDestination = authService.getDashboardPath(response.data?.user)
+    window.location.replace(hasSafeRedirect ? postGoogleLoginPath : defaultDestination === '/dashboard/customer' ? '/' : defaultDestination)
   }
 
   // Process incoming Google OAuth Callback tokens or errors
@@ -182,7 +184,10 @@ export function LoginPage() {
             type: 'success',
           })
 
-          navigate(postGoogleLoginPath, { replace: true })
+          const destination = hasSafeRedirect
+            ? postGoogleLoginPath
+            : authService.getDashboardPath(freshUser)
+          navigate(destination === '/dashboard/customer' ? '/' : destination, { replace: true })
         })
         .catch(() => {
           if (parsedUser) {
@@ -191,7 +196,10 @@ export function LoginPage() {
               description: t('Signed in with Google!', 'បានចូលតាម Google!'),
               type: 'success',
             })
-            navigate(postGoogleLoginPath, { replace: true })
+            const destination = hasSafeRedirect
+              ? postGoogleLoginPath
+              : authService.getDashboardPath(parsedUser)
+            navigate(destination === '/dashboard/customer' ? '/' : destination, { replace: true })
           }
         })
         .finally(() => {
@@ -322,10 +330,9 @@ export function LoginPage() {
 
       if (hasSafeRedirect) {
         navigate(postGoogleLoginPath)
-      } else if (authService.isAdmin(res.data?.user)) {
-        navigate('/dashboard/admin')
       } else {
-        navigate('/')
+        const destination = authService.getDashboardPath(res.data?.user)
+        navigate(destination === '/dashboard/customer' ? '/' : destination)
       }
     } catch (err: any) {
       toast({

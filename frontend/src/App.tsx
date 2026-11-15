@@ -16,6 +16,7 @@ import {
   StaffOrAdminRoute,
   DeliveryOrAdminRoute,
   WarehouseOrAdminRoute,
+  RoleAwareDashboardRoute,
 } from '@/components/auth/AdminOnlyRoute'
 
 // Route-level code splitting keeps the public storefront fast and loads admin,
@@ -129,12 +130,13 @@ export default function App() {
               <Route path="/dashboard/customer/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
 
               {/* Customer Account Portal (Authenticated Users Only) */}
-              <Route path="/dashboard/customer" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
-              <Route path="/dashboard/customer/orders" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
-              <Route path="/dashboard/customer/addresses" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
-              <Route path="/dashboard/customer/payments" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
-              <Route path="/account" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
-              <Route path="/orders" element={<AuthenticatedRoute><CustomerDashboard /></AuthenticatedRoute>} />
+              <Route path="/dashboard" element={<RoleAwareDashboardRoute><Navigate to="/dashboard/customer" replace /></RoleAwareDashboardRoute>} />
+              <Route path="/dashboard/customer" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
+              <Route path="/dashboard/customer/orders" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
+              <Route path="/dashboard/customer/addresses" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
+              <Route path="/dashboard/customer/payments" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
+              <Route path="/account" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
+              <Route path="/orders" element={<RoleAwareDashboardRoute><CustomerDashboard /></RoleAwareDashboardRoute>} />
 
               {/* System Dashboards */}
               <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
