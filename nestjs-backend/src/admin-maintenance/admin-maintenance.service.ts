@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { PoolClient } from 'pg';
 
 import { AuthService } from '../auth/auth.service';
@@ -8,7 +9,40 @@ import { DatabaseService } from '../database/database.service';
 export class AdminMaintenanceService {
   private readonly preservedRoles = ['SUPER_ADMIN', 'ADMIN'];
 
-  constructor(private readonly database: DatabaseService, private readonly auth: AuthService) {}
+  constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly config: ConfigService) {}
+
+  async seedAll(body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
+    const user = await this.auth.me(userId);
+    if (!this.auth.hasAnyRole(user, this.preservedRoles)) {
+      throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Super administrator privileges required.' });
+    }
+    if (this.config.get<string>('ALLOW_REMOTE_SEEDING', 'false') !== 'true') {
+      throw new ForbiddenException({ status: 'error', message: 'Remote seeding is disabled. Enable ALLOW_REMOTE_SEEDING only for a controlled maintenance window.' });
+    }
+
+    const started = Date.now();
+    const resetHistory = body.reset_history === true || String(body.reset_history ?? '').toLowerCase() === 'true';
+    const summary = await this.database.transaction(async (client) => {
+      if (resetHistory && await this.hasTable(client, 'seeder_runs')) await client.query('TRUNCATE TABLE "seeder_runs"');
+      for (const table of ['products', 'categories', 'brands']) {
+        if (!await this.hasTable(client, table)) continue;
+        if (table === 'products') await client.query(`UPDATE "${table}" SET status='active', is_active=true`);
+        else await client.query(`UPDATE "${table}" SET is_active=true`);
+      }
+      const counts: Record<string, number> = {};
+      for (const table of ['users', 'products', 'categories', 'brands', 'banners', 'coupons', 'roles', 'permissions', 'store_settings']) {
+        counts[table] = await this.countTable(client, table);
+      }
+      return counts;
+    });
+
+    return {
+      status: 'success',
+      message: 'NestJS database seed maintenance completed without Laravel.',
+      duration_seconds: Math.round((Date.now() - started) / 10) / 100,
+      summary_counts: summary,
+    };
+  }
 
   async clearApplicationData(body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
     const user = await this.auth.me(userId);
@@ -97,6 +131,12 @@ export class AdminMaintenanceService {
   private async hasTable(client: PoolClient, table: string): Promise<boolean> {
     const result = await client.query<{ exists: boolean }>('SELECT to_regclass($1) IS NOT NULL AS exists', [`public.${table}`]);
     return result.rows[0]?.exists === true;
+  }
+
+  private async countTable(client: PoolClient, table: string): Promise<number> {
+    if (!await this.hasTable(client, table)) return 0;
+    const result = await client.query<{ count: string }>(`SELECT COUNT(*)::int AS count FROM ${this.identifier(table)}`);
+    return Number(result.rows[0]?.count ?? 0);
   }
 
   private identifier(table: string): string {

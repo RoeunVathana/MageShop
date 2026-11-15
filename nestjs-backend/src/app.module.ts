@@ -10,7 +10,6 @@ import { ProductAdminController } from './catalog/product-admin.controller';
 import { ProductManagementService } from './catalog/product-management.service';
 import { DatabaseService } from './database/database.service';
 import { HealthController } from './health/health.controller';
-import { LaravelCompatibilityProxy } from './proxy/laravel-compatibility.proxy';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthRecoveryService } from './auth/auth-recovery.service';
@@ -72,6 +71,6 @@ import { AdminDnsService } from './admin-dns/admin-dns.service';
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
   controllers: [AdminBannerController, AdminCouponController, AdminDeliverySettingsController, AdminDnsController, AdminMaintenanceController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, ReceiptController, SellerController, SellerOperationsController, StoreSettingsController, TelegramAdminController, TelegramAiController, TelegramAuthController, TelegramProductsController, TelegramWebhookController, UserAuthController],
-  providers: [AdminDnsService, AdminMaintenanceService, AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, LaravelCompatibilityProxy, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, ReceiptService, SanctumGuard, SellerService, StoreSettingsService, TelegramAdminService, TelegramAiService, TelegramAuthService, TelegramWebhookService],
+  providers: [AdminDnsService, AdminMaintenanceService, AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, MediaService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, ReceiptService, SanctumGuard, SellerService, StoreSettingsService, TelegramAdminService, TelegramAiService, TelegramAuthService, TelegramWebhookService],
 })
 export class AppModule {}
