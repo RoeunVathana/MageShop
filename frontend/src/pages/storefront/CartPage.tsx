@@ -319,17 +319,11 @@ export function CartPage() {
   useEffect(() => {
     let mounted = true
     syncCartWithCatalog()
-      .then(({ removed, adjusted }) => {
+      .then(() => {
         if (!mounted) return
-        if (removed > 0 || adjusted > 0) {
-          toast({
-            title: t('Cart updated', 'កន្ត្រកទំនិញត្រូវបានធ្វើបច្ចុប្បន្នភាព'),
-            description: removed > 0
-              ? t(`${removed} unavailable item(s) were removed from your cart.`, `បានដកទំនិញ ${removed} មុខដែលមិនមានចេញពីកន្ត្រក។`)
-              : t('Your quantity was adjusted to current stock.', 'បរិមាណត្រូវបានកែតម្រូវតាមស្តុកបច្ចុប្បន្ន។'),
-            type: 'info',
-          })
-        }
+        // Reconcile silently on page load. Showing an alert here made a
+        // successful cart cleanup look like a checkout failure. The checkout
+        // handler still explains a stock change if it happens during submit.
       })
       .catch(() => {
         // Checkout still performs authoritative server-side validation if the
