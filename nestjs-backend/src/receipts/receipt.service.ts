@@ -98,7 +98,14 @@ export class ReceiptService {
       emailStatus = delivered ? 'sent' : 'failed';
       await this.updateEmailStatus(receipt.id, emailStatus, delivered);
     }
-    const telegramNotified = await this.notifyTelegram(order, receipt, payment, 'Order received — awaiting Bakong confirmation.');
+    // Do not send a "paid"-looking Telegram report while a KHQR is still waiting
+    // for the customer to scan and confirm it. The final report is sent by
+    // notifyPayment() after Bakong verification succeeds.
+    const paymentMethod = String(payment?.payment_method ?? order.payment_method ?? '').toLowerCase();
+    const paymentStatus = String(payment?.status ?? order.payment_status ?? '').toLowerCase();
+    const telegramNotified = paymentMethod === 'cash_on_delivery' || ['paid', 'completed'].includes(paymentStatus)
+      ? await this.notifyTelegram(order, receipt, payment)
+      : false;
     return { emailStatus, telegramNotified };
   }
 
@@ -122,7 +129,7 @@ export class ReceiptService {
       const delivered = await this.sendEmail(order, receipt, payment, true, items, pdf);
       await this.updateEmailStatus(receipt.id, delivered ? 'sent' : 'failed', delivered);
     }
-    if (notifyTelegram) await this.notifyTelegram(order, receipt, payment, 'Order payment report');
+    if (notifyTelegram) await this.notifyTelegram(order, receipt, payment);
     return (await this.database.query<ReceiptRow>('SELECT * FROM receipts WHERE id = $1 LIMIT 1', [receipt.id])).rows[0] ?? receipt;
   }
 
@@ -133,7 +140,7 @@ export class ReceiptService {
     const payment = await this.payment(order.id);
     const delivered = order.customer_email ? await this.sendEmail(order, receipt, payment, true, items) : false;
     if (order.customer_email) await this.updateEmailStatus(receipt.id, delivered ? 'sent' : 'failed', delivered);
-    return this.notifyTelegram(order, receipt, payment, 'Payment verified successfully.');
+    return this.notifyTelegram(order, receipt, payment);
   }
 
   private async authorizedOrder(identifier: string, userId: number, roles: readonly string[]): Promise<{ order: OrderRow; user: AuthUser }> {
@@ -201,7 +208,7 @@ export class ReceiptService {
     } catch { return false; }
   }
 
-  private async notifyTelegram(order: OrderRow, receipt: ReceiptRow, payment: Record<string, unknown> | null, prefix: string): Promise<boolean> {
+  private async notifyTelegram(order: OrderRow, receipt: ReceiptRow, payment: Record<string, unknown> | null): Promise<boolean> {
     const token = await this.setting('telegram_bot_token', this.config.get<string>('TELEGRAM_BOT_TOKEN', ''));
     const chatId = await this.setting('telegram_admin_chat_id', this.config.get<string>('TELEGRAM_ADMIN_CHAT_ID', ''));
     if (!token || !chatId) return false;
@@ -209,26 +216,35 @@ export class ReceiptService {
     const rate = Number(await this.setting('usd_to_khr_rate', '4100')) || 4100;
     const amount = Number(order.total_amount ?? 0);
     const amountKhr = Math.round(amount * rate);
-    const paymentMethod = String(payment?.payment_method ?? '-').replaceAll('_', ' ').toUpperCase();
-    const paymentStatus = ['completed', 'paid'].includes(String(payment?.status ?? order.status).toLowerCase())
-      ? 'PAID & VERIFIED'
-      : String(payment?.status ?? order.status).toUpperCase();
+    const paymentMethod = String(payment?.payment_method ?? order.payment_method ?? '-').replaceAll('_', ' ').toUpperCase();
+    const rawPaymentStatus = String(payment?.status ?? order.payment_status ?? order.status).toLowerCase();
+    const paymentStatus = ['completed', 'paid', 'verified'].includes(rawPaymentStatus)
+      ? '✅ PAID & VERIFIED'
+      : paymentMethod === 'CASH ON DELIVERY' || ['pending_arrival', 'cash_on_delivery'].includes(rawPaymentStatus)
+        ? '🟠 CASH ON DELIVERY'
+        : `⏳ ${rawPaymentStatus.replaceAll('_', ' ').toUpperCase()}`;
     const itemLines = items.length
-      ? items.map((item) => `• ${String(item.quantity ?? 0)}x ${String(item.product_name ?? 'Product')} — ${String(item.total_price ?? 0)} ${order.currency ?? 'USD'}`).join('\n')
+      ? items.map((item) => {
+        const itemTotal = Number(item.total_price ?? 0);
+        const itemAmount = order.currency === 'USD' ? `$${itemTotal.toFixed(2)}` : `${itemTotal.toFixed(2)} ${order.currency ?? 'USD'}`;
+        return `• ${String(item.quantity ?? 0)}x ${String(item.product_name ?? 'Product')} — ${itemAmount}`;
+      }).join('\n')
       : '• No order items recorded';
     const customerPhone = String(order['customer_phone'] ?? '-');
     const deliveryAddress = String(order['delivery_address'] ?? '-');
     const trackingUrl = `https://www.tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
-    const issuedAt = new Date(String(order.updated_at ?? order.created_at ?? Date.now())).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
+    const issuedAt = this.reportTimestamp(order.updated_at ?? order.created_at ?? Date.now());
+    const currency = String(order.currency ?? 'USD').toUpperCase();
+    const totalText = currency === 'USD' ? `$${amount.toFixed(2)} USD` : `${amount.toFixed(2)} ${currency}`;
     const message = [
-      `🧾 TYUSHOP — PAYMENT & ORDER REPORT`,
-      '━━━━━━━━━━━━━━━━━━━━',
-      `📄 Order ID: #${order.order_number}`,
-      `🧾 Receipt No: #${receipt.receipt_number}`,
-      `🔁 Transaction: ${String(payment?.transaction_reference ?? '-')}`,
+      `🚨 TYUSHOP — PAYMENT & ORDER REPORT`,
+      '━━━━━━━━━━━━━━━━━━━━━━',
+      `🧾 Order ID: #${order.order_number}`,
+      `📄 Receipt No: #${receipt.receipt_number}`,
+      `🔐 Transaction: ${String(payment?.transaction_reference ?? '-')}`,
       `💳 Method: ${paymentMethod}`,
-      `📌 Status: ✅ ${paymentStatus}`,
-      `💰 Total Amount: ${amount.toFixed(2)} ${order.currency ?? 'USD'} (≈ ${amountKhr.toLocaleString()} ៛)`,
+      `📌 Status: ${paymentStatus}`,
+      `💰 Total Amount: ${totalText} (≈ ${amountKhr.toLocaleString()} ៛)`,
       '',
       '👤 CUSTOMER INFORMATION',
       `• Name: ${String(order.customer_name ?? '-')}`,
@@ -242,25 +258,35 @@ export class ReceiptService {
       `🎁 Loyalty Points: +${Number(order['points_earned'] ?? 0)} pts`,
       `🚚 GPS Tracking: ${trackingUrl}`,
       `🕒 Time: ${issuedAt}`,
-      '',
-      `✅ ${prefix}`,
     ].join('\n');
     const photo = this.config.get<string>('TELEGRAM_REPORT_IMAGE_URL', 'https://tyushop.blog/logo.png');
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       try {
+        const caption = message.length <= 1024
+          ? message
+          : `🚨 TYUSHOP — PAYMENT & ORDER REPORT\n🧾 Order ID: #${order.order_number}\n📄 Receipt No: #${receipt.receipt_number}\n📌 Status: ${paymentStatus}`;
         const photoResponse = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, photo, caption: message.slice(0, 1024) }),
+          body: JSON.stringify({ chat_id: chatId, photo, caption }),
           signal: controller.signal,
         });
-        if (photoResponse.ok) return true;
+        if (photoResponse.ok && message.length <= 1024) return true;
+        if (photoResponse.ok && message.length > 1024) {
+          const fullReportResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
+            signal: controller.signal,
+          });
+          return fullReportResponse.ok;
+        }
         const fallbackResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: message }),
+          body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
           signal: controller.signal,
         });
         return fallbackResponse.ok;
@@ -273,6 +299,12 @@ export class ReceiptService {
   private async setting(key: string, fallback: string): Promise<string> {
     const value = (await this.database.query<{ setting_value: string | null }>('SELECT setting_value FROM store_settings WHERE setting_key = $1 LIMIT 1', [key])).rows[0]?.setting_value;
     return value === null || value === undefined || value === '' ? fallback : value;
+  }
+
+  private reportTimestamp(value: Date | string | number): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString('sv-SE', { timeZone: 'Asia/Phnom_Penh', hour12: false });
   }
 
   private async pdfDocument(order: OrderRow, receipt: ReceiptRow, items: Array<Record<string, unknown>>, payment: Record<string, unknown> | null): Promise<Buffer> {
