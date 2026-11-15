@@ -553,14 +553,31 @@ export function DeliveryDashboard() {
     e.preventDefault()
     if (!editingOrder) return
 
+    const hasValidTargetCoordinates = Number.isFinite(editDestLat)
+      && Number.isFinite(editDestLng)
+      && editDestLat >= -90
+      && editDestLat <= 90
+      && editDestLng >= -180
+      && editDestLng <= 180
+      && !(editDestLat === 0 && editDestLng === 0)
+
+    if (!hasValidTargetCoordinates) {
+      toast({
+        title: 'Valid delivery location required',
+        description: 'Choose a Cambodia location preset or enter valid destination latitude and longitude before saving.',
+        type: 'error',
+      })
+      return
+    }
+
     setSavingLocation(true)
     try {
       const payload = {
         delivery_address: editAddress,
         dest_lat: editDestLat,
         dest_lng: editDestLng,
-        current_lat: editDriverLat,
-        current_lng: editDriverLng,
+        current_lat: editDriverLat === 0 && editDriverLng === 0 ? undefined : editDriverLat,
+        current_lng: editDriverLat === 0 && editDriverLng === 0 ? undefined : editDriverLng,
         estimated_arrival: editEta,
         status: editStatus,
       }
@@ -586,9 +603,12 @@ export function DeliveryDashboard() {
       })
       setEditingOrder(null)
     } catch (error) {
+      const serverMessage = error && typeof error === 'object' && 'message' in error
+        ? String((error as { message?: unknown }).message || '')
+        : ''
       toast({
         title: 'Location update failed',
-        description: error instanceof Error ? error.message : 'The server did not save the delivery location.',
+        description: serverMessage || 'The server did not save the delivery location.',
         type: 'error',
       })
     } finally {
@@ -2082,6 +2102,8 @@ export function DeliveryDashboard() {
                   <input
                     type="number"
                     step="0.0001"
+                    min="-90"
+                    max="90"
                     required
                     value={editDestLat}
                     onChange={(e) => setEditDestLat(parseFloat(e.target.value))}
@@ -2095,6 +2117,8 @@ export function DeliveryDashboard() {
                   <input
                     type="number"
                     step="0.0001"
+                    min="-180"
+                    max="180"
                     required
                     value={editDestLng}
                     onChange={(e) => setEditDestLng(parseFloat(e.target.value))}

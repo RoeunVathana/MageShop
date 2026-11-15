@@ -140,6 +140,9 @@ interface QrSessionData {
   payment_method: string
   points_earned: number
   discount: number
+  subtotal?: number
+  shipping_fee?: number
+  coupon_code?: string
   items: Array<{ name: string; quantity: number; price: number }>
 }
 
@@ -152,6 +155,9 @@ interface PaymentSuccessReport {
   amount_usd: number
   amount_khr: number
   discount: number
+  subtotal: number
+  shipping_fee: number
+  coupon_code?: string
   points_earned: number
   customer_name: string
   customer_email: string
@@ -953,6 +959,9 @@ export function CartPage() {
           payment_method: 'Bakong KHQR',
           points_earned: pointsEarnedThisOrder,
           discount: discountAmount,
+          subtotal,
+          shipping_fee: effectiveShippingFee,
+          coupon_code: appliedCoupon?.code || '',
           items: snapshotItems,
           expires_in_seconds: Number(qrInfo.expires_in_seconds ?? 600),
         })
@@ -978,6 +987,9 @@ export function CartPage() {
           amount_usd: finalTotal,
           amount_khr: finalTotalKhr,
           discount: discountAmount,
+          subtotal,
+          shipping_fee: effectiveShippingFee,
+          coupon_code: appliedCoupon?.code || '',
           points_earned: pointsEarnedThisOrder,
           customer_name: normalizedCustomerName,
           customer_email: customerEmail,
@@ -1082,6 +1094,9 @@ export function CartPage() {
         amount_usd: confirmedAmount,
         amount_khr: confirmedAmountKhr,
         discount: qrModalData.discount,
+        subtotal: Number(qrModalData.subtotal ?? qrModalData.items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0)),
+        shipping_fee: Number(qrModalData.shipping_fee ?? 0),
+        coupon_code: qrModalData.coupon_code || '',
         points_earned: qrModalData.points_earned,
         customer_name: qrModalData.customer_name,
         customer_email: qrModalData.customer_email,
@@ -1206,6 +1221,11 @@ export function CartPage() {
       setVerifyingQrPayment(false)
     }
   }
+
+  const paymentSuccessItemsSubtotal = paymentSuccessData?.items.reduce(
+    (sum, item) => sum + Number(item.price) * Number(item.quantity),
+    0,
+  ) || 0
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-10 space-y-6 pb-28 sm:pb-36">
@@ -2179,15 +2199,15 @@ export function CartPage() {
 
       {/* POPUP PAYMENT SUCCESS MODAL */}
       {paymentSuccessData && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col max-h-[92vh] my-auto">
+        <div className="payment-success-overlay fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="receipt-printable bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col max-h-[92vh] my-auto">
             {/* Celebratory Emerald Top Banner */}
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
               <button
                 type="button"
                 onClick={() => setPaymentSuccessData(null)}
-                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
+                className="print-hide absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition-colors"
                 aria-label="Close Success Popup"
               >
                 <X className="w-4 h-4" />
@@ -2226,6 +2246,18 @@ export function CartPage() {
                     {paymentSuccessData.payment_method}
                   </span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{t('Payment Status:', 'ស្ថានភាពទូទាត់:')}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {paymentSuccessData.payment_status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">{t('Transaction:', 'ប្រតិបត្តិការ:')}</span>
+                  <span className="font-mono text-[10px] font-bold text-foreground truncate" title={paymentSuccessData.transaction_reference}>
+                    {paymentSuccessData.transaction_reference}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border/60">
                   <span className="text-muted-foreground font-semibold">{t('Total Amount Paid:', 'ទឹកប្រាក់បានទូទាត់:')}</span>
                   <div className="text-right">
@@ -2235,6 +2267,54 @@ export function CartPage() {
                     <span className="text-[11px] text-muted-foreground font-medium ml-1.5">
                       ({paymentSuccessData.amount_khr.toLocaleString()} ៛)
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed purchased items and totals */}
+              <div className="rounded-2xl border border-border/70 overflow-hidden bg-background">
+                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/70 bg-muted/30">
+                  <div className="flex items-center gap-2 text-xs font-black text-foreground">
+                    <FileText className="w-4 h-4 text-primary" />
+                    {t('Purchased Items', 'មុខទំនិញដែលបានទិញ')}
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    {paymentSuccessData.items.length} {t('item(s)', 'មុខទំនិញ')}
+                  </span>
+                </div>
+                <div className="divide-y divide-border/60">
+                  {paymentSuccessData.items.map((item, index) => (
+                    <div key={`${item.name}-${index}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-xs">
+                      <div className="min-w-0">
+                        <p className="font-bold text-foreground leading-snug break-words">{item.name}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {item.quantity} × ${Number(item.price).toFixed(2)} {t('each', 'ក្នុងមួយមុខ')}
+                        </p>
+                      </div>
+                      <span className="font-black text-foreground whitespace-nowrap">
+                        ${(Number(item.price) * Number(item.quantity)).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-4 py-3 space-y-1.5 text-xs border-t border-border/70 bg-muted/20">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>{t('Items Subtotal', 'សរុបទំនិញ')}</span>
+                    <span>${paymentSuccessItemsSubtotal.toFixed(2)}</span>
+                  </div>
+                  {paymentSuccessData.discount > 0 && (
+                    <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                      <span>{t('Discount', 'បញ្ចុះតម្លៃ')}{paymentSuccessData.coupon_code ? ` (${paymentSuccessData.coupon_code})` : ''}</span>
+                      <span>-${paymentSuccessData.discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>{t('Delivery Fee', 'ថ្លៃដឹកជញ្ជូន')}</span>
+                    <span>{paymentSuccessData.shipping_fee > 0 ? `$${paymentSuccessData.shipping_fee.toFixed(2)}` : t('FREE', 'ឥតគិតថ្លៃ')}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/60 font-black text-foreground">
+                    <span>{t('Grand Total', 'សរុបត្រូវបង់')}</span>
+                    <span className="text-primary">${paymentSuccessData.amount_usd.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -2279,8 +2359,19 @@ export function CartPage() {
                 </div>
               </div>
 
+              <div className="text-[10px] text-muted-foreground space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <span>{t('Paid / confirmed at', 'ពេលទូទាត់ / បញ្ជាក់')}</span>
+                  <span className="font-medium text-right">{paymentSuccessData.paid_at || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>{t('Receipt delivery', 'ការផ្ញើវិក្កយបត្រ')}</span>
+                  <span className="font-medium text-right">{paymentSuccessData.customer_email}</span>
+                </div>
+              </div>
+
               {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
+              <div className="receipt-actions space-y-2 pt-1">
                 <Link
                   to={`/track?order=${encodeURIComponent(paymentSuccessData.order_number)}`}
                   className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-lg shadow-primary/25 transition-all"
@@ -2296,7 +2387,7 @@ export function CartPage() {
                     onClick={() => window.print()}
                     className="rounded-xl h-10 text-xs font-bold gap-1.5"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Printer className="w-3.5 h-3.5" />
                     {t('Print Receipt', 'បោះពុម្ពវិក្កយបត្រ')}
                   </Button>
                   <Button

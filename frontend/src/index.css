@@ -501,6 +501,47 @@ html.khmer-mode .dashboard-shell .text-xs {
   }
 }
 
+/* Customer receipt print view: print only the completed order report instead
+   of the checkout page, navigation, backdrop, and floating widgets. */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .payment-success-overlay,
+  .payment-success-overlay * {
+    visibility: visible !important;
+  }
+
+  .payment-success-overlay {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+
+  .receipt-printable {
+    position: static !important;
+    width: 100% !important;
+    max-width: 760px !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .receipt-printable .receipt-actions,
+  .receipt-printable .print-hide {
+    display: none !important;
+  }
+}
+
 /* Keep the enlarged admin navigation comfortable to scan while making the
    long Khmer menu visibly scrollable instead of clipping its lower items. */
 .dashboard-sidebar-nav {

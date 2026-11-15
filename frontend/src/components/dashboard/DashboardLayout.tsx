@@ -152,16 +152,16 @@ export function DashboardLayout({
   return (
     <div className="dashboard-shell min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       {/* Desktop Sticky Sidebar - Permanently pinned to viewport when scrolling page */}
-      <aside className="dashboard-sidebar hidden lg:flex flex-col w-80 2xl:w-96 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
+      <aside className="dashboard-sidebar hidden lg:flex flex-col w-72 2xl:w-80 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <Link to="/" aria-label="TYUSHOP Home">
             <Logo size="md" subtitle="WORKSPACE" />
           </Link>
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-5 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
+        <div className="px-4 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
           <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
@@ -177,7 +177,7 @@ export function DashboardLayout({
         </div>
 
         {/* Navigation Items - Self-scrolling if menu exceeds viewport height */}
-        <nav className="dashboard-sidebar-nav flex-1 px-3.5 py-5 space-y-1 overflow-y-auto overscroll-contain">
+        <nav className="dashboard-sidebar-nav flex-1 px-3 py-4 space-y-1 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -188,13 +188,13 @@ export function DashboardLayout({
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  'dashboard-nav-link flex items-center justify-between gap-3 min-h-12 px-3.5 py-3 rounded-xl text-[17px] font-medium leading-7 transition-all',
+                  'dashboard-nav-link flex items-center justify-between gap-2.5 min-h-11 px-3 py-2.5 rounded-xl text-[15px] font-medium leading-6 transition-all',
                   isActive
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Icon className="w-5 h-5 shrink-0" />
                   <span className="dashboard-nav-label min-w-0 flex-1 leading-7 whitespace-normal">{displayLabel}</span>
                 </div>
@@ -209,7 +209,7 @@ export function DashboardLayout({
         </nav>
 
         {/* Storefront return link & footer */}
-        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
           <Link to="/">
             <Button
               variant="outline"
@@ -232,7 +232,7 @@ export function DashboardLayout({
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative w-80 max-w-[92vw] bg-white dark:bg-slate-900 h-full shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col p-5 z-10 animate-in slide-in-from-left duration-300">
+          <div className="relative w-72 max-w-[86vw] bg-white dark:bg-slate-900 h-full shadow-2xl border-r border-slate-200 dark:border-slate-800 flex flex-col p-4 z-10 animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <Link to="/" aria-label="TYUSHOP Home">
                 <Logo size="md" subtitle="WORKSPACE" />
@@ -267,13 +267,13 @@ export function DashboardLayout({
                     to={item.href}
                     onClick={() => setIsMobileSidebarOpen(false)}
                     className={cn(
-                      'flex items-center justify-between px-3.5 py-3 rounded-xl text-[17px] font-medium leading-7 transition-all',
+                      'flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-[15px] font-medium leading-6 transition-all',
                       isActive
                         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     )}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <Icon className="w-5 h-5" />
                       <span className="dashboard-nav-label min-w-0 flex-1 leading-7">{displayLabel}</span>
                     </div>
