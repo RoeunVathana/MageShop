@@ -27,4 +27,13 @@ export class CatalogController {
     response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
     response.json(payload);
   }
+
+  @Get('products/availability')
+  async productAvailability(@Req() request: Request, @Res() response: Response): Promise<void> {
+    const payload = await this.catalog.productAvailability(request.query);
+    // Availability is intentionally never cached because it is used immediately
+    // before checkout to remove archived or sold-out local cart items.
+    response.setHeader('Cache-Control', 'no-store');
+    response.json(payload);
+  }
 }

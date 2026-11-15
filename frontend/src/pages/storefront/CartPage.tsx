@@ -183,6 +183,7 @@ export function CartPage() {
     updateCartQty,
     removeFromCart,
     clearCart,
+    syncCartWithCatalog,
     loyaltyPoints,
     setLoyaltyPoints,
     freeRewardItem,
@@ -308,9 +309,39 @@ export function CartPage() {
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'bakong_khqr' | 'cash_on_delivery'>('bakong_khqr')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [cartSyncing, setCartSyncing] = useState(true)
   // Keep the same key across a network retry so the API can replay the
   // original checkout instead of creating a duplicate order.
   const checkoutIdempotencyKeyRef = useRef<string | null>(null)
+
+  // Local cart data can outlive an archived product or an inventory update.
+  // Reconcile it with the live catalog before allowing checkout to start.
+  useEffect(() => {
+    let mounted = true
+    syncCartWithCatalog()
+      .then(({ removed, adjusted }) => {
+        if (!mounted) return
+        if (removed > 0 || adjusted > 0) {
+          toast({
+            title: t('Cart updated', 'កន្ត្រកទំនិញត្រូវបានធ្វើបច្ចុប្បន្នភាព'),
+            description: removed > 0
+              ? t(`${removed} unavailable item(s) were removed from your cart.`, `បានដកទំនិញ ${removed} មុខដែលមិនមានចេញពីកន្ត្រក។`)
+              : t('Your quantity was adjusted to current stock.', 'បរិមាណត្រូវបានកែតម្រូវតាមស្តុកបច្ចុប្បន្ន។'),
+            type: 'info',
+          })
+        }
+      })
+      .catch(() => {
+        // Checkout still performs authoritative server-side validation if the
+        // availability probe is temporarily unavailable.
+      })
+      .finally(() => {
+        if (mounted) setCartSyncing(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // Real-time GPS Geolocation Detector
   const handleDetectCurrentLocation = () => {
@@ -783,6 +814,15 @@ export function CartPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (cartSyncing) {
+      toast({
+        title: t('Checking cart availability', 'កំពុងពិនិត្យទំនិញក្នុងកន្ត្រក'),
+        description: t('Please wait a moment and try checkout again.', 'សូមរង់ចាំបន្តិច ហើយសាកល្បងទូទាត់ម្ដងទៀត។'),
+        type: 'info',
+      })
+      return
+    }
+
     // 0. REQUIRE CUSTOMER LOGIN ACCOUNT BEFORE CHECKOUT
     if (!authService.isAuthenticated()) {
       setIsLoginRequiredModalOpen(true)
@@ -970,6 +1010,22 @@ export function CartPage() {
           : apiError && 'message' in apiError
             ? String(apiError.message || '')
             : ''
+
+      if (/no longer available|insufficient stock/i.test(errorMessage)) {
+        try {
+          const refreshed = await syncCartWithCatalog()
+          toast({
+            title: t('Cart refreshed', 'កន្ត្រកទំនិញត្រូវបានធ្វើបច្ចុប្បន្នភាព'),
+            description: refreshed.removed > 0
+              ? t('An unavailable product was removed. Please review your cart and try again.', 'ទំនិញដែលមិនមានត្រូវបានដកចេញ។ សូមពិនិត្យកន្ត្រក ហើយសាកល្បងម្ដងទៀត។')
+              : t('Stock changed while you were checking out. Please review the quantity and try again.', 'ស្តុកបានផ្លាស់ប្តូរពេលអ្នកកំពុងទូទាត់។ សូមពិនិត្យបរិមាណ ហើយសាកល្បងម្ដងទៀត។'),
+            type: 'error',
+          })
+          return
+        } catch {
+          // Fall through to the server error below when reconciliation fails.
+        }
+      }
 
       if (apiError?.code === 401) {
         authService.clearSession()

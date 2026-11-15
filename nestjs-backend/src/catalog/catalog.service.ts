@@ -268,6 +268,63 @@ export class CatalogService {
     return this.paginate(result.rows.map((row) => this.productResource(row)), perPage, page, total);
   }
 
+  async productAvailability(query: Query): Promise<Record<string, unknown>> {
+    const rawIds = Array.isArray(query.ids) ? query.ids : [query.ids];
+    const ids = rawIds
+      .flatMap((value) => String(value ?? '').split(','))
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isInteger(value) && value > 0)
+      .filter((value, index, values) => values.indexOf(value) === index)
+      .slice(0, 100);
+
+    if (!ids.length) return { data: [] };
+
+    const result = await this.database.query<{
+      id: number;
+      name: string;
+      slug: string;
+      product_type: string | null;
+      selling_price: number | string | null;
+      price: number | string | null;
+      discount_price: number | string | null;
+      status: string | null;
+      is_active: boolean;
+      image_url: string | null;
+      stock_quantity: number | string | null;
+      quantity_on_hand: number | string | null;
+      quantity_reserved: number | string | null;
+    }>(`
+      SELECT p.id, p.name, p.slug, p.product_type, p.selling_price, p.price,
+             p.discount_price, p.status, p.is_active, p.image_url,
+             p.stock_quantity, i.quantity_on_hand, i.quantity_reserved
+      FROM products p
+      LEFT JOIN inventories i ON i.product_id = p.id
+      WHERE p.id = ANY($1::int[])
+    `, [ids]);
+
+    return {
+      data: result.rows.map((row) => ({
+        id: Number(row.id),
+        name: row.name,
+        slug: row.slug,
+        product_type: row.product_type ?? 'simple',
+        selling_price: Number(row.selling_price ?? row.price ?? 0),
+        price: Number(row.price ?? row.selling_price ?? 0),
+        discount_price: row.discount_price === null ? null : Number(row.discount_price),
+        status: row.status ?? (row.is_active ? 'active' : 'draft'),
+        is_active: Boolean(row.is_active),
+        image_url: row.image_url,
+        stock_quantity: Number(row.stock_quantity ?? 0),
+        quantity_on_hand: Number(row.quantity_on_hand ?? row.stock_quantity ?? 0),
+        quantity_reserved: Number(row.quantity_reserved ?? 0),
+        available_stock: Math.max(
+          0,
+          Number(row.quantity_on_hand ?? row.stock_quantity ?? 0) - Number(row.quantity_reserved ?? 0),
+        ),
+      })),
+    };
+  }
+
   private categoryResource(row: CategoryRow): Record<string, unknown> {
     return {
       id: Number(row.id),

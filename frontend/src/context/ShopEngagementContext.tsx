@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react'
 import { storeSettingsService } from '@/services/storeSettings.service'
 import { api } from '@/lib/api'
+import { productService } from '@/services/product.service'
 
 export interface CartItem {
   id: number
@@ -53,6 +54,7 @@ interface ShopEngagementContextType {
   removeFromCart: (id: number) => void
   updateCartQty: (id: number, qty: number) => void
   clearCart: () => void
+  syncCartWithCatalog: () => Promise<{ removed: number; adjusted: number }>
 
   // Favorites / Customer Likes
   favorites: FavoriteItem[]
@@ -452,6 +454,48 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
     }
   }
 
+  const syncCartWithCatalog = async (): Promise<{ removed: number; adjusted: number }> => {
+    if (!cartItems.length) return { removed: 0, adjusted: 0 }
+
+    const products = await productService.getProductAvailability(cartItems.map((item) => item.id))
+    const byId = new Map(products.map((product) => [product.id, product]))
+    let removed = 0
+    let adjusted = 0
+
+    const nextItems = cartItems.flatMap((item) => {
+      const product = byId.get(item.id)
+      const isUnavailable = !product || !product.is_active || product.status !== 'active'
+      const isDigital = product?.product_type === 'digital'
+      const availableStock = Number(product?.available_stock ?? 0)
+
+      if (isUnavailable || (!isDigital && availableStock <= 0)) {
+        removed += 1
+        return []
+      }
+
+      const quantity = isDigital ? item.quantity : Math.min(item.quantity, availableStock)
+      if (quantity !== item.quantity) adjusted += 1
+      const effectivePrice = product.discount_price !== null && product.discount_price > 0 && product.discount_price < product.selling_price
+        ? product.discount_price
+        : product.selling_price
+
+      return [{
+        ...item,
+        slug: product.slug,
+        name: product.name,
+        price: effectivePrice,
+        originalPrice: product.price,
+        image: product.image_url || item.image,
+        quantity,
+      }]
+    })
+
+    if (removed > 0 || adjusted > 0 || nextItems.some((item, index) => item.id !== cartItems[index]?.id || item.price !== cartItems[index]?.price)) {
+      setCartItems(nextItems)
+    }
+    return { removed, adjusted }
+  }
+
   const toggleFavorite = (item: FavoriteItem): boolean => {
     const exists = favorites.some((f) => f.id === item.id || f.slug === item.slug)
     if (exists) {
@@ -486,6 +530,7 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
         removeFromCart,
         updateCartQty,
         clearCart,
+        syncCartWithCatalog,
         favorites,
         favoritesCount: favorites.length,
         toggleFavorite,

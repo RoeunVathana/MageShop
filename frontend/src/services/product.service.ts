@@ -9,6 +9,29 @@ import type {
 } from '@/types/product.types'
 
 export const productService = {
+  async getProductAvailability(ids: number[]): Promise<Array<{
+    id: number
+    name: string
+    slug: string
+    product_type: string
+    selling_price: number
+    price: number
+    discount_price: number | null
+    status: string
+    is_active: boolean
+    image_url: string | null
+    stock_quantity: number
+    quantity_on_hand: number
+    quantity_reserved: number
+    available_stock: number
+  }>> {
+    if (!ids.length) return []
+    const response = await publicApiClient.get<{ data: Array<any> }>('/products/availability', {
+      params: { ids: ids.join(',') },
+    })
+    return Array.isArray(response.data?.data) ? response.data.data : []
+  },
+
   /**
    * Fetch paginated products with search, category and status filtering
    */
