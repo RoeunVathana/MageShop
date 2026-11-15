@@ -1,4 +1,4 @@
-import React, { useState, useId } from 'react'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -65,6 +65,12 @@ export function StockAdjustmentDialog({
   const isNegative = projectedOnHand < 0
   const violatesReserved = projectedOnHand < reserved
 
+  const handleClose = () => {
+    if (isSubmitting) return
+    setErrorMsg(null)
+    onClose()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
@@ -130,8 +136,8 @@ export function StockAdjustmentDialog({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-xl max-h-[min(90dvh,760px)] p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
@@ -167,9 +173,18 @@ export function StockAdjustmentDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {errorMsg && (
-            <div className="p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
+            <div
+              role="alert"
+              aria-live="polite"
+              className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-destructive shadow-sm"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="min-w-0 space-y-0.5">
+                  <p className="font-semibold">Adjustment failed</p>
+                  <p className="break-words leading-5">{errorMsg}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -287,7 +302,7 @@ export function StockAdjustmentDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isSubmitting}
             >
               Cancel

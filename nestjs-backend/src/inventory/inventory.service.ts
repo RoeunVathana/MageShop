@@ -189,7 +189,7 @@ export class InventoryService {
         INSERT INTO inventory_movements
           (product_id, movement_type, type, quantity_change, before_quantity, after_quantity,
            reason, reference, reference_id, created_by, user_id, idempotency_key, created_at, updated_at)
-        VALUES ($1, $2, LOWER($2), $3, $4, $5, $6, $7, $7, $8, $8, $9, NOW(), NOW())
+        VALUES ($1, $2, LOWER($2::varchar), $3, $4, $5, $6, $7, $7, $8, $8, $9, NOW(), NOW())
         RETURNING id, product_id, variant_id, movement_type, type, quantity_change,
                   before_quantity, after_quantity, reason, reference, reference_id,
                   created_by, NULL::text AS creator_name, idempotency_key, created_at
