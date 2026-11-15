@@ -487,6 +487,12 @@ html.khmer-mode .dashboard-shell .text-xs {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Keep dashboard popup headers aligned while removing the extra blank strip
+   above every form body. */
+.dashboard-modal-panel > form {
+  padding-top: 0 !important;
+}
+
 @media (max-width: 639px) {
   .dashboard-modal-backdrop {
     align-items: flex-start;
