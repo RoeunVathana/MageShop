@@ -298,7 +298,19 @@ export class CatalogService {
              p.discount_price, p.status, p.is_active, p.image_url,
              p.stock_quantity, i.quantity_on_hand, i.quantity_reserved
       FROM products p
-      LEFT JOIN inventories i ON i.product_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT
+          CASE WHEN COUNT(*) FILTER (WHERE inv.variant_id IS NOT NULL) > 0
+            THEN COALESCE(SUM(inv.quantity_on_hand) FILTER (WHERE inv.variant_id IS NOT NULL), 0)
+            ELSE COALESCE(MAX(inv.quantity_on_hand) FILTER (WHERE inv.variant_id IS NULL), p.stock_quantity)
+          END AS quantity_on_hand,
+          CASE WHEN COUNT(*) FILTER (WHERE inv.variant_id IS NOT NULL) > 0
+            THEN COALESCE(SUM(inv.quantity_reserved) FILTER (WHERE inv.variant_id IS NOT NULL), 0)
+            ELSE COALESCE(MAX(inv.quantity_reserved) FILTER (WHERE inv.variant_id IS NULL), 0)
+          END AS quantity_reserved
+        FROM inventories inv
+        WHERE inv.product_id = p.id
+      ) i ON TRUE
       WHERE p.id = ANY($1::int[])
     `, [ids]);
 

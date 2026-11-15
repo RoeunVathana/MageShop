@@ -1008,13 +1008,21 @@ export function CartPage() {
       if (/no longer available|insufficient stock/i.test(errorMessage)) {
         try {
           const refreshed = await syncCartWithCatalog()
-          toast({
-            title: t('Cart refreshed', 'កន្ត្រកទំនិញត្រូវបានធ្វើបច្ចុប្បន្នភាព'),
-            description: refreshed.removed > 0
-              ? t('An unavailable product was removed. Please review your cart and try again.', 'ទំនិញដែលមិនមានត្រូវបានដកចេញ។ សូមពិនិត្យកន្ត្រក ហើយសាកល្បងម្ដងទៀត។')
-              : t('Stock changed while you were checking out. Please review the quantity and try again.', 'ស្តុកបានផ្លាស់ប្តូរពេលអ្នកកំពុងទូទាត់។ សូមពិនិត្យបរិមាណ ហើយសាកល្បងម្ដងទៀត។'),
-            type: 'error',
-          })
+          if (refreshed.removed > 0 || refreshed.adjusted > 0) {
+            toast({
+              title: t('Cart refreshed', 'កន្ត្រកទំនិញត្រូវបានធ្វើបច្ចុប្បន្នភាព'),
+              description: refreshed.removed > 0
+                ? t('An unavailable product was removed. Please review your cart and try again.', 'ទំនិញដែលមិនមានត្រូវបានដកចេញ។ សូមពិនិត្យកន្ត្រក ហើយសាកល្បងម្ដងទៀត។')
+                : t('The available quantity was adjusted. Please review the quantity and try again.', 'បរិមាណដែលមានត្រូវបានកែតម្រូវ។ សូមពិនិត្យបរិមាណ ហើយសាកល្បងម្ដងទៀត។'),
+              type: 'error',
+            })
+          } else {
+            toast({
+              title: t('Checkout unavailable', 'មិនអាចទូទាត់បាន'),
+              description: errorMessage || t('Please refresh the product and try again.', 'សូមធ្វើបច្ចុប្បន្នភាពទំនិញ ហើយសាកល្បងម្ដងទៀត។'),
+              type: 'error',
+            })
+          }
           return
         } catch {
           // Fall through to the server error below when reconciliation fails.
