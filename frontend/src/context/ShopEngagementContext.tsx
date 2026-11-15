@@ -5,6 +5,8 @@ import { productService } from '@/services/product.service'
 
 export interface CartItem {
   id: number
+  /** Stable catalog key used to recover carts after a database reseed. */
+  sku?: string
   slug: string
   name: string
   price: number
@@ -457,13 +459,19 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
   const syncCartWithCatalog = async (): Promise<{ removed: number; adjusted: number }> => {
     if (!cartItems.length) return { removed: 0, adjusted: 0 }
 
-    const products = await productService.getProductAvailability(cartItems.map((item) => item.id))
+    const products = await productService.getProductAvailability(
+      cartItems.map((item) => item.id),
+      cartItems.map((item) => item.slug).filter(Boolean),
+    )
     const byId = new Map(products.map((product) => [product.id, product]))
+    const bySlug = new Map(products.map((product) => [product.slug, product]))
     let removed = 0
     let adjusted = 0
 
     const nextItems = cartItems.flatMap((item) => {
-      const product = byId.get(item.id)
+      // IDs can change after a database reseed or data restore. Slug is the
+      // stable public catalog key, so use it to recover a stale browser cart.
+      const product = byId.get(item.id) || bySlug.get(item.slug)
       const isUnavailable = !product || !product.is_active || product.status !== 'active'
       const isDigital = product?.product_type === 'digital'
       const availableStock = Number(product?.available_stock ?? 0)
@@ -481,6 +489,8 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
 
       return [{
         ...item,
+        id: product.id,
+        sku: item.sku,
         slug: product.slug,
         name: product.name,
         price: effectivePrice,
@@ -490,7 +500,18 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
       }]
     })
 
-    if (removed > 0 || adjusted > 0 || nextItems.some((item, index) => item.id !== cartItems[index]?.id || item.price !== cartItems[index]?.price)) {
+    const changed = nextItems.length !== cartItems.length || nextItems.some((item, index) => {
+      const previous = cartItems[index]
+      return !previous
+        || item.id !== previous.id
+        || item.slug !== previous.slug
+        || item.name !== previous.name
+        || item.price !== previous.price
+        || item.originalPrice !== previous.originalPrice
+        || item.quantity !== previous.quantity
+        || item.image !== previous.image
+    })
+    if (removed > 0 || adjusted > 0 || changed) {
       setCartItems(nextItems)
     }
     return { removed, adjusted }

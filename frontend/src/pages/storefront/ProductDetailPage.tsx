@@ -164,6 +164,7 @@ export function ProductDetailPage() {
     addToCart(
       {
         id: product.id,
+        sku: selectedVariant?.sku || product.sku,
         slug: product.slug || String(product.id),
         name: itemTitle,
         price: effItemPrice,

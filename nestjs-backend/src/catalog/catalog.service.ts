@@ -276,8 +276,15 @@ export class CatalogService {
       .filter((value) => Number.isInteger(value) && value > 0)
       .filter((value, index, values) => values.indexOf(value) === index)
       .slice(0, 100);
+    const rawSlugs = Array.isArray(query.slugs) ? query.slugs : [query.slugs];
+    const slugs = rawSlugs
+      .flatMap((value) => String(value ?? '').split(','))
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index)
+      .slice(0, 100);
 
-    if (!ids.length) return { data: [] };
+    if (!ids.length && !slugs.length) return { data: [] };
 
     const result = await this.database.query<{
       id: number;
@@ -311,8 +318,9 @@ export class CatalogService {
         FROM inventories inv
         WHERE inv.product_id = p.id
       ) i ON TRUE
-      WHERE p.id = ANY($1::int[])
-    `, [ids]);
+      WHERE ($1::int[] IS NOT NULL AND p.id = ANY($1::int[]))
+         OR ($2::text[] IS NOT NULL AND p.slug = ANY($2::text[]))
+    `, [ids, slugs]);
 
     return {
       data: result.rows.map((row) => ({

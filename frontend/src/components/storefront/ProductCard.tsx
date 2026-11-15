@@ -59,6 +59,7 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
     addToCart(
       {
         id: p.id,
+        sku: p.sku,
         slug: p.slug || String(p.id),
         name: p.name,
         price: effPrice,

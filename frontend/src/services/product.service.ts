@@ -9,7 +9,7 @@ import type {
 } from '@/types/product.types'
 
 export const productService = {
-  async getProductAvailability(ids: number[]): Promise<Array<{
+  async getProductAvailability(ids: number[], slugs: string[] = []): Promise<Array<{
     id: number
     name: string
     slug: string
@@ -25,9 +25,12 @@ export const productService = {
     quantity_reserved: number
     available_stock: number
   }>> {
-    if (!ids.length) return []
+    if (!ids.length && !slugs.length) return []
     const response = await publicApiClient.get<{ data: Array<any> }>('/cart-product-availability', {
-      params: { ids: ids.join(',') },
+      params: {
+        ids: ids.join(','),
+        ...(slugs.length ? { slugs: slugs.join(',') } : {}),
+      },
     })
     return Array.isArray(response.data?.data) ? response.data.data : []
   },
