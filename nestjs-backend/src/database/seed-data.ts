@@ -97,7 +97,7 @@ export const SEED_ROLES: SeedRole[] = [
   ['DISPATCHER', 'dispatcher', 'Assigns parcels to delivery drivers and monitors live transit.'],
   ['DELIVERY_DRIVER', 'delivery_driver', 'Fulfills delivery packages, broadcasts GPS location, collects proof.'],
   ['COURIER', 'courier', 'Courier role for assigned delivery routes and cash handover confirmation.'],
-  ['DELIVERY', 'delivery', 'Legacy delivery operator role kept compatible with assigned routes and cash handovers.'],
+  ['DELIVERY', 'delivery', 'Fleet monitoring role with read access to every driver GPS position and live delivery route.'],
   ['SELLER', 'seller', 'Multi-vendor merchant store owner managing storefront and products.'],
   ['SELLER_STAFF', 'seller_staff', 'Staff member assisting an authorized marketplace vendor.'],
   ['CUSTOMER', 'customer', 'Verified retail customer purchasing goods and managing personal profile.'],

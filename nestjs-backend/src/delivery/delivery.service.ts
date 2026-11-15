@@ -63,8 +63,11 @@ export class DeliveryService {
       throw new ForbiddenException({ status: 'error', message: 'Delivery staff privileges are required for this operation.' });
     }
 
-    const isDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
-    const isSupervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN']);
+    // DELIVERY is the fleet-monitoring role. It can read every driver's live
+    // GPS position, while DELIVERY_DRIVER/COURIER remain scoped to assigned
+    // routes. Mutation endpoints still enforce assignment separately below.
+    const isAssignedDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER']);
+    const canViewAllFleetGps = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
     const result = await this.database.query<DeliveryOrderRow>(`
       SELECT id, order_number, user_id, driver_id, status, subtotal, discount,
              shipping_fee, tax, total_amount, currency, payment_status,
@@ -73,10 +76,10 @@ export class DeliveryService {
              current_lat, current_lng, dest_lat, dest_lng, estimated_arrival,
              created_at, updated_at
       FROM orders
-      ${isDriver && !isSupervisor ? 'WHERE driver_id = $1' : ''}
+      ${isAssignedDriver && !canViewAllFleetGps ? 'WHERE driver_id = $1' : ''}
       ORDER BY id DESC
       LIMIT 30
-    `, isDriver && !isSupervisor ? [user.id] : []);
+    `, isAssignedDriver && !canViewAllFleetGps ? [user.id] : []);
 
     const orderIds = result.rows.map((order) => order.id);
     const itemResult = orderIds.length

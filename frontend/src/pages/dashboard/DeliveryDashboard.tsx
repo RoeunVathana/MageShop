@@ -99,7 +99,9 @@ export function DeliveryDashboard() {
   const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
   const canManagePricing = authService.isAdmin(currentUser)
   const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
-  const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
+  const canEditAssignedDelivery = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
+  const isFleetGpsViewer = roleNames.includes('DELIVERY') && !canDispatch
+  const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
@@ -858,7 +860,9 @@ export function DeliveryDashboard() {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {isDriverOnly
                 ? t('Accept assigned parcels, share live GPS, and confirm customer handover from one route view.', 'ទទួលកញ្ចប់ដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនអតិថិជនពីទិដ្ឋភាពផ្លូវតែមួយ។')
-                : t('Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូនរបស់អតិថិជន ផ្សព្វផ្សាយកូអរដោនេ GPS របស់អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារផ្ទាល់ទូទាំងកម្ពុជា។')}
+                : isFleetGpsViewer
+                  ? t('Monitor every driver GPS position and live delivery status across Cambodia.', 'តាមដានទីតាំង GPS របស់អ្នកដឹកជញ្ជូនគ្រប់រូប និងស្ថានភាពដឹកជញ្ជូនផ្ទាល់ទូទាំងកម្ពុជា។')
+                  : t('Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូនរបស់អតិថិជន ផ្សព្វផ្សាយកូអរដោនេ GPS របស់អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារផ្ទាល់ទូទាំងកម្ពុជា។')}
             </p>
           </div>
 
@@ -867,7 +871,7 @@ export function DeliveryDashboard() {
               type="button"
               size="sm"
               onClick={() => setIsContinuousDelivering((prev) => !prev)}
-              disabled={!selectedOrder}
+              disabled={!selectedOrder || !canEditAssignedDelivery}
               className={`rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all ${
                 isContinuousDelivering
                   ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
@@ -883,7 +887,7 @@ export function DeliveryDashboard() {
               variant="outline"
               size="sm"
               onClick={handleBroadcastDeviceGps}
-              disabled={broadcastingGps || !selectedOrder}
+              disabled={broadcastingGps || !selectedOrder || !canEditAssignedDelivery}
               className="rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm"
             >
               {broadcastingGps ? (
@@ -1263,6 +1267,7 @@ export function DeliveryDashboard() {
                       <Button
                         size="sm"
                         onClick={() => setIsContinuousDelivering((prev) => !prev)}
+                        disabled={!canEditAssignedDelivery}
                         className={`rounded-xl h-8 text-xs font-bold gap-1.5 shadow-sm transition-all ${
                           isContinuousDelivering
                             ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
@@ -1275,7 +1280,7 @@ export function DeliveryDashboard() {
                       <Button
                         size="sm"
                         onClick={() => handleAdvanceDelivery(selectedOrder)}
-                        disabled={statusUpdating === selectedOrder.order_number}
+                        disabled={statusUpdating === selectedOrder.order_number || !canEditAssignedDelivery}
                         className="rounded-xl h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
                       >
                         {statusUpdating === selectedOrder.order_number
@@ -1387,7 +1392,7 @@ export function DeliveryDashboard() {
                           </span>
 
                           <div className="flex items-center gap-1.5">
-                            <Button
+                            {canEditAssignedDelivery && <Button
                               type="button"
                               size="sm"
                               variant="outline"
@@ -1398,7 +1403,7 @@ export function DeliveryDashboard() {
                               className="h-7 text-[11px] font-bold rounded-lg px-2.5 gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                             >
                               <Edit3 className="w-3 h-3" /> Manage Location
-                            </Button>
+                            </Button>}
                             {canManagePricing && (
                               <Button
                                 type="button"
