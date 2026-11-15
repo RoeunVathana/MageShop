@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { authService } from '@/services/auth.service'
+import type { User } from '@/types/user.types'
 
 /**
  * Strict Admin-Only Guard:
@@ -146,10 +147,40 @@ export function AuthenticatedRoute({ children }: { children: React.ReactNode }) 
  */
 export function RoleAwareDashboardRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  const user = authService.getStoredUser()
+  const [user, setUser] = useState<User | null>(() => authService.getStoredUser())
+  const [refreshing, setRefreshing] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+
+    if (!authService.isAuthenticated()) {
+      setRefreshing(false)
+      return () => { mounted = false }
+    }
+
+    // Do not trust a cached CUSTOMER role after an administrator assigns a
+    // delivery role. The API is the source of truth for workspace routing.
+    authService.getCurrentUser()
+      .then((response) => {
+        if (mounted && response?.data?.user) setUser(response.data.user)
+      })
+      .catch(() => {
+        // Keep the cached session as a safe fallback during a temporary API
+        // outage; the normal auth interceptor handles expired sessions.
+      })
+      .finally(() => {
+        if (mounted) setRefreshing(false)
+      })
+
+    return () => { mounted = false }
+  }, [])
 
   if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (refreshing) {
+    return <div className="min-h-[45vh] flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">Loading workspace...</div>
   }
 
   const dashboardPath = authService.getDashboardPath(user)

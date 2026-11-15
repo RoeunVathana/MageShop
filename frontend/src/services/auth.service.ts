@@ -29,8 +29,16 @@ const AUTH_TOKEN_KEY = 'tyushop_auth_token'
 const AUTH_USER_KEY = 'tyushop_auth_user'
 
 const roleNamesFor = (user?: User | null): string[] => {
-  const roles = (user as any)?.roles || []
-  return roles
+  const rawRoles = (user as any)?.roles
+  const roles = Array.isArray(rawRoles) ? rawRoles : rawRoles ? [rawRoles] : []
+  const roleValues = [
+    ...roles,
+    (user as any)?.role,
+    (user as any)?.role_name,
+    (user as any)?.role_slug,
+  ]
+
+  return roleValues
     .flatMap((role: any) => typeof role === 'string' ? [role] : [role?.name, role?.slug])
     .filter(Boolean)
     .map((role: unknown) => String(role).trim().toUpperCase().replace(/[\s-]+/g, '_'))
@@ -314,7 +322,14 @@ export const authService = {
    * Fetch current authenticated user profile.
    */
   getCurrentUser: async (): Promise<ApiResponse<{ user: User }>> => {
-    return api.get<ApiResponse<{ user: User }>>('/auth/me')
+    const res = await api.get<ApiResponse<{ user: User }>>('/auth/me')
+    if (res?.data?.user) {
+      // Role assignments can change while a user is already signed in. Keep
+      // the cached session synchronized so dashboard routing uses the latest
+      // server-issued role instead of an old CUSTOMER-only snapshot.
+      authService.saveSession(res.data.user)
+    }
+    return res
   },
 
   /**
