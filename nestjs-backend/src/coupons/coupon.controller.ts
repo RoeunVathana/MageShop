@@ -30,8 +30,10 @@ export class CouponManagementController {
   async show(@Param('id') id: string, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.show(this.id(id), request.authUserId as number); }
 
   @Put(':id')
+  async updatePut(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
+
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
+  async updatePatch(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.remove(this.id(id), request.authUserId as number); }
@@ -57,8 +59,10 @@ export class AdminCouponController {
   async show(@Param('id') id: string, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.show(this.id(id), request.authUserId as number); }
 
   @Put(':id')
+  async updatePut(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
+
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
+  async updatePatch(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.update(this.id(id), body, request.authUserId as number); }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.coupons.remove(this.id(id), request.authUserId as number); }
