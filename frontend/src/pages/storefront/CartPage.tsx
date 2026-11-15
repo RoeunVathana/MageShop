@@ -2057,7 +2057,7 @@ export function CartPage() {
               </button>
             </div>
 
-            <div className="p-4 sm:p-5 space-y-3 text-center">
+            <div className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5 space-y-3 text-center">
               {/* Merchant & Amount Hero */}
               <div className="space-y-0.5">
                 <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
