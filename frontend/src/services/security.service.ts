@@ -110,6 +110,17 @@ export interface UpdateTelegramSettingsPayload {
   register_webhook?: boolean
 }
 
+export interface SellerTelegramSettings {
+  telegram_bot_token_set: boolean
+  telegram_bot_token_masked: string
+  telegram_bot_username: string
+}
+
+export interface UpdateSellerTelegramSettingsPayload {
+  telegram_bot_token?: string
+  telegram_bot_username?: string
+}
+
 export const securityService = {
   // API Token Management
   getApiTokens: async (params?: { search?: string; page?: number; per_page?: number } | string): Promise<ApiResponse<ApiToken[]>> => {
@@ -196,6 +207,18 @@ export const securityService = {
     return api.post<ApiResponse<{ bot_username: string; bot_name: string; message_sent: boolean; chat_id: string }>>('/admin/security/telegram-settings/test', {
       chat_id: chatId,
     })
+  },
+
+  getSellerTelegramSettings: async (): Promise<ApiResponse<SellerTelegramSettings>> => {
+    return api.get<ApiResponse<SellerTelegramSettings>>('/admin/seller/telegram-settings')
+  },
+
+  updateSellerTelegramSettings: async (payload: UpdateSellerTelegramSettingsPayload): Promise<ApiResponse<SellerTelegramSettings>> => {
+    return api.patch<ApiResponse<SellerTelegramSettings>>('/admin/seller/telegram-settings', payload)
+  },
+
+  testSellerTelegramBotConnection: async (): Promise<ApiResponse<{ bot_username: string; bot_name: string; message_sent: boolean }>> => {
+    return api.post<ApiResponse<{ bot_username: string; bot_name: string; message_sent: boolean }>>('/admin/seller/telegram-settings/test')
   },
 
   clearApplicationData: async (): Promise<ApiResponse<{ deleted: Record<string, number>; preserved_admin_user_ids: number[] }>> => {

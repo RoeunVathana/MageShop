@@ -10,6 +10,7 @@ import {
   RefreshCw,
   ShieldCheck,
   AlertCircle,
+  Bot,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
@@ -22,12 +23,13 @@ import { sellerService, type SellerDashboardData } from '@/services/seller.servi
 import { PaymentAccountsPanel } from '@/components/dashboard/PaymentAccountsPanel'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 
-const sellerNav: NavItem[] = [
+export const sellerNav: NavItem[] = [
   { label: 'Store Overview', labelKm: 'ទិដ្ឋភាពទូទៅហាង', href: '/dashboard/seller', icon: Store },
   { label: 'Product Catalog', labelKm: 'បញ្ជីមុខទំនិញ', href: '/dashboard/seller/products', icon: Package },
   { label: 'Discount Coupons', labelKm: 'គូប៉ុងបញ្ចុះតម្លៃ', href: '/dashboard/seller/coupons', icon: Tag, badge: 'Promos', badgeKm: 'ប្រូម៉ូសិន' },
   { label: 'Orders & Fulfillment', labelKm: 'ការបញ្ជាទិញ & ការរៀបចំ', href: '/dashboard/seller', icon: Clock },
   { label: 'Revenue & Payouts', labelKm: 'ចំណូល & ការទូទាត់', href: '/dashboard/seller', icon: DollarSign },
+  { label: 'Telegram Bot Settings', labelKm: 'ការកំណត់ Telegram Bot', href: '/dashboard/seller/telegram', icon: Bot },
 ]
 
 export function SellerDashboard() {

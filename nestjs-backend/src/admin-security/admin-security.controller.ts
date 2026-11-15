@@ -36,4 +36,7 @@ export class AdminSecurityController {
   @Get('security/telegram-settings') telegramSettings(@Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.telegramSettings(request.authUserId as number); }
   @Patch('security/telegram-settings') updateTelegramSettings(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.updateTelegramSettings(body, request.authUserId as number); }
   @Post('security/telegram-settings/test') testTelegram(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.testTelegram(body, request.authUserId as number); }
+  @Get('seller/telegram-settings') sellerTelegramSettings(@Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.sellerTelegramSettings(request.authUserId as number); }
+  @Patch('seller/telegram-settings') updateSellerTelegramSettings(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.updateSellerTelegramSettings(body, request.authUserId as number); }
+  @Post('seller/telegram-settings/test') testSellerTelegram(@Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.security.testSellerTelegram(request.authUserId as number); }
 }

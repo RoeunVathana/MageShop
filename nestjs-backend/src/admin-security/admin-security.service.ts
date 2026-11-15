@@ -40,6 +40,7 @@ interface PermissionRow {
 export class AdminSecurityService {
   private readonly roleAdminRoles = ['SUPER_ADMIN', 'ADMIN'];
   private readonly userAdminRoles = ['SUPER_ADMIN', 'ADMIN'];
+  private readonly telegramSellerRoles = ['SUPER_ADMIN', 'ADMIN', 'SELLER', 'SELLER_STAFF'];
 
   constructor(
     private readonly database: DatabaseService,
@@ -296,6 +297,46 @@ export class AdminSecurityService {
     return { status: 'success', message: messageSent ? `Connected to @${result.username ?? 'UnknownBot'} and sent a test message to Chat ID ${chatId}.` : `Telegram API token verified! Connected to @${result.username ?? 'UnknownBot'}.`, data: { bot_username: result.username ?? 'UnknownBot', bot_name: result.first_name ?? 'TYUSHOP Bot', message_sent: messageSent, chat_id: chatId } };
   }
 
+  async sellerTelegramSettings(actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeTelegramSeller(actorId);
+    return { status: 'success', data: this.sellerTelegramSettingsData(await this.settings(['telegram_bot_token', 'telegram_bot_username'])) };
+  }
+
+  async updateSellerTelegramSettings(body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeTelegramSeller(actorId);
+    const values: Record<string, string> = {};
+    if (body.telegram_bot_token !== undefined) {
+      const token = this.text(body.telegram_bot_token);
+      if (!token || token.length > 255) throw new UnprocessableEntityException({ status: 'error', message: 'Please provide a valid Telegram Bot API token.' });
+      values.telegram_bot_token = token;
+    }
+    if (body.telegram_bot_username !== undefined) {
+      const username = this.text(body.telegram_bot_username);
+      if (username.length > 100) throw new UnprocessableEntityException({ status: 'error', message: 'The Telegram bot username is invalid.' });
+      if (username) values.telegram_bot_username = username.replace(/^@+/, '');
+    }
+    if (!Object.keys(values).length) throw new UnprocessableEntityException({ status: 'error', message: 'Enter a new Telegram Bot API token or bot username before saving.' });
+    await this.saveSettings(values);
+    return { status: 'success', message: 'Seller Telegram Bot API configuration saved successfully.', data: this.sellerTelegramSettingsData(await this.settings(['telegram_bot_token', 'telegram_bot_username'])) };
+  }
+
+  async testSellerTelegram(actorId: number): Promise<Record<string, unknown>> {
+    await this.authorizeTelegramSeller(actorId);
+    const settings = await this.settings(['telegram_bot_token', 'telegram_admin_chat_id']);
+    const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
+    if (!token) throw new UnprocessableEntityException({ status: 'error', message: 'Configure the Telegram Bot API token before testing the seller bot.' });
+    const me = await this.telegramRequest(token, 'getMe');
+    if (!me.ok || !(me.body as { ok?: boolean }).ok) throw new UnprocessableEntityException({ status: 'error', message: `Telegram API rejected token: ${String((me.body as { description?: string }).description ?? 'Invalid Bot Token')}` });
+    const result = (me.body as { result?: { username?: string; first_name?: string } }).result ?? {};
+    const chatId = this.setting(settings, 'telegram_admin_chat_id', '', '');
+    let messageSent = false;
+    if (chatId) {
+      const message = await this.telegramRequest(token, 'sendMessage', { chat_id: chatId, text: `TYUSHOP seller Telegram bot verified!\nBot: @${result.username ?? 'UnknownBot'} (${result.first_name ?? 'TYUSHOP Bot'})\nTime: ${new Date().toISOString()}` });
+      messageSent = message.ok && Boolean((message.body as { ok?: boolean }).ok);
+    }
+    return { status: 'success', message: messageSent ? `Connected to @${result.username ?? 'UnknownBot'} and sent a test message to the configured admin chat.` : `Telegram API token verified! Connected to @${result.username ?? 'UnknownBot'}.`, data: { bot_username: result.username ?? 'UnknownBot', bot_name: result.first_name ?? 'TYUSHOP Bot', message_sent: messageSent } };
+  }
+
   async assignRoles(id: number, body: Record<string, unknown>, actorId: number): Promise<Record<string, unknown>> {
     const actor = await this.authorizeRoleAdmin(actorId);
     const target = await this.findUser(id);
@@ -345,6 +386,7 @@ export class AdminSecurityService {
 
   private async authorizeRoleAdmin(userId: number): Promise<AuthUser> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.roleAdminRoles)) throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Administrator role management privileges required.' }); return user; }
   private async authorizeUserAdmin(userId: number): Promise<AuthUser> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.userAdminRoles)) throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Administrator credentials and security privileges required.' }); return user; }
+  private async authorizeTelegramSeller(userId: number): Promise<AuthUser> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.telegramSellerRoles)) throw new ForbiddenException({ status: 'error', message: 'Seller or administrator access is required to manage the Telegram bot.' }); return user; }
   private async settings(keys: string[]): Promise<Map<string, string>> { const result = await this.database.query<{ setting_key: string; setting_value: string | null }>('SELECT setting_key, setting_value FROM store_settings WHERE setting_key=ANY($1::text[])', [keys]); return new Map(result.rows.map((row) => [row.setting_key, row.setting_value ?? ''])); }
   private async saveSettings(values: Record<string, string>): Promise<void> { if (!Object.keys(values).length) return; await this.database.transaction(async (client) => { for (const [key, value] of Object.entries(values)) await client.query(`INSERT INTO store_settings (store_id, setting_key, setting_value, created_at, updated_at) VALUES ('primary',$1,$2,NOW(),NOW()) ON CONFLICT (setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value, updated_at=NOW()`, [key, value]); }); }
   private emailSettingsData(settings: Map<string, string>): Record<string, unknown> {
@@ -356,6 +398,10 @@ export class AdminSecurityService {
     const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
     const defaultUrl = `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/telegram/webhook`;
     return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot'), telegram_admin_chat_id: this.setting(settings, 'telegram_admin_chat_id', 'TELEGRAM_ADMIN_CHAT_ID', ''), telegram_webhook_secret: this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', 'tyushop_sec_token_99182a'), telegram_mini_app_url: this.setting(settings, 'telegram_mini_app_url', 'TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'), telegram_webhook_url: this.setting(settings, 'telegram_webhook_url', '', defaultUrl) };
+  }
+  private sellerTelegramSettingsData(settings: Map<string, string>): Record<string, unknown> {
+    const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
+    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot') };
   }
   private setting(settings: Map<string, string>, key: string, env: string, fallback: string): string { return String(settings.get(key) || this.config.get<string>(env, fallback) || '').trim(); }
   private async registerWebhook(token: string, url: string, secret: string): Promise<string> {
