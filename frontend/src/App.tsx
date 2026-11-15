@@ -139,9 +139,15 @@ export default function App() {
               {/* System Dashboards */}
               <Route path="/dashboard/admin" element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
               <Route path="/dashboard/seller" element={<AdminOrSellerRoute><SellerDashboard /></AdminOrSellerRoute>} />
+              <Route path="/dashboard/seller/orders" element={<AdminOrSellerRoute><SellerDashboard /></AdminOrSellerRoute>} />
+              <Route path="/dashboard/seller/payouts" element={<AdminOrSellerRoute><SellerDashboard /></AdminOrSellerRoute>} />
               <Route path="/dashboard/staff" element={<StaffOrAdminRoute><StaffDashboard /></StaffOrAdminRoute>} />
               <Route path="/dashboard/delivery" element={<DeliveryOrAdminRoute><DeliveryDashboard /></DeliveryOrAdminRoute>} />
               <Route path="/dashboard/warehouse" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
+              <Route path="/dashboard/warehouse/inbound" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
+              <Route path="/dashboard/warehouse/picking" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
+              <Route path="/dashboard/warehouse/inventory" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
+              <Route path="/dashboard/warehouse/returns" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />
 
               {/* Product & Inventory Management (Admin & Seller Accessible) */}
               <Route path="/admin/products" element={<AdminOrSellerRoute><ProductListPage /></AdminOrSellerRoute>} />
