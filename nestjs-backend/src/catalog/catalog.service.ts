@@ -289,6 +289,7 @@ export class CatalogService {
     const result = await this.database.query<{
       id: number;
       name: string;
+      sku: string;
       slug: string;
       product_type: string | null;
       selling_price: number | string | null;
@@ -301,7 +302,7 @@ export class CatalogService {
       quantity_on_hand: number | string | null;
       quantity_reserved: number | string | null;
     }>(`
-      SELECT p.id, p.name, p.slug, p.product_type, p.selling_price, p.price,
+      SELECT p.id, p.name, p.sku, p.slug, p.product_type, p.selling_price, p.price,
              p.discount_price, p.status, p.is_active, p.image_url,
              p.stock_quantity, i.quantity_on_hand, i.quantity_reserved
       FROM products p
@@ -326,6 +327,7 @@ export class CatalogService {
       data: result.rows.map((row) => ({
         id: Number(row.id),
         name: row.name,
+        sku: row.sku,
         slug: row.slug,
         product_type: row.product_type ?? 'simple',
         selling_price: Number(row.selling_price ?? row.price ?? 0),

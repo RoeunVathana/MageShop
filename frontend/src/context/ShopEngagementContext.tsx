@@ -490,7 +490,7 @@ export function ShopEngagementProvider({ children }: { children: React.ReactNode
       return [{
         ...item,
         id: product.id,
-        sku: item.sku,
+        sku: product.sku || item.sku,
         slug: product.slug,
         name: product.name,
         price: effectivePrice,

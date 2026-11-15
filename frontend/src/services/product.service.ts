@@ -12,6 +12,7 @@ export const productService = {
   async getProductAvailability(ids: number[], slugs: string[] = []): Promise<Array<{
     id: number
     name: string
+    sku: string
     slug: string
     product_type: string
     selling_price: number
