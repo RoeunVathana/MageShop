@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -11,7 +11,8 @@ import { DatabaseService } from '../database/database.service';
 export interface UploadedMediaFile { originalname: string; mimetype: string; size: number; buffer: Buffer; }
 
 @Injectable()
-export class MediaService {
+export class MediaService implements OnModuleInit {
+  private readonly logger = new Logger(MediaService.name);
   private readonly extensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico', 'avif', 'mp4', 'webm', 'mov', 'pdf', 'doc', 'docx', 'xlsx', 'csv']);
   private readonly mediaRoles = ['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'SELLER', 'SELLER_STAFF'];
   private readonly s3: S3Client | null;
@@ -31,6 +32,12 @@ export class MediaService {
       : null;
   }
 
+  onModuleInit(): void {
+    if (this.config.get<string>('MEDIA_MIGRATION_ENABLED', 'false') === 'true') {
+      void this.migrateLegacyMedia();
+    }
+  }
+
   async uploadAvatar(file: UploadedMediaFile | undefined, userId: number): Promise<Record<string, unknown>> {
     if (!file?.buffer?.length) throw new UnprocessableEntityException({ status: 'error', message: 'The avatar field is required.' });
     if (file.size > 5 * 1024 * 1024) throw new UnprocessableEntityException({ status: 'error', message: 'The avatar may not be greater than 5 MB.' });
@@ -40,7 +47,7 @@ export class MediaService {
     const filename = `avatar_${userId}_${Date.now()}_${randomBytes(4).toString('hex')}.${extension}`;
     const key = `avatars/${filename}`;
     await this.persist(key, file.buffer, file.mimetype);
-    const baseUrl = this.config.get<string>('PUBLIC_API_URL', this.config.get<string>('APP_URL', 'http://localhost:8080')).replace(/\/$/, '');
+    const baseUrl = this.publicApiBase();
     const url = `${baseUrl}/api/v1/media/${key}`;
     await this.database.query('UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2', [url, userId]);
     const user = await this.auth.me(userId);
@@ -66,7 +73,7 @@ export class MediaService {
     const target = resolve(root, key);
     if (!this.s3 && !this.isWithin(root, target)) throw new UnprocessableEntityException({ status: 'error', message: 'The upload path is invalid.' });
     await this.persist(key, file.buffer, file.mimetype);
-    const baseUrl = this.config.get<string>('PUBLIC_API_URL', this.config.get<string>('APP_URL', 'http://localhost:8080')).replace(/\/$/, '');
+    const baseUrl = this.publicApiBase();
     const url = `${baseUrl}/api/v1/media/${key}`;
     return { success: true, message: 'Media successfully uploaded to cloud storage', data: { key, url, cloud_url: url, original_name: basename(file.originalname), mime_type: file.mimetype, size: file.size, disk: this.s3 ? 's3' : 'public' } };
   }
@@ -89,6 +96,89 @@ export class MediaService {
       }
     }
     return { bytes, contentType: this.contentType(extension) };
+  }
+
+  private async migrateLegacyMedia(): Promise<void> {
+    if (!this.s3 || !this.database.enabled) {
+      this.logger.warn('Legacy media migration skipped: S3 or PostgreSQL is not configured.');
+      return;
+    }
+    const tables: Array<[string, string]> = [
+      ['products', 'image_url'], ['categories', 'image_url'], ['brands', 'logo_url'],
+      ['product_variants', 'image_url'], ['users', 'avatar_url'],
+      ['seller_applications', 'logo_url'], ['seller_applications', 'banner_url'],
+      ['banners', 'image_url'], ['banners', 'video_url'],
+    ];
+    let migrated = 0;
+    for (const [table, column] of tables) migrated += await this.migrateColumn(table, column);
+    migrated += await this.migrateProductGalleries();
+    this.logger.log(`Legacy media migration completed: ${migrated} database values moved to S3.`);
+  }
+
+  private async migrateColumn(table: string, column: string): Promise<number> {
+    if (!await this.tableExists(table)) return 0;
+    const rows = await this.database.query<{ id: number; value: string | null }>(`SELECT id, ${this.identifier(column)} AS value FROM ${this.identifier(table)} WHERE ${this.identifier(column)} IS NOT NULL`);
+    let migrated = 0;
+    for (const row of rows.rows) {
+      const value = await this.migrateValue(row.value);
+      if (value && value !== row.value) {
+        await this.database.query(`UPDATE ${this.identifier(table)} SET ${this.identifier(column)}=$1, updated_at=NOW() WHERE id=$2`, [value, row.id]);
+        migrated += 1;
+      }
+    }
+    return migrated;
+  }
+
+  private async migrateProductGalleries(): Promise<number> {
+    if (!await this.tableExists('products')) return 0;
+    const rows = await this.database.query<{ id: number; gallery_urls: unknown }>('SELECT id, gallery_urls FROM products WHERE gallery_urls IS NOT NULL');
+    let migrated = 0;
+    for (const row of rows.rows) {
+      const gallery = Array.isArray(row.gallery_urls) ? row.gallery_urls : [];
+      const next: unknown[] = [];
+      let changed = false;
+      for (const item of gallery) {
+        const value = await this.migrateValue(typeof item === 'string' ? item : null);
+        next.push(value ?? item);
+        changed = changed || value !== item;
+      }
+      if (changed) {
+        await this.database.query('UPDATE products SET gallery_urls=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(next), row.id]);
+        migrated += 1;
+      }
+    }
+    return migrated;
+  }
+
+  private async migrateValue(value: string | null): Promise<string | null> {
+    if (!value || !value.includes('/api/v1/media/')) return value;
+    const marker = '/api/v1/media/';
+    const keyStart = value.indexOf(marker) + marker.length;
+    const rawKey = value.slice(keyStart).split(/[?#]/, 1)[0];
+    const key = rawKey.split('/').map((part) => decodeURIComponent(part)).join('/');
+    if (!key || !this.extensions.has(extname(key).slice(1).toLowerCase())) return value;
+    try {
+      const bytes = await this.readLegacy(key);
+      await this.s3?.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: bytes, ContentType: this.contentType(extname(key).slice(1).toLowerCase()) }));
+      return `${this.publicApiBase()}/api/v1/media/${key.split('/').map(encodeURIComponent).join('/')}`;
+    } catch (error) {
+      this.logger.warn(`Could not migrate media ${key}: ${error instanceof Error ? error.message : String(error)}`);
+      return value;
+    }
+  }
+
+  private async tableExists(table: string): Promise<boolean> {
+    const result = await this.database.query<{ exists: boolean }>('SELECT to_regclass($1) IS NOT NULL AS exists', [`public.${table}`]);
+    return result.rows[0]?.exists === true;
+  }
+
+  private identifier(value: string): string {
+    if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw new Error('Invalid media migration identifier.');
+    return `"${value}"`;
+  }
+
+  private publicApiBase(): string {
+    return this.config.get<string>('PUBLIC_API_URL', this.config.get<string>('APP_URL', 'http://localhost:8080')).replace(/\/$/, '');
   }
 
   private storageRoot(): string { return resolve(this.config.get<string>('MEDIA_ROOT', join(process.cwd(), 'storage', 'app', 'public'))); }
