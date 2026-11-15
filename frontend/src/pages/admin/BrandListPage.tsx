@@ -23,7 +23,9 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { brandService } from '@/services/brand.service'
 import { mediaService } from '@/services/media.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -31,6 +33,7 @@ import type { Brand, BrandFormData } from '@/types/brand.types'
 
 export function BrandListPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
@@ -247,7 +250,7 @@ export function BrandListPage() {
           <Card className="border border-slate-200 dark:border-slate-800">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Active Brands</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{t('Active Brands', 'ម៉ាកសកម្ម')}</p>
                 <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{activeCount}</p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -259,7 +262,7 @@ export function BrandListPage() {
           <Card className="border border-slate-200 dark:border-slate-800">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Branded Products</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{t('Branded Products', 'មុខទំនិញតាមម៉ាក')}</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{totalBrandedProducts}</p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -271,7 +274,7 @@ export function BrandListPage() {
           <Card className="border border-slate-200 dark:border-slate-800">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Origin Countries</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{t('Origin Countries', 'ប្រទេសដើម')}</p>
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{uniqueCountries}</p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -287,7 +290,7 @@ export function BrandListPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search by brand name, slug, country..."
+              placeholder={t('Search by brand name, slug, country...', 'ស្វែងរកតាមឈ្មោះម៉ាក slug ប្រទេស...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-10 w-full"
@@ -373,12 +376,12 @@ export function BrandListPage() {
         {loading ? (
           <div className="py-20 text-center">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-600 mb-2" />
-            <p className="text-sm text-slate-500">Loading brands registry...</p>
+          <p className="text-sm text-slate-500">{t('Loading brands registry...', 'កំពុងទាញយកបញ្ជីម៉ាក...')}</p>
           </div>
         ) : brands.length === 0 ? (
           <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl p-12 text-center">
             <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">No Brands Found</h3>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('No Brands Found', 'មិនមានម៉ាកទេ')}</h3>
             <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-6">
               Get started by adding verified manufacturers, designer labels, and trademarked suppliers.
             </p>
@@ -531,8 +534,8 @@ export function BrandListPage() {
 
         {/* Modal: Create & Edit Brand */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <DashboardModal onClose={() => setIsModalOpen(false)}>
+            <div className="dashboard-modal-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
                 <div className="flex items-center gap-2">
@@ -543,7 +546,7 @@ export function BrandListPage() {
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       {editingBrand ? 'Edit Brand Details' : 'Register New Brand'}
                     </h3>
-                    <p className="text-xs text-slate-500">Bilingual brand registration with trademark metadata.</p>
+                    <p className="text-xs text-slate-500">{t('Bilingual brand registration with trademark metadata.', 'ការចុះឈ្មោះម៉ាកពីរភាសា ជាមួយព័ត៌មានពាណិជ្ជសញ្ញា។')}</p>
                   </div>
                 </div>
                 <button
@@ -757,7 +760,7 @@ export function BrandListPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </DashboardModal>
         )}
       </div>
       <ConfirmDialog

@@ -426,6 +426,15 @@ export function AdminDashboard() {
                     {recentOrders.map((order) => {
                       const totalKhr = Math.round(Number(order.total_amount) * (usdToKhrRate || 4100))
                       const isPaid = order.payment_status === 'completed' || order.payment_status === 'paid'
+                      const statusLabel = order.status === 'delivered'
+                        ? t('Delivered', 'បានប្រគល់')
+                        : order.status === 'shipped'
+                          ? t('Shipped', 'កំពុងដឹកជញ្ជូន')
+                          : order.status === 'pending'
+                            ? t('Pending', 'រង់ចាំ')
+                            : order.status === 'cancelled'
+                              ? t('Cancelled', 'បានបោះបង់')
+                              : order.status
 
                       return (
                         <tr key={order.id} className="hover:bg-muted/30 transition-colors">
@@ -449,7 +458,7 @@ export function AdminDashboard() {
                           </td>
                           <td className="py-3 px-4">
                             <Badge variant="outline" className="capitalize text-[10px] font-bold">
-                              {order.status}
+                              {statusLabel}
                             </Badge>
                           </td>
                           <td className="py-3 px-4 text-right">

@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
@@ -95,6 +96,7 @@ function formatProductError(error: unknown): string {
 }
 
 export function ProductCreatePage() {
+  const { t } = useShopEngagement()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -453,7 +455,7 @@ export function ProductCreatePage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-black tracking-tight">Create Universal Product</h1>
+              <h1 className="text-xl font-black tracking-tight">{t('Create Universal Product', 'បង្កើតមុខទំនិញសកល')}</h1>
               <p className="text-xs text-muted-foreground">
                 Universal marketplace item with dynamic category specifications, multi-attribute variants, and pricing.
               </p>
@@ -478,14 +480,14 @@ export function ProductCreatePage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Package className="w-4 h-4 text-purple-600" />
-                Product Identity & Department Taxonomy
+                {t('Product Identity & Department Taxonomy', 'អត្តសញ្ញាណមុខទំនិញ & ប្រភេទនាយកដ្ឋាន')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground">
-                    Product Title <span className="text-destructive">*</span>
+                    {t('Product Title', 'ចំណងជើងមុខទំនិញ')} <span className="text-destructive">*</span>
                   </label>
                   <Input
                     {...register('name')}
@@ -498,12 +500,12 @@ export function ProductCreatePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Brand / Manufacturer</label>
+                  <label className="font-semibold text-foreground">{t('Brand / Manufacturer', 'ម៉ាក / ក្រុមហ៊ុនផលិត')}</label>
                   <select
                     {...register('brand_id')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="">Select Brand / Manufacturer...</option>
+                    <option value="">{t('Select Brand / Manufacturer...', 'ជ្រើសរើសម៉ាក / ក្រុមហ៊ុនផលិត...')}</option>
                     {brands.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.country ? `${b.name} (${b.country})` : b.name}
@@ -516,7 +518,7 @@ export function ProductCreatePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground">
-                    Master SKU <span className="text-destructive">*</span>
+                    {t('Master SKU', 'SKU មេ')} <span className="text-destructive">*</span>
                   </label>
                   <Input
                     {...register('sku')}
@@ -529,24 +531,24 @@ export function ProductCreatePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Product Type</label>
+                  <label className="font-semibold text-foreground">{t('Product Type', 'ប្រភេទមុខទំនិញ')}</label>
                   <select
                     {...register('product_type')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring font-semibold"
                   >
-                    <option value="simple">Simple Product (Single SKU)</option>
-                    <option value="variable">Variable Product (Size/Color Variants)</option>
-                    <option value="digital">Digital Product (License/Download)</option>
+                    <option value="simple">{t('Simple Product (Single SKU)', 'មុខទំនិញធម្មតា (SKU តែមួយ)')}</option>
+                    <option value="variable">{t('Variable Product (Size/Color Variants)', 'មុខទំនិញប្រែប្រួល (ទំហំ/ពណ៌)')}</option>
+                    <option value="digital">{t('Digital Product (License/Download)', 'មុខទំនិញឌីជីថល (អាជ្ញាបណ្ណ/ទាញយក)')}</option>
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Marketplace Category</label>
+                  <label className="font-semibold text-foreground">{t('Marketplace Category', 'ប្រភេទក្នុងទីផ្សារ')}</label>
                   <select
                     {...register('category_id')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="">Select Department...</option>
+                    <option value="">{t('Select Department...', 'ជ្រើសរើសនាយកដ្ឋាន...')}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.parent_name ? `— ${c.name} (${c.parent_name})` : c.name}
@@ -557,7 +559,7 @@ export function ProductCreatePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Description & Details</label>
+                <label className="font-semibold text-foreground">{t('Description & Details', 'ការពិពណ៌នា & ព័ត៌មានលម្អិត')}</label>
                 <textarea
                   {...register('description')}
                   rows={3}
@@ -571,7 +573,7 @@ export function ProductCreatePage() {
                   <div>
                     <label className="font-bold text-sm text-foreground flex items-center gap-2">
                       <Images className="w-4 h-4 text-purple-600" />
-                      <span>Product Media & Multi-Image Gallery</span>
+                      <span>{t('Product Media & Multi-Image Gallery', 'មេឌៀមុខទំនិញ & វិចិត្រសាលរូបភាពច្រើន')}</span>
                       <Badge variant="secondary" className="text-[11px] font-mono">
                         {galleryUrls.length} {galleryUrls.length === 1 ? 'image' : 'images'}
                       </Badge>
@@ -584,7 +586,7 @@ export function ProductCreatePage() {
                   {/* Multi-file Cloud Upload Button */}
                   <label className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all flex-shrink-0">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingMedia ? (uploadProgress || 'Uploading to Cloud S3...') : '☁️ Upload Multiple Images'}</span>
+                      <span>{uploadingMedia ? (uploadProgress || t('Uploading to Cloud S3...', 'កំពុងផ្ទុកឡើងទៅ Cloud S3...')) : `☁️ ${t('Upload Multiple Images', 'ផ្ទុកឡើងរូបភាពច្រើន')}`}</span>
                     <input
                       type="file"
                       accept=".jpg,.jpeg,.png,.webp,.gif,.svg,.ico,.avif,image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/x-icon,image/avif"
@@ -601,7 +603,7 @@ export function ProductCreatePage() {
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-foreground flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span>Primary Cover Image URL</span>
+                      <span>{t('Primary Cover Image URL', 'URL រូបភាពគម្របចម្បង')}</span>
                     </label>
                     <Input
                       {...register('image_url')}
@@ -645,8 +647,8 @@ export function ProductCreatePage() {
                 {galleryUrls.length > 0 ? (
                   <div className="space-y-2">
                     <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                      <span>Gallery Slides Order (Shoppers can slide through these)</span>
-                      <span>Click ⭐ to set as cover</span>
+                      <span>{t('Gallery Slides Order (Shoppers can slide through these)', 'លំដាប់រូបភាពវិចិត្រសាល (អតិថិជនអាចអូសមើល)')}</span>
+                      <span>{t('Click ⭐ to set as cover', 'ចុច ⭐ ដើម្បីកំណត់ជារូបគម្រប')}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
                       {galleryUrls.map((imgUrl, idx) => {
@@ -736,13 +738,13 @@ export function ProductCreatePage() {
                 )}
 
                 <div className="space-y-1.5 pt-2">
-                  <label className="font-semibold text-foreground text-xs">Publishing Status</label>
+                  <label className="font-semibold text-foreground text-xs">{t('Publishing Status', 'ស្ថានភាពផ្សព្វផ្សាយ')}</label>
                   <select
                     {...register('status')}
                     className="w-full h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="active">Active (Visible in Storefront)</option>
-                    <option value="draft">Draft (Internal Only)</option>
+                    <option value="active">{t('Active (Visible in Storefront)', 'សកម្ម (បង្ហាញក្នុងហាង)')}</option>
+                    <option value="draft">{t('Draft (Internal Only)', 'ព្រាង (ប្រើខាងក្នុង)')}</option>
                   </select>
                 </div>
               </div>
@@ -853,7 +855,7 @@ export function ProductCreatePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground text-xs flex items-center justify-between">
-                    <span>Selling Price (USD) <span className="text-destructive">*</span></span>
+                    <span>{t('Selling Price (USD)', 'តម្លៃលក់ (USD)')} <span className="text-destructive">*</span></span>
                     <span className="text-[10px] text-muted-foreground font-normal">Regular</span>
                   </label>
                   <Input
@@ -891,7 +893,7 @@ export function ProductCreatePage() {
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground text-xs flex items-center justify-between">
-                    <span>Cost Price / COGS (USD)</span>
+                    <span>{t('Cost Price / COGS (USD)', 'តម្លៃដើម / COGS (USD)')}</span>
                     <span className="text-[10px] text-muted-foreground font-normal">Internal</span>
                   </label>
                   <Input

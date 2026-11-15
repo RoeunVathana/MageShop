@@ -30,8 +30,50 @@ export interface NavItem {
   badgeKm?: string
 }
 
+// Some older dashboard pages still provide English-only navigation metadata.
+// Keep those pages localized while they are being migrated to explicit labelKm
+// values, so switching language never leaves the sidebar half translated.
+const DASHBOARD_LABELS_KM: Record<string, string> = {
+  'Store Overview': 'ទិដ្ឋភាពទូទៅហាង',
+  'Product Catalog': 'បញ្ជីមុខទំនិញ',
+  'Discount Coupons': 'គូប៉ុងបញ្ចុះតម្លៃ',
+  'Orders & Fulfillment': 'ការបញ្ជាទិញ & ការរៀបចំ',
+  'Revenue & Payouts': 'ចំណូល & ការទូទាត់',
+  'Work Queue': 'បញ្ជីការងារ',
+  'Driver Dispatch': 'បញ្ជូនអ្នកដឹកជញ្ជូន',
+  'Order Operations': 'ប្រតិបត្តិការបញ្ជាទិញ',
+  'Team Directory': 'បញ្ជីសមាជិកក្រុម',
+  'Dock Overview': 'ទិដ្ឋភាពទូទៅចំណត',
+  'Inbound Shipments': 'ទំនិញចូល',
+  'Outbound Picking': 'ជ្រើសរើសទំនិញចេញ',
+  'Bin Stock Inventory': 'ស្តុកក្នុងឃ្លាំង',
+  'Return Logistics': 'ការដឹកជញ្ជូនត្រឡប់',
+}
+
+const DASHBOARD_ROLES_KM: Record<string, string> = {
+  'Admin Control Center': 'មជ្ឈមណ្ឌលគ្រប់គ្រង Admin',
+  'Admin Security & API Governance': 'សុវត្ថិភាព Admin & ការគ្រប់គ្រង API',
+  'Admin Banner Management': 'គ្រប់គ្រងបដា Admin',
+  'Brand Management': 'គ្រប់គ្រងម៉ាក',
+  'Category & Attribute Control': 'គ្រប់គ្រងប្រភេទ & គុណលក្ខណៈ',
+  'Inventory History': 'ប្រវត្តិសារពើភ័ណ្ឌ',
+  'Inventory Control': 'គ្រប់គ្រងសារពើភ័ណ្ឌ',
+  'Product Management': 'គ្រប់គ្រងមុខទំនិញ',
+  'Staff & Role Permissions': 'សិទ្ធិបុគ្គលិក & តួនាទី',
+  'Company & Headquarters Location': 'ក្រុមហ៊ុន & ទីតាំងការិយាល័យ',
+  'Currency & Store Settings': 'រូបិយប័ណ្ណ & ការកំណត់ហាង',
+  'Store Configuration': 'ការកំណត់ហាង',
+  'Orders Management': 'គ្រប់គ្រងការបញ្ជាទិញ',
+  'Staff & Delivery Fleet Control': 'គ្រប់គ្រងបុគ្គលិក & កងដឹកជញ្ជូន',
+  'Customer Portal': 'ផ្ទាំងអតិថិជន',
+  'Seller Merchant Hub': 'មជ្ឈមណ្ឌលអ្នកលក់',
+  'Staff Operations Desk': 'ផ្ទាំងប្រតិបត្តិការបុគ្គលិក',
+  'Warehouse Hub': 'មជ្ឈមណ្ឌលឃ្លាំង',
+}
+
 interface DashboardLayoutProps {
   roleTitle: string
+  roleTitleKm?: string
   roleSlug: string
   roleColor?: string
   navItems: NavItem[]
@@ -40,6 +82,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({
   roleTitle,
+  roleTitleKm,
   roleColor = 'text-indigo-600 dark:text-indigo-400',
   navItems,
   children,
@@ -63,8 +106,11 @@ export function DashboardLayout({
 
   const handleNotificationClick = () => {
     toast({
-      title: 'Notifications Hub',
-      description: 'All system notifications, KHQR payments, and Telegram reports are up to date.',
+      title: t('Notifications Hub', 'មជ្ឈមណ្ឌលការជូនដំណឹង'),
+      description: t(
+        'All system notifications, KHQR payments, and Telegram reports are up to date.',
+        'ការជូនដំណឹងប្រព័ន្ធ ការទូទាត់ KHQR និងរបាយការណ៍ Telegram ទាំងអស់បានធ្វើបច្ចុប្បន្នភាព។'
+      ),
       type: 'info',
     })
     setNotificationsCount(0)
@@ -97,7 +143,7 @@ export function DashboardLayout({
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
           <div className="flex items-center gap-2.5 mt-1.5 min-w-0">
-            <span className={cn('text-sm font-bold truncate min-w-0', roleColor)} title={roleTitle}>{roleTitle}</span>
+            <span className={cn('text-sm font-bold truncate min-w-0', roleColor)} title={roleTitle}>{t(roleTitle, roleTitleKm || DASHBOARD_ROLES_KM[roleTitle] || roleTitle)}</span>
             <Badge
               variant="outline"
               className="shrink-0 text-[11px] rounded-md border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 flex items-center gap-1 px-2 py-1"
@@ -112,7 +158,7 @@ export function DashboardLayout({
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
-            const displayLabel = language === 'KM' && item.labelKm ? item.labelKm : item.label
+            const displayLabel = language === 'KM' ? item.labelKm || DASHBOARD_LABELS_KM[item.label] || item.label : item.label
             const displayBadge = language === 'KM' && item.badgeKm ? item.badgeKm : item.badge
             return (
               <Link
@@ -190,7 +236,7 @@ export function DashboardLayout({
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.href
-                const displayLabel = language === 'KM' && item.labelKm ? item.labelKm : item.label
+            const displayLabel = language === 'KM' ? item.labelKm || DASHBOARD_LABELS_KM[item.label] || item.label : item.label
                 const displayBadge = language === 'KM' && item.badgeKm ? item.badgeKm : item.badge
                 return (
                   <Link

@@ -36,6 +36,7 @@ import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { adminOrderService, type AdminOrder } from '@/services/adminOrder.service'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { API_BASE_URL } from '@/lib/api'
 
 const ORDER_STATUSES = [
@@ -668,8 +669,8 @@ export function AdminOrderListPage() {
 
         {/* Order Details Drawer / Modal */}
         {selectedOrder && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="relative w-full max-w-2xl bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
+          <DashboardModal onClose={closeOrderDetails}>
+            <div className="dashboard-modal-panel relative w-full max-w-2xl rounded-3xl border bg-card p-5 shadow-2xl sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
               {/* Modal Header */}
               <div className="flex items-start justify-between border-b pb-4">
                 <div>
@@ -684,6 +685,7 @@ export function AdminOrderListPage() {
                   </p>
                 </div>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={closeOrderDetails}
@@ -962,7 +964,7 @@ export function AdminOrderListPage() {
                 )}
               </div>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         <ConfirmDialog

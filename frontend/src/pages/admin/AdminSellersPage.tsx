@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 import {
@@ -673,8 +674,8 @@ export function AdminSellersPage() {
 
         {/* Detail & KYC Modal */}
         {selectedApp && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-card border rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
+          <DashboardModal onClose={closeSellerModal}>
+            <div className="dashboard-modal-panel bg-card border rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
               <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/40">
                 <div className="flex items-center gap-2">
                   <Store className="h-5 w-5 text-primary" />
@@ -916,13 +917,13 @@ export function AdminSellersPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         {/* Reject Dialog */}
         {rejectingApp && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-card border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200">
+          <DashboardModal onClose={() => setRejectingApp(null)}>
+            <div className="dashboard-modal-panel bg-card border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200">
               <div className="flex items-center gap-2 text-rose-600">
                 <AlertCircle className="h-5 w-5" />
                 <h3 className="font-bold text-base text-foreground">
@@ -969,7 +970,7 @@ export function AdminSellersPage() {
                 </Button>
               </div>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         <ConfirmDialog

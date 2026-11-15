@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { categoryService } from '@/services/category.service'
 import type { Category, CategoryAttribute, AttributeType } from '@/types/category.types'
@@ -57,6 +58,7 @@ export function CategoryEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   const [category, setCategory] = useState<Category | null>(null)
   const [allCategories, setAllCategories] = useState<Category[]>([])
@@ -259,7 +261,7 @@ export function CategoryEditPage() {
       >
         <div className="p-12 text-center text-muted-foreground">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-          Loading category information...
+          {t('Loading category information...', 'កំពុងទាញយកព័ត៌មានប្រភេទ...')}
         </div>
       </DashboardLayout>
     )
@@ -286,7 +288,7 @@ export function CategoryEditPage() {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tight">Edit Category</h1>
+                <h1 className="text-xl font-black tracking-tight">{t('Edit Category', 'កែប្រែប្រភេទ')}</h1>
                 {category && (
                   <Badge variant="outline" className="font-mono text-xs">
                     ID: {category.id}
@@ -294,7 +296,7 @@ export function CategoryEditPage() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Manage department hierarchy and configure dynamic product specification attributes.
+                {t('Manage department hierarchy and configure dynamic product specification attributes.', 'គ្រប់គ្រងឋានានុក្រមនាយកដ្ឋាន និងកំណត់គុណលក្ខណៈមុខទំនិញ។')}
               </p>
             </div>
           </div>
@@ -426,13 +428,13 @@ export function CategoryEditPage() {
                     <table className="dashboard-data-table w-full text-left text-xs">
                     <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                       <tr>
-                        <th className="p-2.5">Attribute Name</th>
-                        <th className="p-2.5">Code</th>
-                        <th className="p-2.5">Input Type</th>
-                        <th className="p-2.5">Options / Values</th>
-                        <th className="p-2.5 text-center">Required</th>
-                        <th className="p-2.5 text-center">Variant Option</th>
-                        <th className="p-2.5 text-right">Actions</th>
+                        <th className="p-2.5">{t('Attribute Name', 'ឈ្មោះគុណលក្ខណៈ')}</th>
+                        <th className="p-2.5">{t('Code', 'កូដ')}</th>
+                        <th className="p-2.5">{t('Input Type', 'ប្រភេទបញ្ចូល')}</th>
+                        <th className="p-2.5">{t('Options / Values', 'ជម្រើស / តម្លៃ')}</th>
+                        <th className="p-2.5 text-center">{t('Required', 'ចាំបាច់')}</th>
+                        <th className="p-2.5 text-center">{t('Variant Option', 'ជម្រើសវ៉ារ្យង់')}</th>
+                        <th className="p-2.5 text-right">{t('Actions', 'សកម្មភាព')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

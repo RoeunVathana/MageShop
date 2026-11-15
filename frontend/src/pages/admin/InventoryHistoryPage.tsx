@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { inventoryService } from '@/services/inventory.service'
 import { productService } from '@/services/product.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -27,6 +28,7 @@ import type { Product } from '@/types/product.types'
 export function InventoryHistoryPage() {
   const { productId } = useParams<{ productId: string }>()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [movements, setMovements] = useState<InventoryMovement[]>([])
@@ -73,7 +75,12 @@ export function InventoryHistoryPage() {
         return (
           <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] gap-1">
             <ArrowUpRight className="w-3 h-3" />
-            {upper}
+            {t(upper, ({
+              STOCK_IN: 'បញ្ចូលស្តុក',
+              STOCK_OUT: 'ដកស្តុក',
+              RETURN: 'ទំនិញត្រឡប់',
+              DAMAGE: 'ខូចខាត',
+            } as Record<string, string>)[upper] || upper)}
           </Badge>
         )
       case 'STOCK_OUT':
@@ -87,13 +94,13 @@ export function InventoryHistoryPage() {
       case 'RESERVE':
         return (
           <Badge variant="outline" className="text-amber-600 border-amber-500/30 text-[10px]">
-            RESERVED
+            {t('RESERVED', 'បានកក់ទុក')}
           </Badge>
         )
       case 'RELEASE':
         return (
           <Badge variant="outline" className="text-blue-600 border-blue-500/30 text-[10px]">
-            RELEASED
+            {t('RELEASED', 'បានដោះលែង')}
           </Badge>
         )
       default:
@@ -158,7 +165,7 @@ export function InventoryHistoryPage() {
             <Card>
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Current On Hand</p>
+          <p className="text-xs text-muted-foreground">{t('Current On Hand', 'ស្តុកបច្ចុប្បន្ន')}</p>
                   <p className="text-xl font-bold mt-1">{product.quantity_on_hand} units</p>
                 </div>
                 <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600">
@@ -170,7 +177,7 @@ export function InventoryHistoryPage() {
             <Card>
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Reserved in Orders</p>
+          <p className="text-xs text-muted-foreground">{t('Reserved in Orders', 'បានកក់ក្នុងការបញ្ជាទិញ')}</p>
                   <p className="text-xl font-bold mt-1 text-amber-600">
                     {product.quantity_reserved} units
                   </p>
@@ -184,7 +191,7 @@ export function InventoryHistoryPage() {
             <Card>
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Available to Sell</p>
+          <p className="text-xs text-muted-foreground">{t('Available to Sell', 'មានសម្រាប់លក់')}</p>
                   <p className="text-xl font-bold mt-1 text-emerald-600">
                     {product.available_stock} units
                   </p>
@@ -198,7 +205,7 @@ export function InventoryHistoryPage() {
             <Card>
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Ledger Events</p>
+          <p className="text-xs text-muted-foreground">{t('Total Ledger Events', 'ព្រឹត្តិការណ៍បញ្ជីសរុប')}</p>
                   <p className="text-xl font-bold mt-1">{totalCount || movements.length}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600">
@@ -216,13 +223,13 @@ export function InventoryHistoryPage() {
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 w-12">#</th>
-                  <th className="p-3">Timestamp (UTC)</th>
-                  <th className="p-3">Type</th>
-                  <th className="p-3 text-center">Change</th>
-                  <th className="p-3 text-center">Balance</th>
-                  <th className="p-3">Reason & Context</th>
-                  <th className="p-3">Reference</th>
-                  <th className="p-3">Initiated By</th>
+                  <th className="p-3">{t('Timestamp (UTC)', 'ពេលវេលា (UTC)')}</th>
+                  <th className="p-3">{t('Type', 'ប្រភេទ')}</th>
+                  <th className="p-3 text-center">{t('Change', 'ការផ្លាស់ប្តូរ')}</th>
+                  <th className="p-3 text-center">{t('Balance', 'សមតុល្យ')}</th>
+                  <th className="p-3">{t('Reason & Context', 'មូលហេតុ និងបរិបទ')}</th>
+                  <th className="p-3">{t('Reference', 'យោង')}</th>
+                  <th className="p-3">{t('Initiated By', 'អនុវត្តដោយ')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -230,14 +237,14 @@ export function InventoryHistoryPage() {
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
-                      Loading movement logs...
+                      {t('Loading movement logs...', 'កំពុងផ្ទុកកំណត់ហេតុចលនា...')}
                     </td>
                   </tr>
                 ) : movements.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       <History className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                      No inventory movement records for this product yet.
+                      {t('No inventory movement records for this product yet.', 'មិនទាន់មានកំណត់ត្រាចលនាស្តុកសម្រាប់មុខទំនិញនេះទេ។')}
                     </td>
                   </tr>
                 ) : (

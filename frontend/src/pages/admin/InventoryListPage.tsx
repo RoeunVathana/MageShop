@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { inventoryService } from '@/services/inventory.service'
 import { productService } from '@/services/product.service'
 import { Pagination } from '@/components/common/Pagination'
@@ -28,6 +29,7 @@ import type { Product } from '@/types/product.types'
 
 export function InventoryListPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
@@ -149,7 +151,7 @@ export function InventoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Stock On Hand</p>
+          <p className="text-xs text-muted-foreground">{t('Total Stock On Hand', 'ស្តុកមានសរុប')}</p>
                 <p className="text-xl font-bold mt-1">{totalOnHand} units</p>
               </div>
               <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600">
@@ -161,7 +163,7 @@ export function InventoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Reserved in Orders</p>
+          <p className="text-xs text-muted-foreground">{t('Reserved in Orders', 'បានកក់ក្នុងការបញ្ជាទិញ')}</p>
                 <p className="text-xl font-bold mt-1 text-amber-600">{totalReserved} units</p>
               </div>
               <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
@@ -173,7 +175,7 @@ export function InventoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Available to Sell</p>
+          <p className="text-xs text-muted-foreground">{t('Available to Sell', 'មានសម្រាប់លក់')}</p>
                 <p className="text-xl font-bold mt-1 text-emerald-600">{totalAvailable} units</p>
               </div>
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
@@ -185,7 +187,7 @@ export function InventoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Low Stock Warnings</p>
+          <p className="text-xs text-muted-foreground">{t('Low Stock Warnings', 'ការព្រមានស្តុកជិតអស់')}</p>
                 <p className="text-xl font-bold mt-1 text-rose-600">{lowStockCount} items</p>
               </div>
               <div className="p-2 rounded-lg bg-rose-500/10 text-rose-600">
@@ -201,7 +203,7 @@ export function InventoryListPage() {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by SKU or item title..."
+              placeholder={t('Search by SKU or item title...', 'ស្វែងរកតាម SKU ឬចំណងជើងមុខទំនិញ...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9 text-xs"
@@ -237,7 +239,7 @@ export function InventoryListPage() {
                 }}
                 className="rounded border-input text-primary focus:ring-ring w-4 h-4"
               />
-              <span>Show Low Stock Only</span>
+              <span>{t('Show Low Stock Only', 'បង្ហាញតែស្តុកជិតអស់')}</span>
             </label>
 
             <Button
@@ -259,13 +261,13 @@ export function InventoryListPage() {
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 w-12">#</th>
-                  <th className="p-3">Product Name & SKU</th>
-                  <th className="p-3 text-center">On Hand</th>
-                  <th className="p-3 text-center">Reserved</th>
-                  <th className="p-3 text-center">Available</th>
-                  <th className="p-3 text-center">Threshold</th>
-                  <th className="p-3">Health Status</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th className="p-3">{t('Product Name & SKU', 'ឈ្មោះមុខទំនិញ និង SKU')}</th>
+                  <th className="p-3 text-center">{t('On Hand', 'មានក្នុងស្តុក')}</th>
+                  <th className="p-3 text-center">{t('Reserved', 'បានកក់ទុក')}</th>
+                  <th className="p-3 text-center">{t('Available', 'អាចលក់')}</th>
+                  <th className="p-3 text-center">{t('Threshold', 'កម្រិតកំណត់')}</th>
+                  <th className="p-3">{t('Health Status', 'ស្ថានភាពស្តុក')}</th>
+                  <th className="p-3 text-right">{t('Actions', 'សកម្មភាព')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -273,14 +275,14 @@ export function InventoryListPage() {
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
-                      Loading inventory levels...
+                      {t('Loading inventory levels...', 'កំពុងផ្ទុកកម្រិតស្តុក...')}
                     </td>
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       <Boxes className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                      No inventory records found.
+                      {t('No inventory records found.', 'រកមិនឃើញកំណត់ត្រាស្តុកទេ។')}
                     </td>
                   </tr>
                 ) : (
@@ -322,15 +324,15 @@ export function InventoryListPage() {
                         <td className="p-3">
                           {isOut ? (
                             <Badge variant="destructive" className="text-[10px]">
-                              Out of Stock
+                              {t('Out of Stock', 'អស់ពីស្តុក')}
                             </Badge>
                           ) : isLow ? (
                             <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
-                              Low Stock Warning
+                              {t('Low Stock Warning', 'ព្រមានស្តុកទាប')}
                             </Badge>
                           ) : (
                             <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
-                              Optimal Stock
+                              {t('Optimal Stock', 'ស្តុកល្អប្រសើរ')}
                             </Badge>
                           )}
                         </td>
@@ -346,17 +348,17 @@ export function InventoryListPage() {
                               }}
                             >
                               <RefreshCw className="w-3 h-3" />
-                              Adjust Stock
+                              {t('Adjust Stock', 'កែសម្រួលស្តុក')}
                             </Button>
                             <Link to={`/admin/inventory/${item.id}/history`}>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="h-7 text-[11px] gap-1"
-                                title="View Movement Audit Logs"
+                                title={t('View Movement Audit Logs', 'មើលកំណត់ហេតុចលនាស្តុក')}
                               >
                                 <History className="w-3 h-3" />
-                                Audit Log
+                                {t('Audit Log', 'កំណត់ហេតុសវនកម្ម')}
                               </Button>
                             </Link>
                           </div>

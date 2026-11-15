@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { productService } from '@/services/product.service'
 import { Pagination } from '@/components/common/Pagination'
 import { StockAdjustmentDialog } from '@/components/admin/StockAdjustmentDialog'
@@ -35,6 +36,7 @@ import { DollarSign, Tag, Sparkles } from 'lucide-react'
 
 export function ProductListPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Array<{ id: number; name: string; parent_name?: string | null }>>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -206,7 +208,7 @@ export function ProductListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Catalog Total</p>
+                <p className="text-xs text-muted-foreground">{t('Catalog Total', 'មុខទំនិញសរុប')}</p>
                 <p className="text-xl font-bold mt-1">{totalCount || products.length}</p>
               </div>
               <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600">
@@ -217,7 +219,7 @@ export function ProductListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Active in Storefront</p>
+                <p className="text-xs text-muted-foreground">{t('Active in Storefront', 'សកម្មក្នុងហាង')}</p>
                 <p className="text-xl font-bold mt-1 text-emerald-600">{activeCount}</p>
               </div>
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
@@ -228,7 +230,7 @@ export function ProductListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Low Stock Warnings</p>
+                <p className="text-xs text-muted-foreground">{t('Low Stock Warnings', 'ការព្រមានស្តុកជិតអស់')}</p>
                 <p className="text-xl font-bold mt-1 text-amber-600">{lowStockCount}</p>
               </div>
               <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
@@ -239,7 +241,7 @@ export function ProductListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Filter Selection</p>
+                <p className="text-xs text-muted-foreground">{t('Filter Selection', 'ការជ្រើសរើសតម្រង')}</p>
                 <p className="text-sm font-bold mt-1 uppercase text-muted-foreground">
                   {statusFilter}
                 </p>
@@ -257,7 +259,7 @@ export function ProductListPage() {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search title, SKU, brand..."
+              placeholder={t('Search title, SKU, brand...', 'ស្វែងរកតាមចំណងជើង SKU ម៉ាក...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9 text-xs"
@@ -273,7 +275,7 @@ export function ProductListPage() {
             }}
             className="h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full md:w-48"
           >
-            <option value="">All Departments</option>
+            <option value="">{t('All Departments', 'គ្រប់នាយកដ្ឋាន')}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.parent_name ? `— ${c.name}` : c.name}
@@ -290,10 +292,10 @@ export function ProductListPage() {
             }}
             className="h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full md:w-36"
           >
-            <option value="">All Product Types</option>
-            <option value="simple">Simple</option>
-            <option value="variable">Variable</option>
-            <option value="digital">Digital</option>
+            <option value="">{t('All Product Types', 'គ្រប់ប្រភេទមុខទំនិញ')}</option>
+            <option value="simple">{t('Simple', 'ធម្មតា')}</option>
+            <option value="variable">{t('Variable', 'ប្រែប្រួល')}</option>
+            <option value="digital">{t('Digital', 'ឌីជីថល')}</option>
           </select>
 
           {/* Sort By Selector (Defaults to DESC / Newest First) */}
@@ -353,14 +355,14 @@ export function ProductListPage() {
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="w-12 whitespace-nowrap p-3">#</th>
-                  <th className="whitespace-nowrap p-3">Product Name & SKU</th>
-                  <th className="whitespace-nowrap p-3">Type & Brand</th>
-                  <th className="whitespace-nowrap p-3">Department</th>
-                  <th className="whitespace-nowrap p-3">Selling Price</th>
-                  <th className="whitespace-nowrap p-3">Cost Price</th>
-                  <th className="whitespace-nowrap p-3 text-center">Available Stock</th>
-                  <th className="whitespace-nowrap p-3">Status</th>
-                  <th className="whitespace-nowrap p-3 text-right">Actions</th>
+                  <th className="whitespace-nowrap p-3">{t('Product Name & SKU', 'ឈ្មោះមុខទំនិញ និង SKU')}</th>
+                  <th className="whitespace-nowrap p-3">{t('Type & Brand', 'ប្រភេទ និងម៉ាក')}</th>
+                  <th className="whitespace-nowrap p-3">{t('Department', 'នាយកដ្ឋាន')}</th>
+                  <th className="whitespace-nowrap p-3">{t('Selling Price', 'តម្លៃលក់')}</th>
+                  <th className="whitespace-nowrap p-3">{t('Cost Price', 'ថ្លៃដើម')}</th>
+                  <th className="whitespace-nowrap p-3 text-center">{t('Available Stock', 'ស្តុកដែលអាចលក់')}</th>
+                  <th className="whitespace-nowrap p-3">{t('Status', 'ស្ថានភាព')}</th>
+                  <th className="whitespace-nowrap p-3 text-right">{t('Actions', 'សកម្មភាព')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -368,14 +370,14 @@ export function ProductListPage() {
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-muted-foreground">
                       <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
-                      Loading product catalog...
+                      {t('Loading product catalog...', 'កំពុងផ្ទុកកាតាឡុកមុខទំនិញ...')}
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-muted-foreground">
                       <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                      No products found matching the criteria.
+                      {t('No products found matching the criteria.', 'រកមិនឃើញមុខទំនិញដែលត្រូវនឹងលក្ខខណ្ឌទេ។')}
                     </td>
                   </tr>
                 ) : (
@@ -413,7 +415,11 @@ export function ProductListPage() {
                               variant={p.product_type === 'variable' ? 'default' : 'secondary'}
                               className="text-[9px] py-0 px-1 capitalize"
                             >
-                              {p.product_type ?? 'simple'}
+                              {p.product_type === 'variable'
+                                ? t('Variable', 'អថេរ')
+                                : p.product_type === 'digital'
+                                  ? t('Digital', 'ឌីជីថល')
+                                  : t('Simple', 'ធម្មតា')}
                             </Badge>
                             {p.brand && (
                               <div className="text-[10px] text-muted-foreground font-semibold">
@@ -440,7 +446,7 @@ export function ProductListPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-[11px]">Uncategorized</span>
+                            <span className="text-muted-foreground text-[11px]">{t('Uncategorized', 'មិនទាន់មានប្រភេទ')}</span>
                           )}
                         </td>
                         <td className="p-3">
@@ -479,7 +485,7 @@ export function ProductListPage() {
                           {p.cost_price !== null && p.cost_price !== undefined ? (
                             `$${Number(p.cost_price).toFixed(2)}`
                           ) : (
-                            <span className="text-[10px] text-muted-foreground italic">Restricted</span>
+                            <span className="text-[10px] text-muted-foreground italic">{t('Restricted', 'បានកម្រិតសិទ្ធិ')}</span>
                           )}
                         </td>
                         <td className="p-3 text-center">
@@ -488,11 +494,11 @@ export function ProductListPage() {
                               {p.available_stock}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              / {p.quantity_on_hand} on-hand
+                              / {p.quantity_on_hand} {t('on-hand', 'មានក្នុងស្តុក')}
                             </span>
                             {isLow && (
                               <Badge variant="destructive" className="text-[9px] py-0 px-1 ml-1">
-                                Low
+                                {t('Low', 'ទាប')}
                               </Badge>
                             )}
                           </div>
@@ -500,15 +506,15 @@ export function ProductListPage() {
                         <td className="p-3">
                           {p.status === 'active' ? (
                             <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 text-[10px]">
-                              Active
+                              {t('Active', 'សកម្ម')}
                             </Badge>
                           ) : p.status === 'archived' ? (
                             <Badge variant="outline" className="text-muted-foreground text-[10px]">
-                              Archived
+                              {t('Archived', 'បានរក្សាទុក')}
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-[10px]">
-                              Draft
+                              {t('Draft', 'ព្រាង')}
                             </Badge>
                           )}
                         </td>

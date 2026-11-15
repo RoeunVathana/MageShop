@@ -31,7 +31,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { Pagination } from '@/components/common/Pagination'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { authService } from '@/services/auth.service'
 import { api } from '@/lib/api'
 
@@ -192,6 +194,7 @@ const FALLBACK_MEMBERS: TeamMember[] = [
 ]
 
 export function UserDirectoryPage() {
+  const { t } = useShopEngagement()
   const { toast } = useToast()
 
   const [members, setMembers] = useState<TeamMember[]>(FALLBACK_MEMBERS)
@@ -579,6 +582,7 @@ export function UserDirectoryPage() {
   return (
     <DashboardLayout
       roleTitle="Staff & Role Permissions"
+      roleTitleKm="សិទ្ធិបុគ្គលិក និងតួនាទី"
       roleSlug="admin"
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={adminNavItems}
@@ -590,14 +594,14 @@ export function UserDirectoryPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
                 <Users className="w-7 h-7 text-indigo-600" />
-                <span>User Directory & Role Permissions</span>
+                <span>{t('User Directory & Role Permissions', 'បញ្ជីអ្នកប្រើប្រាស់ និងសិទ្ធិតួនាទី')}</span>
               </h1>
               <Badge className="bg-indigo-600 text-white font-bold text-xs">
-                {totalCount} Total Accounts
+                {totalCount} {t('Total Accounts', 'គណនីសរុប')}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Assign roles and permissions to Staff, Delivery Couriers, Merchants, and Administrators with instant database persistence.
+              {t('Assign roles and permissions to Staff, Delivery Couriers, Merchants, and Administrators with instant database persistence.', 'កំណត់តួនាទី និងសិទ្ធិដល់បុគ្គលិក អ្នកដឹកជញ្ជូន អ្នកលក់ និងអ្នកគ្រប់គ្រង ដោយរក្សាទុកភ្លាមៗក្នុងមូលដ្ឋានទិន្នន័យ។')}
             </p>
           </div>
 
@@ -610,7 +614,7 @@ export function UserDirectoryPage() {
               className="rounded-xl h-9 text-xs font-bold gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t('Refresh', 'ផ្ទុកឡើងវិញ')}</span>
             </Button>
 
             <Button
@@ -619,7 +623,7 @@ export function UserDirectoryPage() {
               className="rounded-xl h-9 text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>Enroll Member</span>
+              <span>{t('Enroll Member', 'បន្ថែមសមាជិក')}</span>
             </Button>
             <Button
               size="sm"
@@ -632,7 +636,7 @@ export function UserDirectoryPage() {
               className="rounded-xl h-9 text-xs font-bold gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Assign by Email</span>
+              <span>{t('Assign by Email', 'កំណត់តាមអ៊ីមែល')}</span>
             </Button>
           </div>
         </div>
@@ -642,9 +646,9 @@ export function UserDirectoryPage() {
           <Card className="rounded-2xl border shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-muted-foreground">Delivery Couriers</p>
+                <p className="text-xs font-bold text-muted-foreground">{t('Delivery Couriers', 'អ្នកដឹកជញ្ជូន')}</p>
                 <p className="text-xl font-black mt-1 text-emerald-600">{courierCount}</p>
-                <p className="text-[10px] text-muted-foreground">Live GPS Fleet Access</p>
+                <p className="text-[10px] text-muted-foreground">{t('Live GPS Fleet Access', 'សិទ្ធិប្រើ GPS កងដឹកជញ្ជូន')}</p>
               </div>
               <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600">
                 <Truck className="w-5 h-5" />
@@ -655,9 +659,9 @@ export function UserDirectoryPage() {
           <Card className="rounded-2xl border shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-muted-foreground">Staff Operations</p>
+                <p className="text-xs font-bold text-muted-foreground">{t('Staff Operations', 'ប្រតិបត្តិការបុគ្គលិក')}</p>
                 <p className="text-xl font-black mt-1 text-blue-600">{staffCount}</p>
-                <p className="text-[10px] text-muted-foreground">Catalog & Orders Staff</p>
+                <p className="text-[10px] text-muted-foreground">{t('Catalog & Orders Staff', 'បុគ្គលិកកាតាឡុក និងការបញ្ជាទិញ')}</p>
               </div>
               <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600">
                 <ShieldCheck className="w-5 h-5" />
@@ -668,9 +672,9 @@ export function UserDirectoryPage() {
           <Card className="rounded-2xl border shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-muted-foreground">Administrators</p>
+                <p className="text-xs font-bold text-muted-foreground">{t('Administrators', 'អ្នកគ្រប់គ្រង')}</p>
                 <p className="text-xl font-black mt-1 text-purple-600">{adminCount}</p>
-                <p className="text-[10px] text-muted-foreground">Super Admin & Admins</p>
+                <p className="text-[10px] text-muted-foreground">{t('Super Admin & Admins', 'Super Admin និង Admin')}</p>
               </div>
               <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600">
                 <Shield className="w-5 h-5" />
@@ -681,9 +685,9 @@ export function UserDirectoryPage() {
           <Card className="rounded-2xl border shadow-sm">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-muted-foreground">Total Accounts</p>
+                <p className="text-xs font-bold text-muted-foreground">{t('Total Accounts', 'គណនីសរុប')}</p>
                 <p className="text-xl font-black mt-1 text-indigo-600">{totalCount}</p>
-                <p className="text-[10px] text-muted-foreground">All Roles in System</p>
+                <p className="text-[10px] text-muted-foreground">{t('All Roles in System', 'តួនាទីទាំងអស់ក្នុងប្រព័ន្ធ')}</p>
               </div>
               <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600">
                 <Users className="w-5 h-5" />
@@ -698,7 +702,7 @@ export function UserDirectoryPage() {
             <div className="relative flex-1 w-full">
               <Input
                 type="text"
-                placeholder="Search by name, email, phone (+855), or role..."
+                placeholder={t('Search by name, email, phone (+855), or role...', 'ស្វែងរកតាមឈ្មោះ អ៊ីមែល ទូរស័ព្ទ (+855) ឬតួនាទី...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 h-10 rounded-xl text-xs sm:text-sm"
@@ -712,15 +716,15 @@ export function UserDirectoryPage() {
                 onChange={(e) => setSelectedRole(e.target.value)}
                 className="h-10 px-3 rounded-xl border bg-background text-xs font-bold focus:ring-2 focus:ring-indigo-500/30"
               >
-                <option value="all">All Roles</option>
-                <option value="delivery_driver">Delivery Driver / Courier</option>
-                <option value="courier">Courier / Delivery Operator</option>
-                <option value="delivery">Legacy Delivery Operator</option>
-                <option value="staff">Staff Operations</option>
-                <option value="seller">Merchant Seller</option>
-                <option value="warehouse">Warehouse Manager</option>
-                <option value="admin">Administrator</option>
-                <option value="customer">Customer</option>
+                <option value="all">{t('All Roles', 'តួនាទីទាំងអស់')}</option>
+                <option value="delivery_driver">{t('Delivery Driver / Courier', 'អ្នកដឹកជញ្ជូន / Courier')}</option>
+                <option value="courier">{t('Courier / Delivery Operator', 'Courier / ប្រតិបត្តិករដឹកជញ្ជូន')}</option>
+                <option value="delivery">{t('Legacy Delivery Operator', 'ប្រតិបត្តិករដឹកជញ្ជូនចាស់')}</option>
+                <option value="staff">{t('Staff Operations', 'ប្រតិបត្តិការបុគ្គលិក')}</option>
+                <option value="seller">{t('Merchant Seller', 'អ្នកលក់ពាណិជ្ជកម្ម')}</option>
+                <option value="warehouse">{t('Warehouse Manager', 'អ្នកគ្រប់គ្រងឃ្លាំង')}</option>
+                <option value="admin">{t('Administrator', 'អ្នកគ្រប់គ្រង')}</option>
+                <option value="customer">{t('Customer', 'អតិថិជន')}</option>
               </select>
             </div>
           </CardContent>
@@ -732,23 +736,23 @@ export function UserDirectoryPage() {
             {loading ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
-                <p className="text-xs text-muted-foreground font-semibold">Loading users and roles from database...</p>
+                <p className="text-xs text-muted-foreground font-semibold">{t('Loading users and roles from database...', 'កំពុងផ្ទុកអ្នកប្រើប្រាស់ និងតួនាទីពីមូលដ្ឋានទិន្នន័យ...')}</p>
               </div>
             ) : paginatedMembers.length === 0 ? (
               <div className="py-16 text-center text-xs text-muted-foreground">
-                No user accounts found matching your query.
+                {t('No user accounts found matching your query.', 'រកមិនឃើញគណនីអ្នកប្រើប្រាស់ដែលត្រូវនឹងការស្វែងរករបស់អ្នកទេ។')}
               </div>
             ) : (
               <div className="dashboard-table-scroll">
                 <table className="dashboard-data-table w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b bg-muted/40 text-muted-foreground font-bold uppercase tracking-wider text-[10.5px]">
-                      <th className="py-3 px-4">Member Account</th>
-                      <th className="py-3 px-4">Assigned Roles</th>
-                      <th className="py-3 px-4">Contact</th>
-                      <th className="py-3 px-4">Department</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right min-w-[320px]">Actions</th>
+                      <th className="py-3 px-4">{t('Member Account', 'គណនីសមាជិក')}</th>
+                      <th className="py-3 px-4">{t('Assigned Roles', 'តួនាទីដែលបានកំណត់')}</th>
+                      <th className="py-3 px-4">{t('Contact', 'ទំនាក់ទំនង')}</th>
+                      <th className="py-3 px-4">{t('Department', 'ផ្នែក')}</th>
+                      <th className="py-3 px-4">{t('Status', 'ស្ថានភាព')}</th>
+                      <th className="py-3 px-4 text-right min-w-[320px]">{t('Actions', 'សកម្មភាព')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -891,8 +895,8 @@ export function UserDirectoryPage() {
 
         {/* Interactive Role & Permission Assignment Modal */}
         {selectedMemberForRole && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="relative w-full max-w-xl bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
+          <DashboardModal onClose={() => setSelectedMemberForRole(null)}>
+            <div className="dashboard-modal-panel relative w-full max-w-xl bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
               {/* Modal Header */}
               <div className="flex items-start justify-between border-b pb-4">
                 <div>
@@ -1030,13 +1034,13 @@ export function UserDirectoryPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         {/* Assign a role to an existing account by email */}
         {isEmailRoleModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
+          <DashboardModal onClose={() => setIsEmailRoleModalOpen(false)}>
+            <div className="dashboard-modal-panel relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in-0 zoom-in-95 duration-200">
               <div className="flex items-start justify-between border-b pb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
@@ -1117,13 +1121,13 @@ export function UserDirectoryPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         {/* Edit Member Modal */}
         {editingMember && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-            <div className="relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-4">
+          <DashboardModal onClose={() => setEditingMember(null)}>
+            <div className="dashboard-modal-panel relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <div>
                   <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -1214,13 +1218,13 @@ export function UserDirectoryPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </DashboardModal>
         )}
 
         {/* Add Member Modal */}
         {isAddModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-            <div className="relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-4">
+          <DashboardModal onClose={() => setIsAddModalOpen(false)}>
+            <div className="dashboard-modal-panel relative w-full max-w-lg bg-card rounded-3xl border shadow-2xl p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-foreground flex items-center gap-2">
                   <UserPlus className="w-5 h-5 text-indigo-600" />
@@ -1310,7 +1314,7 @@ export function UserDirectoryPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </DashboardModal>
         )}
       </div>
       <ConfirmDialog

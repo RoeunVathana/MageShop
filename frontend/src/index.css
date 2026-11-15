@@ -457,6 +457,41 @@ html.khmer-mode .dashboard-shell .text-xs {
   min-width: 0;
 }
 
+/* Shared dashboard modal behavior. Custom dashboard forms use the same shell
+   as Radix dialogs so they stay centered, reachable, and dismissible on short
+   desktop windows and small mobile viewports. */
+.dashboard-modal-host {
+  max-height: calc(100dvh - 2rem);
+  overscroll-behavior: contain;
+}
+
+.dashboard-modal-host > * {
+  min-height: 0;
+  max-height: calc(100dvh - 2rem);
+}
+
+.dashboard-modal-panel {
+  max-height: calc(100dvh - 2rem) !important;
+  min-height: 0;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 639px) {
+  .dashboard-modal-backdrop {
+    align-items: flex-start;
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .dashboard-modal-host,
+  .dashboard-modal-host > *,
+  .dashboard-modal-panel {
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+}
+
 /* Keep the enlarged admin navigation comfortable to scan while making the
    long Khmer menu visibly scrollable instead of clipping its lower items. */
 .dashboard-sidebar-nav {

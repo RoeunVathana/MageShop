@@ -39,10 +39,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { api } from '@/lib/api'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
 import { authService } from '@/services/auth.service'
 import { staffService, type StaffDriver } from '@/services/staff.service'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export interface DeliveryOrder {
   id: number
@@ -84,13 +86,14 @@ const CAMBODIA_LOCATION_PRESETS = [
 ]
 
 const deliveryNav: NavItem[] = [
-  { label: 'Delivery Location Manager', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS' },
-  { label: 'Fleet Route Dispatch', href: '/dashboard/delivery', icon: Truck },
-  { label: 'Staff Operations Desk', href: '/dashboard/staff', icon: Layers },
-  { label: 'Admin Governance', href: '/dashboard/admin', icon: Shield },
+  { label: 'Delivery Location Manager', labelKm: 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូន', href: '/dashboard/delivery', icon: MapPin, badge: 'Live GPS', badgeKm: 'GPS ផ្ទាល់' },
+  { label: 'Fleet Route Dispatch', labelKm: 'ចាត់ចែងផ្លូវកងដឹកជញ្ជូន', href: '/dashboard/delivery', icon: Truck },
+  { label: 'Staff Operations Desk', labelKm: 'ផ្ទាំងប្រតិបត្តិការបុគ្គលិក', href: '/dashboard/staff', icon: Layers },
+  { label: 'Admin Governance', labelKm: 'ការគ្រប់គ្រងរដ្ឋបាល', href: '/dashboard/admin', icon: Shield },
 ]
 
 export function DeliveryDashboard() {
+  const { t } = useShopEngagement()
   const { toast } = useToast()
   const currentUser = authService.getStoredUser()
   const roleNames = (currentUser?.roles || []).map((role: any) => String(role?.name || role?.slug || role).toUpperCase())
@@ -835,6 +838,7 @@ export function DeliveryDashboard() {
   return (
     <DashboardLayout
       roleTitle="Staff & Delivery Fleet Control"
+      roleTitleKm="ការគ្រប់គ្រងបុគ្គលិក និងកងដឹកជញ្ជូន"
       roleSlug="delivery"
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={deliveryNav}
@@ -845,16 +849,16 @@ export function DeliveryDashboard() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                {isDriverOnly ? 'My Delivery Route' : 'Staff & Delivery Location Manager'}
+                {isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Staff & Delivery Location Manager', 'គ្រប់គ្រងបុគ្គលិក និងទីតាំងដឹកជញ្ជូន')}
               </h1>
               <Badge className="bg-indigo-600 text-white text-[11px] font-bold">
-                Live GPS Active
+                {t('Live GPS Active', 'GPS កំពុងដំណើរការ')}
               </Badge>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {isDriverOnly
-                ? 'Accept assigned parcels, share live GPS, and confirm customer handover from one route view.'
-                : 'Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.'}
+                ? t('Accept assigned parcels, share live GPS, and confirm customer handover from one route view.', 'ទទួលកញ្ចប់ដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនអតិថិជនពីទិដ្ឋភាពផ្លូវតែមួយ។')
+                : t('Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូនរបស់អតិថិជន ផ្សព្វផ្សាយកូអរដោនេ GPS របស់អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារផ្ទាល់ទូទាំងកម្ពុជា។')}
             </p>
           </div>
 
@@ -871,7 +875,7 @@ export function DeliveryDashboard() {
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
-              {isContinuousDelivering ? '⏸ Pause Delivering Mode' : '🚀 Start Delivering Mode'}
+              {isContinuousDelivering ? t('⏸ Pause Delivering Mode', '⏸ ផ្អាករបៀបដឹកជញ្ជូន') : t('🚀 Start Delivering Mode', '🚀 ចាប់ផ្តើមរបៀបដឹកជញ្ជូន')}
             </Button>
 
             <Button
@@ -885,12 +889,12 @@ export function DeliveryDashboard() {
               {broadcastingGps ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Broadcasting GPS...
+                  {t('Broadcasting GPS...', 'កំពុងផ្សព្វផ្សាយ GPS...')}
                 </>
               ) : (
                 <>
                   <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-spin" />
-                  🛰️ Broadcast My Device GPS
+                  {t('🛰️ Broadcast My Device GPS', '🛰️ ផ្សព្វផ្សាយ GPS ឧបករណ៍របស់ខ្ញុំ')}
                 </>
               )}
             </Button>
@@ -907,7 +911,7 @@ export function DeliveryDashboard() {
               className="rounded-xl h-9 text-xs gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || loadingSettings ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('Refresh', 'ផ្ទុកឡើងវិញ')}
             </Button>
           </div>
         </div>
@@ -925,7 +929,7 @@ export function DeliveryDashboard() {
               }`}
             >
               <MapPin className="w-4 h-4" />
-              <span>Fleet & Live Location (គ្រប់គ្រងទីតាំង & ការដឹក)</span>
+              <span>{t('Fleet & Live Location', 'ទីតាំងកងដឹកជញ្ជូនផ្ទាល់')}</span>
             </button>
             {canManagePricing && <button
               type="button"
@@ -937,7 +941,7 @@ export function DeliveryDashboard() {
               }`}
             >
               <DollarSign className="w-4 h-4" />
-              <span>Delivery Rates & Free Shipping (គ្រប់គ្រងថ្លៃដឹក & ឥតគិតថ្លៃ)</span>
+              <span>{t('Delivery Rates & Free Shipping', 'តម្លៃដឹកជញ្ជូន និងការដឹកឥតគិតថ្លៃ')}</span>
               <Badge
                 className={`text-[10px] ml-1 font-bold ${
                   deliverySettings.is_free_delivery
@@ -945,15 +949,15 @@ export function DeliveryDashboard() {
                     : 'bg-amber-600 text-white'
                 }`}
               >
-                {deliverySettings.is_free_delivery ? 'FREE ON (ឥតគិតថ្លៃ)' : 'PAID ACTIVE'}
+                {deliverySettings.is_free_delivery ? t('FREE ON', 'ឥតគិតថ្លៃ') : t('PAID ACTIVE', 'បង់ប្រាក់សកម្ម')}
               </Badge>
             </button>}
           </div>
 
           <div className="text-xs text-slate-500 font-medium px-2 hidden sm:block">
             {activeTab === 'pricing'
-              ? 'Admin Delivery Governance Mode'
-              : 'Live Courier Telemetry Mode'}
+              ? t('Admin Delivery Governance Mode', 'របៀបគ្រប់គ្រងការដឹកជញ្ជូនរបស់ Admin')
+              : t('Live Courier Telemetry Mode', 'របៀបតាមដាន Courier ផ្ទាល់')}
           </div>
         </div>
 
@@ -965,10 +969,10 @@ export function DeliveryDashboard() {
           <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Active Deliveries</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Active Deliveries', 'ការដឹកជញ្ជូនសកម្ម')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
-                    {orders.filter((o) => o.status !== 'delivered').length} stops
+                    {orders.filter((o) => o.status !== 'delivered').length} {t('stops', 'កន្លែងឈប់')}
                   </span>
                   <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                     <TrendingUp className="w-3 h-3" /> +14.2%
@@ -984,7 +988,7 @@ export function DeliveryDashboard() {
           <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Completed Today</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Completed Today', 'បានបញ្ចប់ថ្ងៃនេះ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                     {orders.filter((o) => o.status === 'delivered').length}
@@ -1003,7 +1007,7 @@ export function DeliveryDashboard() {
           <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Route Distance</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Route Distance', 'ចម្ងាយផ្លូវ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
                     {orders.reduce((sum, order) => {
@@ -1025,7 +1029,7 @@ export function DeliveryDashboard() {
           <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">On-Time Dispatch</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('On-Time Dispatch', 'ចាត់ចែងទាន់ពេល')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                     {orders.length > 0
@@ -1055,7 +1059,7 @@ export function DeliveryDashboard() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search customer name, order #, phone, or street address..."
+                  placeholder={t('Search customer name, order #, phone, or street address...', 'ស្វែងរកឈ្មោះអតិថិជន លេខបញ្ជាទិញ ទូរស័ព្ទ ឬអាសយដ្ឋាន...')}
                   className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
                 {searchQuery && (
@@ -1828,8 +1832,8 @@ export function DeliveryDashboard() {
 
       {/* DELIVERY METHOD ADD / EDIT MODAL DIALOG */}
       {methodModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+        <DashboardModal onClose={() => setMethodModalOpen(false)}>
+          <div className="dashboard-modal-panel bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
             <div className="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
               <div>
@@ -1984,13 +1988,13 @@ export function DeliveryDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </DashboardModal>
       )}
 
       {/* LOCATION MANAGEMENT MODAL DIALOG */}
       {editingOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+        <DashboardModal onClose={() => setEditingOrder(null)}>
+          <div className="dashboard-modal-panel bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
             <div className="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
               <div>
@@ -2138,7 +2142,7 @@ export function DeliveryDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </DashboardModal>
       )}
       <ConfirmDialog
         open={deleteTarget !== null}

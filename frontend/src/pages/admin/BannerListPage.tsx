@@ -29,13 +29,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { Pagination } from '@/components/common/Pagination'
 import { bannerService, type Banner, type CreateBannerPayload } from '@/services/banner.service'
 import { mediaService } from '@/services/media.service'
 
 export function BannerListPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -300,7 +303,7 @@ export function BannerListPage() {
               onClick={openCreateModal}
               className="gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white"
             >
-              <Plus className="w-3.5 h-3.5" /> Add Slide Banner
+            <Plus className="w-3.5 h-3.5" /> {t('Add Slide Banner', 'បន្ថែមបដាស្លាយ')}
             </Button>
           </div>
         </div>
@@ -400,7 +403,7 @@ export function BannerListPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search banners..."
+              placeholder={t('Search banners...', 'ស្វែងរកបដា...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchBanners()}
@@ -463,7 +466,7 @@ export function BannerListPage() {
         {/* Banners Table */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold">Registered Slide Banners ({banners.length})</CardTitle>
+          <CardTitle className="text-base font-bold">{t('Registered Slide Banners', 'បដាស្លាយដែលបានចុះឈ្មោះ')} ({banners.length})</CardTitle>
             <CardDescription className="text-xs">
               Banners are displayed on the storefront in ascending order of Sort Order.
             </CardDescription>
@@ -473,13 +476,13 @@ export function BannerListPage() {
               <table className="dashboard-data-table w-full text-left text-xs">
                 <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                   <tr>
-                    <th className="py-2.5 px-4 w-12 text-center">Order</th>
-                    <th className="py-2.5 px-4 w-16">Preview</th>
-                    <th className="py-2.5 px-4">Banner Details</th>
-                    <th className="py-2.5 px-4">Placement</th>
-                    <th className="py-2.5 px-4">Clicks</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
+            <th className="py-2.5 px-4 w-12 text-center">{t('Order', 'លំដាប់')}</th>
+            <th className="py-2.5 px-4 w-16">{t('Preview', 'មើលជាមុន')}</th>
+            <th className="py-2.5 px-4">{t('Banner Details', 'ព័ត៌មានបដា')}</th>
+            <th className="py-2.5 px-4">{t('Placement', 'ទីតាំង')}</th>
+            <th className="py-2.5 px-4">{t('Clicks', 'ការចុច')}</th>
+            <th className="py-2.5 px-4">{t('Status', 'ស្ថានភាព')}</th>
+            <th className="py-2.5 px-4 text-right">{t('Actions', 'សកម្មភាព')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -654,8 +657,8 @@ export function BannerListPage() {
 
         {/* Modal: Create or Edit Banner - Ultra Spacious 2-Column with Real-Time Live Preview */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-            <Card className="max-w-5xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
+          <DashboardModal onClose={() => setIsModalOpen(false)}>
+            <Card className="dashboard-modal-panel max-w-5xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/70 dark:bg-slate-800/40">
                 <div className="flex items-center gap-3">
@@ -1050,7 +1053,7 @@ export function BannerListPage() {
                 </Button>
               </div>
             </Card>
-          </div>
+          </DashboardModal>
         )}
       </div>
       <ConfirmDialog

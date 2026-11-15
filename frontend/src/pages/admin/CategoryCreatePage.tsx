@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { categoryService } from '@/services/category.service'
 import type { Category } from '@/types/category.types'
 
@@ -41,6 +42,7 @@ export function CategoryCreatePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -128,10 +130,10 @@ export function CategoryCreatePage() {
           <div>
             <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
               <FolderTree className="w-5 h-5 text-purple-600" />
-              Create Category or Subcategory
+              {t('Create Category or Subcategory', 'បង្កើតប្រភេទ ឬប្រភេទរង')}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Define a new product department with hierarchical placement and SEO rules.
+              {t('Define a new product department with hierarchical placement and SEO rules.', 'កំណត់នាយកដ្ឋានមុខទំនិញថ្មី ជាមួយឋានានុក្រម និងច្បាប់ SEO។')}
             </p>
           </div>
         </div>
@@ -149,17 +151,17 @@ export function CategoryCreatePage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Layers className="w-4 h-4 text-purple-600" />
-                Department Identification & Hierarchy
+                {t('Department Identification & Hierarchy', 'អត្តសញ្ញាណនាយកដ្ឋាន & ឋានានុក្រម')}
               </CardTitle>
               <CardDescription className="text-xs">
-                Parent category relationship and visual icons.
+                {t('Parent category relationship and visual icons.', 'ទំនាក់ទំនងប្រភេទមេ និងរូបតំណាង។')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground">
-                    Category Name <span className="text-destructive">*</span>
+                    {t('Category Name', 'ឈ្មោះប្រភេទ')} <span className="text-destructive">*</span>
                   </label>
                   <Input
                     {...register('name')}
@@ -173,13 +175,13 @@ export function CategoryCreatePage() {
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground">
-                    Parent Category (Hierarchy Level)
+                    {t('Parent Category (Hierarchy Level)', 'ប្រភេទមេ (កម្រិតឋានានុក្រម)')}
                   </label>
                   <select
                     {...register('parent_id')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="">(None - Top-level Root Department)</option>
+                    <option value="">{t('(None - Top-level Root Department)', '(គ្មាន - នាយកដ្ឋានមេកម្រិតខ្ពស់)')}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.parent_id ? `— ${c.name} (Subcategory of ${c.parent_name ?? 'Parent'})` : c.name}
@@ -191,7 +193,7 @@ export function CategoryCreatePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">URL Slug (Optional)</label>
+                  <label className="font-semibold text-foreground">{t('URL Slug (Optional)', 'URL Slug (ជាជម្រើស)')}</label>
                   <Input
                     {...register('slug')}
                     placeholder="e.g. ergonomic-office-chairs"
@@ -200,7 +202,7 @@ export function CategoryCreatePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Icon Identifier</label>
+                  <label className="font-semibold text-foreground">{t('Icon Identifier', 'លេខសម្គាល់រូបតំណាង')}</label>
                   <Input
                     {...register('icon')}
                     placeholder="e.g. Armchair, Shirt, Laptop"
@@ -209,7 +211,7 @@ export function CategoryCreatePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Sort Display Order</label>
+                  <label className="font-semibold text-foreground">{t('Sort Display Order', 'លំដាប់បង្ហាញ')}</label>
                   <Input
                     type="number"
                     {...register('sort_order')}
@@ -219,7 +221,7 @@ export function CategoryCreatePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Department Description</label>
+                <label className="font-semibold text-foreground">{t('Department Description', 'ការពិពណ៌នានាយកដ្ឋាន')}</label>
                 <textarea
                   {...register('description')}
                   rows={3}
@@ -229,7 +231,7 @@ export function CategoryCreatePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Banner / Image URL</label>
+                <label className="font-semibold text-foreground">{t('Banner / Image URL', 'URL បដា / រូបភាព')}</label>
                 <Input
                   {...register('image_url')}
                   placeholder="https://images.unsplash.com/photo-..."
@@ -245,7 +247,7 @@ export function CategoryCreatePage() {
                   className="rounded border-input text-primary focus:ring-ring w-4 h-4"
                 />
                 <label htmlFor="is_active" className="text-xs font-semibold cursor-pointer select-none">
-                  Active (Visible on marketplace navigation menu)
+                  {t('Active (Visible on marketplace navigation menu)', 'សកម្ម (បង្ហាញក្នុងម៉ឺនុយទីផ្សារ)')}
                 </label>
               </div>
             </CardContent>
@@ -256,12 +258,12 @@ export function CategoryCreatePage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                Search Engine Optimization (SEO)
+                {t('Search Engine Optimization (SEO)', 'ការបង្កើនប្រសិទ្ធភាពម៉ាស៊ីនស្វែងរក (SEO)')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">SEO Title</label>
+                <label className="font-semibold text-foreground">{t('SEO Title', 'ចំណងជើង SEO')}</label>
                 <Input
                   {...register('seo_title')}
                   placeholder="e.g. Buy Ergonomic Office Chairs Online | TYUSHOP"
@@ -270,7 +272,7 @@ export function CategoryCreatePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Meta Description</label>
+                <label className="font-semibold text-foreground">{t('Meta Description', 'ការពិពណ៌នា Meta')}</label>
                 <Input
                   {...register('seo_description')}
                   placeholder="e.g. Shop the highest rated mesh, lumbar support, and leather office chairs..."
@@ -279,7 +281,7 @@ export function CategoryCreatePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">Keywords</label>
+                <label className="font-semibold text-foreground">{t('Keywords', 'ពាក្យគន្លឹះ')}</label>
                 <Input
                   {...register('seo_keywords')}
                   placeholder="e.g. office chairs, ergonomic, lumbar support, desk furniture"
@@ -293,7 +295,7 @@ export function CategoryCreatePage() {
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link to="/admin/categories">
               <Button type="button" variant="outline" size="sm" disabled={isSubmitting}>
-                Cancel
+                {t('Cancel', 'បោះបង់')}
               </Button>
             </Link>
             <Button
@@ -305,12 +307,12 @@ export function CategoryCreatePage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Category...
+                  {t('Creating Category...', 'កំពុងបង្កើតប្រភេទ...')}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Create Category
+                  {t('Create Category', 'បង្កើតប្រភេទ')}
                 </>
               )}
             </Button>

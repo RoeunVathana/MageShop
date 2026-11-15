@@ -26,7 +26,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DashboardModal } from '@/components/ui/dashboard-modal'
 import { Pagination } from '@/components/common/Pagination'
 import { API_BASE_URL } from '@/lib/api'
 import {
@@ -41,6 +43,7 @@ import {
 
 export function AdminSecurityPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [activeTab, setActiveTab] = useState<'tokens' | 'users' | 'email'>('tokens')
 
   // --- TAB 1: API TOKENS STATE ---
@@ -559,10 +562,10 @@ export function AdminSecurityPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
               <Shield className="w-6 h-6 text-purple-500" />
-              Manage Telegram API Token Key, Email & OTP Security
+              {t('Manage Telegram API Token Key, Email & OTP Security', 'គ្រប់គ្រង Telegram API Token Key អ៊ីមែល & សុវត្ថិភាព OTP')}
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Configure your Telegram Bot API Token Key (@BotFather), webhook URL, admin chat ID, developer API tokens, and 6-digit OTP mailers.
+              {t('Configure your Telegram Bot API Token Key (@BotFather), webhook URL, admin chat ID, developer API tokens, and 6-digit OTP mailers.', 'កំណត់ Telegram Bot API Token Key (@BotFather), webhook URL, Admin chat ID, developer API tokens និង OTP ៦ ខ្ទង់។')}
             </p>
           </div>
 
@@ -577,7 +580,7 @@ export function AdminSecurityPage() {
               }}
               className="gap-1.5 text-xs"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              <RefreshCw className="w-3.5 h-3.5" /> {t('Refresh', 'ផ្ទុកឡើងវិញ')}
             </Button>
             {activeTab === 'tokens' && (
               <Button
@@ -585,7 +588,7 @@ export function AdminSecurityPage() {
                 onClick={() => setIsCreateTokenOpen(true)}
                 className="gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white"
               >
-                <Plus className="w-3.5 h-3.5" /> Generate Bearer Token
+                <Plus className="w-3.5 h-3.5" /> {t('Generate Bearer Token', 'បង្កើត Bearer Token')}
               </Button>
             )}
           </div>
@@ -595,10 +598,10 @@ export function AdminSecurityPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
-              Production Data Maintenance
+              {t('Production Data Maintenance', 'ការថែទាំទិន្នន័យ Production')}
             </CardTitle>
             <CardDescription className="text-xs">
-              Clears application records while preserving database tables, the admin account, roles, permissions, store settings, and the global Bakong account.
+              {t('Clears application records while preserving database tables, the admin account, roles, permissions, store settings, and the global Bakong account.', 'លុបទិន្នន័យកម្មវិធី ប៉ុន្តែរក្សាតារាងទិន្នន័យ គណនី Admin តួនាទី សិទ្ធិ ការកំណត់ហាង និងគណនី Bakong សកល។')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -610,7 +613,7 @@ export function AdminSecurityPage() {
               className="gap-1.5 text-xs"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Clear All Application Data
+              {t('Clear All Application Data', 'សម្អាតទិន្នន័យកម្មវិធីទាំងអស់')}
             </Button>
           </CardContent>
         </Card>
@@ -626,7 +629,7 @@ export function AdminSecurityPage() {
             }`}
           >
             <Key className="w-4 h-4" />
-            <span>Config Manage Telegram API Token Key</span>
+            <span>{t('Config Manage Telegram API Token Key', 'កំណត់ Telegram API Token Key')}</span>
             <Badge variant={activeTab === 'tokens' ? 'outline' : 'secondary'} className="text-[10px] ml-1">
               {telegramSettings.telegram_bot_token_set ? 'ACTIVE' : 'SETUP'}
             </Badge>
@@ -641,7 +644,7 @@ export function AdminSecurityPage() {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Manage Email, Password & OTP</span>
+            <span>{t('Manage Email, Password & OTP', 'គ្រប់គ្រងអ៊ីមែល ពាក្យសម្ងាត់ & OTP')}</span>
           </button>
 
           <button
@@ -653,7 +656,7 @@ export function AdminSecurityPage() {
             }`}
           >
             <Mail className="w-4 h-4" />
-            <span>SMTP Settings & Sent OTP Logs</span>
+            <span>{t('SMTP Settings & Sent OTP Logs', 'ការកំណត់ SMTP & កំណត់ត្រា OTP')}</span>
           </button>
         </div>
 
@@ -668,10 +671,10 @@ export function AdminSecurityPage() {
                     <div>
                       <CardTitle className="text-base font-bold flex items-center gap-2">
                         <Key className="w-4 h-4 text-purple-600" />
-                        Configure & Manage Telegram Bot API Token Key
+                        {t('Configure & Manage Telegram Bot API Token Key', 'កំណត់ & គ្រប់គ្រង Telegram Bot API Token Key')}
                       </CardTitle>
                       <CardDescription className="text-xs mt-0.5">
-                        Connect your Telegram Bot token from <strong>@BotFather</strong> to power 6-digit OTP password recovery, order notifications, and the TYUSHOP Telegram Mini App.
+                        {t('Connect your Telegram Bot token from @BotFather to power 6-digit OTP password recovery, order notifications, and the TYUSHOP Telegram Mini App.', 'ភ្ជាប់ Telegram Bot token ពី @BotFather ដើម្បីប្រើការសង្គ្រោះពាក្យសម្ងាត់ OTP ៦ ខ្ទង់ ការជូនដំណឹងបញ្ជាទិញ និង TYUSHOP Telegram Mini App។')}
                       </CardDescription>
                     </div>
                     <Badge
@@ -967,12 +970,12 @@ export function AdminSecurityPage() {
                   <table className="dashboard-data-table w-full text-left text-xs">
                     <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                       <tr>
-                        <th className="py-2.5 px-4">Token Name & Scopes</th>
-                        <th className="py-2.5 px-4">Assigned User</th>
-                        <th className="py-2.5 px-4">Created</th>
-                        <th className="py-2.5 px-4">Last Used</th>
-                        <th className="py-2.5 px-4">Expiration</th>
-                        <th className="py-2.5 px-4 text-right">Actions</th>
+                        <th className="py-2.5 px-4">{t('Token Name & Scopes', 'ឈ្មោះ Token និងសិទ្ធិ')}</th>
+                        <th className="py-2.5 px-4">{t('Assigned User', 'អ្នកប្រើប្រាស់ដែលបានកំណត់')}</th>
+                        <th className="py-2.5 px-4">{t('Created', 'បានបង្កើត')}</th>
+                        <th className="py-2.5 px-4">{t('Last Used', 'បានប្រើចុងក្រោយ')}</th>
+                        <th className="py-2.5 px-4">{t('Expiration', 'កាលបរិច្ឆេទផុតកំណត់')}</th>
+                        <th className="py-2.5 px-4 text-right">{t('Actions', 'សកម្មភាព')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -980,7 +983,7 @@ export function AdminSecurityPage() {
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-muted-foreground">
                             <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-500" />
-                            Loading API Tokens...
+                            {t('Loading API Tokens...', 'កំពុងផ្ទុក API Token...')}
                           </td>
                         </tr>
                       ) : tokens.length === 0 ? (
@@ -1111,11 +1114,11 @@ export function AdminSecurityPage() {
                   <table className="dashboard-data-table w-full text-left text-xs">
                     <thead className="bg-muted/50 border-y text-muted-foreground font-semibold">
                       <tr>
-                        <th className="py-2.5 px-4">User Details</th>
-                        <th className="py-2.5 px-4">Assigned Roles</th>
-                        <th className="py-2.5 px-4">Status & Verification</th>
-                        <th className="py-2.5 px-4">Registered</th>
-                        <th className="py-2.5 px-4 text-right">Administrative Actions</th>
+                        <th className="py-2.5 px-4">{t('User Details', 'ព័ត៌មានអ្នកប្រើប្រាស់')}</th>
+                        <th className="py-2.5 px-4">{t('Assigned Roles', 'តួនាទីដែលបានកំណត់')}</th>
+                        <th className="py-2.5 px-4">{t('Status & Verification', 'ស្ថានភាព និងការផ្ទៀងផ្ទាត់')}</th>
+                        <th className="py-2.5 px-4">{t('Registered', 'បានចុះឈ្មោះ')}</th>
+                        <th className="py-2.5 px-4 text-right">{t('Administrative Actions', 'សកម្មភាពរដ្ឋបាល')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1123,13 +1126,13 @@ export function AdminSecurityPage() {
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-muted-foreground">
                             <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-purple-500" />
-                            Loading User Records...
+                            {t('Loading User Records...', 'កំពុងផ្ទុកកំណត់ត្រាអ្នកប្រើប្រាស់...')}
                           </td>
                         </tr>
                       ) : users.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                            No matching user accounts found.
+                            {t('No matching user accounts found.', 'រកមិនឃើញគណនីអ្នកប្រើប្រាស់ដែលត្រូវគ្នាទេ។')}
                           </td>
                         </tr>
                       ) : (
@@ -1171,7 +1174,7 @@ export function AdminSecurityPage() {
                                   {u.status}
                                 </Badge>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {u.is_email_verified ? 'Email Verified' : 'Pending Verification'}
+                                  {u.is_email_verified ? t('Email Verified', 'អ៊ីមែលបានផ្ទៀងផ្ទាត់') : t('Pending Verification', 'កំពុងរង់ចាំការផ្ទៀងផ្ទាត់')}
                                 </span>
                               </div>
                             </td>
@@ -1449,17 +1452,17 @@ export function AdminSecurityPage() {
                       <table className="dashboard-data-table w-full text-left text-xs">
                         <thead className="bg-muted/50 border-b text-muted-foreground font-semibold sticky top-0">
                           <tr>
-                            <th className="py-2 px-3">Recipient</th>
-                            <th className="py-2 px-3">Status</th>
-                            <th className="py-2 px-3">Expires</th>
-                            <th className="py-2 px-3 text-right">Action</th>
+                            <th className="py-2 px-3">{t('Recipient', 'អ្នកទទួល')}</th>
+                            <th className="py-2 px-3">{t('Status', 'ស្ថានភាព')}</th>
+                            <th className="py-2 px-3">{t('Expires', 'ផុតកំណត់')}</th>
+                            <th className="py-2 px-3 text-right">{t('Action', 'សកម្មភាព')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {otpsLoading ? (
                             <tr>
                               <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                                Loading Sent OTP Logs...
+                                {t('Loading Sent OTP Logs...', 'កំពុងផ្ទុកកំណត់ហេតុ OTP ដែលបានផ្ញើ...')}
                               </td>
                             </tr>
                           ) : sentOtps.length === 0 ? (
@@ -1538,8 +1541,8 @@ export function AdminSecurityPage() {
 
         {/* --- MODAL: CREATE API TOKEN --- */}
         {isCreateTokenOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <Card className="max-w-md w-full shadow-2xl border">
+          <DashboardModal onClose={() => setIsCreateTokenOpen(false)}>
+            <Card className="dashboard-modal-panel max-w-md w-full shadow-2xl border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Key className="w-4 h-4 text-purple-500" />
@@ -1625,13 +1628,13 @@ export function AdminSecurityPage() {
                 </form>
               </CardContent>
             </Card>
-          </div>
+          </DashboardModal>
         )}
 
         {/* --- MODAL: UPDATE USER EMAIL --- */}
         {selectedUserForEmail && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <Card className="max-w-md w-full shadow-2xl border">
+          <DashboardModal onClose={() => setSelectedUserForEmail(null)}>
+            <Card className="dashboard-modal-panel max-w-md w-full shadow-2xl border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Mail className="w-4 h-4 text-purple-500" />
@@ -1668,13 +1671,13 @@ export function AdminSecurityPage() {
                 </form>
               </CardContent>
             </Card>
-          </div>
+          </DashboardModal>
         )}
 
         {/* --- MODAL: UPDATE USER PASSWORD --- */}
         {selectedUserForPassword && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <Card className="max-w-md w-full shadow-2xl border">
+          <DashboardModal onClose={() => setSelectedUserForPassword(null)}>
+            <Card className="dashboard-modal-panel max-w-md w-full shadow-2xl border">
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Lock className="w-4 h-4 text-purple-500" />
@@ -1725,7 +1728,7 @@ export function AdminSecurityPage() {
                 </form>
               </CardContent>
             </Card>
-          </div>
+          </DashboardModal>
         )}
       </div>
       <ConfirmDialog

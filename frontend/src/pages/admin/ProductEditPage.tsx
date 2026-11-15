@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
@@ -78,6 +79,7 @@ export function ProductEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [categories, setCategories] = useState<Array<{ id: number; name: string; parent_name?: string | null }>>([])
@@ -586,7 +588,7 @@ export function ProductEditPage() {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tight">Edit Product</h1>
+          <h1 className="text-xl font-black tracking-tight">{t('Edit Product', 'កែប្រែមុខទំនិញ')}</h1>
                 {product && (
                   <>
                     <Badge variant="outline" className="font-mono text-xs">
@@ -631,7 +633,7 @@ export function ProductEditPage() {
           {/* Identity & Department */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Package className="w-4 h-4 text-purple-600" />
                 Universal Product Identity
               </CardTitle>
@@ -657,7 +659,7 @@ export function ProductEditPage() {
                     {...register('brand_id')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="">Select Brand / Manufacturer...</option>
+                    <option value="">{t('Select Brand / Manufacturer...', 'ជ្រើសរើសម៉ាក / ក្រុមហ៊ុនផលិត...')}</option>
                     {brands.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.country ? `${b.name} (${b.country})` : b.name}
@@ -684,10 +686,10 @@ export function ProductEditPage() {
                     {...register('product_type')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="simple">Simple (Single SKU)</option>
-                    <option value="variable">Variable (Multi-Variant: Size, Color)</option>
-                    <option value="digital">Digital (Downloadable / License)</option>
-                    <option value="bundle">Bundle (Multi-Pack)</option>
+                    <option value="simple">{t('Simple (Single SKU)', 'ធម្មតា (SKU តែមួយ)')}</option>
+                    <option value="variable">{t('Variable (Multi-Variant: Size, Color)', 'ប្រែប្រួល (ច្រើនជម្រើស៖ ទំហំ ពណ៌)')}</option>
+                    <option value="digital">{t('Digital (Downloadable / License)', 'ឌីជីថល (ទាញយក / អាជ្ញាបណ្ណ)')}</option>
+                    <option value="bundle">{t('Bundle (Multi-Pack)', 'កញ្ចប់ (ច្រើនកញ្ចប់)')}</option>
                   </select>
                 </div>
 
@@ -697,7 +699,7 @@ export function ProductEditPage() {
                     {...register('category_id')}
                     className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring font-medium"
                   >
-                    <option value="">Select a department...</option>
+                    <option value="">{t('Select a department...', 'ជ្រើសរើសនាយកដ្ឋាន...')}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.parent_name ? `${c.parent_name} → ${c.name}` : c.name}
@@ -1140,8 +1142,8 @@ export function ProductEditPage() {
                     <table className="dashboard-data-table w-full text-left text-xs">
                       <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
                         <tr>
-                          <th className="p-2.5">Variant SKU</th>
-                          <th className="p-2.5">Option Title</th>
+                          <th className="p-2.5">{t('Variant SKU', 'SKU វ៉ារ្យង់')}</th>
+                          <th className="p-2.5">{t('Option Title', 'ចំណងជើងជម្រើស')}</th>
                           {categoryAttributes
                             .filter((a) => a.is_variant_option)
                             .map((a) => (
@@ -1149,10 +1151,10 @@ export function ProductEditPage() {
                                 {a.name}
                               </th>
                             ))}
-                          <th className="p-2.5">Price ($)</th>
-                          <th className="p-2.5">Stock Qty</th>
-                          <th className="p-2.5 text-center">Active</th>
-                          <th className="p-2.5 text-right">Action</th>
+                          <th className="p-2.5">{t('Price ($)', 'តម្លៃ ($)')}</th>
+                          <th className="p-2.5">{t('Stock Qty', 'ចំនួនស្តុក')}</th>
+                          <th className="p-2.5 text-center">{t('Active', 'សកម្ម')}</th>
+                          <th className="p-2.5 text-right">{t('Action', 'សកម្មភាព')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">

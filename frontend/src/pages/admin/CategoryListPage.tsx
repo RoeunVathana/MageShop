@@ -24,12 +24,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { categoryService } from '@/services/category.service'
 import { Pagination } from '@/components/common/Pagination'
 import type { Category } from '@/types/category.types'
 
 export function CategoryListPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
@@ -178,7 +180,7 @@ export function CategoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Marketplace Taxonomy</p>
+          <p className="text-xs text-muted-foreground">{t('Total Marketplace Taxonomy', 'ប្រភេទក្នុងទីផ្សារសរុប')}</p>
                 <p className="text-xl font-bold mt-1">{totalCategories} categories</p>
               </div>
               <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600">
@@ -190,7 +192,7 @@ export function CategoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Root Departments</p>
+          <p className="text-xs text-muted-foreground">{t('Root Departments', 'នាយកដ្ឋានមេ')}</p>
                 <p className="text-xl font-bold mt-1 text-emerald-600">{rootCount} departments</p>
               </div>
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
@@ -202,7 +204,7 @@ export function CategoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Nested Subcategories</p>
+          <p className="text-xs text-muted-foreground">{t('Nested Subcategories', 'ប្រភេទរង')}</p>
                 <p className="text-xl font-bold mt-1 text-blue-600">
                   {Math.max(0, totalCategories - rootCount)} subcategories
                 </p>
@@ -216,8 +218,8 @@ export function CategoryListPage() {
           <Card>
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Hierarchy Nesting</p>
-                <p className="text-sm font-bold mt-1 text-purple-600">Unlimited Levels</p>
+          <p className="text-xs text-muted-foreground">{t('Hierarchy Nesting', 'កម្រិតឋានានុក្រម')}</p>
+          <p className="text-sm font-bold mt-1 text-purple-600">{t('Unlimited Levels', 'គ្មានកំណត់')}</p>
               </div>
               <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600">
                 <SlidersHorizontal className="w-4 h-4" />
@@ -232,7 +234,7 @@ export function CategoryListPage() {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by department name or slug..."
+              placeholder={t('Search by department name or slug...', 'ស្វែងរកតាមឈ្មោះនាយកដ្ឋាន ឬ slug...')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -280,13 +282,13 @@ export function CategoryListPage() {
               <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
                 <tr>
                   <th className="p-3 w-10"></th>
-                  <th className="p-3">Department / Category Name</th>
-                  <th className="p-3">Slug</th>
-                  <th className="p-3 text-center">Configured Attributes</th>
-                  <th className="p-3 text-center">Products</th>
-                  <th className="p-3 text-center">Order</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Actions</th>
+                <th className="p-3">{t('Department / Category Name', 'ឈ្មោះនាយកដ្ឋាន / ប្រភេទ')}</th>
+                <th className="p-3">Slug</th>
+                <th className="p-3 text-center">{t('Configured Attributes', 'គុណលក្ខណៈបានកំណត់')}</th>
+                <th className="p-3 text-center">{t('Products', 'មុខទំនិញ')}</th>
+                <th className="p-3 text-center">{t('Order', 'លំដាប់')}</th>
+                <th className="p-3">{t('Status', 'ស្ថានភាព')}</th>
+                <th className="p-3 text-right">{t('Actions', 'សកម្មភាព')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

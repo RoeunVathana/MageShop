@@ -20,17 +20,19 @@ import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { sellerService, type SellerDashboardData } from '@/services/seller.service'
 import { PaymentAccountsPanel } from '@/components/dashboard/PaymentAccountsPanel'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const sellerNav: NavItem[] = [
-  { label: 'Store Overview', href: '/dashboard/seller', icon: Store },
-  { label: 'Product Catalog', href: '/dashboard/seller/products', icon: Package },
-  { label: 'Discount Coupons', href: '/dashboard/seller/coupons', icon: Tag, badge: 'Promos' },
-  { label: 'Orders & Fulfillment', href: '/dashboard/seller', icon: Clock },
-  { label: 'Revenue & Payouts', href: '/dashboard/seller', icon: DollarSign },
+  { label: 'Store Overview', labelKm: 'ទិដ្ឋភាពទូទៅហាង', href: '/dashboard/seller', icon: Store },
+  { label: 'Product Catalog', labelKm: 'បញ្ជីមុខទំនិញ', href: '/dashboard/seller/products', icon: Package },
+  { label: 'Discount Coupons', labelKm: 'គូប៉ុងបញ្ចុះតម្លៃ', href: '/dashboard/seller/coupons', icon: Tag, badge: 'Promos', badgeKm: 'ប្រូម៉ូសិន' },
+  { label: 'Orders & Fulfillment', labelKm: 'ការបញ្ជាទិញ & ការរៀបចំ', href: '/dashboard/seller', icon: Clock },
+  { label: 'Revenue & Payouts', labelKm: 'ចំណូល & ការទូទាត់', href: '/dashboard/seller', icon: DollarSign },
 ]
 
 export function SellerDashboard() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -71,6 +73,7 @@ export function SellerDashboard() {
   return (
     <DashboardLayout
       roleTitle="Seller Merchant Hub"
+      roleTitleKm="មជ្ឈមណ្ឌលអ្នកលក់"
       roleSlug="seller"
       roleColor="text-emerald-500"
       navItems={sellerNav}
@@ -83,31 +86,31 @@ export function SellerDashboard() {
               <Badge className={`text-[10px] capitalize ${statusTone}`}><ShieldCheck className="w-3 h-3 mr-1" />{storeStatus}</Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {dashboard?.application?.slug ? `Store slug: ${dashboard.application.slug}` : 'Your approved marketplace workspace and fulfillment queue.'}
+              {dashboard?.application?.slug ? `${t('Store slug', 'Slug ហាង')}: ${dashboard.application.slug}` : t('Your approved marketplace workspace and fulfillment queue.', 'កន្លែងធ្វើការហាង និងបញ្ជីរៀបចំការបញ្ជាទិញដែលបានអនុម័តរបស់អ្នក។')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => loadDashboard(false)} disabled={loading || refreshing} className="gap-1.5 rounded-lg text-xs font-semibold">
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> {t('Refresh', 'ផ្ទុកឡើងវិញ')}
             </Button>
             <Link to="/dashboard/seller/coupons">
               <Button size="sm" variant="outline" className="gap-1.5 rounded-lg text-xs font-semibold border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Tag className="w-3.5 h-3.5" /> Manage Coupons
+                <Tag className="w-3.5 h-3.5" /> {t('Manage Coupons', 'គ្រប់គ្រងគូប៉ុង')}
               </Button>
             </Link>
             <Link to="/admin/products/create">
               <Button size="sm" className="gap-1.5 rounded-lg text-xs font-semibold">
-                <PlusCircle className="w-3.5 h-3.5" /> Add New Listing
+                <PlusCircle className="w-3.5 h-3.5" /> {t('Add New Listing', 'បន្ថែមមុខទំនិញ')}
               </Button>
             </Link>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SellerMetric label="Gross Volume" value={loading ? '—' : `$${Number(stats?.gross_revenue || 0).toFixed(2)}`} icon={DollarSign} tone="emerald" />
-          <SellerMetric label="Pending Orders" value={loading ? '—' : String(stats?.pending_orders ?? 0)} icon={Clock} tone="amber" />
-          <SellerMetric label="Active Listings" value={loading ? '—' : String(stats?.active_listings ?? 0)} icon={Package} tone="blue" />
-          <SellerMetric label="Payout Balance" value={loading ? '—' : `$${Number(stats?.payout_balance || 0).toFixed(2)}`} icon={TrendingUp} tone="indigo" />
+          <SellerMetric label={t('Gross Volume', 'ចំណូលសរុប')} value={loading ? '—' : `$${Number(stats?.gross_revenue || 0).toFixed(2)}`} icon={DollarSign} tone="emerald" />
+          <SellerMetric label={t('Pending Orders', 'ការបញ្ជាទិញរង់ចាំ')} value={loading ? '—' : String(stats?.pending_orders ?? 0)} icon={Clock} tone="amber" />
+          <SellerMetric label={t('Active Listings', 'មុខទំនិញសកម្ម')} value={loading ? '—' : String(stats?.active_listings ?? 0)} icon={Package} tone="blue" />
+          <SellerMetric label={t('Payout Balance', 'សមតុល្យទូទាត់ចំណូល')} value={loading ? '—' : `$${Number(stats?.payout_balance || 0).toFixed(2)}`} icon={TrendingUp} tone="indigo" />
         </div>
 
         <PaymentAccountsPanel />
@@ -117,10 +120,10 @@ export function SellerDashboard() {
             <CardContent className="p-4 flex items-start gap-3 text-xs">
               <AlertCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-emerald-900 dark:text-emerald-200">Your seller workspace is ready</p>
-                <p className="text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">Create your first listing to start receiving seller-scoped orders and revenue records.</p>
+                <p className="font-bold text-emerald-900 dark:text-emerald-200">{t('Your seller workspace is ready', 'កន្លែងធ្វើការអ្នកលក់របស់អ្នករួចរាល់')}</p>
+                <p className="text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">{t('Create your first listing to start receiving seller-scoped orders and revenue records.', 'បង្កើតមុខទំនិញដំបូង ដើម្បីចាប់ផ្តើមទទួលការបញ្ជាទិញ និងកំណត់ត្រាចំណូលរបស់អ្នកលក់។')}</p>
               </div>
-              <Link className="ml-auto shrink-0 font-bold text-emerald-700 dark:text-emerald-300" to="/admin/products/create">Create listing →</Link>
+              <Link className="ml-auto shrink-0 font-bold text-emerald-700 dark:text-emerald-300" to="/admin/products/create">{t('Create listing', 'បង្កើតមុខទំនិញ')} →</Link>
             </CardContent>
           </Card>
         )}
@@ -128,8 +131,8 @@ export function SellerDashboard() {
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base font-bold">Store Fulfillment Queue</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">Only orders containing your owned products appear here.</p>
+              <CardTitle className="text-base font-bold">{t('Store Fulfillment Queue', 'បញ្ជីរៀបចំការបញ្ជាទិញរបស់ហាង')}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">{t('Only orders containing your owned products appear here.', 'បង្ហាញតែការបញ្ជាទិញដែលមានមុខទំនិញរបស់អ្នកនៅទីនេះ។')}</p>
             </div>
             <Badge variant="outline" className="text-xs">{orders.length} visible</Badge>
           </CardHeader>
@@ -137,7 +140,7 @@ export function SellerDashboard() {
             {loading && <div className="h-20 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />}
             {!loading && orders.length === 0 && (
               <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                No seller orders yet. Your first order will appear here after checkout.
+                {t('No seller orders yet. Your first order will appear here after checkout.', 'មិនទាន់មានការបញ្ជាទិញរបស់អ្នកលក់ទេ។ ការបញ្ជាទិញដំបូងនឹងបង្ហាញនៅទីនេះបន្ទាប់ពី Checkout។')}
               </div>
             )}
             {!loading && orders.map((order) => (
@@ -151,7 +154,7 @@ export function SellerDashboard() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-bold text-sm">${Number(order.items?.reduce((sum, item) => sum + Number(item.total_price || 0), 0) || 0).toFixed(2)}</span>
-                  <Link to="/dashboard/delivery"><Button size="sm" variant="outline" className="h-7 text-xs">Track fulfillment</Button></Link>
+                  <Link to="/dashboard/delivery"><Button size="sm" variant="outline" className="h-7 text-xs">{t('Track fulfillment', 'តាមដានការរៀបចំ')}</Button></Link>
                 </div>
               </div>
             ))}
