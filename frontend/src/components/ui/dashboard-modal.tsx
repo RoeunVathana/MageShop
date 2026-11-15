@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 interface DashboardModalProps {
@@ -31,7 +32,7 @@ export function DashboardModal({ children, onClose, className }: DashboardModalP
     if (event.target === event.currentTarget) onClose()
   }
 
-  return (
+  return createPortal(
     <div
       className={cn(
         'dashboard-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4',
@@ -48,6 +49,7 @@ export function DashboardModal({ children, onClose, className }: DashboardModalP
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
