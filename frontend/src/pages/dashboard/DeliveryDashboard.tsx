@@ -2101,7 +2101,8 @@ export function DeliveryDashboard() {
                   </label>
                   <input
                     type="number"
-                    step="0.0001"
+                    step="any"
+                    inputMode="decimal"
                     min="-90"
                     max="90"
                     required
@@ -2116,7 +2117,8 @@ export function DeliveryDashboard() {
                   </label>
                   <input
                     type="number"
-                    step="0.0001"
+                    step="any"
+                    inputMode="decimal"
                     min="-180"
                     max="180"
                     required
