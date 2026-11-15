@@ -26,7 +26,7 @@ export const productService = {
     available_stock: number
   }>> {
     if (!ids.length) return []
-    const response = await publicApiClient.get<{ data: Array<any> }>('/products/availability', {
+    const response = await publicApiClient.get<{ data: Array<any> }>('/cart-product-availability', {
       params: { ids: ids.join(',') },
     })
     return Array.isArray(response.data?.data) ? response.data.data : []

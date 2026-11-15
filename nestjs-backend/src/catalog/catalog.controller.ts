@@ -28,7 +28,7 @@ export class CatalogController {
     response.json(payload);
   }
 
-  @Get('products/availability')
+  @Get('cart-product-availability')
   async productAvailability(@Req() request: Request, @Res() response: Response): Promise<void> {
     const payload = await this.catalog.productAvailability(request.query);
     // Availability is intentionally never cached because it is used immediately
