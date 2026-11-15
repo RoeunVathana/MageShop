@@ -12,6 +12,7 @@ interface ProductRow {
   id: number;
   name: string;
   sku: string | null;
+  slug: string;
   seller_id: number | null;
   selling_price: number | string | null;
   price: number | string | null;
@@ -23,8 +24,10 @@ interface ProductRow {
 }
 
 interface CheckoutItem {
-  product_id: number;
+  product_id: number | null;
   quantity: number;
+  slug?: string;
+  sku?: string;
 }
 
 interface MerchantAccount {
@@ -74,9 +77,11 @@ export class CheckoutService {
     }
 
     const user = await this.auth.me(userId);
-    const productIds = [...new Set(items.map((item) => item.product_id))];
+    const productIds = [...new Set(items.map((item) => item.product_id).filter((id): id is number => id !== null))];
+    const productSlugs = [...new Set(items.map((item) => item.slug).filter((slug): slug is string => Boolean(slug)))];
+    const productSkus = [...new Set(items.map((item) => item.sku).filter((sku): sku is string => Boolean(sku)))];
     const products = await this.database.query<ProductRow>(`
-      SELECT p.id, p.name, p.sku, p.seller_id, p.selling_price, p.price,
+      SELECT p.id, p.name, p.sku, p.slug, p.seller_id, p.selling_price, p.price,
              p.discount_price, p.is_active, p.product_type,
              i.quantity_on_hand, i.quantity_reserved
       FROM products p
@@ -93,15 +98,20 @@ export class CheckoutService {
         FROM inventories inv
         WHERE inv.product_id = p.id
       ) i ON TRUE
-      WHERE p.id = ANY($1::int[]) AND p.is_active = TRUE
-    `, [productIds]);
+      WHERE (p.id = ANY($1::int[]) OR p.slug = ANY($2::text[]) OR p.sku = ANY($3::text[]))
+        AND p.is_active = TRUE
+    `, [productIds, productSlugs, productSkus]);
     const productMap = new Map(products.rows.map((product) => [product.id, product]));
+    const productBySlug = new Map(products.rows.map((product) => [product.slug, product]));
+    const productBySku = new Map(products.rows.filter((product) => product.sku).map((product) => [product.sku as string, product]));
 
     const orderItems: Array<Record<string, unknown>> = [];
     const requested = new Map<number, number>();
     let subtotal = 0;
     for (const item of items) {
-      const product = productMap.get(item.product_id);
+      const product = (item.product_id === null ? undefined : productMap.get(item.product_id))
+        || (item.slug ? productBySlug.get(item.slug) : undefined)
+        || (item.sku ? productBySku.get(item.sku) : undefined);
       if (!product) throw new UnprocessableEntityException({ status: 'error', message: 'One or more selected products are no longer available.' });
       if (product.product_type !== 'digital') {
         const available = Math.max(0, Number(product.quantity_on_hand ?? 0) - Number(product.quantity_reserved ?? 0));
@@ -414,8 +424,12 @@ export class CheckoutService {
       const record = item as Record<string, unknown>;
       const productId = this.number(record.product_id);
       const quantity = this.number(record.quantity);
-      if (productId === null || quantity === null || !Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1) throw new UnprocessableEntityException({ status: 'error', message: 'Each order item must have a valid product and quantity.' });
-      return { product_id: productId, quantity };
+      const slug = this.string(record.slug).toLowerCase();
+      const sku = this.string(record.sku).toUpperCase();
+      if ((productId === null && !slug && !sku) || quantity === null || (productId !== null && !Number.isInteger(productId)) || !Number.isInteger(quantity) || quantity < 1) {
+        throw new UnprocessableEntityException({ status: 'error', message: 'Each order item must have a valid product and quantity.' });
+      }
+      return { product_id: productId, quantity, ...(slug ? { slug } : {}), ...(sku ? { sku } : {}) };
     });
   }
 

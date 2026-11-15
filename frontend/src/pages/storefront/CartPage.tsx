@@ -874,6 +874,8 @@ export function CartPage() {
           cartItems.length > 0
             ? cartItems.map((i) => ({
                 product_id: i.id,
+                slug: i.slug,
+                sku: i.sku,
                 name: i.name,
                 price: i.price,
                 quantity: i.quantity,
