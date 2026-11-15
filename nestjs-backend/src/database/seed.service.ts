@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from './database.service';
@@ -518,13 +519,41 @@ export class SeedService {
     const unitPrice = Number(product.discount_price ?? product.price);
     await client.query('INSERT INTO order_items (order_id,product_id,product_name,product_sku,quantity,unit_price,total_price,created_at,updated_at) VALUES ($1,$2,$3,$4,1,$5,$5,NOW(),NOW())', [orderId, product.id, product.name, product.sku, unitPrice]);
     const transaction = `SEED-TXN-${orderNumber.replace(/[^A-Z0-9]/g, '')}`;
+    const qr = paymentMethod === 'bakong_khqr' ? this.buildSeedQr(orderNumber, total) : null;
     const payment = await client.query<{ id: number }>(`
       INSERT INTO payments (order_id,transaction_reference,payment_method,amount,currency,status,khqr_string,khqr_md5,merchant_account,merchant_name,merchant_city,verified_at,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,'USD',$5,NULL,NULL,$6,$7,$8,$9,NOW(),NOW()) RETURNING id
-    `, [orderId, transaction, paymentMethod, total, paymentStatus === 'paid' ? 'completed' : (paymentMethod === 'cash_on_delivery' ? 'pending_arrival' : 'pending_qr'), this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'), this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh'), paymentStatus === 'paid' ? new Date() : null]);
+      VALUES ($1,$2,$3,$4,'USD',$5,$6,$7,$8,$9,$10,$11,NOW(),NOW()) RETURNING id
+    `, [orderId, transaction, paymentMethod, total, paymentStatus === 'paid' ? 'completed' : (paymentMethod === 'cash_on_delivery' ? 'pending_arrival' : 'pending_qr'), qr?.qr_string ?? null, qr?.md5 ?? null, this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt'), this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop'), this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh'), paymentStatus === 'paid' ? new Date() : null]);
     const paymentId = payment.rows[0]?.id;
     if (paymentId) await client.query('INSERT INTO receipts (order_id,payment_id,receipt_number,email_status,issued_at,created_at,updated_at) VALUES ($1,$2,$3,\'sent\',NOW(),NOW(),NOW())', [orderId, paymentId, `REC-SEED-${orderNumber.replace(/[^A-Z0-9]/g, '')}`]);
     return orderId;
+  }
+
+  private buildSeedQr(orderNumber: string, amount: number): { qr_string: string; md5: string } {
+    const accountId = this.config.get<string>('BAKONG_ACCOUNT_ID', 'roeun_vathana1@bkrt').trim();
+    const merchantName = this.config.get<string>('BAKONG_MERCHANT_NAME', 'Tyushop').trim();
+    const merchantCity = this.config.get<string>('BAKONG_MERCHANT_CITY', 'Phnom Penh').trim();
+    const amountText = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+    const tag29Value = `00${accountId.length.toString().padStart(2, '0')}${accountId}`;
+    const tag29 = `29${tag29Value.length.toString().padStart(2, '0')}${tag29Value}`;
+    const tag62Value = `01${orderNumber.length.toString().padStart(2, '0')}${orderNumber}`;
+    const tag62 = `62${tag62Value.length.toString().padStart(2, '0')}${tag62Value}`;
+    const creationMs = String(Date.now());
+    const expirationMs = String(Date.now() + Number(this.config.get<string>('PAYMENT_QR_EXPIRES_MINUTES', '10')) * 60_000);
+    const tag99Value = `0013${creationMs}0113${expirationMs}`;
+    const tag99 = `99${tag99Value.length.toString().padStart(2, '0')}${tag99Value}`;
+    const payload = `000201010212${tag29}52045999530384054${amountText.length.toString().padStart(2, '0')}${amountText}5802KH59${merchantName.length.toString().padStart(2, '0')}${merchantName}60${merchantCity.length.toString().padStart(2, '0')}${merchantCity}${tag62}${tag99}6304`;
+    const qrString = `${payload}${this.crc(payload)}`;
+    return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex') };
+  }
+
+  private crc(payload: string): string {
+    let crc = 0xffff;
+    for (const character of payload) {
+      crc ^= character.charCodeAt(0) << 8;
+      for (let bit = 0; bit < 8; bit += 1) crc = (crc & 0x8000) !== 0 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
   }
 
   private async seedFixtureTelegram(client: PoolClient, userId: number): Promise<void> {
