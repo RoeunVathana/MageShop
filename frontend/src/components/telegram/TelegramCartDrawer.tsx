@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
+import { browserLocalPersistence, getRedirectResult, setPersistence, signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import {
   AlertCircle,
   ArrowRight,
@@ -20,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
+import { auth, authPersistenceReady, googleAuthProvider } from '@/lib/firebase';
 import { setTelegramAuthToken, StoreSettings, telegramApi } from '@/services/telegramApi';
 import { authService, GOOGLE_AUTH_SESSION_KEY } from '@/services/auth.service';
 
@@ -146,24 +148,23 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     if (googleLoginLoading) return;
     setGoogleLoginLoading(true);
     try {
-      const { signInWithPopup, signInWithRedirect } = await import('firebase/auth');
-      const { auth, googleAuthProvider } = await import('@/lib/firebase');
       const result = await signInWithPopup(auth, googleAuthProvider);
       await completeGoogleCheckoutLogin(result.user);
     } catch (error: any) {
+      let currentError = error;
       const code = String(error?.code || '');
-      if (code === 'auth/popup-blocked' || code === 'auth/web-storage-unsupported' || code === 'auth/operation-not-supported-in-this-environment') {
+      if (['auth/popup-blocked', 'auth/web-storage-unsupported', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(code)) {
         try {
-          const { signInWithRedirect } = await import('firebase/auth');
-          const { auth, googleAuthProvider } = await import('@/lib/firebase');
+          await authPersistenceReady;
+          await setPersistence(auth, browserLocalPersistence);
           await signInWithRedirect(auth, googleAuthProvider);
           return;
         } catch (redirectError: any) {
-          error = redirectError;
+          currentError = redirectError;
         }
       }
-      if (code !== 'auth/popup-closed-by-user') {
-        setCheckoutError(error?.message || 'Google sign-in is required before checkout.');
+      if (String(currentError?.code || '') !== 'auth/popup-closed-by-user') {
+        setCheckoutError(currentError?.message || 'Google sign-in is required before checkout.');
       }
     } finally {
       setGoogleLoginLoading(false);
@@ -176,15 +177,19 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     let active = true;
     const finishRedirect = async () => {
       try {
-        const { getRedirectResult } = await import('firebase/auth');
-        const { auth } = await import('@/lib/firebase');
+        await authPersistenceReady;
         const result = await getRedirectResult(auth);
         if (active && result?.user) {
           setGoogleLoginLoading(true);
           await completeGoogleCheckoutLogin(result.user);
         }
       } catch (error: any) {
-        if (active && error?.code !== 'auth/no-auth-event') setCheckoutError(error?.message || 'Google sign-in could not be completed.');
+        if (active && error?.code !== 'auth/no-auth-event') {
+          const message = error?.code === 'auth/missing-initial-state'
+            ? 'Google sign-in was interrupted by Telegram. Please tap Continue with Google again.'
+            : error?.message || 'Google sign-in could not be completed.';
+          setCheckoutError(message);
+        }
       } finally {
         if (active) setGoogleLoginLoading(false);
       }

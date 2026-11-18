@@ -1,7 +1,7 @@
 // Firebase Configuration & Initialization for TYUSHOP (tyushop-5aea2)
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAnalytics, isSupported } from 'firebase/analytics'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, GoogleAuthProvider, setPersistence } from 'firebase/auth'
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBKs2OYgjUWXCO3JV32jFNrdSM5BdyzIIA',
@@ -20,6 +20,12 @@ export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getA
 export const auth = getAuth(app)
 export const googleAuthProvider = new GoogleAuthProvider()
 googleAuthProvider.setCustomParameters({ prompt: 'select_account' })
+
+// Telegram's iOS in-app browser can discard the temporary session storage
+// used by Firebase redirect sign-in. Start local persistence as soon as the
+// Firebase Auth singleton is created so popup and redirect flows share a
+// durable browser state.
+export const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch(() => undefined)
 
 // Initialize Analytics conditionally (only in browser environment when supported)
 export let analytics: ReturnType<typeof getAnalytics> | null = null
