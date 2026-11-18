@@ -873,7 +873,7 @@ export function DeliveryDashboard() {
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={visibleDeliveryNav}
     >
-      <div className="space-y-6">
+      <div className="delivery-dashboard space-y-6">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-5">
           <div>
@@ -881,7 +881,7 @@ export function DeliveryDashboard() {
               <h1 className="text-xl leading-tight sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
                 {isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Delivery Operations', 'ប្រតិបត្តិការដឹកជញ្ជូន')}
               </h1>
-              <Badge className="w-fit max-w-full whitespace-normal bg-indigo-600 text-center text-[10px] leading-5 sm:text-[11px] font-bold">
+              <Badge className="w-fit max-w-full whitespace-normal bg-indigo-600 text-center text-[10px] leading-5 sm:text-[11px] font-bold animate-pulse">
                 {t('Live GPS Active', 'GPS កំពុងដំណើរការ')}
               </Badge>
             </div>
@@ -949,7 +949,7 @@ export function DeliveryDashboard() {
         </div>
 
         {/* View Switcher: live fleet map vs delivery rates */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700/80 shadow-sm">
           <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
@@ -986,7 +986,7 @@ export function DeliveryDashboard() {
             </button>}
           </div>
 
-          <div className="text-xs text-slate-500 font-medium px-2 hidden sm:block">
+          <div className="text-xs text-slate-600 dark:text-slate-300 font-medium px-2 hidden sm:block">
             {activeTab === 'pricing'
               ? t('Delivery rate settings', 'ការកំណត់តម្លៃដឹកជញ្ជូន')
               : t('Live fleet tracking', 'ការតាមដានកងដឹកជញ្ជូនផ្ទាល់')}
@@ -998,10 +998,10 @@ export function DeliveryDashboard() {
           <>
             {/* 4 Stat Cards with Percentage Indicators */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-75">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Active Deliveries', 'ការដឹកជញ្ជូនសកម្ម')}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Active Deliveries', 'ការដឹកជញ្ជូនសកម្ម')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
                     {orders.filter((o) => o.status !== 'delivered').length} {t('stops', 'កន្លែងឈប់')}
@@ -1017,10 +1017,10 @@ export function DeliveryDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Completed Today', 'បានបញ្ចប់ថ្ងៃនេះ')}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Completed Today', 'បានបញ្ចប់ថ្ងៃនេះ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                     {orders.filter((o) => o.status === 'delivered').length}
@@ -1036,10 +1036,10 @@ export function DeliveryDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-200">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('Route Distance', 'ចម្ងាយផ្លូវ')}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Route Distance', 'ចម្ងាយផ្លូវ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
                     {orders.reduce((sum, order) => {
@@ -1058,10 +1058,10 @@ export function DeliveryDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-300">
             <CardContent className="p-4 sm:p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('On-Time Dispatch', 'ចាត់ចែងទាន់ពេល')}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('On-Time Dispatch', 'ចាត់ចែងទាន់ពេល')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                     {orders.length > 0
@@ -1081,7 +1081,7 @@ export function DeliveryDashboard() {
         </div>
 
         {/* Real-Time Search & Category Filters */}
-        <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <Card className="delivery-filter-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
           <CardContent className="p-4 sm:p-5 space-y-3.5">
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
               {/* Search Bar */}
@@ -1092,7 +1092,7 @@ export function DeliveryDashboard() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('Search orders by customer, order #, phone, or address…', 'ស្វែងរកតាមអតិថិជន លេខបញ្ជាទិញ ទូរស័ព្ទ ឬអាសយដ្ឋាន…')}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
                 {searchQuery && (
                   <button
@@ -1106,7 +1106,7 @@ export function DeliveryDashboard() {
               </div>
 
               {/* Status Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 overflow-x-auto">
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700/80 overflow-x-auto">
                 {[
                   { key: 'all', label: 'All Orders' },
                   { key: 'in_transit', label: 'In Transit' },
@@ -1120,7 +1120,7 @@ export function DeliveryDashboard() {
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                       statusFilter === tab.key
                         ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -1131,7 +1131,7 @@ export function DeliveryDashboard() {
 
             {/* Cambodia Zone Filter Chips */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1">
                 Delivery zones:
               </span>
               {[
@@ -1151,7 +1151,7 @@ export function DeliveryDashboard() {
                   className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
                     zoneFilter === zone.key
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-indigo-400'
                   }`}
                 >
                   📍 {zone.label}
@@ -1165,7 +1165,7 @@ export function DeliveryDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT COLUMN (7 Cols): Live GPS Map & Selected Order Focus */}
           <div className="lg:col-span-7 space-y-6">
-            <Card className="rounded-2xl border-2 border-indigo-500/30 overflow-hidden bg-white dark:bg-slate-900 shadow-xl">
+            <Card className="delivery-map-card rounded-2xl border-2 border-indigo-500/30 overflow-hidden bg-white dark:bg-slate-900 shadow-xl transition-shadow duration-500 hover:shadow-2xl animate-in fade-in-0 zoom-in-95 duration-500">
               {/* Map Header Bar */}
               <div className="gps-map-header bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="gps-map-coordinates flex min-w-0 flex-wrap items-center gap-2">
@@ -1343,7 +1343,7 @@ export function DeliveryDashboard() {
           {/* RIGHT COLUMN (5 Cols): Orders Location Queue & Quick Dispatch */}
           <div className="lg:col-span-5 space-y-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="min-w-0 font-bold text-sm text-slate-800 dark:text-slate-200 flex items-start gap-2">
+              <h2 className="min-w-0 font-bold text-sm text-slate-900 dark:text-slate-100 flex items-start gap-2">
                 <Truck className="w-4 h-4 text-indigo-600" />
                 <span className="min-w-0">
                   {isDriverOnly
@@ -1352,12 +1352,12 @@ export function DeliveryDashboard() {
                   ({filteredOrders.length})
                 </span>
               </h2>
-              <span className="pl-6 text-xs text-slate-500 sm:pl-0">Select an order to view its route</span>
+              <span className="pl-6 text-xs text-slate-600 dark:text-slate-400 sm:pl-0">Select an order to view its route</span>
             </div>
 
             <div className="space-y-3">
               {filteredOrders.length === 0 ? (
-                <Card className="rounded-2xl border p-8 text-center text-xs text-slate-500">
+                <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 p-8 text-center text-xs text-slate-600 dark:text-slate-300 animate-in fade-in-0 duration-300">
                   No orders found matching "{searchQuery}" in {zoneFilter === 'all' ? 'any zone' : zoneFilter}.
                 </Card>
               ) : (
@@ -1370,7 +1370,7 @@ export function DeliveryDashboard() {
                     <Card
                       key={order.order_number}
                       onClick={() => setSelectedOrder(order)}
-                      className={`rounded-2xl border transition-all cursor-pointer ${
+                      className={`delivery-order-card rounded-2xl border transition-all duration-300 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${
                         isSelected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-md'
                           : 'border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900'
@@ -1380,7 +1380,7 @@ export function DeliveryDashboard() {
                         <div className="flex items-start justify-between gap-2 text-xs">
                           <div className="min-w-0">
                             <div className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
-                            <span className="break-all">#{order.order_number}</span>
+                              <span className="break-all">#{order.order_number}</span>
                               {isDelivered ? (
                                 <Badge className="bg-emerald-500 text-white text-[10px]">Delivered</Badge>
                               ) : (
@@ -1394,7 +1394,7 @@ export function DeliveryDashboard() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-slate-600 dark:text-slate-400 font-semibold mt-0.5">
+                            <p className="text-slate-700 dark:text-slate-300 font-semibold mt-0.5">
                               {order.customer_name} • {order.customer_phone}
                             </p>
                           </div>
@@ -1410,7 +1410,7 @@ export function DeliveryDashboard() {
                         </div>
 
                         {/* Delivery Address Target */}
-                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                        <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-200 flex items-start gap-2">
                           <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
                           <span className="line-clamp-2 leading-relaxed font-medium">
                             {order.delivery_address}
@@ -1419,7 +1419,7 @@ export function DeliveryDashboard() {
 
                         {/* Coordinates & Actions Bar */}
                         <div className="flex flex-col items-start gap-2 text-[11px] pt-1 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="max-w-full break-words font-mono text-slate-400">
+                          <span className="max-w-full break-words font-mono text-slate-500 dark:text-slate-400">
                             GPS: {order.dest_lat == null || order.dest_lng == null
                               ? 'Unavailable'
                               : `${Number(order.dest_lat).toFixed(4)}° N, ${Number(order.dest_lng).toFixed(4)}° E`}
