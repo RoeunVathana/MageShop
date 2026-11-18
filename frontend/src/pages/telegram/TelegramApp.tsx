@@ -271,6 +271,7 @@ export const TelegramApp: React.FC = () => {
                 isOpen={true}
                 onClose={() => setCurrentTab('home')}
                 storeSettings={storeSettings}
+                userProfile={userProfile}
               />
             </div>
           ) : currentTab === 'orders' ? (
@@ -319,6 +320,7 @@ export const TelegramApp: React.FC = () => {
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
           storeSettings={storeSettings}
+          userProfile={userProfile}
         />
 
         {/* Bottom Navigation */}

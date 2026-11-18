@@ -77,6 +77,16 @@ export interface CategoryItem {
   products_count: number;
 }
 
+export interface TelegramCheckoutPayload {
+  items: Array<{ product_id: number; quantity: number }>;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  delivery_address: string;
+  payment_method: 'bakong_khqr' | 'cash_on_delivery';
+  idempotency_key?: string;
+}
+
 export interface AiChatMessage {
   id?: string;
   sender: 'user' | 'assistant' | 'system';
@@ -130,6 +140,17 @@ export const telegramApi = {
   getCategories: async (): Promise<CategoryItem[]> => {
     const res = await api.get('/telegram/categories');
     return res.data.data;
+  },
+
+  // Real Mini App checkout and Bakong payment verification
+  createCheckout: async (payload: TelegramCheckoutPayload) => {
+    const res = await api.post('/orders/checkout', payload, { timeout: 45000 });
+    return res.data;
+  },
+
+  confirmPayment: async (orderNumber: string) => {
+    const res = await api.post(`/orders/track/${encodeURIComponent(orderNumber)}/confirm-payment`, {}, { timeout: 30000 });
+    return res.data;
   },
 
   // AI Chat
