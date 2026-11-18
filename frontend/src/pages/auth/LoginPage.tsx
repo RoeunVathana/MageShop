@@ -17,7 +17,6 @@ import {
   getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
-  signInWithRedirect,
 } from 'firebase/auth'
 import { auth, authPersistenceReady, googleAuthProvider } from '@/lib/firebase'
 
@@ -32,29 +31,6 @@ type LoginFormData = z.infer<typeof loginSchema>
 const GOOGLE_AUTH_REQUEST_TIMEOUT_MS = 20000
 const GOOGLE_REDIRECT_PENDING_KEY = 'tyushop_google_redirect_pending'
 const GOOGLE_REDIRECT_QUERY_KEY = 'google_redirect'
-
-function setGoogleRedirectPending(): void {
-  try {
-    sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, '1')
-  } catch {
-    // Some private/mobile browsers block sessionStorage. Keep a durable
-    // marker so the callback can still be completed after the redirect.
-  }
-
-  try {
-    localStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, '1')
-  } catch {
-    // Continue; the URL marker below is the final fallback.
-  }
-
-  try {
-    const url = new URL(window.location.href)
-    url.searchParams.set(GOOGLE_REDIRECT_QUERY_KEY, '1')
-    window.history.replaceState(window.history.state, '', url.toString())
-  } catch {
-    // The redirect can still proceed when history APIs are unavailable.
-  }
-}
 
 function clearGoogleRedirectPending(): void {
   try {
@@ -388,10 +364,16 @@ export function LoginPage() {
 
           if (!canUseRedirectFallback) throw mobilePopupErr
 
-          setGoogleRedirectPending()
-          await authPersistenceReady
-          await signInWithRedirect(auth, googleAuthProvider)
-          return
+          // Do not fall back to Firebase redirect sign-in here. Telegram's
+          // iOS browser can partition sessionStorage between the Google
+          // page and TYUSHOP, which causes auth/missing-initial-state. Keep
+          // the user on TYUSHOP and give a clear recovery instruction.
+          throw new Error(
+            t(
+              'Google sign-in was blocked by this in-app browser. Open TYUSHOP in Safari or Chrome and try again.',
+              'កម្មវិធីរុករកក្នុង App នេះបានរារាំងការចូល Google។ សូមបើក TYUSHOP ក្នុង Safari ឬ Chrome ហើយព្យាយាមម្តងទៀត។'
+            )
+          )
         }
       }
 

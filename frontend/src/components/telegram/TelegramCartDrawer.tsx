@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { browserLocalPersistence, getRedirectResult, setPersistence, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+import { getRedirectResult, signInWithPopup } from 'firebase/auth';
 import {
   AlertCircle,
   ArrowRight,
@@ -155,10 +155,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
       const code = String(error?.code || '');
       if (['auth/popup-blocked', 'auth/web-storage-unsupported', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(code)) {
         try {
-          await authPersistenceReady;
-          await setPersistence(auth, browserLocalPersistence);
-          await signInWithRedirect(auth, googleAuthProvider);
-          return;
+          throw new Error('Google sign-in was blocked by Telegram. Open TYUSHOP in Safari or Chrome and try again.');
         } catch (redirectError: any) {
           currentError = redirectError;
         }
