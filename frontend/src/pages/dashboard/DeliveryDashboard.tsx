@@ -114,7 +114,8 @@ export function DeliveryDashboard() {
   const canEditAssignedDelivery = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
   const isFleetGpsViewer = roleNames.includes('DELIVERY') && !canDispatch
   const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
-  const visibleDeliveryNav = isDriverOnly
+  const isDeliveryWorkspaceOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
+  const visibleDeliveryNav = isDeliveryWorkspaceOnly
     ? deliveryNav.filter((item) => item.href === '/dashboard/delivery')
     : deliveryNav
 
