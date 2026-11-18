@@ -467,8 +467,8 @@ export function RegisterPage() {
 
       {/* Google Sign-In Remote Config Notice Modal */}
       {googleConfigModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-screen py-6 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col my-auto animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-dvh animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
               <div className="flex items-center gap-2.5">

@@ -495,7 +495,8 @@ html.khmer-mode .dashboard-shell .text-xs {
 
 @media (max-width: 639px) {
   .dashboard-modal-backdrop {
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
     padding-top: max(0.75rem, env(safe-area-inset-top));
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
@@ -1014,11 +1015,9 @@ html[lang="km"] .bilingual-badge {
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
