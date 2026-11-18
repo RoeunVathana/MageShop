@@ -22,6 +22,7 @@ import {
 import { useTelegramCartStore } from '@/context/telegramCartStore';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
 import { ProductItem, StoreSettings, telegramApi } from '@/services/telegramApi';
+import { localizeProductName, localizeStoreName } from './telegramCatalogI18n';
 
 interface TelegramProfile {
   user?: {
@@ -67,17 +68,23 @@ interface TelegramCartDrawerProps {
 }
 
 const errorMessage = (error: unknown, translate: (en: string, km: string) => string): string => {
+  let rawMessage = '';
   if (typeof error === 'object' && error !== null) {
     const response = (error as { response?: { data?: { message?: string } } }).response;
-    if (response?.data?.message) return response.data.message;
+    rawMessage = response?.data?.message || '';
   }
   const message = error instanceof Error ? error.message : '';
+  rawMessage ||= message;
   const knownMessages: Record<string, string> = {
     'Telegram checkout could not be completed. Please try again.': 'ការទូទាត់ក្នុង Telegram មិនអាចបញ្ចប់បានទេ។ សូមព្យាយាមម្តងទៀត។',
     'The server did not return an order number. Please try again.': 'ម៉ាស៊ីនមេមិនបានផ្តល់លេខបញ្ជាទិញទេ។ សូមព្យាយាមម្តងទៀត។',
     'Bakong payment QR was not created. Your order was not marked as paid. Please try again.': 'មិនអាចបង្កើត QR បង់ប្រាក់បាគងបានទេ។ ការបញ្ជាទិញរបស់អ្នកមិនទាន់បានទូទាត់ទេ។ សូមព្យាយាមម្តងទៀត។',
+    'One or more selected products are no longer available.': 'ទំនិញមួយ ឬច្រើនដែលបានជ្រើសរើស មិនមានទៀតទេ។',
+    'Stock changed while you were checking out. Please review the quantity and try again.': 'ស្តុកបានផ្លាស់ប្តូរខណៈពេលអ្នកកំពុងបង់ប្រាក់។ សូមពិនិត្យចំនួនទំនិញ ហើយព្យាយាមម្តងទៀត។',
+    'The selected product is no longer available.': 'ទំនិញដែលបានជ្រើសរើស មិនមានទៀតទេ។',
   };
-  return translate(message || 'Telegram checkout could not be completed. Please try again.', knownMessages[message] || 'ការទូទាត់ក្នុង Telegram មិនអាចបញ្ចប់បានទេ។ សូមព្យាយាមម្តងទៀត។');
+  const fallback = 'Telegram checkout could not be completed. Please try again.';
+  return translate(rawMessage || fallback, knownMessages[rawMessage] || knownMessages[fallback]);
 };
 
 export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
@@ -87,7 +94,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   userProfile,
 }) => {
   const { items, updateQuantity, removeItem, replaceItems, clearCart, subtotal } = useTelegramCartStore();
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -257,7 +264,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         const available = Number(current?.available_stock ?? current?.stock_quantity ?? 0);
         const isDigital = current?.product_type === 'digital';
         if (!current || !current.is_active || current.status !== 'active' || (!isDigital && available <= 0)) {
-          unavailableNames.push(item.product.name);
+          unavailableNames.push(localizeProductName(item.product, language));
           continue;
         }
 
@@ -353,7 +360,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/60">
           <div className="flex items-center space-x-2 min-w-0">
             <ShoppingBag className="w-5 h-5 text-indigo-600 shrink-0" />
-            <h2 className="font-bold text-sm text-foreground truncate">{storeSettings?.store_name || 'TYUSHOP'} {t('Shopping Bag', 'កន្ត្រកទិញទំនិញ')}</h2>
+            <h2 className="font-bold text-sm text-foreground truncate">{localizeStoreName(storeSettings?.store_name, language)} {t('Shopping Bag', 'កន្ត្រកទិញទំនិញ')}</h2>
             <span className="text-xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-semibold shrink-0">{items.length} {t('items', 'មុខ')}</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label={t('Close shopping bag', 'បិទកន្ត្រកទិញទំនិញ')}><X className="w-5 h-5" /></button>
@@ -394,7 +401,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
                 const price = product.discount_price ? Number(product.discount_price) : Number(product.price);
                 return (
                     <div key={product.id} className="flex items-center justify-between bg-card p-3 rounded-2xl border border-border/80 shadow-2xs">
-                    <div className="flex items-center space-x-3 min-w-0"><div className="w-12 h-12 rounded-xl bg-muted/60 p-1 flex-shrink-0 flex items-center justify-center">{product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" /> : <ShoppingBag className="w-5 h-5 text-muted-foreground" />}</div><div className="min-w-0"><h4 className="font-bold text-xs text-foreground truncate">{product.name}</h4><div className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">${price.toFixed(2)}</div></div></div>
+                    <div className="flex items-center space-x-3 min-w-0"><div className="w-12 h-12 rounded-xl bg-muted/60 p-1 flex-shrink-0 flex items-center justify-center">{product.image_url ? <img src={product.image_url} alt={localizeProductName(product, language)} className="w-full h-full object-contain" /> : <ShoppingBag className="w-5 h-5 text-muted-foreground" />}</div><div className="min-w-0"><h4 className="font-bold text-xs text-foreground truncate">{localizeProductName(product, language)}</h4><div className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">${price.toFixed(2)}</div></div></div>
                     <div className="flex items-center space-x-2 flex-shrink-0"><div className="flex items-center space-x-1 bg-muted rounded-xl p-1"><button onClick={() => updateQuantity(product.id, quantity - 1)} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10" aria-label={t('Decrease quantity', 'បន្ថយចំនួន')}><Minus className="w-3 h-3" /></button><span className="w-6 text-center font-bold text-xs text-foreground">{quantity}</span><button onClick={() => updateQuantity(product.id, quantity + 1)} disabled={quantity >= product.stock_quantity} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10" aria-label={t('Increase quantity', 'បង្កើនចំនួន')}><Plus className="w-3 h-3" /></button></div><button onClick={() => removeItem(product.id)} className="p-1.5 text-rose-500 hover:text-rose-600 transition-colors" title={t('Remove', 'លុប')} aria-label={t('Remove', 'លុប')}><Trash2 className="w-4 h-4" /></button></div>
                   </div>
                 );

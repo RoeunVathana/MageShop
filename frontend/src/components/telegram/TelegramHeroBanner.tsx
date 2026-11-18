@@ -2,6 +2,7 @@ import React from 'react';
 import { Sparkles, Wallet, QrCode, Truck, ArrowRight } from 'lucide-react';
 import { StoreSettings } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeShippingPolicy } from './telegramCatalogI18n';
 
 interface TelegramHeroBannerProps {
   customerName?: string;
@@ -14,7 +15,7 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
   storeSettings,
   onExploreDeals,
 }) => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   return (
     <div className="px-4 pt-3 pb-2 space-y-3">
       {/* Welcome & Wallet Bar */}
@@ -59,7 +60,7 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
               {t('Genuine Tech & Lifestyles', 'បច្ចេកវិទ្យា និងរបៀបរស់នៅពិតប្រាកដ')}
             </h3>
             <p className="text-xs text-indigo-100/90 line-clamp-1 mt-0.5">
-              {storeSettings?.shipping_policy || t('Free express nationwide delivery in Cambodia over $50.', 'ដឹកជញ្ជូនរហ័សទូទាំងកម្ពុជាឥតគិតថ្លៃសម្រាប់ការទិញលើស $50។')}
+              {localizeShippingPolicy(storeSettings?.shipping_policy_km && language === 'KM' ? storeSettings.shipping_policy_km : storeSettings?.shipping_policy, language) || t('Free express nationwide delivery in Cambodia over $50.', 'ដឹកជញ្ជូនរហ័សទូទាំងកម្ពុជាឥតគិតថ្លៃសម្រាប់ការទិញលើស $50។')}
             </p>
           </div>
 

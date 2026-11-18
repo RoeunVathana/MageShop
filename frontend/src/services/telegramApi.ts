@@ -40,11 +40,16 @@ export interface StoreSettings {
   shipping_policy: string;
   telegram_bot_username?: string;
   telegram_support_contact?: string;
+  store_name_km?: string;
+  store_description_km?: string;
+  shipping_policy_km?: string;
 }
 
 export interface ProductItem {
   id: number;
   name: string;
+  name_km?: string | null;
+  description_km?: string | null;
   slug: string;
   sku: string;
   description: string;
@@ -70,6 +75,7 @@ export interface ProductItem {
   category?: {
     id: number;
     name: string;
+    name_km?: string | null;
     slug: string;
   };
 }
@@ -116,6 +122,7 @@ export interface TelegramSellerDashboard {
 export interface CategoryItem {
   id: number;
   name: string;
+  name_km?: string | null;
   slug: string;
   icon?: string;
   description?: string;

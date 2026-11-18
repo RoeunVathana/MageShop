@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { telegramApi, AiChatMessage } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeProductName } from './telegramCatalogI18n';
 
 interface TelegramAiChatModalProps {
   isOpen: boolean;
@@ -221,7 +222,7 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
                                   className="flex items-center justify-between bg-card p-1.5 rounded-lg border border-border/60"
                                 >
                                   <div>
-                                    <div className="font-bold text-foreground">{p.name}</div>
+                                    <div className="font-bold text-foreground">{localizeProductName(p, appLanguage)}</div>
                                     <div className="text-muted-foreground text-[10px]">
                                       SKU: {p.sku} • {p.in_stock ? `${t('Stock', 'ស្តុក')}: ${p.stock_quantity}` : t('Out of Stock', 'អស់ស្តុក')}
                                     </div>

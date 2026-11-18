@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { CategoryItem } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeCategoryName } from './telegramCatalogI18n';
 
 interface TelegramCategoryBarProps {
   categories: CategoryItem[];
@@ -23,7 +24,7 @@ export const TelegramCategoryBar: React.FC<TelegramCategoryBarProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const getCategoryIcon = (slug: string) => {
     switch (slug.toLowerCase()) {
       case 'laptops':
@@ -76,7 +77,7 @@ export const TelegramCategoryBar: React.FC<TelegramCategoryBarProps> = ({
               }`}
             >
               {getCategoryIcon(cat.slug)}
-              <span>{cat.name}</span>
+              <span>{localizeCategoryName(cat, language)}</span>
               {cat.products_count > 0 && (
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${

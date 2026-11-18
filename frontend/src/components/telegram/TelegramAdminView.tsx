@@ -9,9 +9,10 @@ import {
 } from 'lucide-react';
 import { telegramApi, ProductItem } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeProductName } from './telegramCatalogI18n';
 
 export const TelegramAdminView: React.FC = () => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const [summary, setSummary] = useState<any>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +152,7 @@ export const TelegramAdminView: React.FC = () => {
               >
                 <div className="min-w-0 pr-2">
                   <div className="flex items-center space-x-1.5">
-                    <span className="font-bold text-xs text-foreground truncate">{p.name}</span>
+                    <span className="font-bold text-xs text-foreground truncate">{localizeProductName(p, language)}</span>
                     {isLow && (
                       <span className="bg-amber-100 dark:bg-amber-950 text-amber-700 text-[9px] font-bold px-1.5 py-0.2 rounded-md">
                         {t('Low', 'ទាប')}

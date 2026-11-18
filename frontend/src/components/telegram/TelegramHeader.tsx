@@ -3,6 +3,7 @@ import { ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness, Languages } fro
 import { useTheme } from '@/context/ThemeProvider';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
 import { StoreSettings } from '@/services/telegramApi';
+import { localizeStoreName } from './telegramCatalogI18n';
 
 interface TelegramHeaderProps {
   storeSettings?: StoreSettings;
@@ -55,7 +56,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
           <div>
             <div className="flex items-center space-x-1.5">
               <h1 className="font-bold text-sm tracking-tight leading-none text-foreground">
-                {storeSettings?.store_name || 'TYUSHOP'}
+                {localizeStoreName(storeSettings?.store_name, language)}
               </h1>
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
             </div>

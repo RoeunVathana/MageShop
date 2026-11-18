@@ -3,6 +3,7 @@ import { Star, ShoppingBag, Check, AlertCircle } from 'lucide-react';
 import { ProductItem } from '@/services/telegramApi';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeCategoryName, localizeProductName } from './telegramCatalogI18n';
 
 interface TelegramProductCardProps {
   product: ProductItem;
@@ -11,7 +12,9 @@ interface TelegramProductCardProps {
 
 export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ product, onSelect }) => {
   const { addItem, items } = useTelegramCartStore();
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
+  const displayName = localizeProductName(product, language);
+  const displayCategory = localizeCategoryName(product.category, language);
   const cartItem = items.find((i) => i.product.id === product.id);
   const inCartQty = cartItem?.quantity || 0;
 
@@ -42,7 +45,7 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
         {product.image_url ? (
           <img
             src={product.image_url}
-            alt={product.name}
+            alt={displayName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
@@ -85,12 +88,12 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>{product.category?.name || t('Catalog', 'កាតាឡុក')}</span>
+            <span>{displayCategory || t('Catalog', 'កាតាឡុក')}</span>
             <span className="font-mono text-[10px]">{product.sku}</span>
           </div>
 
           <h3 className="font-bold text-xs sm:text-sm text-foreground line-clamp-2 leading-tight">
-            {product.name}
+            {displayName}
           </h3>
 
           <div className="flex items-center space-x-1 text-[11px] text-amber-500">

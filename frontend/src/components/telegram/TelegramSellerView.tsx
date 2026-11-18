@@ -3,9 +3,10 @@ import { AlertCircle, Clock3, DollarSign, Package, RefreshCw, Store } from 'luci
 
 import { telegramApi, TelegramSellerDashboard } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeProductName } from './telegramCatalogI18n';
 
 export const TelegramSellerView: React.FC = () => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const [dashboard, setDashboard] = useState<TelegramSellerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,7 +112,7 @@ export const TelegramSellerView: React.FC = () => {
                   <span className="truncate text-xs font-extrabold text-foreground">#{order.order_number}</span>
                   <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold capitalize text-emerald-700 dark:text-emerald-300">{getStatusLabel(order.status)}</span>
                 </div>
-                <p className="truncate text-[11px] text-muted-foreground">{order.items?.map((item) => `${item.product_name} × ${item.quantity}`).join(', ') || t('Seller items', 'ទំនិញអ្នកលក់')}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{order.items?.map((item) => `${localizeProductName({ name: item.product_name }, language)} × ${item.quantity}`).join(', ') || t('Seller items', 'ទំនិញអ្នកលក់')}</p>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-muted-foreground">{t('Buyer', 'អ្នកទិញ')}: {order.customer?.name || t('Customer', 'អតិថិជន')}</span>
                   <strong className="text-foreground">${Number(order.items?.reduce((sum, item) => sum + Number(item.total_price || 0), 0) || order.total_amount || 0).toFixed(2)}</strong>

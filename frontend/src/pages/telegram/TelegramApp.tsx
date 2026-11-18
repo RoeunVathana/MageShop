@@ -26,9 +26,10 @@ import { TelegramAdminView } from '@/components/telegram/TelegramAdminView';
 import { TelegramSellerView } from '@/components/telegram/TelegramSellerView';
 import { TelegramProfileView } from '@/components/telegram/TelegramProfileView';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
+import { localizeCategoryName, localizeStoreName } from '@/components/telegram/telegramCatalogI18n';
 
 export const TelegramApp: React.FC = () => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const telegramClientUser = typeof window !== 'undefined' ? window.Telegram?.WebApp?.initDataUnsafe?.user : undefined;
   const [currentTab, setCurrentTab] = useState<TelegramViewTab>('home');
   const [storeSettings, setStoreSettings] = useState<StoreSettings | undefined>(undefined);
@@ -296,7 +297,7 @@ export const TelegramApp: React.FC = () => {
                     }}
                     className="bg-card p-3.5 rounded-2xl border border-border text-left hover:border-indigo-500 shadow-2xs transition-all space-y-1"
                   >
-                    <div className="font-bold text-xs text-foreground">{c.name}</div>
+                    <div className="font-bold text-xs text-foreground">{localizeCategoryName(c, language)}</div>
                     <div className="text-[10px] text-muted-foreground">{c.products_count} {t('products', 'មុខទំនិញ')}</div>
                   </button>
                 ))}
@@ -333,7 +334,7 @@ export const TelegramApp: React.FC = () => {
         <TelegramAiChatModal
           isOpen={isAiChatOpen}
           onClose={() => setIsAiChatOpen(false)}
-          storeName={storeSettings?.store_name}
+          storeName={localizeStoreName(storeSettings?.store_name, language)}
         />
 
         {/* Cart Drawer for Quick Checkout */}
