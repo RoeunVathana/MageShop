@@ -205,7 +205,7 @@ export class DeliveryService {
 
   private authorizeOrder(user: AuthUser, order: DeliveryOrderRow): void {
     const driver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
-    const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
+    const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
     if (driver && !supervisor && order.driver_id !== user.id) throw new ForbiddenException({ status: 'error', message: 'This order is not assigned to your delivery route.' });
   }
 
@@ -227,7 +227,7 @@ export class DeliveryService {
   private transitionError(user: AuthUser, from: string, to: string, orderNumber: string): string | null {
     if (from === to) return null;
     const driver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
-    const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
+    const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
     const allowed = ['pending', 'confirmed'].includes(from) ? (driver ? ['shipped'] : ['processing', 'shipped', 'cancelled']) : from === 'processing' ? (driver ? ['shipped'] : ['shipped', 'cancelled']) : ['shipped'].includes(from) ? (driver || supervisor ? ['out_for_delivery', 'delivered'] : []) : from === 'out_for_delivery' ? (driver || supervisor ? ['delivered'] : []) : [];
     return allowed.includes(to) ? null : `Order #${orderNumber} cannot move from ${from} to ${to} in the current workflow.`;
   }

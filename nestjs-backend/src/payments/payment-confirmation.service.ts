@@ -253,7 +253,7 @@ export class PaymentConfirmationService {
 
   private authorizeDeliveryOrder(user: AuthUser, order: OrderRow): void {
     const isDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
-    const isSupervisor = this.auth.hasAnyRole(user, this.staffRoles);
+    const isSupervisor = this.auth.hasAnyRole(user, [...this.staffRoles, 'DELIVERY']);
     if (isDriver && !isSupervisor && order.driver_id !== user.id) throw new ForbiddenException({ status: 'error', message: 'This order is not assigned to your delivery route.' });
   }
 

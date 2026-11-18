@@ -2148,7 +2148,7 @@ class CommerceEngagementController extends Controller
         }
 
         $isDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
-        $isSupervisor = $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
+        $isSupervisor = $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
         if ($isDriver && ! $isSupervisor && (int) $order->driver_id !== (int) $user->id) {
             abort(403, 'This order is not assigned to your delivery route.');
         }
