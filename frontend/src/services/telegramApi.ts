@@ -83,6 +83,8 @@ export interface TelegramCheckoutPayload {
   customer_phone: string;
   customer_email?: string;
   delivery_address: string;
+  dest_lat?: number;
+  dest_lng?: number;
   payment_method: 'bakong_khqr' | 'cash_on_delivery';
   idempotency_key?: string;
 }

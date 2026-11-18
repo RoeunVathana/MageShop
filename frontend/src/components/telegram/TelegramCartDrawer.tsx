@@ -7,6 +7,7 @@ import {
   Mail,
   MapPin,
   Minus,
+  Navigation,
   Phone,
   Plus,
   QrCode,
@@ -19,7 +20,8 @@ import {
   X,
 } from 'lucide-react';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
-import { StoreSettings, telegramApi } from '@/services/telegramApi';
+import { setTelegramAuthToken, StoreSettings, telegramApi } from '@/services/telegramApi';
+import { authService } from '@/services/auth.service';
 
 interface TelegramProfile {
   user?: {
@@ -59,6 +61,8 @@ interface TelegramCartDrawerProps {
   userProfile?: TelegramProfile | null;
 }
 
+const TELEGRAM_GOOGLE_CHECKOUT_KEY = 'tyushop_telegram_google_checkout_verified';
+
 const errorMessage = (error: unknown): string => {
   if (typeof error === 'object' && error !== null) {
     const response = (error as { response?: { data?: { message?: string } } }).response;
@@ -85,6 +89,10 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(() => sessionStorage.getItem(TELEGRAM_GOOGLE_CHECKOUT_KEY) === '1');
+  const [googleLoginLoading, setGoogleLoginLoading] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
 
   const cartSubtotal = subtotal();
@@ -101,6 +109,99 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     setCustomerPhone((current) => current || profilePhone);
     setCustomerEmail((current) => current || (profileEmail.includes('@megacommerce.internal') ? '' : profileEmail));
   }, [userProfile]);
+
+  const completeGoogleCheckoutLogin = useCallback(async (firebaseUser: any) => {
+    const response = await authService.loginWithFirebase({
+      id_token: await firebaseUser.getIdToken(),
+      email: firebaseUser.email,
+      name: firebaseUser.displayName,
+      avatar: firebaseUser.photoURL,
+      uid: firebaseUser.uid,
+    });
+    const token = response.data?.token;
+    if (!token) throw new Error('Google login did not return a secure session token.');
+    // The normal Sanctum token is valid for checkout and order tracking. Keep
+    // it in the Telegram API client so the Google-linked customer remains
+    // authenticated after the Firebase popup closes.
+    setTelegramAuthToken(token);
+    sessionStorage.setItem(TELEGRAM_GOOGLE_CHECKOUT_KEY, '1');
+    setGoogleConnected(true);
+  }, []);
+
+  const handleGoogleCheckoutLogin = async () => {
+    if (googleLoginLoading) return;
+    setGoogleLoginLoading(true);
+    try {
+      const { signInWithPopup, signInWithRedirect } = await import('firebase/auth');
+      const { auth, googleAuthProvider } = await import('@/lib/firebase');
+      const result = await signInWithPopup(auth, googleAuthProvider);
+      await completeGoogleCheckoutLogin(result.user);
+    } catch (error: any) {
+      const code = String(error?.code || '');
+      if (code === 'auth/popup-blocked' || code === 'auth/web-storage-unsupported' || code === 'auth/operation-not-supported-in-this-environment') {
+        try {
+          const { signInWithRedirect } = await import('firebase/auth');
+          const { auth, googleAuthProvider } = await import('@/lib/firebase');
+          await signInWithRedirect(auth, googleAuthProvider);
+          return;
+        } catch (redirectError: any) {
+          error = redirectError;
+        }
+      }
+      if (code !== 'auth/popup-closed-by-user') {
+        setCheckoutError(error?.message || 'Google sign-in is required before checkout.');
+      }
+    } finally {
+      setGoogleLoginLoading(false);
+    }
+  };
+
+  // Complete a Google redirect when Telegram's embedded browser returns to
+  // the Mini App after the popup fallback.
+  useEffect(() => {
+    let active = true;
+    const finishRedirect = async () => {
+      try {
+        const { getRedirectResult } = await import('firebase/auth');
+        const { auth } = await import('@/lib/firebase');
+        const result = await getRedirectResult(auth);
+        if (active && result?.user) {
+          setGoogleLoginLoading(true);
+          await completeGoogleCheckoutLogin(result.user);
+        }
+      } catch (error: any) {
+        if (active && error?.code !== 'auth/no-auth-event') setCheckoutError(error?.message || 'Google sign-in could not be completed.');
+      } finally {
+        if (active) setGoogleLoginLoading(false);
+      }
+    };
+    void finishRedirect();
+    return () => { active = false; };
+  }, [completeGoogleCheckoutLogin]);
+
+  const handleDetectCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setCheckoutError('Your device does not support GPS location. Please use a device with location services enabled.');
+      return;
+    }
+    setIsLocating(true);
+    setCheckoutError('');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setCustomerCoords({ lat: latitude, lng: longitude, accuracy });
+        if (!deliveryAddress.trim()) {
+          setDeliveryAddress(`Current GPS location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+        }
+        setIsLocating(false);
+      },
+      (error) => {
+        setIsLocating(false);
+        setCheckoutError(error.code === 1 ? 'Location permission was denied. Enable location access, then try again.' : error.message || 'Unable to read your current GPS location.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  };
 
   useEffect(() => {
     const qrString = checkoutData?.qr_payment?.qr_string;
@@ -170,8 +271,16 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
 
   const handleCheckout = async () => {
     if (!items.length || isSubmitting) return;
+    if (!googleConnected) {
+      setCheckoutError('Continue with Google before buying this item.');
+      return;
+    }
     if (!customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) {
       setCheckoutError('Please enter your name, phone number, and delivery address before paying.');
+      return;
+    }
+    if (!customerCoords) {
+      setCheckoutError('Use Current GPS Location before paying so your courier can be tracked in real time.');
       return;
     }
 
@@ -185,6 +294,8 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         customer_phone: customerPhone.trim(),
         customer_email: customerEmail.trim() || undefined,
         delivery_address: deliveryAddress.trim(),
+        dest_lat: customerCoords.lat,
+        dest_lng: customerCoords.lng,
         payment_method: 'bakong_khqr',
         idempotency_key: idempotencyKeyRef.current,
       });
@@ -193,10 +304,12 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
       if (!data.order?.order_number) throw new Error('The server did not return an order number. Please try again.');
 
       setCheckoutData(data);
-      if (paymentStatus === 'paid' || paymentStatus === 'completed' || !data.qr_payment?.qr_string) {
+      if (paymentStatus === 'paid' || paymentStatus === 'completed') {
         markPaymentComplete(data);
-      } else {
+      } else if (data.qr_payment?.qr_string) {
         setIsCheckingOut(true);
+      } else {
+        throw new Error('Bakong payment QR was not created. Your order was not marked as paid. Please try again.');
       }
     } catch (error) {
       setCheckoutError(errorMessage(error));
@@ -236,6 +349,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
               <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 mx-auto flex items-center justify-center"><CheckCircle2 className="w-10 h-10" /></div>
               <h3 className="text-lg font-bold text-foreground">Payment Verified!</h3>
               <p className="text-xs text-muted-foreground max-w-xs mx-auto">Order <strong className="text-foreground">#{orderNumber}</strong> was verified by Bakong. Your receipt and admin Telegram report are being dispatched.</p>
+              <a href={`/track-order/${encodeURIComponent(orderNumber || '')}`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700"> <MapPin className="w-3.5 h-3.5" /> Track live GPS delivery</a>
               <div className="grid grid-cols-2 gap-2 text-left text-[10px] max-w-xs mx-auto">
                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 p-2 text-emerald-800 dark:text-emerald-300"><Mail className="w-3.5 h-3.5 mb-1" /> Receipt Email<div className="font-bold">{checkoutData?.email_status === 'sent' ? 'Sent' : 'Processing'}</div></div>
                 <div className="rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/50 p-2 text-sky-800 dark:text-sky-300"><Send className="w-3.5 h-3.5 mb-1" /> Admin Telegram<div className="font-bold">Processing</div></div>
@@ -271,12 +385,23 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
               })}
               <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/60 dark:bg-indigo-950/20 p-3 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800 dark:text-indigo-300"><ShieldCheck className="w-4 h-4" /> Delivery information</div>
+                <div className={`rounded-xl border p-2.5 ${googleConnected ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/30' : 'border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className={`text-[11px] font-bold ${googleConnected ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>{googleConnected ? 'Google account verified' : 'Google account required before purchase'}</div>
+                      <div className="text-[10px] text-muted-foreground">{googleConnected ? 'Secure checkout identity connected.' : 'Sign in with Google to continue checkout.'}</div>
+                    </div>
+                    {!googleConnected && <button type="button" onClick={() => void handleGoogleCheckoutLogin()} disabled={googleLoginLoading} className="shrink-0 rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">{googleLoginLoading ? 'Signing in...' : 'Continue with Google'}</button>}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="text-[10px] font-semibold text-muted-foreground"><User className="inline w-3 h-3 mr-1" />Name<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Full name" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-indigo-500" /></label>
                   <label className="text-[10px] font-semibold text-muted-foreground"><Phone className="inline w-3 h-3 mr-1" />Phone<input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="0xx xxx xxx" inputMode="tel" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-indigo-500" /></label>
                 </div>
                 <label className="block text-[10px] font-semibold text-muted-foreground"><Mail className="inline w-3 h-3 mr-1" />Email receipt (optional)<input type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="you@example.com" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-indigo-500" /></label>
                 <label className="block text-[10px] font-semibold text-muted-foreground"><MapPin className="inline w-3 h-3 mr-1" />Delivery address<textarea value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="House number, street, district, city" rows={2} className="mt-1 w-full resize-none rounded-lg border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-indigo-500" /></label>
+                <button type="button" onClick={handleDetectCurrentLocation} disabled={isLocating} className="flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-[11px] font-bold text-indigo-700 shadow-sm hover:bg-indigo-50 disabled:opacity-60 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"><Navigation className="w-3.5 h-3.5" />{isLocating ? 'Detecting current GPS...' : 'Use Current GPS Location'}</button>
+                {customerCoords && <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[10px] font-semibold text-emerald-800 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"><span>GPS locked: {customerCoords.lat.toFixed(5)}, {customerCoords.lng.toFixed(5)}{customerCoords.accuracy ? ` (±${Math.round(customerCoords.accuracy)}m)` : ''}</span><a href={`https://www.google.com/maps/search/?api=1&query=${customerCoords.lat},${customerCoords.lng}`} target="_blank" rel="noopener noreferrer" className="font-bold underline">View map</a></div>}
               </div>
               {checkoutError && <div className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-800/50 p-3 text-[11px] text-rose-800 dark:text-rose-300"><AlertCircle className="inline w-3.5 h-3.5 mr-1" />{checkoutError}</div>}
             </>
