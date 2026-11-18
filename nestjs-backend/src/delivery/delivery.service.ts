@@ -210,9 +210,12 @@ export class DeliveryService {
   }
 
   private authorizeLocationOrder(user: AuthUser, order: DeliveryOrderRow): void {
-    const canManageFleetLocations = this.auth.hasPermission(user, 'delivery.location.manage') || this.auth.hasAnyRole(user, [
+    const canManageFleetLocations = this.auth.hasAnyRole(user, [
       'SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY',
-    ]);
+    ]) || (
+      this.auth.hasPermission(user, 'delivery.location.manage')
+      && !this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER'])
+    );
     const isAssignedDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER'])
       && order.driver_id === user.id;
 

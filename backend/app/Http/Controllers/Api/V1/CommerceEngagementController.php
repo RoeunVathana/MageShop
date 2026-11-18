@@ -1822,7 +1822,9 @@ class CommerceEngagementController extends Controller
             ->orderBy('id', 'desc')
             ->take(30);
 
-        if ($user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
+        // DELIVERY is the fleet-wide Delivery Location Manager role. Only a
+        // driver/courier should be limited to orders assigned to that user.
+        if ($user && $user->hasRole(['DELIVERY_DRIVER', 'COURIER']) && ! $user->hasRole(['SUPER_ADMIN', 'ADMIN'])) {
             $ordersQuery->where('driver_id', $user->id);
         }
 
@@ -1854,7 +1856,9 @@ class CommerceEngagementController extends Controller
                 'message' => 'Order not found.',
             ], 404);
         }
-        $this->authorizeDeliveryOrder($request, $order);
+        // Location managers can edit any delivery destination. Drivers and
+        // couriers remain restricted to their own assigned route.
+        $this->authorizeDeliveryLocation($request, $order);
 
         $validated = $request->validate([
             'delivery_address' => ['nullable', 'string', 'max:500'],
@@ -2147,6 +2151,38 @@ class CommerceEngagementController extends Controller
         $isSupervisor = $user->hasRole(['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
         if ($isDriver && ! $isSupervisor && (int) $order->driver_id !== (int) $user->id) {
             abort(403, 'This order is not assigned to your delivery route.');
+        }
+    }
+
+    /**
+     * Authorize destination/location changes independently from driver route
+     * actions. DELIVERY is a fleet-wide location manager, while a driver or
+     * courier can only edit an order assigned to their own route.
+     */
+    protected function authorizeDeliveryLocation(Request $request, Order $order): void
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user) {
+            abort(401, 'Authentication is required for delivery operations.');
+        }
+
+        $isFleetLocationManager = $user->hasAnyRole([
+            'SUPER_ADMIN',
+            'ADMIN',
+            'STAFF',
+            'ORDER_MANAGER',
+            'LOGISTICS_MANAGER',
+            'DISPATCHER',
+            'DELIVERY',
+        ]) || (
+            $user->hasPermission('delivery.location.manage')
+            && ! $user->hasRole(['DELIVERY_DRIVER', 'COURIER'])
+        );
+        $isAssignedDriver = $user->hasRole(['DELIVERY_DRIVER', 'COURIER'])
+            && (int) $order->driver_id === (int) $user->id;
+
+        if (! $isFleetLocationManager && ! $isAssignedDriver) {
+            abort(403, 'You can only manage locations for delivery orders assigned to your route.');
         }
     }
 }
