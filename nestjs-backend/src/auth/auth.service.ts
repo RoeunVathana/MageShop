@@ -183,6 +183,11 @@ export class AuthService {
     return user.roles.some((role) => expected.has(role.name.toUpperCase()) || expected.has(role.slug.toUpperCase()));
   }
 
+  hasPermission(user: AuthUser, permission: string): boolean {
+    const expected = permission.trim().toLowerCase();
+    return user.roles.some((role) => (role.permissions ?? []).some((item) => item.slug.trim().toLowerCase() === expected));
+  }
+
   async authenticate(authorization: string | undefined): Promise<{ userId: number; tokenId: number } | null> {
     const value = authorization?.trim() ?? '';
     if (!/^Bearer\s+[^|]+\|.+$/i.test(value)) return null;

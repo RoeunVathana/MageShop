@@ -152,7 +152,7 @@ export function DashboardLayout({
   return (
     <div className="dashboard-shell min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       {/* Desktop Sticky Sidebar - Permanently pinned to viewport when scrolling page */}
-      <aside className="dashboard-sidebar hidden lg:flex flex-col w-72 2xl:w-80 border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 z-30 shrink-0 sticky top-0 h-screen">
+      <aside className="dashboard-sidebar hidden lg:flex flex-col w-64 2xl:w-72 border-r border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 z-30 shrink-0 sticky top-0 h-screen shadow-[8px_0_30px_-28px_rgba(15,23,42,0.45)]">
         {/* Brand */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <Link to="/" aria-label="TYUSHOP Home">
@@ -161,7 +161,7 @@ export function DashboardLayout({
         </div>
 
         {/* Role Badge Indicator */}
-        <div className="px-4 py-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
+        <div className="px-3.5 py-3.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 shrink-0">
           <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('Active Workspace', 'កន្លែងធ្វើការសកម្ម')}
           </div>
@@ -177,7 +177,7 @@ export function DashboardLayout({
         </div>
 
         {/* Navigation Items - Self-scrolling if menu exceeds viewport height */}
-        <nav className="dashboard-sidebar-nav flex-1 px-3 py-4 space-y-1 overflow-y-auto overscroll-contain">
+        <nav className="dashboard-sidebar-nav flex-1 px-2.5 py-3.5 space-y-1 overflow-y-auto overscroll-contain">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -188,7 +188,7 @@ export function DashboardLayout({
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  'dashboard-nav-link flex items-center justify-between gap-2.5 min-h-11 px-3 py-2.5 rounded-xl text-[15px] font-medium leading-6 transition-all',
+                  'dashboard-nav-link flex items-center justify-between gap-2 min-h-10 px-2.5 py-2 rounded-xl text-sm font-medium leading-6 transition-all',
                   isActive
                     ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
@@ -416,7 +416,7 @@ export function DashboardLayout({
         </header>
 
         {/* Page Content Area with Generous Whitespace (Full Width) */}
-        <main className="dashboard-content page-enter flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="dashboard-content page-enter flex-1 min-w-0 w-full overflow-x-hidden overflow-y-auto p-3.5 sm:p-5 lg:p-6">
           <div key={location.pathname} className="min-w-0">
             {children}
           </div>

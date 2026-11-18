@@ -67,10 +67,37 @@ export function StaffOrAdminRoute({ children }: { children: React.ReactNode }) {
  */
 export function DeliveryOrAdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  const user = authService.getStoredUser()
+  const [user, setUser] = useState<User | null>(() => authService.getStoredUser())
+  const [refreshing, setRefreshing] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+
+    if (!authService.isAuthenticated()) {
+      setRefreshing(false)
+      return () => { mounted = false }
+    }
+
+    authService.getCurrentUser()
+      .then((response) => {
+        if (mounted && response?.data?.user) setUser(response.data.user)
+      })
+      .catch(() => {
+        // Keep the cached profile during a temporary API outage.
+      })
+      .finally(() => {
+        if (mounted) setRefreshing(false)
+      })
+
+    return () => { mounted = false }
+  }, [])
 
   if (!user || !authService.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+
+  if (refreshing) {
+    return <div className="min-h-[45vh] flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">Loading delivery workspace...</div>
   }
 
   if (!authService.isDelivery(user)) {
