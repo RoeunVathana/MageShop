@@ -35,7 +35,7 @@ export function DashboardModal({ children, onClose, className }: DashboardModalP
   return createPortal(
     <div
       className={cn(
-        'dashboard-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4',
+        'dashboard-modal-backdrop fixed inset-0 z-[2147483000] isolate flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4',
         className
       )}
       onMouseDown={closeFromBackdrop}

@@ -348,7 +348,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[2147483000] isolate flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-background w-full max-w-md mx-auto max-h-[92vh] rounded-t-3xl flex flex-col border-t border-border shadow-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/60">
           <div className="flex items-center space-x-2 min-w-0">

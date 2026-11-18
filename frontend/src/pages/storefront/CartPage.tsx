@@ -2125,7 +2125,7 @@ export function CartPage() {
 
       {/* LIVE BAKONG KHQR SCAN-TO-PAY MODAL - COMPACT & SEAMLESS SINGLE-SCREEN UX */}
       {qrModalData && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-dvh animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[2147483000] isolate bg-black/80 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4 min-h-dvh animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-[370px] sm:max-w-[400px] w-full overflow-hidden shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col animate-in zoom-in-95 duration-150">
             {/* Official Red KHQR Top Bar */}
             <div className="bg-[#E1232E] text-white px-4 py-2.5 flex items-center justify-between shrink-0 shadow-sm">
@@ -2272,7 +2272,7 @@ export function CartPage() {
 
       {/* POPUP PAYMENT SUCCESS MODAL */}
       {paymentSuccessData && (
-        <div className="payment-success-overlay fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="payment-success-overlay fixed inset-0 z-[2147483000] isolate bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
           <div className="receipt-printable bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col max-h-[92vh]">
             {/* Celebratory Emerald Top Banner */}
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
@@ -2535,7 +2535,7 @@ export function CartPage() {
 
       {/* POPUP PAYMENT FALSE / FAILED MODAL */}
       {paymentFailedData && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[2147483000] isolate bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-rose-500/50 flex flex-col max-h-[92vh]">
             {/* Warning Red Top Banner */}
             <div className="bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">
@@ -2645,7 +2645,7 @@ export function CartPage() {
 
       {/* CUSTOMER LOGIN REQUIRED MODAL DIALOG */}
       {isLoginRequiredModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[2147483000] isolate bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-amber-500/40 flex flex-col max-h-[92vh]">
             {/* Top Amber / Orange Branded Banner */}
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-5 py-4 text-center relative overflow-hidden shrink-0">

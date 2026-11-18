@@ -104,7 +104,7 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[2147483000] isolate flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-background w-full max-w-md mx-auto h-[88vh] rounded-t-3xl flex flex-col border-t border-border shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="px-4 py-3 border-b border-border bg-card/60 backdrop-blur-md flex items-center justify-between">
