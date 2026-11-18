@@ -867,8 +867,8 @@ export function DeliveryDashboard() {
 
   return (
     <DashboardLayout
-      roleTitle="Staff & Delivery Fleet Control"
-      roleTitleKm="ការគ្រប់គ្រងបុគ្គលិក និងកងដឹកជញ្ជូន"
+      roleTitle="Delivery Operations"
+      roleTitleKm="ប្រតិបត្តិការដឹកជញ្ជូន"
       roleSlug="delivery"
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={visibleDeliveryNav}
@@ -877,30 +877,30 @@ export function DeliveryDashboard() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-5">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                {isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Staff & Delivery Location Manager', 'គ្រប់គ្រងបុគ្គលិក និងទីតាំងដឹកជញ្ជូន')}
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+              <h1 className="text-xl leading-tight sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
+                {isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Delivery Operations', 'ប្រតិបត្តិការដឹកជញ្ជូន')}
               </h1>
-              <Badge className="bg-indigo-600 text-white text-[11px] font-bold">
+              <Badge className="w-fit max-w-full whitespace-normal bg-indigo-600 text-center text-[10px] leading-5 sm:text-[11px] font-bold">
                 {t('Live GPS Active', 'GPS កំពុងដំណើរការ')}
               </Badge>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400 sm:text-xs sm:leading-5">
               {isDriverOnly
-                ? t('Accept assigned parcels, share live GPS, and confirm customer handover from one route view.', 'ទទួលកញ្ចប់ដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនអតិថិជនពីទិដ្ឋភាពផ្លូវតែមួយ។')
+                ? t('Manage assigned deliveries, share live GPS, and confirm handovers from one route view.', 'គ្រប់គ្រងការដឹកជញ្ជូនដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនពីទិដ្ឋភាពផ្លូវតែមួយ។')
                 : isFleetGpsViewer
-                  ? t('Monitor every driver GPS position and live delivery status across Cambodia.', 'តាមដានទីតាំង GPS របស់អ្នកដឹកជញ្ជូនគ្រប់រូប និងស្ថានភាពដឹកជញ្ជូនផ្ទាល់ទូទាំងកម្ពុជា។')
-                  : t('Manage customer delivery target locations, broadcast driver GPS coordinates, and monitor real-time fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូនរបស់អតិថិជន ផ្សព្វផ្សាយកូអរដោនេ GPS របស់អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារផ្ទាល់ទូទាំងកម្ពុជា។')}
+                  ? t('Monitor driver GPS and live delivery status across Cambodia.', 'តាមដាន GPS អ្នកដឹកជញ្ជូន និងស្ថានភាពដឹកជញ្ជូនផ្ទាល់ទូទាំងកម្ពុជា។')
+                  : t('Manage delivery locations, share driver GPS, and monitor fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូន ចែករំលែក GPS អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារទូទាំងកម្ពុជា។')}
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
             <Button
               type="button"
               size="sm"
               onClick={() => setIsContinuousDelivering((prev) => !prev)}
               disabled={!selectedOrder || !canEditAssignedDelivery}
-              className={`rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all ${
+              className={`w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all sm:w-auto ${
                 isContinuousDelivering
                   ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -916,7 +916,7 @@ export function DeliveryDashboard() {
               size="sm"
               onClick={handleBroadcastDeviceGps}
               disabled={broadcastingGps || !selectedOrder || !canEditAssignedDelivery}
-              className="rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm"
+              className="w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm sm:w-auto"
             >
               {broadcastingGps ? (
                 <>
@@ -940,7 +940,7 @@ export function DeliveryDashboard() {
                 if (canManagePricing) fetchDeliverySettings()
               }}
               disabled={loading || loadingSettings}
-              className="rounded-xl h-9 text-xs gap-1.5"
+              className="w-full justify-center rounded-xl h-9 text-xs gap-1.5 sm:w-auto"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || loadingSettings ? 'animate-spin' : ''}`} />
               {t('Refresh', 'ផ្ទុកឡើងវិញ')}
@@ -948,32 +948,32 @@ export function DeliveryDashboard() {
           </div>
         </div>
 
-        {/* View Switcher: Fleet Live Location vs Delivery Rates & Free Shipping */}
+        {/* View Switcher: live fleet map vs delivery rates */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('location')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:px-4 ${
                 activeTab === 'location'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
               <MapPin className="w-4 h-4" />
-              <span>{t('Fleet & Live Location', 'ទីតាំងកងដឹកជញ្ជូនផ្ទាល់')}</span>
+              <span>{t('Live Fleet Map', 'ផែនទីកងដឹកជញ្ជូនផ្ទាល់')}</span>
             </button>
             {canManagePricing && <button
               type="button"
               onClick={() => setActiveTab('pricing')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:px-4 ${
                 activeTab === 'pricing'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
               <DollarSign className="w-4 h-4" />
-              <span>{t('Delivery Rates & Free Shipping', 'តម្លៃដឹកជញ្ជូន និងការដឹកឥតគិតថ្លៃ')}</span>
+              <span>{t('Rates & Free Delivery', 'តម្លៃ និងការដឹកជញ្ជូនឥតគិតថ្លៃ')}</span>
               <Badge
                 className={`text-[10px] ml-1 font-bold ${
                   deliverySettings.is_free_delivery
@@ -988,8 +988,8 @@ export function DeliveryDashboard() {
 
           <div className="text-xs text-slate-500 font-medium px-2 hidden sm:block">
             {activeTab === 'pricing'
-              ? t('Admin Delivery Governance Mode', 'របៀបគ្រប់គ្រងការដឹកជញ្ជូនរបស់ Admin')
-              : t('Live Courier Telemetry Mode', 'របៀបតាមដាន Courier ផ្ទាល់')}
+              ? t('Delivery rate settings', 'ការកំណត់តម្លៃដឹកជញ្ជូន')
+              : t('Live fleet tracking', 'ការតាមដានកងដឹកជញ្ជូនផ្ទាល់')}
           </div>
         </div>
 
@@ -1091,7 +1091,7 @@ export function DeliveryDashboard() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('Search customer name, order #, phone, or street address...', 'ស្វែងរកឈ្មោះអតិថិជន លេខបញ្ជាទិញ ទូរស័ព្ទ ឬអាសយដ្ឋាន...')}
+                  placeholder={t('Search orders by customer, order #, phone, or address…', 'ស្វែងរកតាមអតិថិជន លេខបញ្ជាទិញ ទូរស័ព្ទ ឬអាសយដ្ឋាន…')}
                   className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
                 {searchQuery && (
@@ -1132,7 +1132,7 @@ export function DeliveryDashboard() {
             {/* Cambodia Zone Filter Chips */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                Cambodia Delivery Zones:
+                Delivery zones:
               </span>
               {[
                 { key: 'all', label: 'All Cambodia' },
@@ -1168,15 +1168,15 @@ export function DeliveryDashboard() {
             <Card className="rounded-2xl border-2 border-indigo-500/30 overflow-hidden bg-white dark:bg-slate-900 shadow-xl">
               {/* Map Header Bar */}
               <div className="gps-map-header bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="gps-map-coordinates flex items-center gap-2">
+                <div className="gps-map-coordinates flex min-w-0 flex-wrap items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <span className="font-mono font-bold text-emerald-400">
                     TARGET: {destLat.toFixed(4)}° N, {destLng.toFixed(4)}° E
                   </span>
-                  <span className="text-slate-400">|</span>
-                  <span className="font-bold text-slate-200">#{selectedOrder.order_number}</span>
+                  <span className="hidden text-slate-400 sm:inline">|</span>
+                  <span className="break-all font-bold text-slate-200">#{selectedOrder.order_number}</span>
                 </div>
-                <div className="gps-map-actions flex items-center gap-2">
+                <div className="gps-map-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                   <Badge className="bg-indigo-600 text-white text-[10px]">
                     ETA ~{selectedOrder.estimated_arrival || '—'}
                   </Badge>
@@ -1186,7 +1186,7 @@ export function DeliveryDashboard() {
                     onClick={() => openLocationModal(selectedOrder)}
                     className="h-7 text-xs text-white hover:bg-white/15 gap-1.5"
                   >
-                    <Edit3 className="w-3.5 h-3.5" /> Manage Location
+                    <Edit3 className="w-3.5 h-3.5" /> Edit location
                   </Button>
                 </div>
               </div>
@@ -1214,12 +1214,12 @@ export function DeliveryDashboard() {
                     </div>
                     <div className="min-w-0 text-xs">
                       <div className="flex min-w-0 flex-wrap items-center gap-1.5 font-bold text-emerald-400">
-                        <span>Customer Location Target</span>
+                        <span>Customer destination</span>
                         <span className="text-[10px] text-slate-300 font-normal break-words">
                           ({selectedOrder.customer_name})
                         </span>
                       </div>
-                      <p className="mt-0.5 max-w-full truncate text-[11px] font-medium text-slate-300 sm:max-w-xs">
+                      <p className="mt-0.5 max-w-full break-words text-[11px] font-medium text-slate-300 sm:max-w-xs">
                         {selectedOrder.delivery_address}
                       </p>
                     </div>
@@ -1231,7 +1231,7 @@ export function DeliveryDashboard() {
                     rel="noopener noreferrer"
                     className="gps-map-navigation pointer-events-auto self-start sm:self-auto px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
                   >
-                    <span>Google Maps Navigation</span>
+                    <span>Open route in Google Maps</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
@@ -1342,17 +1342,17 @@ export function DeliveryDashboard() {
 
           {/* RIGHT COLUMN (5 Cols): Orders Location Queue & Quick Dispatch */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="min-w-0 font-bold text-sm text-slate-800 dark:text-slate-200 flex items-start gap-2">
                 <Truck className="w-4 h-4 text-indigo-600" />
-                <span>
+                <span className="min-w-0">
                   {isDriverOnly
                     ? t('My Assigned Delivery Queue', 'បញ្ជីការដឹកជញ្ជូនដែលបានកំណត់ឱ្យខ្ញុំ')
-                    : t('Active Location Dispatch Queue', 'បញ្ជីចាត់ចែងទីតាំងសកម្ម')}{' '}
+                    : t('Active Delivery Queue', 'បញ្ជីការដឹកជញ្ជូនសកម្ម')}{' '}
                   ({filteredOrders.length})
                 </span>
               </h2>
-              <span className="text-xs text-slate-500">Click order to view map</span>
+              <span className="pl-6 text-xs text-slate-500 sm:pl-0">Select an order to view its route</span>
             </div>
 
             <div className="space-y-3">
@@ -1378,9 +1378,9 @@ export function DeliveryDashboard() {
                     >
                       <CardContent className="p-4 space-y-2.5">
                         <div className="flex items-start justify-between gap-2 text-xs">
-                          <div>
-                            <div className="flex items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
-                              <span>#{order.order_number}</span>
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
+                            <span className="break-all">#{order.order_number}</span>
                               {isDelivered ? (
                                 <Badge className="bg-emerald-500 text-white text-[10px]">Delivered</Badge>
                               ) : (
@@ -1418,14 +1418,14 @@ export function DeliveryDashboard() {
                         </div>
 
                         {/* Coordinates & Actions Bar */}
-                        <div className="flex items-center justify-between text-[11px] pt-1">
-                          <span className="font-mono text-slate-400">
+                        <div className="flex flex-col items-start gap-2 text-[11px] pt-1 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="max-w-full break-words font-mono text-slate-400">
                             GPS: {order.dest_lat == null || order.dest_lng == null
                               ? 'Unavailable'
                               : `${Number(order.dest_lat).toFixed(4)}° N, ${Number(order.dest_lng).toFixed(4)}° E`}
                           </span>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
                             {canEditAssignedDelivery && <Button
                               type="button"
                               size="sm"
@@ -1436,7 +1436,7 @@ export function DeliveryDashboard() {
                               }}
                               className="h-7 text-[11px] font-bold rounded-lg px-2.5 gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                             >
-                              <Edit3 className="w-3 h-3" /> Manage Location
+                              <Edit3 className="w-3 h-3" /> Edit location
                             </Button>}
                             {canManagePricing && (
                               <Button
@@ -1472,7 +1472,7 @@ export function DeliveryDashboard() {
           ) : (
             <Card className="rounded-3xl border-dashed border-2 p-10 text-center">
               <Package className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-              <h2 className="font-black text-lg text-slate-900 dark:text-slate-100">No live delivery orders</h2>
+              <h2 className="font-black text-lg text-slate-900 dark:text-slate-100">No delivery orders yet</h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
                 {ordersError || 'Orders will appear here after a customer places an order and your staff account can access the delivery queue.'}
               </p>

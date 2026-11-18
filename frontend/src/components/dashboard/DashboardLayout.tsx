@@ -319,9 +319,9 @@ export function DashboardLayout({
                 {t('Home', 'ទំព័រដើម')}
               </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="dashboard-breadcrumb-role max-w-[12rem] truncate font-semibold text-slate-800 dark:text-slate-200">{localizedRoleTitle}</span>
+              <span className="dashboard-breadcrumb-role max-w-[min(12rem,42vw)] truncate font-semibold text-slate-800 dark:text-slate-200">{localizedRoleTitle}</span>
               <ChevronRight className="w-3.5 h-3.5 hidden sm:inline" />
-              <span className="dashboard-breadcrumb-page capitalize hidden max-w-[10rem] truncate sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
+              <span className="dashboard-breadcrumb-page capitalize hidden max-w-[min(10rem,30vw)] truncate sm:inline text-indigo-600 dark:text-indigo-400 font-medium">
                 {localizedPageTitle}
               </span>
             </div>
