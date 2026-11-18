@@ -198,7 +198,14 @@ export class ReceiptService {
     const from = await this.mailSetting('mail_from_address') || this.config.get<string>('MAIL_FROM_ADDRESS', 'no-reply@tyushop.blog');
     const fromName = await this.mailSetting('mail_from_name') || this.config.get<string>('MAIL_FROM_NAME', 'TYUSHOP');
     const text = this.emailText(order, receipt, payment, withPdf, items);
-    const body: Record<string, unknown> = { from: `${fromName} <${from}>`, to: [order.customer_email], subject: withPdf ? `TYUSHOP Payment Receipt #${receipt.receipt_number}` : `TYUSHOP Order Confirmation #${order.order_number}`, text };
+    const html = this.emailHtml(order, receipt, payment, withPdf, items);
+    const body: Record<string, unknown> = {
+      from: `${fromName} <${from}>`,
+      to: [order.customer_email],
+      subject: withPdf ? `TYUSHOP Payment Receipt #${receipt.receipt_number}` : `TYUSHOP Order Confirmation #${order.order_number}`,
+      text,
+      html,
+    };
     if (withPdf && pdf) body.attachments = [{ filename: basename(`receipt-${receipt.receipt_number}.pdf`), content: pdf.toString('base64') }];
     try {
       const controller = new AbortController();
@@ -226,42 +233,53 @@ export class ReceiptService {
         ? '🟠 CASH ON DELIVERY'
         : `⏳ ${rawPaymentStatus.replaceAll('_', ' ').toUpperCase()}`;
     const itemLines = items.length
-      ? items.map((item) => {
+      ? items.slice(0, 20).map((item) => {
         const itemTotal = Number(item.total_price ?? 0);
         const itemCurrency = String(order.currency ?? 'USD').toUpperCase();
         const itemAmount = itemCurrency === 'USD' ? `$${itemTotal.toFixed(2)}` : `${itemTotal.toFixed(2)} ${itemCurrency}`;
-        return `• ${String(item.quantity ?? 0)}x ${String(item.product_name ?? 'Product')} — ${itemAmount}`;
+        return `• <b>${this.escape(String(item.quantity ?? 0))}×</b> ${this.escape(String(item.product_name ?? 'Product'))} <i>— ${this.escape(itemAmount)}</i>`;
       }).join('\n')
       : '• No order items recorded';
-    const customerPhone = String(order['customer_phone'] ?? '-');
-    const deliveryAddress = String(order['delivery_address'] ?? '-');
+    const omittedItems = items.length > 20 ? `\n<i>…and ${items.length - 20} more item(s)</i>` : '';
+    const customerPhone = this.escape(String(order['customer_phone'] ?? '-'));
+    const deliveryAddress = this.escape(String(order['delivery_address'] ?? '-'));
     const trackingUrl = `https://tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
+    const miniAppUrl = await this.setting('telegram_mini_app_url', this.config.get<string>('TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'));
     const issuedAt = this.reportTimestamp(order.updated_at ?? order.created_at ?? Date.now());
     const currency = String(order.currency ?? 'USD').toUpperCase();
     const totalText = currency === 'USD' ? `$${amount.toFixed(2)} USD` : `${amount.toFixed(2)} ${currency}`;
     const message = [
-      `🚨 TYUSHOP — PAYMENT & ORDER REPORT`,
+      '🚨 <b>TYUSHOP | PAYMENT &amp; ORDER</b>',
+      '<i>New order activity requires your attention</i>',
       '━━━━━━━━━━━━━━━━━━━━━━',
-      `🧾 Order ID: #${order.order_number}`,
-      `📄 Receipt No: #${receipt.receipt_number}`,
-      `🔐 Transaction: ${String(payment?.transaction_reference ?? '-')}`,
-      `💳 Method: ${paymentMethod}`,
-      `📌 Status: ${paymentStatus}`,
-      `💰 Total Amount: ${totalText} (≈ ${amountKhr.toLocaleString()} ៛)`,
+      '<b>🧾 ORDER SUMMARY</b>',
+      `Order: <code>#${this.escape(order.order_number)}</code>`,
+      `Receipt: <code>#${this.escape(receipt.receipt_number)}</code>`,
+      `Transaction: <code>${this.escape(String(payment?.transaction_reference ?? '-'))}</code>`,
+      `Payment: <b>${this.escape(paymentMethod)}</b>`,
+      `Status: <b>${this.escape(paymentStatus)}</b>`,
+      `Total: <b>${this.escape(totalText)}</b> <i>(≈ ${amountKhr.toLocaleString()} ៛)</i>`,
       '',
-      '👤 CUSTOMER INFORMATION',
-      `• Name: ${String(order.customer_name ?? '-')}`,
-      `• Phone: ${customerPhone}`,
-      `• Email: ${String(order.customer_email ?? '-')}`,
-      `• Address: ${deliveryAddress}`,
+      '<b>👤 CUSTOMER</b>',
+      `Name: ${this.escape(String(order.customer_name ?? '-'))}`,
+      `Phone: ${customerPhone}`,
+      `Email: ${this.escape(String(order.customer_email ?? '-'))}`,
+      `Address: ${deliveryAddress}`,
       '',
-      '📦 ORDER ITEMS',
-      itemLines,
+      '<b>📦 ITEMS</b>',
+      itemLines + omittedItems,
       '',
-      `🎁 Loyalty Points: +${Number(order['points_earned'] ?? 5)} pts`,
-      `🚚 GPS Tracking: ${trackingUrl}`,
-      `🕒 Time: ${issuedAt}`,
+      `🎁 Loyalty points: <b>+${Number(order['points_earned'] ?? 5)} pts</b>`,
+      `🕒 Reported: ${this.escape(issuedAt)}`,
+      '',
+      `<a href="${trackingUrl}">🚚 Open live delivery tracking</a>`,
     ].join('\n');
+    const replyMarkup = {
+      inline_keyboard: [[
+        { text: '🚚 View Delivery', url: trackingUrl },
+        { text: '🛍️ Open Mini App', web_app: { url: miniAppUrl } },
+      ]],
+    };
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
@@ -269,7 +287,7 @@ export class ReceiptService {
         const messageResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
+          body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: replyMarkup }),
           signal: controller.signal,
         });
         if (messageResponse.ok) return true;
@@ -281,7 +299,7 @@ export class ReceiptService {
         const photoResponse = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, photo, caption: message.slice(0, 1024) }),
+          body: JSON.stringify({ chat_id: chatId, photo, caption: message.replace(/<[^>]+>/g, '').slice(0, 1024), reply_markup: replyMarkup }),
           signal: controller.signal,
         });
         return photoResponse.ok;
@@ -327,8 +345,60 @@ export class ReceiptService {
   }
 
   private emailText(order: OrderRow, receipt: ReceiptRow, payment: Record<string, unknown> | null, withPdf: boolean, items: Array<Record<string, unknown>>): string {
-    const lines = items.map((item) => `- ${String(item.product_name ?? 'Product')} x ${String(item.quantity ?? 0)}: ${String(item.total_price ?? 0)} USD`).join('\n');
-    return `${withPdf ? 'Payment receipt' : 'Order confirmation'} for ${order.order_number}\nReceipt: ${receipt.receipt_number}\nCustomer: ${order.customer_name ?? '-'}\nPayment: ${String(payment?.payment_method ?? '-')}\nTotal: ${String(order.total_amount)} ${order.currency ?? 'USD'}\n\n${lines}\n\nTrack: https://www.tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
+    const lines = items.length
+      ? items.map((item) => `- ${String(item.product_name ?? 'Product')} × ${String(item.quantity ?? 0)}: ${String(item.total_price ?? 0)} ${order.currency ?? 'USD'}`).join('\n')
+      : '- No order items recorded';
+    const paymentStatus = this.paymentStatusText(order, payment);
+    return [
+      `TYUSHOP ${withPdf ? 'PAYMENT RECEIPT' : 'ORDER CONFIRMATION'}`,
+      '========================================',
+      `Order: #${order.order_number}`,
+      `Receipt: #${receipt.receipt_number}`,
+      `Status: ${paymentStatus}`,
+      `Payment: ${String(payment?.payment_method ?? order.payment_method ?? '-')}`,
+      `Total: ${String(order.total_amount)} ${order.currency ?? 'USD'}`,
+      '',
+      `Customer: ${order.customer_name ?? '-'}`,
+      `Email: ${order.customer_email ?? '-'}`,
+      `Phone: ${order['customer_phone'] ?? '-'}`,
+      `Delivery address: ${order['delivery_address'] ?? '-'}`,
+      '',
+      'ITEMS',
+      lines,
+      '',
+      `Track delivery: https://www.tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`,
+      '',
+      'Thank you for shopping with TYUSHOP.',
+    ].join('\n');
+  }
+
+  private emailHtml(order: OrderRow, receipt: ReceiptRow, payment: Record<string, unknown> | null, withPdf: boolean, items: Array<Record<string, unknown>>): string {
+    const orderNumber = this.escape(order.order_number);
+    const receiptNumber = this.escape(receipt.receipt_number);
+    const trackingUrl = `https://tyushop.blog/track-order/${encodeURIComponent(order.order_number)}`;
+    const paymentStatus = this.paymentStatusText(order, payment);
+    const isPaid = ['paid', 'completed', 'verified'].includes(String(payment?.status ?? order.payment_status ?? '').toLowerCase());
+    const statusColor = isPaid ? '#047857' : '#b45309';
+    const statusBackground = isPaid ? '#d1fae5' : '#fef3c7';
+    const paymentMethod = this.escape(String(payment?.payment_method ?? order.payment_method ?? '-').replaceAll('_', ' ').toUpperCase());
+    const currency = this.escape(String(order.currency ?? 'USD').toUpperCase());
+    const total = this.escape(`${Number(order.total_amount ?? 0).toFixed(2)} ${order.currency ?? 'USD'}`);
+    const customerName = this.escape(String(order.customer_name ?? '-'));
+    const customerEmail = this.escape(String(order.customer_email ?? '-'));
+    const customerPhone = this.escape(String(order['customer_phone'] ?? '-'));
+    const address = this.escape(String(order['delivery_address'] ?? 'Delivery address not provided'));
+    const reportedAt = this.escape(this.reportTimestamp(order.updated_at ?? order.created_at ?? Date.now()));
+    const itemRows = items.length
+      ? items.map((item) => `<tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#172033;font-weight:600;">${this.escape(String(item.product_name ?? 'Product'))}</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;text-align:center;color:#64748b;">${this.escape(String(item.quantity ?? 0))}</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;text-align:right;color:#172033;font-weight:700;">${this.escape(String(item.total_price ?? 0))} ${currency}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="padding:12px 0;color:#64748b;">No order items recorded.</td></tr>';
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TYUSHOP ${withPdf ? 'Payment Receipt' : 'Order Confirmation'} #${orderNumber}</title></head><body style="margin:0;background:#f1f5f9;color:#172033;font-family:Arial,Helvetica,sans-serif;"><div style="padding:28px 12px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(15,23,42,.10);"><tr><td style="padding:28px 32px;background:linear-gradient(135deg,#102a56,#2563eb);color:#ffffff;"><div style="font-size:26px;font-weight:800;letter-spacing:.04em;">TYUSHOP</div><div style="margin-top:6px;color:#dbeafe;font-size:14px;">${withPdf ? 'Payment receipt & delivery details' : 'Your order has been received'}</div></td></tr><tr><td style="padding:28px 32px 10px;"><div style="font-size:22px;font-weight:800;">${withPdf ? 'Payment received successfully' : 'Thank you for your order'} 🎉</div><p style="margin:8px 0 0;color:#64748b;font-size:14px;line-height:1.6;">Order <strong style="color:#172033;">#${orderNumber}</strong> is recorded in your TYUSHOP account.</p></td></tr><tr><td style="padding:16px 32px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:${statusBackground};border-radius:14px;"><tr><td style="padding:16px 18px;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:${statusColor};font-weight:800;">Payment status</div><div style="margin-top:5px;font-size:18px;color:${statusColor};font-weight:800;">${this.escape(paymentStatus)}</div><div style="margin-top:6px;font-size:13px;color:#475569;">${paymentMethod} · ${total}</div></td></tr></table></td></tr><tr><td style="padding:8px 32px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr><td style="padding:12px 0;color:#64748b;font-size:13px;">Receipt number</td><td style="padding:12px 0;text-align:right;font-family:monospace;font-weight:700;font-size:13px;">#${receiptNumber}</td></tr><tr><td style="padding:12px 0;color:#64748b;font-size:13px;border-top:1px solid #e5e7eb;">Reported at</td><td style="padding:12px 0;text-align:right;font-size:13px;border-top:1px solid #e5e7eb;">${reportedAt}</td></tr></table></td></tr><tr><td style="padding:16px 32px;"><div style="font-size:16px;font-weight:800;margin-bottom:8px;">📦 Order items</div><table role="presentation" cellpadding="0" cellspacing="0" width="100%"><thead><tr><th align="left" style="padding:8px 0;color:#94a3b8;font-size:11px;text-transform:uppercase;">Product</th><th align="center" style="padding:8px 0;color:#94a3b8;font-size:11px;text-transform:uppercase;">Qty</th><th align="right" style="padding:8px 0;color:#94a3b8;font-size:11px;text-transform:uppercase;">Total</th></tr></thead><tbody>${itemRows}</tbody></table></td></tr><tr><td style="padding:16px 32px;"><div style="font-size:16px;font-weight:800;margin-bottom:10px;">👤 Customer & delivery</div><div style="padding:16px;background:#f8fafc;border-radius:14px;font-size:13px;line-height:1.8;color:#475569;"><strong style="color:#172033;">${customerName}</strong><br>${customerEmail}<br>${customerPhone}<br><span style="color:#172033;font-weight:600;">${address}</span></div></td></tr><tr><td style="padding:18px 32px 28px;text-align:center;"><a href="${trackingUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:13px 24px;border-radius:12px;font-size:14px;font-weight:800;">🚚 Track my delivery</a><p style="margin:14px 0 0;font-size:12px;color:#64748b;">You can follow delivery status and courier GPS from the tracking page.</p></td></tr><tr><td style="padding:18px 32px;background:#f8fafc;color:#64748b;font-size:12px;line-height:1.6;text-align:center;">TYUSHOP · Cambodia Online Marketplace<br>Need help? Reply to this email or contact TYUSHOP support.</td></tr></table></div></body></html>`;
+  }
+
+  private paymentStatusText(order: OrderRow, payment: Record<string, unknown> | null): string {
+    const rawStatus = String(payment?.status ?? order.payment_status ?? order.status).toLowerCase();
+    if (['completed', 'paid', 'verified'].includes(rawStatus)) return 'PAID & VERIFIED';
+    if (['pending_arrival', 'cash_on_delivery'].includes(rawStatus) || String(payment?.payment_method ?? order.payment_method ?? '').toLowerCase() === 'cash_on_delivery') return 'CASH ON DELIVERY';
+    return rawStatus.replaceAll('_', ' ').toUpperCase();
   }
 
   private escape(value: string): string { return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? character); }
