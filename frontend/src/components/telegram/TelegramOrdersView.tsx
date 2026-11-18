@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock, Download, ExternalLink, MapPin, Navigation, Package, RefreshCw, Truck } from 'lucide-react';
 import { telegramApi } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramOrdersViewProps {
   orders: any[];
@@ -8,6 +9,7 @@ interface TelegramOrdersViewProps {
 }
 
 export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, onStartShopping }) => {
+  const { t } = useShopEngagement();
   const [trackingOrderNumber, setTrackingOrderNumber] = useState<string | null>(null);
   const [tracking, setTracking] = useState<Record<string, any> | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
@@ -40,15 +42,15 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
         <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-500 mx-auto">
           <Package className="w-8 h-8 opacity-70" />
         </div>
-        <h3 className="font-bold text-sm text-foreground">No orders recorded yet</h3>
+        <h3 className="font-bold text-sm text-foreground">{t('No orders recorded yet', 'មិនទាន់មានការបញ្ជាទិញទេ')}</h3>
         <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-          Explore genuine electronics and lifestyle products with instant Bakong KHQR checkout.
+          {t('Explore genuine electronics and lifestyle products with instant Bakong KHQR checkout.', 'ស្វែងរកទំនិញពិតប្រាកដ និងបង់ប្រាក់តាមបាគង KHQR បានភ្លាមៗ។')}
         </p>
         <button
           onClick={onStartShopping}
           className="mt-2 bg-indigo-600 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-xs"
         >
-          Browse Products
+          {t('Browse Products', 'មើលទំនិញ')}
         </button>
       </div>
     );
@@ -61,7 +63,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
         return (
           <span className="inline-flex items-center space-x-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
             <CheckCircle2 className="w-2.5 h-2.5" />
-            <span>Delivered</span>
+            <span>{t('Delivered', 'បានដឹកជញ្ជូន')}</span>
           </span>
         );
       case 'shipped':
@@ -69,14 +71,14 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
         return (
           <span className="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
             <Truck className="w-2.5 h-2.5" />
-            <span>In Transit</span>
+            <span>{t('In Transit', 'កំពុងដឹកជញ្ជូន')}</span>
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center space-x-1 bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
             <Clock className="w-2.5 h-2.5" />
-            <span>Processing</span>
+            <span>{t('Processing', 'កំពុងរៀបចំ')}</span>
           </span>
         );
     }
@@ -85,8 +87,8 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
   return (
     <div className="p-4 space-y-3 pb-24">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-foreground">Order History & Invoices</h2>
-        <span className="text-xs text-muted-foreground">{orders.length} orders</span>
+        <h2 className="text-sm font-bold text-foreground">{t('Order History & Invoices', 'ប្រវត្តិការបញ្ជាទិញ និងវិក្កយបត្រ')}</h2>
+        <span className="text-xs text-muted-foreground">{orders.length} {t('orders', 'ការបញ្ជាទិញ')}</span>
       </div>
 
       <div className="space-y-3">
@@ -117,7 +119,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
               </div>
 
               <div className="flex items-center justify-between text-xs py-1 border-t border-border/60">
-                <span className="text-muted-foreground">Settled Amount:</span>
+                <span className="text-muted-foreground">{t('Settled Amount:', 'ចំនួនទឹកប្រាក់៖')}</span>
                 <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
                   ${Number(ord.total_amount).toFixed(2)} USD
                 </span>
@@ -125,7 +127,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
 
               {ord.tracking_number && (
                 <div className="text-[11px] bg-muted/60 p-2 rounded-xl flex items-center justify-between">
-                  <span className="text-muted-foreground">Tracking Code:</span>
+                  <span className="text-muted-foreground">{t('Tracking Code:', 'លេខតាមដាន៖')}</span>
                   <span className="font-mono font-bold text-foreground">{ord.tracking_number}</span>
                 </div>
               )}
@@ -137,7 +139,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                   className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300"
                 >
                   {trackingLoading && isTrackingThisOrder ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Truck className="h-3.5 w-3.5" />}
-                  <span>{isTrackingThisOrder && tracking ? 'Hide delivery' : 'View delivery'}</span>
+                  <span>{isTrackingThisOrder && tracking ? t('Hide delivery', 'លាក់ព័ត៌មានដឹកជញ្ជូន') : t('View delivery', 'មើលការដឹកជញ្ជូន')}</span>
                 </button>
                 <a
                   href={receiptUrl}
@@ -146,7 +148,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                   className="inline-flex items-center space-x-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF Receipt</span>
+                  <span>{t('Download PDF Receipt', 'ទាញយកបង្កាន់ដៃ PDF')}</span>
                 </a>
               </div>
 
@@ -165,21 +167,21 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                   ) : tracking ? (
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-emerald-800 dark:text-emerald-200">Delivery status</span>
+                        <span className="font-bold text-emerald-800 dark:text-emerald-200">{t('Delivery status', 'ស្ថានភាពដឹកជញ្ជូន')}</span>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 shadow-xs dark:bg-emerald-950 dark:text-emerald-300">
                           {String(tracking.status || 'processing').replaceAll('_', ' ')}
                         </span>
                       </div>
                       <div className="flex items-start gap-2 text-muted-foreground">
                         <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                        <span>{tracking.delivery_address || 'Delivery address is not available yet.'}</span>
+                        <span>{tracking.delivery_address || t('Delivery address is not available yet.', 'មិនទាន់មានអាសយដ្ឋានដឹកជញ្ជូនទេ។')}</span>
                       </div>
                       <div className="flex items-start gap-2 text-muted-foreground">
                         <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                         <span>
                           {hasLiveGps
-                            ? `Courier GPS is live: ${Number(gps.current_lat).toFixed(5)}, ${Number(gps.current_lng).toFixed(5)}`
-                            : 'Courier GPS is waiting for the delivery driver to start broadcasting.'}
+                            ? `${t('Courier GPS is live:', 'GPS អ្នកដឹកជញ្ជូនកំពុងដំណើរការ៖')} ${Number(gps.current_lat).toFixed(5)}, ${Number(gps.current_lng).toFixed(5)}`
+                            : t('Courier GPS is waiting for the delivery driver to start broadcasting.', 'កំពុងរង់ចាំអ្នកដឹកជញ្ជូនបើក GPS។')}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-0.5">
@@ -191,7 +193,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-700"
                           >
                             <Navigation className="h-3.5 w-3.5" />
-                            <span>Open live map</span>
+                            <span>{t('Open live map', 'បើកផែនទីផ្ទាល់')}</span>
                           </a>
                         )}
                         <a
@@ -201,7 +203,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                           className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
-                          <span>Full tracking page</span>
+                          <span>{t('Full tracking page', 'ទំព័រតាមដានពេញលេញ')}</span>
                         </a>
                       </div>
                     </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, ShoppingBag, Check, AlertCircle } from 'lucide-react';
 import { ProductItem } from '@/services/telegramApi';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramProductCardProps {
   product: ProductItem;
@@ -10,6 +11,7 @@ interface TelegramProductCardProps {
 
 export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ product, onSelect }) => {
   const { addItem, items } = useTelegramCartStore();
+  const { t } = useShopEngagement();
   const cartItem = items.find((i) => i.product.id === product.id);
   const inCartQty = cartItem?.quantity || 0;
 
@@ -54,7 +56,7 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
           {product.is_featured && (
             <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-              Featured
+              {t('Featured', 'ពេញនិយម')}
             </span>
           )}
           {hasDiscount && (
@@ -68,12 +70,12 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
         <div className="absolute top-2 right-2">
           {isOutOfStock ? (
             <span className="bg-slate-800/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-              Sold Out
+              {t('Sold Out', 'អស់ពីស្តុក')}
             </span>
           ) : isLowStock ? (
             <span className="bg-amber-500/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center space-x-0.5">
               <AlertCircle className="w-2.5 h-2.5" />
-              <span>Only {product.stock_quantity} left</span>
+              <span>{t(`Only ${product.stock_quantity} left`, `នៅសល់តែ ${product.stock_quantity}`)}</span>
             </span>
           ) : null}
         </div>
@@ -83,7 +85,7 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>{product.category?.name || 'Catalog'}</span>
+            <span>{product.category?.name || t('Catalog', 'កាតាឡុក')}</span>
             <span className="font-mono text-[10px]">{product.sku}</span>
           </div>
 
@@ -111,7 +113,7 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-muted-foreground">Bakong KHQR</div>
+            <div className="text-[10px] text-muted-foreground">{t('Bakong KHQR', 'បាគង KHQR')}</div>
           </div>
 
           <button
@@ -124,7 +126,7 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs active:scale-95'
             }`}
-            title="Add to Cart"
+            title={t('Add to Cart', 'បន្ថែមទៅកន្ត្រក')}
           >
             {inCartQty > 0 ? (
               <div className="flex items-center space-x-1">

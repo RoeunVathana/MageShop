@@ -12,6 +12,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { StoreSettings } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramProfileViewProps {
   userProfile?: any;
@@ -34,6 +35,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
 }) => {
   const user = userProfile?.user;
   const tg = userProfile?.telegram;
+  const { t } = useShopEngagement();
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -63,7 +65,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
           </div>
           <div className="text-[10px] text-emerald-600 font-semibold flex items-center space-x-1 mt-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>Authenticated Telegram Session</span>
+            <span>{t('Authenticated Telegram Session', 'សម័យ Telegram បានផ្ទៀងផ្ទាត់')}</span>
           </div>
         </div>
       </div>
@@ -76,7 +78,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              TYUSHOP Wallet
+              {t('TYUSHOP Wallet', 'កាបូប TYUSHOP')}
             </div>
             <div className="text-sm font-extrabold text-foreground">
               $0.00 USD <span className="text-[10px] font-normal text-muted-foreground">(0 pts)</span>
@@ -91,7 +93,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
 
       {/* Real Store Details Card */}
       <div className="bg-card rounded-2xl border border-border p-3.5 space-y-2.5 shadow-2xs">
-        <h4 className="text-xs font-bold text-foreground">Verified Store Flagship</h4>
+          <h4 className="text-xs font-bold text-foreground">{t('Verified Store Flagship', 'ហាងផ្លូវការដែលបានផ្ទៀងផ្ទាត់')}</h4>
         <div className="space-y-1.5 text-xs text-muted-foreground">
           <div className="flex items-start space-x-2">
             <MapPin className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
@@ -112,11 +114,11 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
         <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-3.5 space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs font-bold text-foreground">Seller Workspace</h4>
-              <p className="text-[11px] text-muted-foreground">View your listings, revenue, and seller orders inside Telegram.</p>
+              <h4 className="text-xs font-bold text-foreground">{t('Seller Workspace', 'កន្លែងធ្វើការអ្នកលក់')}</h4>
+              <p className="text-[11px] text-muted-foreground">{t('View your listings, revenue, and seller orders inside Telegram.', 'មើលទំនិញ ចំណូល និងការបញ្ជាទិញរបស់អ្នកលក់ក្នុង Telegram។')}</p>
             </div>
             <button onClick={onToggleSellerMode} className="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white">
-              {sellerModeActive ? 'Shop' : 'Open'}
+              {sellerModeActive ? t('Shop', 'ហាង') : t('Open', 'បើក')}
             </button>
           </div>
         </div>
@@ -124,28 +126,28 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
 
       {/* Demo Sandbox Role Switcher */}
       <div className="bg-card rounded-2xl border border-border p-3.5 space-y-2">
-        <h4 className="text-xs font-bold text-foreground">Developer Preview Roles</h4>
+        <h4 className="text-xs font-bold text-foreground">{t('Developer Preview Roles', 'តួនាទីសម្រាប់សាកល្បង')}</h4>
         <p className="text-[11px] text-muted-foreground">
-          Test the Mini App experience with different roles in sandbox mode.
+          {t('Test the Mini App experience with different roles in sandbox mode.', 'សាកល្បង Mini App ជាមួយតួនាទីផ្សេងៗក្នុងរបៀបសាកល្បង។')}
         </p>
         <div className="grid grid-cols-3 gap-2 pt-1">
           <button
             onClick={() => onSwitchRole?.('customer')}
             className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:border-indigo-500 transition-colors"
           >
-            Shopper Mode
+            {t('Shopper Mode', 'របៀបអតិថិជន')}
           </button>
           <button
             onClick={() => onSwitchRole?.('admin')}
             className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition-colors"
           >
-            Staff Admin Mode
+            {t('Staff Admin Mode', 'របៀបអ្នកគ្រប់គ្រង')}
           </button>
           <button
             onClick={() => onSwitchRole?.('seller')}
             className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-colors"
           >
-            Seller Mode
+            {t('Seller Mode', 'របៀបអ្នកលក់')}
           </button>
         </div>
       </div>

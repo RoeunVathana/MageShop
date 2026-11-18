@@ -1,6 +1,7 @@
 import React from 'react';
-import { Store, ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness } from 'lucide-react';
+import { Store, ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness, Languages } from 'lucide-react';
 import { useTheme } from '@/context/ThemeProvider';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 import { StoreSettings } from '@/services/telegramApi';
 
 interface TelegramHeaderProps {
@@ -29,6 +30,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
   onOpenProfile,
 }) => {
   const { setTheme, isDark } = useTheme();
+  const { language, setLanguage, t } = useShopEngagement();
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2.5 transition-colors">
@@ -56,7 +58,7 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
             </div>
             <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-              Verified Flagship • Bakong KHQR
+              {t('Verified Flagship • Bakong KHQR', 'ហាងផ្លូវការ • បាគង KHQR')}
             </p>
           </div>
         </div>
@@ -72,10 +74,10 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
                   ? 'bg-amber-500 text-white shadow-sm'
                   : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
               }`}
-              title="Toggle Staff Mode"
+              title={t('Toggle Staff Mode', 'ប្តូររបៀបបុគ្គលិក')}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span className="text-[10px] hidden sm:inline">{adminModeActive ? 'Admin' : 'Staff'}</span>
+              <span className="text-[10px] hidden sm:inline">{adminModeActive ? t('Admin', 'អ្នកគ្រប់គ្រង') : t('Staff', 'បុគ្គលិក')}</span>
             </button>
           )}
 
@@ -87,18 +89,28 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
               }`}
-              title="Toggle Seller Workspace"
+              title={t('Toggle Seller Workspace', 'ប្តូរកន្លែងធ្វើការអ្នកលក់')}
             >
               <BriefcaseBusiness className="w-3.5 h-3.5" />
-              <span className="text-[10px] hidden sm:inline">{sellerModeActive ? 'Shop' : 'Seller'}</span>
+              <span className="text-[10px] hidden sm:inline">{sellerModeActive ? t('Shop', 'ហាង') : t('Seller', 'អ្នកលក់')}</span>
             </button>
           )}
 
           {/* Theme Toggle */}
           <button
+            onClick={() => setLanguage(language === 'EN' ? 'KM' : 'EN')}
+            className="flex items-center gap-1 rounded-xl bg-muted/70 px-2 py-1.5 text-[10px] font-bold text-foreground transition-colors hover:bg-muted"
+            title={t('Switch language', 'ប្តូរភាសា')}
+            aria-label={t('Switch language', 'ប្តូរភាសា')}
+          >
+            <Languages className="h-3.5 w-3.5 text-indigo-500" />
+            <span>{language === 'EN' ? 'ខ្មែរ' : 'EN'}</span>
+          </button>
+
+          <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            title="Toggle Theme"
+            title={t('Toggle Theme', 'ប្តូររូបរាង')}
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>

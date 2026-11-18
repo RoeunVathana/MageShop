@@ -27,8 +27,10 @@ import { TelegramAdminView } from '@/components/telegram/TelegramAdminView';
 import { TelegramSellerView } from '@/components/telegram/TelegramSellerView';
 import { TelegramProfileView } from '@/components/telegram/TelegramProfileView';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export const TelegramApp: React.FC = () => {
+  const { t } = useShopEngagement();
   const [currentTab, setCurrentTab] = useState<TelegramViewTab>('home');
   const [storeSettings, setStoreSettings] = useState<StoreSettings | undefined>(undefined);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -145,11 +147,11 @@ export const TelegramApp: React.FC = () => {
   const isUserSeller = Array.isArray(userProfile?.user?.roles) && userProfile.user.roles.some((role: unknown) => ['SELLER', 'SELLER_STAFF'].includes(String(role).toUpperCase()));
 
   const sectionTabs = [
-    { id: 'all', label: 'All Items' },
-    { id: 'featured', label: 'Featured', icon: Flame },
-    { id: 'flash_sales', label: 'Flash Sale', icon: Zap },
-    { id: 'best_sellers', label: 'Top Rated', icon: Award },
-    { id: 'new', label: 'New Arrivals' },
+    { id: 'all', label: t('All Items', 'ទំនិញទាំងអស់') },
+    { id: 'featured', label: t('Featured', 'ពេញនិយម'), icon: Flame },
+    { id: 'flash_sales', label: t('Flash Sale', 'ការបញ្ចុះតម្លៃរហ័ស'), icon: Zap },
+    { id: 'best_sellers', label: t('Top Rated', 'ពេញនិយមបំផុត'), icon: Award },
+    { id: 'new', label: t('New Arrivals', 'ទំនិញថ្មី') },
   ];
 
   return (
@@ -200,7 +202,7 @@ export const TelegramApp: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search genuine electronics, SKU, brand..."
+                    placeholder={t('Search genuine electronics, SKU, brand...', 'ស្វែងរកអេឡិចត្រូនិក SKU ឬម៉ាក...')}
                     className="w-full bg-muted/60 border border-border/80 rounded-2xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-foreground placeholder:text-muted-foreground"
                   />
                   {searchQuery && (
@@ -243,13 +245,13 @@ export const TelegramApp: React.FC = () => {
                 {loading ? (
                   <div className="py-16 text-center space-y-2">
                     <RefreshCw className="w-7 h-7 text-indigo-500 animate-spin mx-auto" />
-                    <p className="text-xs text-muted-foreground">Retrieving store inventory...</p>
+                    <p className="text-xs text-muted-foreground">{t('Retrieving store inventory...', 'កំពុងទាញយកស្តុកទំនិញ...')}</p>
                   </div>
                 ) : products.length === 0 ? (
                   <div className="py-16 text-center space-y-2">
                     <ShoppingBag className="w-10 h-10 text-muted-foreground/30 mx-auto" />
-                    <p className="text-sm font-semibold text-foreground">No products found</p>
-                    <p className="text-xs text-muted-foreground">Try clearing filters or search query.</p>
+                    <p className="text-sm font-semibold text-foreground">{t('No products found', 'រកមិនឃើញទំនិញទេ')}</p>
+                    <p className="text-xs text-muted-foreground">{t('Try clearing filters or search query.', 'សូមសម្អាតតម្រង ឬសាកល្បងពាក្យស្វែងរកផ្សេង។')}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
@@ -262,7 +264,7 @@ export const TelegramApp: React.FC = () => {
             </div>
           ) : currentTab === 'categories' ? (
             <div className="p-4 space-y-3 pb-24">
-              <h2 className="text-sm font-bold text-foreground">All Departments</h2>
+              <h2 className="text-sm font-bold text-foreground">{t('All Departments', 'ផ្នែកទំនិញទាំងអស់')}</h2>
               <div className="grid grid-cols-2 gap-2.5">
                 {categories.map((c) => (
                   <button
@@ -274,7 +276,7 @@ export const TelegramApp: React.FC = () => {
                     className="bg-card p-3.5 rounded-2xl border border-border text-left hover:border-indigo-500 shadow-2xs transition-all space-y-1"
                   >
                     <div className="font-bold text-xs text-foreground">{c.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{c.products_count} products</div>
+                    <div className="text-[10px] text-muted-foreground">{c.products_count} {t('products', 'មុខទំនិញ')}</div>
                   </button>
                 ))}
               </div>

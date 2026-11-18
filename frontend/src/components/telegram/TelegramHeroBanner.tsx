@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, Wallet, QrCode, Truck, ArrowRight } from 'lucide-react';
 import { StoreSettings } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramHeroBannerProps {
   customerName?: string;
@@ -13,12 +14,13 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
   storeSettings,
   onExploreDeals,
 }) => {
+  const { t } = useShopEngagement();
   return (
     <div className="px-4 pt-3 pb-2 space-y-3">
       {/* Welcome & Wallet Bar */}
       <div className="flex items-center justify-between bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
         <div>
-          <span className="text-[11px] font-medium text-muted-foreground">Welcome back,</span>
+          <span className="text-[11px] font-medium text-muted-foreground">{t('Welcome back,', 'សូមស្វាគមន៍ត្រឡប់មកវិញ,')}</span>
           <h2 className="text-base font-bold text-foreground leading-tight">
             {customerName} 👋
           </h2>
@@ -27,7 +29,7 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
         <div className="flex items-center space-x-2 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 px-3 py-1.5 rounded-xl">
           <Wallet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <div className="text-right">
-            <div className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">Store Credit</div>
+            <div className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">{t('Store Credit', 'ឥណទានហាង')}</div>
             <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300">$0.00 USD</div>
           </div>
         </div>
@@ -43,7 +45,7 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center space-x-1 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-semibold text-indigo-100 uppercase tracking-wider">
               <Sparkles className="w-3 h-3 text-amber-300" />
-              <span>Flagship Season 2026</span>
+              <span>{t('Flagship Season 2026', 'រដូវកាលពិសេស ២០២៦')}</span>
             </span>
 
             <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-emerald-500/90 text-white px-2 py-0.5 rounded-full">
@@ -54,24 +56,24 @@ export const TelegramHeroBanner: React.FC<TelegramHeroBannerProps> = ({
 
           <div>
             <h3 className="text-lg font-extrabold leading-tight tracking-tight">
-              Genuine Tech & Lifestyles
+              {t('Genuine Tech & Lifestyles', 'បច្ចេកវិទ្យា និងរបៀបរស់នៅពិតប្រាកដ')}
             </h3>
             <p className="text-xs text-indigo-100/90 line-clamp-1 mt-0.5">
-              {storeSettings?.shipping_policy || 'Free express nationwide delivery in Cambodia over $50.'}
+              {storeSettings?.shipping_policy || t('Free express nationwide delivery in Cambodia over $50.', 'ដឹកជញ្ជូនរហ័សទូទាំងកម្ពុជាឥតគិតថ្លៃសម្រាប់ការទិញលើស $50។')}
             </p>
           </div>
 
           <div className="pt-1 flex items-center justify-between">
             <div className="flex items-center space-x-1.5 text-[11px] text-indigo-200">
               <Truck className="w-3.5 h-3.5" />
-              <span>24h – 48h Delivery</span>
+              <span>{t('24h – 48h Delivery', 'ដឹកជញ្ជូន ២៤–៤៨ ម៉ោង')}</span>
             </div>
 
             <button
               onClick={onExploreDeals}
               className="bg-white text-indigo-800 hover:bg-indigo-50 font-semibold text-xs px-3 py-1.5 rounded-xl shadow-xs flex items-center space-x-1 active:scale-95 transition-all"
             >
-              <span>Shop Deals</span>
+              <span>{t('Shop Deals', 'ទិញប្រូម៉ូសិន')}</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>

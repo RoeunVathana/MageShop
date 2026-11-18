@@ -10,8 +10,10 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { telegramApi, ProductItem } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export const TelegramAdminView: React.FC = () => {
+  const { t } = useShopEngagement();
   const [summary, setSummary] = useState<any>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export const TelegramAdminView: React.FC = () => {
     return (
       <div className="p-8 text-center space-y-2">
         <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin mx-auto" />
-        <p className="text-xs text-muted-foreground font-medium">Loading staff telemetry...</p>
+        <p className="text-xs text-muted-foreground font-medium">{t('Loading staff telemetry...', 'កំពុងផ្ទុកទិន្នន័យបុគ្គលិក...')}</p>
       </div>
     );
   }
@@ -85,8 +87,8 @@ export const TelegramAdminView: React.FC = () => {
             <ShieldAlert className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-foreground">Staff Control Deck</h2>
-            <p className="text-[10px] text-muted-foreground">Inventory & Sales Supervision</p>
+            <h2 className="text-sm font-bold text-foreground">{t('Staff Control Deck', 'ផ្ទាំងគ្រប់គ្រងបុគ្គលិក')}</h2>
+            <p className="text-[10px] text-muted-foreground">{t('Inventory & Sales Supervision', 'គ្រប់គ្រងស្តុក និងការលក់')}</p>
           </div>
         </div>
 
@@ -111,33 +113,33 @@ export const TelegramAdminView: React.FC = () => {
         <div className="grid grid-cols-2 gap-2.5">
           <div className="bg-card p-3 rounded-2xl border border-border space-y-1 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-              <span>Today's Sales</span>
+              <span>{t("Today's Sales", 'ការលក់ថ្ងៃនេះ')}</span>
               <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
             </div>
             <div className="text-base font-extrabold text-indigo-600 dark:text-indigo-400">
               ${Number(summary.today?.sales || 0).toFixed(2)}
             </div>
             <div className="text-[10px] text-muted-foreground">
-              {summary.today?.orders || 0} orders settled
+              {summary.today?.orders || 0} {t('orders settled', 'ការបញ្ជាទិញបានទូទាត់')}
             </div>
           </div>
 
           <div className="bg-card p-3 rounded-2xl border border-border space-y-1 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-              <span>Low Stock Alerts</span>
+              <span>{t('Low Stock Alerts', 'ការជូនដំណឹងស្តុកទាប')}</span>
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
             </div>
             <div className="text-base font-extrabold text-amber-600 dark:text-amber-400">
-              {summary.operations?.low_stock_items || 0} items
+              {summary.operations?.low_stock_items || 0} {t('items', 'មុខ')}
             </div>
-            <div className="text-[10px] text-muted-foreground">Requires Restock</div>
+              <div className="text-[10px] text-muted-foreground">{t('Requires Restock', 'ត្រូវការបំពេញស្តុក')}</div>
           </div>
         </div>
       )}
 
       {/* Product Stock Adjustment Table */}
       <div className="space-y-2">
-        <h3 className="text-xs font-bold text-foreground">Stock Management</h3>
+        <h3 className="text-xs font-bold text-foreground">{t('Stock Management', 'គ្រប់គ្រងស្តុក')}</h3>
 
         <div className="space-y-2">
           {products.map((p) => {
@@ -153,7 +155,7 @@ export const TelegramAdminView: React.FC = () => {
                     <span className="font-bold text-xs text-foreground truncate">{p.name}</span>
                     {isLow && (
                       <span className="bg-amber-100 dark:bg-amber-950 text-amber-700 text-[9px] font-bold px-1.5 py-0.2 rounded-md">
-                        Low
+                        {t('Low', 'ទាប')}
                       </span>
                     )}
                   </div>

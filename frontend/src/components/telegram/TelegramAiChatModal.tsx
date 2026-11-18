@@ -11,6 +11,7 @@ import {
   Languages,
 } from 'lucide-react';
 import { telegramApi, AiChatMessage } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramAiChatModalProps {
   isOpen: boolean;
@@ -23,14 +24,15 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
   onClose,
   storeName = 'TYUSHOP Flagship',
 }) => {
+  const { language: appLanguage, setLanguage: setAppLanguage, t } = useShopEngagement();
+  const language: 'en' | 'km' = appLanguage === 'KM' ? 'km' : 'en';
   const [messages, setMessages] = useState<AiChatMessage[]>([
     {
       sender: 'assistant',
-      message: `Hello! 👋 I am your ${storeName} AI Shopping Assistant. Ask me about product availability, genuine specs, current promotions, return policies, or order status in English or ភាសាខ្មែរ!`,
+      message: t(`Hello! 👋 I am your ${storeName} AI Shopping Assistant. Ask me about product availability, genuine specs, current promotions, return policies, or order status in English or ភាសាខ្មែរ!`, `សួស្តី! 👋 ខ្ញុំជាជំនួយការទិញទំនិញ AI របស់ ${storeName}។ សួរខ្ញុំអំពីស្តុក លក្ខណៈទំនិញ ប្រូម៉ូសិន គោលការណ៍ប្តូរ ឬស្ថានភាពការបញ្ជាទិញបាន។`),
     },
   ]);
   const [input, setInput] = useState('');
-  const [language, setLanguage] = useState<'en' | 'km'>('en');
   const [sessionId, setSessionId] = useState<number | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,16 +116,19 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground flex items-center space-x-1.5">
-                <span>AI Shopping Assistant</span>
+                <span>{t('AI Shopping Assistant', 'ជំនួយការទិញទំនិញ AI')}</span>
               </h2>
-              <p className="text-[10px] text-muted-foreground">Catalog & Policy Intelligence</p>
+              <p className="text-[10px] text-muted-foreground">
+                {t('Catalog & Policy Intelligence', 'ព័ត៌មានកាតាឡុក និងគោលការណ៍')}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
             {/* Language Switch */}
             <button
-              onClick={() => setLanguage(language === 'en' ? 'km' : 'en')}
+              onClick={() => setAppLanguage(language === 'en' ? 'KM' : 'EN')}
+              title={t('Switch language', 'ប្តូរភាសា')}
               className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-all"
             >
               <Languages className="w-3.5 h-3.5 text-indigo-500" />
@@ -191,7 +196,7 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
                         >
                           <div className="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center space-x-1">
                             <ShoppingBag className="w-3 h-3" />
-                            <span>Catalog Tool: {tc.tool}</span>
+                            <span>{t('Catalog Tool', 'ឧបករណ៍កាតាឡុក')}: {tc.tool}</span>
                           </div>
                           {tc.result?.products && (
                             <div className="grid grid-cols-1 gap-1.5 pt-1">
@@ -203,7 +208,7 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
                                   <div>
                                     <div className="font-bold text-foreground">{p.name}</div>
                                     <div className="text-muted-foreground text-[10px]">
-                                      SKU: {p.sku} • {p.in_stock ? `Stock: ${p.stock_quantity}` : 'Out of Stock'}
+                                      SKU: {p.sku} • {p.in_stock ? `${t('Stock', 'ស្តុក')}: ${p.stock_quantity}` : t('Out of Stock', 'អស់ស្តុក')}
                                     </div>
                                   </div>
                                   <div className="font-extrabold text-indigo-600 dark:text-indigo-400">
@@ -231,7 +236,7 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse delay-100" />
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse delay-200" />
-                <span>Checking store catalog...</span>
+                <span>{t('Checking store catalog...', 'កំពុងពិនិត្យកាតាឡុកហាង...')}</span>
               </div>
             </div>
           )}

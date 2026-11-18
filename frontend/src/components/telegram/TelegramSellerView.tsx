@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { AlertCircle, Clock3, DollarSign, Package, RefreshCw, Store } from 'lucide-react';
 
 import { telegramApi, TelegramSellerDashboard } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export const TelegramSellerView: React.FC = () => {
+  const { t } = useShopEngagement();
   const [dashboard, setDashboard] = useState<TelegramSellerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,7 +19,7 @@ export const TelegramSellerView: React.FC = () => {
       const response = await telegramApi.getSellerDashboard();
       setDashboard(response?.data ?? null);
     } catch (cause: any) {
-      setError(cause?.response?.data?.message || cause?.message || 'Seller workspace could not be loaded.');
+      setError(cause?.response?.data?.message || cause?.message || t('Seller workspace could not be loaded.', 'មិនអាចផ្ទុកកន្លែងធ្វើការអ្នកលក់បានទេ។'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -32,7 +34,7 @@ export const TelegramSellerView: React.FC = () => {
     return (
       <div className="p-8 text-center space-y-2 pb-24">
         <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin mx-auto" />
-        <p className="text-xs text-muted-foreground">Loading your seller workspace...</p>
+        <p className="text-xs text-muted-foreground">{t('Loading your seller workspace...', 'កំពុងផ្ទុកកន្លែងធ្វើការអ្នកលក់...')}</p>
       </div>
     );
   }
@@ -42,10 +44,10 @@ export const TelegramSellerView: React.FC = () => {
       <div className="p-4 pb-24">
         <div className="rounded-2xl border border-rose-300/60 bg-rose-50 dark:bg-rose-950/30 p-4 text-center space-y-3">
           <AlertCircle className="w-7 h-7 text-rose-500 mx-auto" />
-          <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Seller workspace unavailable</p>
+          <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">{t('Seller workspace unavailable', 'កន្លែងធ្វើការអ្នកលក់មិនអាចប្រើបាន')}</p>
           <p className="text-xs text-rose-700/80 dark:text-rose-300/80">{error}</p>
           <button onClick={() => void loadDashboard(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">
-            <RefreshCw className="w-3.5 h-3.5" /> Retry
+            <RefreshCw className="w-3.5 h-3.5" /> {t('Retry', 'ព្យាយាមម្តងទៀត')}
           </button>
         </div>
       </div>
@@ -63,7 +65,7 @@ export const TelegramSellerView: React.FC = () => {
             <div className="rounded-xl bg-emerald-600 p-2 text-white"><Store className="w-4 h-4" /></div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-extrabold text-foreground">{dashboard?.store.name || 'Seller Workspace'}</h2>
-              <p className="text-[11px] text-muted-foreground">Manage your store from Telegram</p>
+              <p className="text-[11px] text-muted-foreground">{t('Manage your store from Telegram', 'គ្រប់គ្រងហាងរបស់អ្នកពី Telegram')}</p>
             </div>
           </div>
         </div>
@@ -73,19 +75,19 @@ export const TelegramSellerView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <Metric label="Gross revenue" value={`$${Number(stats?.gross_revenue ?? 0).toFixed(2)}`} icon={DollarSign} tone="emerald" />
-        <Metric label="Pending orders" value={String(stats?.pending_orders ?? 0)} icon={Clock3} tone="amber" />
-        <Metric label="Active listings" value={String(stats?.active_listings ?? 0)} icon={Package} tone="indigo" />
-        <Metric label="Total listings" value={String(stats?.total_listings ?? 0)} icon={Store} tone="blue" />
+        <Metric label={t('Gross revenue', 'ចំណូលសរុប')} value={`$${Number(stats?.gross_revenue ?? 0).toFixed(2)}`} icon={DollarSign} tone="emerald" />
+        <Metric label={t('Pending orders', 'ការបញ្ជាទិញរង់ចាំ')} value={String(stats?.pending_orders ?? 0)} icon={Clock3} tone="amber" />
+        <Metric label={t('Active listings', 'ទំនិញកំពុងលក់')} value={String(stats?.active_listings ?? 0)} icon={Package} tone="indigo" />
+        <Metric label={t('Total listings', 'ទំនិញសរុប')} value={String(stats?.total_listings ?? 0)} icon={Store} tone="blue" />
       </div>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-foreground">Seller orders</h3>
-          <span className="text-[10px] font-bold text-muted-foreground">{orders.length} visible</span>
+          <h3 className="text-sm font-bold text-foreground">{t('Seller orders', 'ការបញ្ជាទិញអ្នកលក់')}</h3>
+          <span className="text-[10px] font-bold text-muted-foreground">{orders.length} {t('visible', 'បង្ហាញ')}</span>
         </div>
         {orders.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border p-7 text-center text-xs text-muted-foreground">Your seller orders will appear here after checkout.</div>
+          <div className="rounded-2xl border border-dashed border-border p-7 text-center text-xs text-muted-foreground">{t('Your seller orders will appear here after checkout.', 'ការបញ្ជាទិញរបស់អ្នកលក់នឹងបង្ហាញនៅទីនេះបន្ទាប់ពីការទូទាត់។')}</div>
         ) : (
           <div className="space-y-2">
             {orders.map((order) => (

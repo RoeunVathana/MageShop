@@ -11,6 +11,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { CategoryItem } from '@/services/telegramApi';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 interface TelegramCategoryBarProps {
   categories: CategoryItem[];
@@ -23,6 +24,7 @@ export const TelegramCategoryBar: React.FC<TelegramCategoryBarProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  const { t } = useShopEngagement();
   const getCategoryIcon = (slug: string) => {
     switch (slug.toLowerCase()) {
       case 'laptops':
@@ -58,7 +60,7 @@ export const TelegramCategoryBar: React.FC<TelegramCategoryBarProps> = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>All Items</span>
+          <span>{t('All Items', 'ទំនិញទាំងអស់')}</span>
         </button>
 
         {/* Dynamic Category Pills */}

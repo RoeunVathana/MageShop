@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, Grid, ShoppingBag, Package, User } from 'lucide-react';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
+import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export type TelegramViewTab = 'home' | 'categories' | 'cart' | 'orders' | 'profile';
 
@@ -11,13 +12,14 @@ interface TelegramBottomNavProps {
 
 export const TelegramBottomNav: React.FC<TelegramBottomNavProps> = ({ currentTab, onTabChange }) => {
   const totalItems = useTelegramCartStore((state) => state.totalItems());
+  const { t } = useShopEngagement();
 
   const navItems = [
-    { id: 'home' as TelegramViewTab, label: 'Home', icon: Home },
-    { id: 'categories' as TelegramViewTab, label: 'Catalog', icon: Grid },
-    { id: 'cart' as TelegramViewTab, label: 'Cart', icon: ShoppingBag, badge: totalItems },
-    { id: 'orders' as TelegramViewTab, label: 'Orders', icon: Package },
-    { id: 'profile' as TelegramViewTab, label: 'Profile', icon: User },
+    { id: 'home' as TelegramViewTab, label: t('Home', 'ទំព័រដើម'), icon: Home },
+    { id: 'categories' as TelegramViewTab, label: t('Catalog', 'កាតាឡុក'), icon: Grid },
+    { id: 'cart' as TelegramViewTab, label: t('Cart', 'កន្ត្រក'), icon: ShoppingBag, badge: totalItems },
+    { id: 'orders' as TelegramViewTab, label: t('Orders', 'ការបញ្ជាទិញ'), icon: Package },
+    { id: 'profile' as TelegramViewTab, label: t('Profile', 'ប្រវត្តិរូប'), icon: User },
   ];
 
   return (
