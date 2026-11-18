@@ -873,7 +873,7 @@ export function DeliveryDashboard() {
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={visibleDeliveryNav}
     >
-      <div className="delivery-dashboard space-y-6">
+      <div className="delivery-dashboard space-y-6" aria-busy={loading}>
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-5">
           <div>
@@ -943,7 +943,7 @@ export function DeliveryDashboard() {
               className="w-full justify-center rounded-xl h-9 text-xs gap-1.5 sm:w-auto"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || loadingSettings ? 'animate-spin' : ''}`} />
-              {t('Refresh', 'ផ្ទុកឡើងវិញ')}
+              {loading ? t('Refreshing…', 'កំពុងផ្ទុក…') : t('Refresh', 'ផ្ទុកឡើងវិញ')}
             </Button>
           </div>
         </div>
@@ -994,7 +994,26 @@ export function DeliveryDashboard() {
         </div>
 
         {activeTab === 'location' ? (
-          selectedOrder ? (
+          loading && orders.length === 0 ? (
+            <Card
+              className="delivery-loading-state overflow-hidden rounded-3xl border border-indigo-200/80 bg-white/95 shadow-lg dark:border-indigo-900/60 dark:bg-slate-900/95 animate-in fade-in-0 slide-in-from-bottom-2 duration-500"
+              role="status"
+              aria-live="polite"
+            >
+              <CardContent className="flex min-h-[22rem] flex-col items-center justify-center px-6 py-12 text-center sm:min-h-[28rem]">
+                <div className="relative mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-300">
+                  <span className="absolute inset-0 rounded-2xl border-2 border-indigo-400/40 animate-ping" />
+                  <Truck className="relative h-7 w-7 animate-pulse" />
+                </div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">Loading delivery workspace</h2>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600 dark:text-slate-300">Syncing live orders, routes, and GPS status. This will only take a moment.</p>
+                <div className="mt-5 flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  <span>Connecting to delivery services…</span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : selectedOrder ? (
           <>
             {/* 4 Stat Cards with Percentage Indicators */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

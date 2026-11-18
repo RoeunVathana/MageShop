@@ -57,27 +57,52 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, toasts, dismiss }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none">
+      <div
+        className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1rem)] max-w-md -translate-x-1/2 flex-col gap-3 px-0 pointer-events-none sm:bottom-6 sm:left-auto sm:right-6 sm:w-full sm:translate-x-0"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
+            role={t.type === 'error' || t.type === 'warning' ? 'alert' : 'status'}
             className={cn(
-              'pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lg border backdrop-blur-md transition-all animate-in slide-in-from-bottom-5',
-              t.type === 'success' && 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100',
-              t.type === 'error' && 'bg-rose-50 dark:bg-rose-950/80 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-100',
-              t.type === 'warning' && 'bg-amber-50 dark:bg-amber-950/80 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100',
-              t.type === 'info' && 'bg-background/95 border-border text-foreground'
+              'pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-2xl border p-4 pl-5 shadow-2xl backdrop-blur-xl transition-all duration-300 animate-in fade-in-0 slide-in-from-right-5 hover:-translate-y-0.5',
+              t.type === 'success' && 'border-emerald-200 bg-emerald-50/95 text-emerald-950 shadow-emerald-950/10 dark:border-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-50',
+              t.type === 'error' && 'border-rose-200 bg-rose-50/95 text-rose-950 shadow-rose-950/10 dark:border-rose-800 dark:bg-rose-950/90 dark:text-rose-50',
+              t.type === 'warning' && 'border-amber-200 bg-amber-50/95 text-amber-950 shadow-amber-950/10 dark:border-amber-800 dark:bg-amber-950/90 dark:text-amber-50',
+              t.type === 'info' && 'border-slate-200 bg-white/95 text-slate-950 shadow-slate-950/10 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-50'
             )}
           >
-            {t.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />}
-            {t.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />}
-            {t.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />}
-            {t.type === 'info' && <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />}
+            <span
+              className={cn(
+                'absolute inset-y-0 left-0 w-1',
+                t.type === 'success' && 'bg-emerald-500',
+                t.type === 'error' && 'bg-rose-500',
+                t.type === 'warning' && 'bg-amber-500',
+                t.type === 'info' && 'bg-indigo-500'
+              )}
+            />
+
+            <span
+              className={cn(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                t.type === 'success' && 'bg-emerald-500/15',
+                t.type === 'error' && 'bg-rose-500/15',
+                t.type === 'warning' && 'bg-amber-500/15',
+                t.type === 'info' && 'bg-indigo-500/15'
+              )}
+            >
+              {t.type === 'success' && <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
+              {t.type === 'error' && <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
+              {t.type === 'warning' && <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+              {t.type === 'info' && <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
+            </span>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">{language === 'KM' && t.titleKm ? t.titleKm : t.title}</p>
+              <p className="text-sm font-bold leading-5">{language === 'KM' && t.titleKm ? t.titleKm : t.title}</p>
               {(language === 'KM' && t.descriptionKm ? t.descriptionKm : t.description) && (
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="mt-1 text-xs leading-5 text-current/75">
                   {language === 'KM' && t.descriptionKm ? t.descriptionKm : t.description}
                 </p>
               )}
@@ -85,7 +110,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
             <button
               onClick={() => dismiss(t.id)}
-              className="text-muted-foreground hover:text-foreground shrink-0 p-1 rounded-md transition-colors"
+              type="button"
+              aria-label="Dismiss notification"
+              className="shrink-0 rounded-lg p-1 text-current/55 transition-colors hover:bg-black/5 hover:text-current dark:hover:bg-white/10"
             >
               <X className="w-4 h-4" />
             </button>
