@@ -15,6 +15,7 @@ export class TelegramAuthService {
   async authenticate(body: Record<string, unknown>, authorization?: string): Promise<Record<string, unknown>> {
     const initData = String(body.init_data ?? '').trim();
     const demo = this.config.get<string>('NODE_ENV', 'development') !== 'production' && this.boolean(body.demo_mode);
+    const demoRole = this.text(body.demo_role).toLowerCase();
     const params = initData
       ? this.validateInitData(initData, await this.setting('telegram_bot_token', this.config.get<string>('TELEGRAM_BOT_TOKEN', '')))
       : (demo ? this.demoData(body.demo_role) : null);
@@ -33,6 +34,17 @@ export class TelegramAuthService {
     const result = await this.database.transaction(async (client) => {
       const account = await client.query<{ id: number; user_id: number | null }>('SELECT id, user_id FROM telegram_accounts WHERE telegram_user_id=$1 LIMIT 1 FOR UPDATE', [telegramId]);
       let userId = current?.userId ?? account.rows[0]?.user_id ?? null;
+      if (!userId && username) {
+        const seller = await client.query<{ user_id: number }>(`
+          SELECT sa.user_id
+          FROM seller_applications sa
+          WHERE sa.status = 'approved'
+            AND LOWER(REPLACE(COALESCE(sa.telegram_username, ''), '@', '')) = LOWER(REPLACE($1, '@', ''))
+          ORDER BY sa.id DESC
+          LIMIT 1
+        `, [username]);
+        userId = seller.rows[0]?.user_id ?? null;
+      }
       if (!userId) {
         const email = `tg_${telegramId}@megacommerce.internal`;
         const existing = await client.query<{ id: number }>('SELECT id FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1', [email]);
@@ -47,6 +59,10 @@ export class TelegramAuthService {
         }
       }
       if (!userId) throw new Error('Telegram user could not be linked.');
+      if (demo && demoRole === 'seller') {
+        const sellerRole = await client.query<{ id: number }>("SELECT id FROM roles WHERE LOWER(slug) IN ('seller','seller_staff') OR UPPER(name) IN ('SELLER','SELLER_STAFF') ORDER BY CASE WHEN LOWER(slug)='seller' THEN 0 ELSE 1 END, id LIMIT 1");
+        if (sellerRole.rows[0]) await client.query('INSERT INTO role_user (user_id,role_id,created_at,updated_at) VALUES ($1,$2,NOW(),NOW()) ON CONFLICT DO NOTHING', [userId, sellerRole.rows[0].id]);
+      }
       const roles = await client.query<{ name: string; slug: string }>('SELECT r.name, r.slug FROM roles r JOIN role_user ru ON ru.role_id=r.id WHERE ru.user_id=$1', [userId]);
       const isAdmin = (adminChatId > 0 && adminChatId === telegramId) || roles.rows.some((role) => ['super_admin', 'admin', 'staff'].includes(role.slug.toLowerCase()) || ['SUPER_ADMIN', 'ADMIN', 'STAFF'].includes(role.name.toUpperCase()));
       await client.query(`INSERT INTO telegram_accounts (user_id,telegram_user_id,telegram_username,first_name,last_name,photo_url,language_code,is_bot_admin,linked_at,created_at,updated_at)
@@ -84,7 +100,7 @@ export class TelegramAuthService {
     return output;
   }
 
-  private demoData(roleValue: unknown): Record<string, unknown> { const role = this.text(roleValue).toLowerCase(); return { auth_date: String(Math.floor(Date.now() / 1000)), user: { id: role === 'admin' || role === 'staff' ? Number(this.config.get<string>('TELEGRAM_ADMIN_CHAT_ID', '987654321')) : 88001122, first_name: role === 'admin' ? 'Admin' : 'Telegram', last_name: 'User', username: role === 'admin' ? 'tyushop_admin' : 'telegram_user', language_code: 'en' } }; }
+  private demoData(roleValue: unknown): Record<string, unknown> { const role = this.text(roleValue).toLowerCase(); const id = role === 'admin' || role === 'staff' ? Number(this.config.get<string>('TELEGRAM_ADMIN_CHAT_ID', '987654321')) : role === 'seller' ? 88001123 : 88001122; return { auth_date: String(Math.floor(Date.now() / 1000)), user: { id, first_name: role === 'admin' ? 'Admin' : role === 'seller' ? 'Seller' : 'Telegram', last_name: 'User', username: role === 'admin' ? 'tyushop_admin' : role === 'seller' ? 'tyushop_seller' : 'telegram_user', language_code: 'en' } }; }
   private parseUser(value: string): TelegramUser { try { return JSON.parse(value) as TelegramUser; } catch { throw new UnauthorizedException({ status: 'error', message: 'Telegram user payload is invalid.' }); } }
   private async setting(key: string, fallback: string): Promise<string> { const result = await this.database.query<{ setting_value: string | null }>('SELECT setting_value FROM store_settings WHERE setting_key=$1 LIMIT 1', [key]); return result.rows[0]?.setting_value || fallback; }
   private text(value: unknown): string { return value === undefined || value === null ? '' : String(value).trim(); }

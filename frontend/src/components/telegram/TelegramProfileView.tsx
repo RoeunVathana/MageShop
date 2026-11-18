@@ -17,6 +17,9 @@ interface TelegramProfileViewProps {
   userProfile?: any;
   storeSettings?: StoreSettings;
   onSwitchRole?: (role: string) => void;
+  isSeller?: boolean;
+  sellerModeActive?: boolean;
+  onToggleSellerMode?: () => void;
   onOpenSupport?: () => void;
 }
 
@@ -24,6 +27,9 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
   userProfile,
   storeSettings,
   onSwitchRole,
+  isSeller = false,
+  sellerModeActive = false,
+  onToggleSellerMode,
   onOpenSupport,
 }) => {
   const user = userProfile?.user;
@@ -102,13 +108,27 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
         </div>
       </div>
 
+      {isSeller && (
+        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-3.5 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-foreground">Seller Workspace</h4>
+              <p className="text-[11px] text-muted-foreground">View your listings, revenue, and seller orders inside Telegram.</p>
+            </div>
+            <button onClick={onToggleSellerMode} className="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white">
+              {sellerModeActive ? 'Shop' : 'Open'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Demo Sandbox Role Switcher */}
       <div className="bg-card rounded-2xl border border-border p-3.5 space-y-2">
         <h4 className="text-xs font-bold text-foreground">Developer Preview Roles</h4>
         <p className="text-[11px] text-muted-foreground">
           Test the Mini App experience with different roles in sandbox mode.
         </p>
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-3 gap-2 pt-1">
           <button
             onClick={() => onSwitchRole?.('customer')}
             className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:border-indigo-500 transition-colors"
@@ -120,6 +140,12 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
             className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition-colors"
           >
             Staff Admin Mode
+          </button>
+          <button
+            onClick={() => onSwitchRole?.('seller')}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-500/20 transition-colors"
+          >
+            Seller Mode
           </button>
         </div>
       </div>

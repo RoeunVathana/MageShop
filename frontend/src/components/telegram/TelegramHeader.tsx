@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, ShieldCheck, Sun, Moon, Bell, User as UserIcon, ShieldAlert } from 'lucide-react';
+import { Store, ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness } from 'lucide-react';
 import { useTheme } from '@/context/ThemeProvider';
 import { StoreSettings } from '@/services/telegramApi';
 
@@ -10,6 +10,9 @@ interface TelegramHeaderProps {
   isAdmin?: boolean;
   adminModeActive?: boolean;
   onToggleAdminMode?: () => void;
+  isSeller?: boolean;
+  sellerModeActive?: boolean;
+  onToggleSellerMode?: () => void;
   onOpenProfile?: () => void;
 }
 
@@ -20,6 +23,9 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
   isAdmin = false,
   adminModeActive = false,
   onToggleAdminMode,
+  isSeller = false,
+  sellerModeActive = false,
+  onToggleSellerMode,
   onOpenProfile,
 }) => {
   const { setTheme, isDark } = useTheme();
@@ -70,6 +76,21 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               <span className="text-[10px] hidden sm:inline">{adminModeActive ? 'Admin' : 'Staff'}</span>
+            </button>
+          )}
+
+          {isSeller && !isAdmin && (
+            <button
+              onClick={onToggleSellerMode}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-all ${
+                sellerModeActive
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+              }`}
+              title="Toggle Seller Workspace"
+            >
+              <BriefcaseBusiness className="w-3.5 h-3.5" />
+              <span className="text-[10px] hidden sm:inline">{sellerModeActive ? 'Shop' : 'Seller'}</span>
             </button>
           )}
 

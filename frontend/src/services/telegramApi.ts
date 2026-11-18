@@ -92,6 +92,27 @@ export interface TelegramProductAvailability {
   available_stock: number;
 }
 
+export interface TelegramSellerDashboard {
+  application: Record<string, unknown> | null;
+  store: { name?: string | null; slug?: string | null; status: string };
+  stats: {
+    gross_revenue: number;
+    pending_orders: number;
+    active_listings: number;
+    total_listings: number;
+    payout_balance: number;
+  };
+  orders: Array<{
+    id: number;
+    order_number: string;
+    status: string;
+    total_amount: number | string;
+    created_at?: string;
+    customer?: { id: number; name: string; email: string } | null;
+    items?: Array<{ product_name: string; quantity: number; total_price: number | string }>;
+  }>;
+}
+
 export interface CategoryItem {
   id: number;
   name: string;
@@ -149,6 +170,11 @@ export const telegramApi = {
   getProfile: async () => {
     const res = await api.get('/telegram/profile');
     return res.data.data;
+  },
+
+  getSellerDashboard: async (): Promise<{ data: TelegramSellerDashboard }> => {
+    const res = await api.get('/seller/dashboard');
+    return res.data;
   },
 
   // Products

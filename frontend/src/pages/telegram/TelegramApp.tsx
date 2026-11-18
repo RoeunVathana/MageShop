@@ -24,6 +24,7 @@ import { TelegramAiChatModal } from '@/components/telegram/TelegramAiChatModal';
 import { TelegramCartDrawer } from '@/components/telegram/TelegramCartDrawer';
 import { TelegramOrdersView } from '@/components/telegram/TelegramOrdersView';
 import { TelegramAdminView } from '@/components/telegram/TelegramAdminView';
+import { TelegramSellerView } from '@/components/telegram/TelegramSellerView';
 import { TelegramProfileView } from '@/components/telegram/TelegramProfileView';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
 
@@ -44,6 +45,7 @@ export const TelegramApp: React.FC = () => {
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [adminModeActive, setAdminModeActive] = useState(false);
+  const [sellerModeActive, setSellerModeActive] = useState(false);
 
   // Initialize Telegram WebApp & Auth
   useEffect(() => {
@@ -74,15 +76,15 @@ export const TelegramApp: React.FC = () => {
         setUserProfile(profileRes);
         setCategories(catRes);
 
-        // Check if user is staff/admin
-        const isAdmin = profileRes?.telegram?.is_bot_admin ||
-          profileRes?.user?.roles?.includes('ADMIN') ||
-          profileRes?.user?.roles?.includes('SUPER_ADMIN') ||
-          profileRes?.user?.roles?.includes('STAFF');
+        // Check role capabilities returned by the server.
+        const roles = Array.isArray(profileRes?.user?.roles) ? profileRes.user.roles.map((role: unknown) => String(role).toUpperCase()) : [];
+        const isAdmin = profileRes?.telegram?.is_bot_admin || roles.some((role: string) => ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(role));
+        const isSeller = roles.some((role: string) => ['SELLER', 'SELLER_STAFF'].includes(role));
 
         if (isAdmin) {
           // Keep note of admin eligibility
         }
+        if (!isSeller) setSellerModeActive(false);
       } catch (err) {
         console.error('Initialization error', err);
       } finally {
@@ -119,8 +121,13 @@ export const TelegramApp: React.FC = () => {
       setUserProfile(profileRes);
       if (role === 'admin') {
         setAdminModeActive(true);
+        setSellerModeActive(false);
+      } else if (role === 'seller') {
+        setAdminModeActive(false);
+        setSellerModeActive(true);
       } else {
         setAdminModeActive(false);
+        setSellerModeActive(false);
       }
     } catch (e) {
       console.error(e);
@@ -134,6 +141,8 @@ export const TelegramApp: React.FC = () => {
     userProfile?.user?.roles?.includes('ADMIN') ||
     userProfile?.user?.roles?.includes('SUPER_ADMIN') ||
     userProfile?.user?.roles?.includes('STAFF');
+
+  const isUserSeller = Array.isArray(userProfile?.user?.roles) && userProfile.user.roles.some((role: unknown) => ['SELLER', 'SELLER_STAFF'].includes(String(role).toUpperCase()));
 
   const sectionTabs = [
     { id: 'all', label: 'All Items' },
@@ -155,6 +164,9 @@ export const TelegramApp: React.FC = () => {
           isAdmin={isUserStaff}
           adminModeActive={adminModeActive}
           onToggleAdminMode={() => setAdminModeActive(!adminModeActive)}
+          isSeller={isUserSeller}
+          sellerModeActive={sellerModeActive}
+          onToggleSellerMode={() => setSellerModeActive(!sellerModeActive)}
           onOpenProfile={() => setCurrentTab('profile')}
         />
 
@@ -162,6 +174,8 @@ export const TelegramApp: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           {adminModeActive ? (
             <TelegramAdminView />
+          ) : sellerModeActive && isUserSeller ? (
+            <TelegramSellerView />
           ) : currentTab === 'home' ? (
             <div className="space-y-3 pb-24">
               {/* Hero Banner with Personalized Greeting */}
@@ -283,6 +297,9 @@ export const TelegramApp: React.FC = () => {
             <TelegramProfileView
               userProfile={userProfile}
               storeSettings={storeSettings}
+              isSeller={isUserSeller}
+              sellerModeActive={sellerModeActive}
+              onToggleSellerMode={() => setSellerModeActive(!sellerModeActive)}
               onSwitchRole={handleSwitchDemoRole}
               onOpenSupport={() => setIsAiChatOpen(true)}
             />
