@@ -221,6 +221,14 @@ export const telegramApi = {
     return res.data;
   },
 
+  // Customer delivery tracking from the Telegram Mini App. The Telegram auth
+  // token is already attached to this client, so the API can enforce that the
+  // customer may only view their own order.
+  getOrderTracking: async (orderNumber: string) => {
+    const res = await api.get(`/orders/track/${encodeURIComponent(orderNumber)}`, { timeout: 30000 });
+    return res.data?.data ?? null;
+  },
+
   // AI Chat
   sendAiMessage: async (payload: { message: string; session_id?: number; language?: 'en' | 'km' }) => {
     const res = await api.post('/telegram/ai/chat', payload);
