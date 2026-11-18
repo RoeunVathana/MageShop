@@ -545,6 +545,59 @@ export function CartPage() {
     }
   }
 
+  const handleQuickGoogleLogin = async () => {
+    setQuickLoginLoading(true)
+    try {
+      // Let the full login page handle mobile redirect fallback. It already
+      // preserves the cart route and completes Firebase redirect callbacks.
+      const isMobileBrowser =
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768
+      if (isMobileBrowser) {
+        setIsLoginRequiredModalOpen(false)
+        navigate('/login?redirect=/cart')
+        return
+      }
+
+      const { signInWithPopup } = await import('firebase/auth')
+      const { auth, googleAuthProvider } = await import('@/lib/firebase')
+      const result = await signInWithPopup(auth, googleAuthProvider)
+      const firebaseUser = result.user
+      const response = await authService.loginWithFirebase({
+        id_token: await firebaseUser.getIdToken(),
+        email: firebaseUser.email,
+        name: firebaseUser.displayName,
+        avatar: firebaseUser.photoURL,
+        uid: firebaseUser.uid,
+      })
+      const user = response.data?.user || authService.getStoredUser()
+      setCurrentUser(user)
+      if (user) {
+        if (user.name) setCustomerName(user.name)
+        if (user.email) setCustomerEmail(user.email)
+        if ((user as any).phone_number) setCustomerPhone((user as any).phone_number)
+        if ((user as any).address) setDeliveryAddress((user as any).address)
+      }
+      setIsLoginRequiredModalOpen(false)
+      toast({
+        title: t('Google Sign-In Successful', 'ចូលតាម Google បានជោគជ័យ'),
+        description: t('You can now continue checkout and live GPS delivery.', 'អ្នកអាចបន្តការទូទាត់ និងតាមដាន GPS ផ្ទាល់បានហើយ។'),
+        type: 'success',
+      })
+    } catch (error: any) {
+      const isConfigError = String(error?.code || '').includes('configuration-not-found')
+        || String(error?.message || '').includes('CONFIGURATION_NOT_FOUND')
+      toast({
+        title: t('Google Sign-In Failed', 'ការចូលតាម Google មិនបានជោគជ័យ'),
+        description: isConfigError
+          ? t('Google Sign-In is not enabled in Firebase yet. Use the full login page or enable Google in Firebase Console.', 'Google Sign-In មិនទាន់បានបើកក្នុង Firebase ទេ។ សូមប្រើទំព័រចូលពេញ ឬបើក Google ក្នុង Firebase Console។')
+          : error?.message || t('Please try Google Sign-In again.', 'សូមព្យាយាមចូលតាម Google ម្តងទៀត។'),
+        type: 'error',
+      })
+    } finally {
+      setQuickLoginLoading(false)
+    }
+  }
+
   // Countdown timer when KHQR modal is open
   useEffect(() => {
     if (!qrModalData) return
@@ -867,6 +920,18 @@ export function CartPage() {
       return
     }
 
+    if (!customerCoords) {
+      toast({
+        title: t('Choose a real GPS delivery location', 'សូមជ្រើសរើសទីតាំង GPS ពិតសម្រាប់ដឹកជញ្ជូន'),
+        description: t(
+          'Tap Choose Current Location or select a Cambodia preset before paying so the courier can be tracked on the live map.',
+          'សូមចុច ជ្រើសរើសទីតាំងបច្ចុប្បន្ន ឬជ្រើសរើសទីតាំងរហ័ស មុនពេលទូទាត់ ដើម្បីឱ្យអ្នកអាចតាមដានអ្នកដឹកជញ្ជូនលើផែនទីផ្ទាល់។'
+        ),
+        type: 'error',
+      })
+      return
+    }
+
     setCheckoutLoading(true)
     const isKhqrFlow = paymentMethod === 'bakong_khqr' && finalTotal > 0
     const apiPaymentMethod = paymentMethod
@@ -1075,6 +1140,13 @@ export function CartPage() {
     setVerifyingQrPayment(true)
 
     const showPaymentSuccess = (confirmationData: any) => {
+      const verifiedStatus = String(
+        confirmationData?.payment_status || confirmationData?.order?.payment_status || ''
+      ).toLowerCase()
+      if (!['paid', 'completed'].includes(verifiedStatus)) {
+        throw new Error('Bakong has not confirmed this payment yet. Your order remains unpaid.')
+      }
+
       const confirmedReceipt = confirmationData?.receipt_number || qrModalData.receipt_number
       const confirmedTxn = confirmationData?.transaction_reference || qrModalData.transaction_reference
       const confirmedAmount = Number(
@@ -1090,7 +1162,7 @@ export function CartPage() {
         receipt_number: confirmedReceipt,
         transaction_reference: confirmedTxn,
         payment_method: 'BAKONG KHQR (INSTANT SCAN)',
-        payment_status: confirmationData?.payment_status === 'paid' ? 'PAID & VERIFIED' : 'PAID',
+        payment_status: 'PAID & VERIFIED',
         amount_usd: confirmedAmount,
         amount_khr: confirmedAmountKhr,
         discount: qrModalData.discount,
@@ -2425,7 +2497,7 @@ export function CartPage() {
               {/* Action Buttons */}
               <div className="receipt-actions space-y-2 pt-1">
                 <Link
-                  to={`/track?order=${encodeURIComponent(paymentSuccessData.order_number)}`}
+                  to={`/track-order/${encodeURIComponent(paymentSuccessData.order_number)}`}
                   className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-lg shadow-primary/25 transition-all"
                 >
                   <MapPin className="w-4 h-4" />
@@ -2664,6 +2736,26 @@ export function CartPage() {
                   )}
                 </Button>
               </form>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleQuickGoogleLogin}
+                disabled={quickLoginLoading}
+                className="w-full h-10 rounded-xl gap-2 text-xs font-bold border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+              >
+                {quickLoginLoading ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.16 0 9.97 0 12s.45 3.84 1.24 5.42l4.04-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                )}
+                {t('Continue with Google', 'ចូលតាម Google')}
+              </Button>
 
               {/* Alternative Links */}
               <div className="relative my-3">

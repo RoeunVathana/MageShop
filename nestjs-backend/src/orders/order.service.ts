@@ -29,6 +29,7 @@ interface OrderRow {
   dest_lat: number | string | null;
   dest_lng: number | string | null;
   estimated_arrival: string | null;
+  updated_at: Date | string;
 }
 
 interface OrderItemRow {
@@ -102,7 +103,7 @@ export class OrderService {
              total_amount, payment_status, payment_method, customer_name,
              customer_phone, delivery_address, points_earned, points_redeemed,
              driver_name, driver_phone, driver_vehicle, current_lat, current_lng,
-             dest_lat, dest_lng, estimated_arrival
+             dest_lat, dest_lng, estimated_arrival, updated_at
       FROM orders
       WHERE order_number = $1
       LIMIT 1
@@ -120,8 +121,12 @@ export class OrderService {
       ORDER BY id
     `, [order.id]);
 
-    const currentLat = Number(order.current_lat ?? order.dest_lat ?? 0);
-    const currentLng = Number(order.current_lng ?? order.dest_lng ?? 0);
+    // Do not fall back to the customer's destination. That made the UI look
+    // like a courier was already at the destination when no driver GPS had
+    // been broadcast yet.
+    const hasLiveLocation = order.current_lat !== null && order.current_lng !== null;
+    const currentLat = hasLiveLocation ? Number(order.current_lat) : null;
+    const currentLng = hasLiveLocation ? Number(order.current_lng) : null;
     const destLat = Number(order.dest_lat ?? 0);
     const destLng = Number(order.dest_lng ?? 0);
     const paymentStatus = order.payment_status ?? 'unpaid';
@@ -167,6 +172,9 @@ export class OrderService {
           warehouse_name: null,
           current_lat: currentLat,
           current_lng: currentLng,
+          has_live_location: hasLiveLocation,
+          location_source: hasLiveLocation ? 'courier_device_gps' : null,
+          location_updated_at: hasLiveLocation ? order.updated_at : null,
           dest_lat: destLat,
           dest_lng: destLng,
           estimated_arrival: eta,
@@ -224,8 +232,8 @@ export class OrderService {
     ];
   }
 
-  private distance(currentLat: number, currentLng: number, destLat: number, destLng: number, order: OrderRow): number | null {
-    if (order.current_lat === null || order.current_lng === null || order.dest_lat === null || order.dest_lng === null) {
+  private distance(currentLat: number | null, currentLng: number | null, destLat: number, destLng: number, order: OrderRow): number | null {
+    if (currentLat === null || currentLng === null || order.dest_lat === null || order.dest_lng === null) {
       return null;
     }
     const radians = Math.PI / 180;

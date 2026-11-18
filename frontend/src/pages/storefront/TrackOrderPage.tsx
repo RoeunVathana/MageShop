@@ -81,36 +81,45 @@ export function TrackOrderPage() {
   const backendDriverLng = tracking?.gps?.current_lng !== null && tracking?.gps?.current_lng !== undefined
     ? Number(tracking.gps.current_lng)
     : null
+  const hasLiveDriverGps = backendDriverLat !== null && backendDriverLng !== null
+  const hasWarehouseCoordinates = whLat !== 0 && whLng !== 0
+  const hasLiveRouteProgress = hasLiveDriverGps && hasWarehouseCoordinates
   const hasMapCoordinates = dstLat !== 0 && dstLng !== 0
 
   // If driver updated their real GPS position in backend, calculate distance and routeProgress from driver's location
   useEffect(() => {
-    if (backendDriverLat !== null && backendDriverLng !== null && tracking?.status !== 'delivered') {
+    if (hasLiveRouteProgress && tracking?.status !== 'delivered') {
       const totalDist = Math.hypot(dstLat - whLat, dstLng - whLng)
       const currentDist = Math.hypot(dstLat - backendDriverLat, dstLng - backendDriverLng)
       if (totalDist > 0) {
         const computedProgress = Math.min(96, Math.max(15, Math.round((1 - currentDist / totalDist) * 100)))
         setRouteProgress(computedProgress)
       }
+    } else if (tracking?.status !== 'delivered') {
+      setRouteProgress(0)
     }
-  }, [backendDriverLat, backendDriverLng, dstLat, dstLng, whLat, whLng, tracking?.status])
+  }, [backendDriverLat, backendDriverLng, dstLat, dstLng, whLat, whLng, tracking?.status, hasLiveRouteProgress])
 
   useEffect(() => {
     if (tracking?.status === 'delivered') setRouteProgress(100)
   }, [tracking?.status])
 
-  const liveLat = backendDriverLat !== null ? backendDriverLat.toFixed(5) : (dstLat ? dstLat.toFixed(5) : '—')
-  const liveLng = backendDriverLng !== null ? backendDriverLng.toFixed(5) : (dstLng ? dstLng.toFixed(5) : '—')
+  const liveLat = hasLiveDriverGps ? backendDriverLat!.toFixed(5) : '—'
+  const liveLng = hasLiveDriverGps ? backendDriverLng!.toFixed(5) : '—'
 
   const remainingKm = tracking?.gps?.distance_remaining_km ?? '—'
   const etaMins = tracking?.gps?.estimated_arrival || '—'
 
-  const minLng = (Math.min(dstLng, whLng) - 0.03).toFixed(4)
-  const maxLng = (Math.max(dstLng, whLng) + 0.03).toFixed(4)
-  const minLat = (Math.min(dstLat, whLat) - 0.03).toFixed(4)
-  const maxLat = (Math.max(dstLat, whLat) + 0.03).toFixed(4)
+  const mapLongitudes = [dstLng, ...(hasLiveDriverGps ? [backendDriverLng!] : [])]
+  const mapLatitudes = [dstLat, ...(hasLiveDriverGps ? [backendDriverLat!] : [])]
+  const minLng = (Math.min(...mapLongitudes) - 0.03).toFixed(4)
+  const maxLng = (Math.max(...mapLongitudes) + 0.03).toFixed(4)
+  const minLat = (Math.min(...mapLatitudes) - 0.03).toFixed(4)
+  const maxLat = (Math.max(...mapLatitudes) + 0.03).toFixed(4)
+  const markerLat = hasLiveDriverGps ? backendDriverLat : dstLat
+  const markerLng = hasLiveDriverGps ? backendDriverLng : dstLng
   const osmEmbedUrl = hasMapCoordinates
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${dstLat}%2C${dstLng}`
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik&marker=${markerLat}%2C${markerLng}`
     : ''
 
   if (!tracking) {
@@ -253,15 +262,15 @@ export function TrackOrderPage() {
             <div className="gps-telemetry-bar bg-slate-900 text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="gps-telemetry-primary flex items-center gap-2">
                 <Compass className="w-4 h-4 text-emerald-400 animate-spin" />
-                <span className="font-mono font-bold text-emerald-400">
-                  GPS: {liveLat}° N, {liveLng}° E
+                <span className={`font-mono font-bold ${hasLiveDriverGps ? 'text-emerald-400' : 'text-amber-300'}`}>
+                  {hasLiveDriverGps ? `GPS: ${liveLat}° N, ${liveLng}° E` : t('GPS: waiting for courier device', 'GPS: កំពុងរង់ចាំឧបករណ៍អ្នកដឹកជញ្ជូន')}
                 </span>
                 <span className="text-slate-400">|</span>
                 <span className="text-slate-200">{t('Order #', 'លេខកូដ #')}{tracking?.order_number || activeOrderNum}</span>
               </div>
               <div className="gps-telemetry-secondary flex items-center gap-3">
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
-                   {t('Speed', 'ល្បឿន')}: {tracking?.gps?.speed_kmh ?? '—'} km/h
+                  <span className={`px-2.5 py-0.5 rounded-full font-semibold ${hasLiveDriverGps ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-200'}`}>
+                   {hasLiveDriverGps ? `${t('Live courier GPS', 'GPS អ្នកដឹកជញ្ជូនផ្ទាល់')}: ${tracking?.gps?.speed_kmh ?? '—'} km/h` : t('Waiting for courier GPS', 'កំពុងរង់ចាំ GPS អ្នកដឹកជញ្ជូន')}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold">
                   {remainingKm === '—'
@@ -269,7 +278,7 @@ export function TrackOrderPage() {
                     : `${remainingKm} ${t('km remaining • ETA', 'គ.ម នៅសល់ • មកដល់ក្នុង')} ${etaMins}`}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[11px] font-medium">
-                  {t('Live API refresh', 'ធ្វើបច្ចុប្បន្នភាពពី API')}
+                  {hasLiveDriverGps ? t('Live API refresh', 'ធ្វើបច្ចុប្បន្នភាពពី API') : t('Location not available yet', 'មិនទាន់មានទីតាំង')}
                 </span>
               </div>
             </div>
@@ -330,15 +339,30 @@ export function TrackOrderPage() {
                   </div>
 
                   {/* Moving Courier Vehicle Badge */}
-                  <div
-                    className="absolute -top-10 -translate-x-1/2 transition-all duration-700"
-                    style={{ left: `${routeProgress}%` }}
-                  >
-                    <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full shadow-2xl border-2 border-white flex items-center gap-1.5 whitespace-nowrap text-xs font-bold">
-                      <Truck className="w-4 h-4 animate-bounce" />
-                      <span>{t('Courier', 'អ្នកដឹកជញ្ជូន')} ({routeProgress}%)</span>
+                  {hasLiveRouteProgress ? (
+                    <div
+                      className="absolute -top-10 -translate-x-1/2 transition-all duration-700"
+                      style={{ left: `${routeProgress}%` }}
+                    >
+                      <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full shadow-2xl border-2 border-white flex items-center gap-1.5 whitespace-nowrap text-xs font-bold">
+                        <Truck className="w-4 h-4 animate-bounce" />
+                        <span>{t('Courier', 'អ្នកដឹកជញ្ជូន')} ({routeProgress}%)</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : hasLiveDriverGps ? (
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                      <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-full shadow-xl border border-white/70 whitespace-nowrap text-xs font-bold">
+                        <Truck className="mr-1 inline-block h-4 w-4" />
+                        {t('Courier GPS is live', 'GPS អ្នកដឹកជញ្ជូនកំពុងដំណើរការ')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                      <div className="bg-slate-900/95 text-amber-200 px-3 py-1.5 rounded-full shadow-xl border border-amber-400/40 whitespace-nowrap text-xs font-bold">
+                        {t('Waiting for courier to start GPS', 'កំពុងរង់ចាំអ្នកដឹកជញ្ជូនបើក GPS')}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Warehouse Origin Pin (Bottom Right) */}
@@ -349,7 +373,7 @@ export function TrackOrderPage() {
                   </div>
                   <div className="gps-map-status bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
-                    {t('Arriving in ~', 'មកដល់ក្នុងរង្វង់ ~')}{etaMins} {t('mins', 'នាទី')}
+                    {etaMins === '—' ? t('Waiting for live GPS', 'កំពុងរង់ចាំ GPS ផ្ទាល់') : `${t('Arriving in ~', 'មកដល់ក្នុងរង្វង់ ~')}${etaMins} ${t('mins', 'នាទី')}`}
                   </div>
                 </div>
               </div>
@@ -376,6 +400,17 @@ export function TrackOrderPage() {
               </div>
 
               <div className="flex items-center gap-2">
+                {hasLiveDriverGps && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${backendDriverLat},${backendDriverLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button size="sm" variant="outline" className="rounded-xl text-xs gap-1.5 font-bold">
+                      <Navigation className="w-3.5 h-3.5" /> {t('Open Live Map', 'បើកផែនទីផ្ទាល់')}
+                    </Button>
+                  </a>
+                )}
                 <a href={tracking?.driver?.phone ? `tel:${tracking.driver.phone}` : undefined}>
                   <Button size="sm" className="rounded-xl text-xs gap-1.5 font-bold">
                     <Phone className="w-3.5 h-3.5" /> {t('Call Driver', 'ហៅទូរស័ព្ទ')}
