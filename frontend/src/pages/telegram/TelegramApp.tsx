@@ -289,25 +289,6 @@ export const TelegramApp: React.FC = () => {
           )}
         </main>
 
-        {/* Floating Action Button (FAB) for AI Shopping Assistant */}
-        {!adminModeActive && (
-          <button
-            onClick={() => {
-              if (window.Telegram?.WebApp?.HapticFeedback) {
-                window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-              }
-              setIsAiChatOpen(true);
-            }}
-            className="fixed bottom-18 right-4 sm:right-[calc(50%-200px)] z-40 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-3.5 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-all group ring-2 ring-white/20"
-            title="Open AI Shopping Assistant"
-          >
-            <Sparkles className="w-5 h-5 animate-pulse text-amber-300" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 text-xs font-bold px-0 group-hover:px-1.5">
-              AI Assistant
-            </span>
-          </button>
-        )}
-
         {/* Slide-Up AI Chat Modal */}
         <TelegramAiChatModal
           isOpen={isAiChatOpen}
@@ -325,6 +306,26 @@ export const TelegramApp: React.FC = () => {
 
         {/* Bottom Navigation */}
         <TelegramBottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+
+        {/* AI shortcut stays in the bottom area, above the footer navigation */}
+        {!adminModeActive && (
+          <button
+            onClick={() => {
+              if (window.Telegram?.WebApp?.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+              }
+              setIsAiChatOpen(true);
+            }}
+            className="fixed bottom-[4.75rem] right-4 sm:right-[calc(50%-200px)] z-40 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-3.5 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-all group ring-2 ring-white/20"
+            title="Open AI Shopping Assistant"
+            aria-label="Open AI Shopping Assistant"
+          >
+            <Sparkles className="w-5 h-5 animate-pulse text-amber-300" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-bold px-0 group-hover:max-w-xs group-hover:px-1.5">
+              AI Assistant
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
