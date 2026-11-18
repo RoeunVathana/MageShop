@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
-import { StoreSettings, telegramApi } from '@/services/telegramApi';
+import { ProductItem, StoreSettings, telegramApi } from '@/services/telegramApi';
 
 interface TelegramProfile {
   user?: {
@@ -74,7 +74,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   storeSettings,
   userProfile,
 }) => {
-  const { items, updateQuantity, removeItem, clearCart, subtotal } = useTelegramCartStore();
+  const { items, updateQuantity, removeItem, replaceItems, clearCart, subtotal } = useTelegramCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -215,8 +215,77 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     setCheckoutError('');
     idempotencyKeyRef.current ||= `tg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     try {
+      // Telegram WebApps persist the cart locally. After a reseed, archive, or
+      // product edit, the numeric ID in that snapshot may be old even though
+      // the product still exists under its stable slug/SKU. Refresh once before
+      // creating the order so the server receives the current product record.
+      const liveProducts = await telegramApi.getProductAvailability(
+        items.map(({ product }) => product.id),
+        items.map(({ product }) => product.slug).filter(Boolean),
+        items.map(({ product }) => product.sku).filter(Boolean),
+      );
+      const byId = new Map(liveProducts.map((product) => [Number(product.id), product]));
+      const bySlug = new Map(liveProducts.map((product) => [product.slug, product]));
+      const bySku = new Map(liveProducts.map((product) => [String(product.sku || '').toUpperCase(), product]));
+      const refreshedItems: Array<{ product: ProductItem; quantity: number }> = [];
+      const unavailableNames: string[] = [];
+
+      for (const item of items) {
+        const current = bySlug.get(item.product.slug)
+          || bySku.get(String(item.product.sku || '').toUpperCase())
+          || byId.get(Number(item.product.id));
+        const available = Number(current?.available_stock ?? current?.stock_quantity ?? 0);
+        const isDigital = current?.product_type === 'digital';
+        if (!current || !current.is_active || current.status !== 'active' || (!isDigital && available <= 0)) {
+          unavailableNames.push(item.product.name);
+          continue;
+        }
+
+        const quantity = isDigital ? item.quantity : Math.min(item.quantity, available);
+        const price = Number(current.price ?? current.selling_price ?? 0);
+        const discountPrice = current.discount_price !== null && Number(current.discount_price) > 0
+          && Number(current.discount_price) < price
+          ? Number(current.discount_price)
+          : null;
+        const refreshedProduct: ProductItem = {
+          ...item.product,
+          id: Number(current.id),
+          name: current.name,
+          sku: String(current.sku || item.product.sku || ''),
+          slug: current.slug,
+          price,
+          selling_price: Number(current.selling_price ?? price),
+          discount_price: discountPrice,
+          stock_quantity: available,
+          available_stock: available,
+          quantity_on_hand: Number(current.quantity_on_hand ?? available),
+          quantity_reserved: Number(current.quantity_reserved ?? 0),
+          product_type: current.product_type,
+          status: current.status,
+          is_active: current.is_active,
+          image_url: current.image_url || item.product.image_url,
+        };
+        refreshedItems.push({ product: refreshedProduct, quantity });
+      }
+
+      if (unavailableNames.length || refreshedItems.length !== items.length) {
+        replaceItems(refreshedItems);
+        idempotencyKeyRef.current = null;
+        setCheckoutError(unavailableNames.length
+          ? `${unavailableNames.join(', ')} is no longer available. The cart was refreshed; please choose another product.`
+          : 'Your cart was refreshed with the latest product information. Please try checkout again.');
+        return;
+      }
+
+      replaceItems(refreshedItems);
+
       const response = await telegramApi.createCheckout({
-        items: items.map(({ product, quantity }) => ({ product_id: product.id, quantity })),
+        items: refreshedItems.map(({ product, quantity }) => ({
+          product_id: Number(product.id),
+          slug: product.slug,
+          sku: product.sku,
+          quantity,
+        })),
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: email,

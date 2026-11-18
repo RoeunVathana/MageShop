@@ -10,6 +10,7 @@ export interface CartItem {
 interface TelegramCartState {
   items: CartItem[];
   addItem: (product: ProductItem, quantity?: number) => void;
+  replaceItems: (items: CartItem[]) => void;
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
@@ -21,6 +22,7 @@ export const useTelegramCartStore = create<TelegramCartState>()(
   persist(
     (set, get) => ({
       items: [],
+      replaceItems: (items) => set({ items }),
       addItem: (product: ProductItem, quantity = 1) => {
         const current = get().items;
         const existingIndex = current.findIndex((item) => item.product.id === product.id);

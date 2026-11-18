@@ -51,6 +51,12 @@ export interface ProductItem {
   price: string | number;
   discount_price?: string | number | null;
   stock_quantity: number;
+  available_stock?: number;
+  quantity_on_hand?: number;
+  quantity_reserved?: number;
+  product_type?: string;
+  selling_price?: string | number;
+  status?: string;
   low_stock_threshold: number;
   rating: string | number;
   reviews_count: number;
@@ -68,6 +74,24 @@ export interface ProductItem {
   };
 }
 
+export interface TelegramProductAvailability {
+  id: number;
+  name: string;
+  sku: string;
+  slug: string;
+  product_type: string;
+  selling_price: number;
+  price: number;
+  discount_price: number | null;
+  status: string;
+  is_active: boolean;
+  image_url: string | null;
+  stock_quantity: number;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  available_stock: number;
+}
+
 export interface CategoryItem {
   id: number;
   name: string;
@@ -78,7 +102,7 @@ export interface CategoryItem {
 }
 
 export interface TelegramCheckoutPayload {
-  items: Array<{ product_id: number; quantity: number }>;
+  items: Array<{ product_id: number; quantity: number; slug?: string; sku?: string }>;
   customer_name: string;
   customer_phone: string;
   customer_email: string;
@@ -136,6 +160,22 @@ export const telegramApi = {
   getProduct: async (idOrSku: string | number) => {
     const res = await api.get(`/telegram/products/${idOrSku}`);
     return res.data.data;
+  },
+
+  getProductAvailability: async (
+    ids: Array<number | string>,
+    slugs: string[] = [],
+    skus: string[] = [],
+  ): Promise<TelegramProductAvailability[]> => {
+    if (!ids.length && !slugs.length && !skus.length) return [];
+    const res = await api.get('/cart-product-availability', {
+      params: {
+        ...(ids.length ? { ids: ids.join(',') } : {}),
+        ...(slugs.length ? { slugs: slugs.join(',') } : {}),
+        ...(skus.length ? { skus: skus.join(',') } : {}),
+      },
+    });
+    return Array.isArray(res.data?.data) ? res.data.data : [];
   },
 
   // Categories

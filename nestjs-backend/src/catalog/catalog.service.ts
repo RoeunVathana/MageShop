@@ -258,7 +258,19 @@ export class CatalogService {
       LEFT JOIN categories c ON c.id = p.category_id
       LEFT JOIN categories cp ON cp.id = c.parent_id
       LEFT JOIN brands b ON b.id = p.brand_id
-      LEFT JOIN inventories i ON i.product_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT
+          CASE WHEN COUNT(*) FILTER (WHERE inv.variant_id IS NOT NULL) > 0
+            THEN COALESCE(SUM(inv.quantity_on_hand) FILTER (WHERE inv.variant_id IS NOT NULL), 0)
+            ELSE COALESCE(MAX(inv.quantity_on_hand) FILTER (WHERE inv.variant_id IS NULL), p.stock_quantity)
+          END AS quantity_on_hand,
+          CASE WHEN COUNT(*) FILTER (WHERE inv.variant_id IS NOT NULL) > 0
+            THEN COALESCE(SUM(inv.quantity_reserved) FILTER (WHERE inv.variant_id IS NOT NULL), 0)
+            ELSE COALESCE(MAX(inv.quantity_reserved) FILTER (WHERE inv.variant_id IS NULL), 0)
+          END AS quantity_reserved
+        FROM inventories inv
+        WHERE inv.product_id = p.id
+      ) i ON TRUE
       ${where}
       ORDER BY ${orderBy}
       LIMIT $${values.length - 1} OFFSET $${values.length}
@@ -283,8 +295,15 @@ export class CatalogService {
       .filter(Boolean)
       .filter((value, index, values) => values.indexOf(value) === index)
       .slice(0, 100);
+    const rawSkus = Array.isArray(query.skus) ? query.skus : [query.skus];
+    const skus = rawSkus
+      .flatMap((value) => String(value ?? '').split(','))
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index)
+      .slice(0, 100);
 
-    if (!ids.length && !slugs.length) return { data: [] };
+    if (!ids.length && !slugs.length && !skus.length) return { data: [] };
 
     const result = await this.database.query<{
       id: number;
@@ -321,7 +340,8 @@ export class CatalogService {
       ) i ON TRUE
       WHERE ($1::int[] IS NOT NULL AND p.id = ANY($1::int[]))
          OR ($2::text[] IS NOT NULL AND p.slug = ANY($2::text[]))
-    `, [ids, slugs]);
+         OR ($3::text[] IS NOT NULL AND UPPER(p.sku) = ANY($3::text[]))
+    `, [ids, slugs, skus]);
 
     return {
       data: result.rows.map((row) => ({
