@@ -30,6 +30,11 @@ interface TelegramProfile {
   };
   telegram?: {
     first_name?: string;
+    delivery_location?: {
+      latitude?: number | string;
+      longitude?: number | string;
+      accuracy?: number | string | null;
+    } | null;
   };
 }
 
@@ -103,6 +108,13 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     setCustomerName((current) => current || profileName);
     setCustomerPhone((current) => current || profilePhone);
     setCustomerEmail((current) => current || (profileEmail.includes('@megacommerce.internal') ? '' : profileEmail));
+    const savedLocation = userProfile?.telegram?.delivery_location;
+    const latitude = Number(savedLocation?.latitude);
+    const longitude = Number(savedLocation?.longitude);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      setCustomerCoords((current) => current || { lat: latitude, lng: longitude, accuracy: Number(savedLocation?.accuracy) || undefined });
+      setDeliveryAddress((current) => current || `Telegram delivery location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+    }
   }, [userProfile]);
 
   const handleDetectCurrentLocation = () => {

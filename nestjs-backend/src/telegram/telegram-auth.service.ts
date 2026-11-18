@@ -78,9 +78,14 @@ export class TelegramAuthService {
   async profile(userId: number): Promise<Record<string, unknown>> {
     const user = await this.auth.me(userId);
     const account = await this.database.query<Record<string, unknown>>('SELECT id, telegram_user_id, telegram_username, first_name, last_name, photo_url, language_code, is_bot_admin FROM telegram_accounts WHERE user_id=$1 ORDER BY id DESC LIMIT 1', [userId]);
+    const location = await this.database.query<{ delivery_location: unknown }>(`SELECT context_data->'delivery_location' AS delivery_location
+      FROM telegram_chat_sessions s
+      JOIN telegram_accounts a ON a.id=s.telegram_account_id
+      WHERE a.user_id=$1 AND context_data::jsonb ? 'delivery_location'
+      ORDER BY s.updated_at DESC, s.id DESC LIMIT 1`, [userId]);
     const count = await this.database.query<{ total: number | string }>('SELECT COUNT(*)::int AS total FROM orders WHERE user_id=$1', [userId]);
     const recent = await this.database.query<Record<string, unknown>>('SELECT * FROM orders WHERE user_id=$1 ORDER BY created_at DESC LIMIT 5', [userId]);
-    return { status: 'success', data: { user: { id: user.id, name: user.name, email: user.email, phone_number: user.phone_number, roles: user.roles.map((role) => role.name) }, telegram: account.rows[0] ?? null, stats: { orders_count: Number(count.rows[0]?.total ?? 0), wallet_balance: 0 }, recent_orders: recent.rows } };
+    return { status: 'success', data: { user: { id: user.id, name: user.name, email: user.email, phone_number: user.phone_number, roles: user.roles.map((role) => role.name) }, telegram: account.rows[0] ? { ...account.rows[0], delivery_location: location.rows[0]?.delivery_location ?? null } : null, stats: { orders_count: Number(count.rows[0]?.total ?? 0), wallet_balance: 0 }, recent_orders: recent.rows } };
   }
 
   private validateInitData(initData: string, botToken: string): Record<string, unknown> {

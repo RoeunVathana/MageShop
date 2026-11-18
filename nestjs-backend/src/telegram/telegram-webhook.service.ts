@@ -13,6 +13,7 @@ interface TelegramUser {
 }
 
 interface TelegramAccount {
+  id?: number;
   user_id: number | null;
   first_name: string | null;
   last_name: string | null;
@@ -70,6 +71,21 @@ export class TelegramWebhookService {
     }
 
     const account = await this.syncTelegramAccount(from);
+    const location = message.location as Record<string, unknown> | undefined;
+    if (location) {
+      const latitude = Number(location.latitude);
+      const longitude = Number(location.longitude);
+      const accuracy = Number(location.horizontal_accuracy ?? 0);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+        await this.saveDeliveryLocation(account.id, latitude, longitude, Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null);
+        await this.sendMessage(chatId, `📍 <b>Delivery location saved</b>\n\nYour courier can use <b>${latitude.toFixed(5)}, ${longitude.toFixed(5)}</b> for delivery. Open Shop to continue ordering.`, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '🛍️ Open TYUSHOP Shop', web_app: { url: await this.setting('telegram_mini_app_url', this.config.get<string>('TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app')) } }]] },
+        });
+        await this.sendMenuPrompt(chatId);
+        return { status: 'location_saved', latitude, longitude };
+      }
+    }
     const text = this.text(message.text);
     const [rawCommand, ...paramParts] = text.split(/\s+/);
     const normalizedCommand = rawCommand.toLowerCase().split('@')[0];
@@ -247,6 +263,7 @@ export class TelegramWebhookService {
       keyboard: [
         [{ text: '🛍️ Shop' }, { text: '📦 ប្រវត្តិបញ្ជាទិញ' }],
         [{ text: '💬 ជំនួយ Support' }, { text: '🌐 ភាសា / Language' }],
+        [{ text: '📍 Send Delivery Location', request_location: true }],
       ],
       resize_keyboard: true,
       is_persistent: true,
@@ -301,8 +318,19 @@ export class TelegramWebhookService {
     const result = await this.database.query<TelegramAccount>(`INSERT INTO telegram_accounts (telegram_user_id, telegram_username, first_name, last_name, language_code, is_bot_admin, linked_at, created_at, updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW(),NOW())
       ON CONFLICT (telegram_user_id) DO UPDATE SET telegram_username=EXCLUDED.telegram_username, first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name, language_code=EXCLUDED.language_code, is_bot_admin=telegram_accounts.is_bot_admin OR EXCLUDED.is_bot_admin, updated_at=NOW()
-      RETURNING user_id, first_name, last_name, language_code`, [telegramId, username, firstName, lastName, language, isAdmin]);
-    return result.rows[0] ?? { user_id: null, first_name: firstName, last_name: lastName, language_code: language };
+      RETURNING id, user_id, first_name, last_name, language_code`, [telegramId, username, firstName, lastName, language, isAdmin]);
+    return result.rows[0] ?? { id: undefined, user_id: null, first_name: firstName, last_name: lastName, language_code: language };
+  }
+
+  private async saveDeliveryLocation(accountId: number | undefined, latitude: number, longitude: number, accuracy: number | null): Promise<void> {
+    if (!accountId) return;
+    const location = JSON.stringify({ delivery_location: { latitude, longitude, accuracy, updated_at: new Date().toISOString() } });
+    const session = await this.database.query<{ id: number }>('SELECT id FROM telegram_chat_sessions WHERE telegram_account_id=$1 ORDER BY updated_at DESC, id DESC LIMIT 1', [accountId]);
+    if (session.rows[0]) {
+      await this.database.query("UPDATE telegram_chat_sessions SET context_data=(COALESCE(context_data::jsonb, '{}'::jsonb) || $1::jsonb)::json, updated_at=NOW() WHERE id=$2", [location, session.rows[0].id]);
+      return;
+    }
+    await this.database.query("INSERT INTO telegram_chat_sessions (telegram_account_id, session_type, context_data, created_at, updated_at) VALUES ($1,'customer',$2::jsonb,NOW(),NOW())", [accountId, location]);
   }
 
   private async setting(key: string, fallback: string): Promise<string> {
