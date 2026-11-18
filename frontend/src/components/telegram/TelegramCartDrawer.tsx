@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useTelegramCartStore } from '@/context/telegramCartStore';
 import { setTelegramAuthToken, StoreSettings, telegramApi } from '@/services/telegramApi';
-import { authService } from '@/services/auth.service';
+import { authService, GOOGLE_AUTH_SESSION_KEY } from '@/services/auth.service';
 
 interface TelegramProfile {
   user?: {
@@ -91,7 +91,9 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [customerCoords, setCustomerCoords] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [googleConnected, setGoogleConnected] = useState(() => sessionStorage.getItem(TELEGRAM_GOOGLE_CHECKOUT_KEY) === '1');
+  const [googleConnected, setGoogleConnected] = useState(() => (
+    sessionStorage.getItem(TELEGRAM_GOOGLE_CHECKOUT_KEY) === '1' || authService.isAuthenticated()
+  ));
   const [googleLoginLoading, setGoogleLoginLoading] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
 
@@ -110,6 +112,17 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     setCustomerEmail((current) => current || (profileEmail.includes('@megacommerce.internal') ? '' : profileEmail));
   }, [userProfile]);
 
+  // Keep the Telegram checkout guard synchronized with the normal site login.
+  // Telegram has its own sessionStorage token, so a Google login completed on
+  // tyushop.blog was previously invisible here and customers were asked to
+  // sign in twice.
+  useEffect(() => {
+    if (authService.isAuthenticated() || localStorage.getItem(GOOGLE_AUTH_SESSION_KEY) === '1') {
+      sessionStorage.setItem(TELEGRAM_GOOGLE_CHECKOUT_KEY, '1');
+      setGoogleConnected(true);
+    }
+  }, [userProfile]);
+
   const completeGoogleCheckoutLogin = useCallback(async (firebaseUser: any) => {
     const response = await authService.loginWithFirebase({
       id_token: await firebaseUser.getIdToken(),
@@ -124,6 +137,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
     // it in the Telegram API client so the Google-linked customer remains
     // authenticated after the Firebase popup closes.
     setTelegramAuthToken(token);
+    localStorage.setItem(GOOGLE_AUTH_SESSION_KEY, '1');
     sessionStorage.setItem(TELEGRAM_GOOGLE_CHECKOUT_KEY, '1');
     setGoogleConnected(true);
   }, []);

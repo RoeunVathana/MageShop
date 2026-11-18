@@ -27,6 +27,7 @@ export interface UpdateProfilePayload {
 
 const AUTH_TOKEN_KEY = 'tyushop_auth_token'
 const AUTH_USER_KEY = 'tyushop_auth_user'
+export const GOOGLE_AUTH_SESSION_KEY = 'tyushop_google_auth_verified'
 
 const roleNamesFor = (user?: User | null): string[] => {
   const rawRoles = (user as any)?.roles
@@ -67,6 +68,15 @@ export const authService = {
     // fail with an unauthenticated API response.
     try {
       return Boolean(authService.getStoredUser() && localStorage.getItem(AUTH_TOKEN_KEY))
+    } catch {
+      return false
+    }
+  },
+
+  /** Whether the current browser session completed Google authentication. */
+  isGoogleAuthenticated: (): boolean => {
+    try {
+      return authService.isAuthenticated() && localStorage.getItem(GOOGLE_AUTH_SESSION_KEY) === '1'
     } catch {
       return false
     }
@@ -233,6 +243,7 @@ export const authService = {
     try {
       localStorage.removeItem(AUTH_USER_KEY)
       localStorage.removeItem(AUTH_TOKEN_KEY)
+      localStorage.removeItem(GOOGLE_AUTH_SESSION_KEY)
       window.dispatchEvent(new Event('tyushop-auth-changed'))
     } catch {
       // ignore storage errors
@@ -253,6 +264,7 @@ export const authService = {
     await initCsrf()
     const res = await api.post<ApiResponse<{ user: User; token?: string }>>('/auth/login', credentials)
     if (res?.data?.user) {
+      localStorage.removeItem(GOOGLE_AUTH_SESSION_KEY)
       authService.saveSession(res.data.user, res.data.token)
     }
     return res
@@ -265,6 +277,7 @@ export const authService = {
     await initCsrf()
     const res = await api.post<ApiResponse<{ user: User; token: string }>>('/auth/register', payload)
     if (res?.data?.user) {
+      localStorage.removeItem(GOOGLE_AUTH_SESSION_KEY)
       authService.saveSession(res.data.user, res.data.token)
     }
     return res
@@ -285,6 +298,7 @@ export const authService = {
     await initCsrf()
     const res = await api.post<ApiResponse<{ user: User; token: string }>>('/auth/google/firebase', payload)
     if (res?.data?.user) {
+      localStorage.setItem(GOOGLE_AUTH_SESSION_KEY, '1')
       authService.saveSession(res.data.user, res.data.token)
     }
     return res
