@@ -6,6 +6,7 @@ import { ShopEngagementProvider } from '@/context/ShopEngagementContext'
 import { ToastProvider } from '@/components/ui/toast'
 import { SeoHead } from '@/components/seo/SeoHead'
 import { ScrollToTop } from '@/components/routing/ScrollToTop'
+import { AppLoadingScreen } from '@/components/ui/app-loading-screen'
 
 // Layouts
 import { StorefrontLayout } from '@/components/layout/StorefrontLayout'
@@ -89,7 +90,7 @@ export default function App() {
             <Router>
               <ScrollToTop />
               <SeoHead />
-              <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading TYUSHOP…</div>}>
+              <Suspense fallback={<AppLoadingScreen />}>
               <Routes>
                 {/* Official Telegram Mini App Interface */}
                 <Route path="/telegram-app" element={<TelegramApp />} />
