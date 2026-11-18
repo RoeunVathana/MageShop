@@ -31,6 +31,7 @@ import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export const TelegramApp: React.FC = () => {
   const { t } = useShopEngagement();
+  const telegramClientUser = typeof window !== 'undefined' ? window.Telegram?.WebApp?.initDataUnsafe?.user : undefined;
   const [currentTab, setCurrentTab] = useState<TelegramViewTab>('home');
   const [storeSettings, setStoreSettings] = useState<StoreSettings | undefined>(undefined);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -146,6 +147,28 @@ export const TelegramApp: React.FC = () => {
 
   const isUserSeller = Array.isArray(userProfile?.user?.roles) && userProfile.user.roles.some((role: unknown) => ['SELLER', 'SELLER_STAFF'].includes(String(role).toUpperCase()));
 
+  // Telegram exposes the signed-in Mini App user through initDataUnsafe. Prefer
+  // it for the visible profile, while retaining the API profile for roles and
+  // customer data loaded from the server.
+  const effectiveUserProfile = telegramClientUser
+    ? {
+        ...userProfile,
+        telegram: {
+          ...userProfile?.telegram,
+          telegram_user_id: telegramClientUser.id,
+          telegram_username: telegramClientUser.username,
+          first_name: telegramClientUser.first_name,
+          last_name: telegramClientUser.last_name,
+          language_code: telegramClientUser.language_code,
+          photo_url: telegramClientUser.photo_url || userProfile?.telegram?.photo_url,
+        },
+      }
+    : userProfile;
+  const telegramDisplayName = [telegramClientUser?.first_name, telegramClientUser?.last_name].filter(Boolean).join(' ')
+    || effectiveUserProfile?.telegram?.first_name
+    || effectiveUserProfile?.user?.name
+    || 'Shopper';
+
   const sectionTabs = [
     { id: 'all', label: t('All Items', 'ទំនិញទាំងអស់') },
     { id: 'featured', label: t('Featured', 'ពេញនិយម'), icon: Flame },
@@ -161,8 +184,8 @@ export const TelegramApp: React.FC = () => {
         {/* Header */}
         <TelegramHeader
           storeSettings={storeSettings}
-          userName={userProfile?.telegram?.first_name || userProfile?.user?.name || 'Shopper'}
-          userPhoto={userProfile?.telegram?.photo_url}
+          userName={telegramDisplayName}
+          userPhoto={effectiveUserProfile?.telegram?.photo_url}
           isAdmin={isUserStaff}
           adminModeActive={adminModeActive}
           onToggleAdminMode={() => setAdminModeActive(!adminModeActive)}
@@ -182,7 +205,7 @@ export const TelegramApp: React.FC = () => {
             <div className="space-y-3 pb-24">
               {/* Hero Banner with Personalized Greeting */}
               <TelegramHeroBanner
-                customerName={userProfile?.telegram?.first_name || 'Shopper'}
+                customerName={telegramDisplayName}
                 storeSettings={storeSettings}
                 onExploreDeals={() => setSectionTab('flash_sales')}
               />
@@ -287,17 +310,17 @@ export const TelegramApp: React.FC = () => {
                 isOpen={true}
                 onClose={() => setCurrentTab('home')}
                 storeSettings={storeSettings}
-                userProfile={userProfile}
+                userProfile={effectiveUserProfile}
               />
             </div>
           ) : currentTab === 'orders' ? (
             <TelegramOrdersView
-              orders={userProfile?.recent_orders || []}
+              orders={effectiveUserProfile?.recent_orders || []}
               onStartShopping={() => setCurrentTab('home')}
             />
           ) : (
             <TelegramProfileView
-              userProfile={userProfile}
+              userProfile={effectiveUserProfile}
               storeSettings={storeSettings}
               isSeller={isUserSeller}
               sellerModeActive={sellerModeActive}
@@ -320,7 +343,7 @@ export const TelegramApp: React.FC = () => {
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
           storeSettings={storeSettings}
-          userProfile={userProfile}
+          userProfile={effectiveUserProfile}
         />
 
         {/* Bottom Navigation */}

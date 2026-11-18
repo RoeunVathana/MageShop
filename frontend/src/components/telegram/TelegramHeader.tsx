@@ -31,6 +31,8 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
 }) => {
   const { setTheme, isDark } = useTheme();
   const { language, setLanguage, t } = useShopEngagement();
+  const [failedPhoto, setFailedPhoto] = React.useState<string | null>(null);
+  const showPhoto = Boolean(userPhoto && failedPhoto !== userPhoto);
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2.5 transition-colors">
@@ -121,11 +123,12 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
             className="relative flex items-center p-0.5 rounded-full ring-2 ring-indigo-500/30 hover:ring-indigo-500 transition-all"
             title={userName}
           >
-            {userPhoto ? (
+            {showPhoto ? (
               <img
                 src={userPhoto}
                 alt={userName}
                 className="w-7 h-7 rounded-full object-cover"
+                onError={() => setFailedPhoto(userPhoto || null)}
               />
             ) : (
               <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">

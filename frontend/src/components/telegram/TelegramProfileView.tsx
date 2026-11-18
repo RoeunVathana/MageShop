@@ -36,17 +36,25 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
   const user = userProfile?.user;
   const tg = userProfile?.telegram;
   const { t } = useShopEngagement();
+  const [failedPhoto, setFailedPhoto] = React.useState<string | null>(null);
+  const showPhoto = Boolean(tg?.photo_url && failedPhoto !== tg.photo_url);
+  const profileName = [tg?.first_name, tg?.last_name].filter(Boolean).join(' ') || user?.name || 'Verified Shopper';
 
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Profile Header Card */}
       <div className="bg-card rounded-2xl border border-border p-4 flex items-center space-x-3.5 shadow-2xs">
         <div className="relative">
-          {tg?.photo_url ? (
-            <img src={tg.photo_url} alt="Profile" className="w-14 h-14 rounded-2xl object-cover ring-2 ring-indigo-500/20" />
+          {showPhoto ? (
+            <img
+              src={tg.photo_url}
+              alt={profileName}
+              className="w-14 h-14 rounded-2xl object-cover ring-2 ring-indigo-500/20"
+              onError={() => setFailedPhoto(tg.photo_url || null)}
+            />
           ) : (
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xl shadow-xs">
-              {(tg?.first_name || user?.name || 'U').charAt(0).toUpperCase()}
+              {profileName.charAt(0).toUpperCase()}
             </div>
           )}
           <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full ring-2 ring-background">
@@ -57,7 +65,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-center space-x-1.5">
             <h3 className="font-bold text-base text-foreground truncate">
-              {tg?.first_name ? `${tg.first_name} ${tg.last_name || ''}` : user?.name || 'Verified Shopper'}
+              {profileName}
             </h3>
           </div>
           <div className="text-xs text-muted-foreground font-mono">
