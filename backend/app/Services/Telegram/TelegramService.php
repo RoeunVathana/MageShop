@@ -927,38 +927,56 @@ class TelegramService
             $receiptNo = $receipt ? $receipt->receipt_number : ('REC-'.date('Ymd'));
             $txnRef = ($payment && $payment->transaction_reference) ? $payment->transaction_reference : 'TXN-DIRECT';
 
+            $escapeHtml = static fn ($value): string => htmlspecialchars(
+                (string) $value,
+                ENT_QUOTES | ENT_SUBSTITUTE,
+                'UTF-8'
+            );
+            $safeOrderNumber = $escapeHtml($order->order_number);
+            $safeReceiptNo = $escapeHtml($receiptNo);
+            $safeTxnRef = $escapeHtml($txnRef);
+            $safeMethod = $escapeHtml($methodLabel);
+            $safeStatus = $escapeHtml($statusBadge);
+            $safeCustomerName = $escapeHtml($order->customer_name ?: 'Valued Customer');
+            $safePhone = $escapeHtml($order->customer_phone ?: 'N/A');
+            $safeEmail = $escapeHtml($order->customer_email ?: 'N/A');
+            $safeAddress = $escapeHtml($order->delivery_address ?: 'Phnom Penh, Cambodia');
+            $trackingUrl = 'https://tyushop.blog/track-order/'.rawurlencode((string) $order->order_number);
+
             $lines = [
-                '🚨 TYUSHOP — PAYMENT & ORDER REPORT',
-                '━━━━━━━━━━━━━━━━━━━━━━',
-                "🧾 Order ID: #{$order->order_number}",
-                "📄 Receipt No: #{$receiptNo}",
-                "🔐 Transaction: {$txnRef}",
-                "💳 Method: {$methodLabel}",
-                "📌 Status: {$statusBadge}",
-                "💰 Total Amount: \${$totalUsd} USD (≈ {$totalKhr} ៛)",
+                '🚨 <b>TYUSHOP — PAYMENT &amp; ORDER REPORT</b>',
+                '<b>━━━━━━━━━━━━━━━━━━━━━━</b>',
+                "🧾 <b>Order ID:</b> <code>#{$safeOrderNumber}</code>",
+                "📄 <b>Receipt No:</b> <code>#{$safeReceiptNo}</code>",
+                "🔐 <b>Transaction:</b> <code>{$safeTxnRef}</code>",
+                "💳 <b>Method:</b> {$safeMethod}",
+                "📌 <b>Status:</b> {$safeStatus}",
+                "💰 <b>Total Amount:</b> <b>\${$totalUsd} USD</b> <i>(≈ {$totalKhr} ៛)</i>",
                 '',
-                '👤 CUSTOMER INFORMATION',
-                '• Name: '.($order->customer_name ?: 'Valued Customer'),
-                '• Phone: '.($order->customer_phone ?: 'N/A'),
-                '• Email: '.($order->customer_email ?: 'N/A'),
-                '• Address: '.($order->delivery_address ?: 'Phnom Penh, Cambodia'),
+                '👤 <b>CUSTOMER INFORMATION</b>',
+                "• <b>Name:</b> {$safeCustomerName}",
+                "• <b>Phone:</b> {$safePhone}",
+                "• <b>Email:</b> {$safeEmail}",
+                "• <b>Address:</b> {$safeAddress}",
                 '',
-                '📦 ORDER ITEMS',
+                '📦 <b>ORDER ITEMS</b>',
             ];
 
             foreach ($order->items as $item) {
                 $itemTotal = number_format((float) $item->total_price, 2);
-                $lines[] = "• {$item->quantity}x {$item->product_name} — \${$itemTotal}";
+                $lines[] = '• <b>'.(int) $item->quantity.'x</b> '.$escapeHtml($item->product_name)." — <b>\${$itemTotal}</b>";
             }
 
             if ((float) ($order->discount ?? 0) > 0) {
-                $lines[] = '🏷️ Discount: -$'.number_format((float) $order->discount, 2);
+                $lines[] = '🏷️ <b>Discount:</b> -$'.number_format((float) $order->discount, 2);
             }
 
             $lines[] = '';
-            $lines[] = '🎁 Loyalty Points: +'.((int) ($order->points_earned ?? 5)).' pts';
-            $lines[] = '🚚 GPS Tracking: https://tyushop.blog/track-order/'.$order->order_number;
-            $lines[] = '🕒 Time: '.now('Asia/Phnom_Penh')->format('Y-m-d H:i:s');
+            $lines[] = '🎁 <b>Loyalty Points:</b> +'.((int) ($order->points_earned ?? 5)).' pts';
+            $lines[] = "🚚 <a href=\"{$trackingUrl}\"><b>Open GPS Tracking</b></a>";
+            $lines[] = '🕒 <b>Time:</b> '.now('Asia/Phnom_Penh')->format('Y-m-d H:i:s');
+            $lines[] = '';
+            $lines[] = '✅ <i>Report delivered to TYUSHOP Admin.</i>';
 
             $messageText = implode("\n", $lines);
 
@@ -985,7 +1003,13 @@ class TelegramService
             $dispatched = false;
             foreach ($targetChatIds as $chatId) {
                 $resp = $this->sendMessage($chatId, $messageText, [
+                    'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
+                    'reply_markup' => json_encode([
+                        'inline_keyboard' => [[
+                            ['text' => '🚚 Track GPS Delivery', 'url' => $trackingUrl],
+                        ]],
+                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ]);
                 if ($resp && ! empty($resp['ok'])) {
                     $dispatched = true;

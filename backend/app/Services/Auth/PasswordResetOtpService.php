@@ -50,7 +50,7 @@ class PasswordResetOtpService
         $rawOtp = (string) random_int(100000, 999999);
         $otpHash = Hash::make($rawOtp);
 
-        PasswordResetOtp::create([
+        $otpRecord = PasswordResetOtp::create([
             'email' => $email,
             'otp_hash' => $otpHash,
             'expires_at' => now()->addMinutes(5),
@@ -91,7 +91,7 @@ class PasswordResetOtpService
 
         if (! $mailSent) {
             // Do not leave a code active when it could not be delivered.
-            PasswordResetOtp::whereKey($record->id)->update(['is_used' => true]);
+            PasswordResetOtp::whereKey($otpRecord->id)->update(['is_used' => true]);
             throw new \RuntimeException('Email delivery is temporarily unavailable. Please try again later.');
         }
 
@@ -99,10 +99,23 @@ class PasswordResetOtpService
         try {
             $telegramAccount = $user->telegramAccount;
             if ($telegramAccount && ! empty($telegramAccount->telegram_chat_id)) {
+                $safeEmail = htmlspecialchars($email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 app(TelegramService::class)->sendMessage(
                     $telegramAccount->telegram_chat_id,
-                    "🔐 *TYUSHOP Password Recovery OTP*\n\nYour 6-digit verification code is: *{$rawOtp}*\nExpires in 5 minutes.",
-                    ['parse_mode' => 'Markdown']
+                    implode("\n", [
+                        '🔐 <b>TYUSHOP PASSWORD RECOVERY</b>',
+                        '<b>━━━━━━━━━━━━━━━━━━━━</b>',
+                        "✉️ <b>Account:</b> <code>{$safeEmail}</code>",
+                        "🔑 <b>Verification code:</b> <code>{$rawOtp}</code>",
+                        '⏱️ <b>Expires in:</b> 5 minutes',
+                        '',
+                        '🛡️ Never share this code with anyone.',
+                        'If you did not request this, you can ignore this message.',
+                    ]),
+                    [
+                        'parse_mode' => 'HTML',
+                        'disable_web_page_preview' => true,
+                    ]
                 );
             }
         } catch (\Throwable $e) {

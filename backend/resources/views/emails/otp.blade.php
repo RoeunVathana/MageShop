@@ -9,8 +9,9 @@
     <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);">
         <!-- Top Brand Header -->
         <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+            <div style="width: 54px; height: 54px; line-height: 54px; margin: 0 auto 14px auto; border-radius: 18px; background-color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.28); font-size: 26px;">🔐</div>
             <div style="display: inline-block; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); padding: 6px 16px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;">
-                🔐 Password Recovery • សង្គ្រោះពាក្យសម្ងាត់
+                SECURITY VERIFICATION • ផ្ទៀងផ្ទាត់សុវត្ថិភាព
             </div>
             <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.02em;">TYUSHOP Cambodia</h1>
             <p style="margin: 6px 0 0 0; font-size: 13px; color: #c7d2fe;">
@@ -29,13 +30,14 @@
             </p>
 
             <!-- OTP Code Display Card -->
-            <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px dashed #6366f1; border-radius: 16px; padding: 24px; text-align: center; margin: 24px 0;">
+            <div style="background-color: #eef2ff; background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 2px solid #818cf8; border-radius: 18px; padding: 24px; text-align: center; margin: 24px 0; box-shadow: 0 8px 20px rgba(79,70,229,0.12);">
                 <div style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">
                     Your 6-Digit OTP Code / លេខកូដផ្ទៀងផ្ទាត់ ៦ ខ្ទង់
                 </div>
                 <div style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 0.25em; color: #4338ca; text-indent: 0.25em;">
                     {{ $rawOtp }}
                 </div>
+                <div style="margin-top: 8px; font-size: 11px; color: #6366f1; font-weight: 700;">🔑 ENTER THIS CODE ON TYUSHOP</div>
                 <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #dc2626; background: #fee2e2; padding: 4px 12px; border-radius: 999px;">
                     ⏱ Valid for 5 minutes only • មានសុពលភាព ៥ នាទី
                 </div>

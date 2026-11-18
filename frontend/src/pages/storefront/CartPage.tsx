@@ -1003,7 +1003,7 @@ export function CartPage() {
         checkoutIdempotencyKeyRef.current = null
         toast({
           title: `🎉 Order #${orderNum} Confirmed!`,
-          description: `Receipt emailed to ${customerEmail} & report sent to Telegram Admin!`,
+          description: `✉️ Receipt email: ${checkoutData?.email_status === 'sent' ? 'sent' : 'pending'} • 📲 Telegram report: ${checkoutData?.telegram_admin_notified ? 'sent' : 'pending'}`,
           type: 'success',
         })
       }
@@ -1112,8 +1112,8 @@ export function CartPage() {
       toast({
         title: t('✅ Payment Successful!', '✅ ការទូទាត់ប្រាក់ជោគជ័យ!'),
         description: t(
-          `Receipt emailed to ${qrModalData.customer_email} & Telegram Admin notified!`,
-          `វិក្កយបត្រត្រូវបានផ្ញើទៅកាន់អ៊ីមែល និង Telegram Admin រួចរាល់!`
+          `✉️ Email receipt: ${confirmationData?.email_status === 'sent' ? 'sent' : 'pending'} • 📲 Telegram report: ${confirmationData?.telegram_admin_notified ? 'sent' : 'pending'}`,
+          `✉️ អ៊ីមែលវិក្កយបត្រ៖ ${confirmationData?.email_status === 'sent' ? 'បានផ្ញើ' : 'កំពុងរង់ចាំ'} • 📲 របាយការណ៍ Telegram៖ ${confirmationData?.telegram_admin_notified ? 'បានផ្ញើ' : 'កំពុងរង់ចាំ'}`
         ),
         type: 'success',
       })
@@ -2319,27 +2319,79 @@ export function CartPage() {
                 </div>
               </div>
 
-              {/* Status Badges */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-2.5 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              {/* Notification Delivery Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div
+                  className={cn(
+                    'rounded-xl border p-2.5 flex items-center gap-2',
+                    paymentSuccessData.email_report_sent
+                      ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/40'
+                      : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/40'
+                  )}
+                >
+                  {paymentSuccessData.email_report_sent ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  )}
                   <div className="min-w-0">
-                    <div className="font-bold text-emerald-900 dark:text-emerald-300 text-[11px]">
-                      {t('Receipt Emailed', 'ផ្ញើវិក្កយបត្ររួច')}
+                    <div
+                      className={cn(
+                        'font-bold text-[11px]',
+                        paymentSuccessData.email_report_sent
+                          ? 'text-emerald-900 dark:text-emerald-300'
+                          : 'text-amber-900 dark:text-amber-300'
+                      )}
+                    >
+                      {paymentSuccessData.email_report_sent
+                        ? t('Receipt Sent by Email', 'វិក្កយបត្របានផ្ញើតាមអ៊ីមែល')
+                        : t('Email Delivery Pending', 'កំពុងរង់ចាំផ្ញើអ៊ីមែល')}
                     </div>
                     <div className="text-[10px] text-muted-foreground truncate">
-                      {paymentSuccessData.customer_email}
+                      <Mail className="inline w-3 h-3 mr-1" />{paymentSuccessData.customer_email}
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-2.5 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <div
+                  className={cn(
+                    'rounded-xl border p-2.5 flex items-center gap-2',
+                    paymentSuccessData.telegram_admin_notified
+                      ? 'bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800/40'
+                      : 'bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700'
+                  )}
+                >
+                  {paymentSuccessData.telegram_admin_notified ? (
+                    <Send className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                  ) : (
+                    <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <div
+                      className={cn(
+                        'font-bold text-[11px]',
+                        paymentSuccessData.telegram_admin_notified
+                          ? 'text-sky-900 dark:text-sky-300'
+                          : 'text-slate-700 dark:text-slate-300'
+                      )}
+                    >
+                      {paymentSuccessData.telegram_admin_notified
+                        ? t('Report Sent to Telegram', 'របាយការណ៍បានផ្ញើទៅ Telegram')
+                        : t('Telegram Report Pending', 'កំពុងរង់ចាំរបាយការណ៍ Telegram')}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">
+                      <Send className="inline w-3 h-3 mr-1" />{t('Admin notification channel', 'ឆានែលជូនដំណឹង Admin')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-2.5 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                   <div className="min-w-0">
                     <div className="font-bold text-amber-900 dark:text-amber-300 text-[11px]">
                       {t('Loyalty Reward', 'រង្វាន់ពិន្ទុ')}
                     </div>
-                    <div className="text-[10px] font-bold text-amber-600">
+                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
                       +{paymentSuccessData.points_earned} PTS {t('Earned', 'ទទួលបាន')}
                     </div>
                   </div>

@@ -55,6 +55,21 @@
                 <p style="margin: 0;"><strong>🎁 Loyalty Reward Earned:</strong> <span style="color: #4f46e5; font-weight: bold;">+{{ $order->points_earned ?? 5 }} Points</span></p>
             </div>
 
+            <!-- Notification Delivery Summary -->
+            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 16px 18px; margin: 20px 0;">
+                <p style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">📨 Notification Delivery • ការផ្ញើការជូនដំណឹង</p>
+                <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <tr>
+                        <td style="padding: 7px 0; color: #334155;">✉️ Customer receipt</td>
+                        <td style="padding: 7px 0; text-align: right; color: #047857; font-weight: 800;">✅ Sent by Email</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 0 0 0; color: #334155; border-top: 1px solid #dbeafe;">📣 Admin order report</td>
+                        <td style="padding: 7px 0 0 0; text-align: right; color: #2563eb; font-weight: 800; border-top: 1px solid #dbeafe;">🚀 Telegram Admin</td>
+                    </tr>
+                </table>
+            </div>
+
             <!-- Itemized Breakdown -->
             <h3 style="font-size: 16px; margin: 24px 0 12px 0; color: #0f172a;">📦 Purchased Items Summary</h3>
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 14px;">

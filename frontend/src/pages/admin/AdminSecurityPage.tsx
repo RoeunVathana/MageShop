@@ -421,14 +421,14 @@ export function AdminSecurityPage() {
     try {
       await securityService.sendUserOtp(user.id)
       toast({
-        title: 'OTP Code Dispatched',
-        description: `6-digit verification OTP dispatched to ${user.email}`,
+        title: '🔐 OTP Code Dispatched',
+        description: `✉️ Email sent to ${user.email} • 📲 Telegram sent when the account is linked`,
         type: 'success',
       })
     } catch (err: any) {
       toast({
-        title: 'OTP Dispatch Failed',
-        description: err.response?.data?.message || err.message,
+        title: '⚠️ OTP Dispatch Failed',
+        description: `✉️ Email delivery failed: ${err.response?.data?.message || err.message}`,
         type: 'error',
       })
     } finally {
@@ -445,14 +445,18 @@ export function AdminSecurityPage() {
     try {
       await securityService.dispatchDirectOtp(directOtpEmail.trim())
       toast({
-        title: 'OTP Sent',
-        description: `Recovery OTP sent to ${directOtpEmail.trim()}`,
+        title: '✅ OTP Sent Successfully',
+        description: `✉️ Recovery code emailed to ${directOtpEmail.trim()} • 📲 Telegram sent when linked`,
         type: 'success',
       })
       setDirectOtpEmail('')
       fetchEmailData()
     } catch (err: any) {
-      toast({ title: 'Dispatch Failed', description: err.response?.data?.message || err.message, type: 'error' })
+      toast({
+        title: '⚠️ Dispatch Failed',
+        description: `✉️ Could not deliver the recovery email: ${err.response?.data?.message || err.message}`,
+        type: 'error',
+      })
     } finally {
       setDispatchingDirectOtp(false)
     }
@@ -510,17 +514,17 @@ export function AdminSecurityPage() {
     try {
       const res = await securityService.sendTestEmailOtp(testEmailAddress.trim())
       toast({
-        title: 'Test Email Delivered',
+        title: '📨 Test OTP Email Delivered',
         description: res.data?.recipient
-          ? `Verified SMTP delivery to ${res.data.recipient}!`
-          : 'Verified SMTP delivery!',
+          ? `✅ Verified SMTP delivery to ${res.data.recipient}`
+          : '✅ Verified SMTP delivery',
         type: 'success',
       })
       fetchEmailData()
     } catch (err: any) {
       toast({
-        title: 'SMTP Delivery Failed',
-        description: err.response?.data?.message || err.message,
+        title: '⚠️ SMTP Delivery Failed',
+        description: `✉️ ${err.response?.data?.message || err.message}`,
         type: 'error',
       })
     } finally {
