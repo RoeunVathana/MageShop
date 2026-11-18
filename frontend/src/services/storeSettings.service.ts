@@ -72,7 +72,7 @@ export const storeSettingsService = {
       support_email: data.support_email || 'Vothanarern@gmail.com',
       business_email: data.business_email || 'business@megacommerce.local',
       tax_id: data.tax_id || 'KHM-VAT-9024881',
-      telegram_bot_username: data.telegram_bot_username || 'MegaCommerceAiBot',
+      telegram_bot_username: data.telegram_bot_username || 'TYUSHOP_Bot',
       telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       google_client_id: data.google_client_id,
       google_client_secret: data.google_client_secret,

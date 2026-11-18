@@ -16,10 +16,10 @@ export function SellerTelegramSettingsPage() {
   const [settings, setSettings] = useState<SellerTelegramSettings>({
     telegram_bot_token_set: false,
     telegram_bot_token_masked: '',
-    telegram_bot_username: 'TyuShopBot',
+    telegram_bot_username: 'TYUSHOP_Bot',
   })
   const [tokenInput, setTokenInput] = useState('')
-  const [username, setUsername] = useState('TyuShopBot')
+  const [username, setUsername] = useState('TYUSHOP_Bot')
   const [showToken, setShowToken] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -126,7 +126,7 @@ export function SellerTelegramSettingsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold">Bot Username</label>
-                  <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="TyuShopBot" className="w-full rounded-lg border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="TYUSHOP_Bot" className="w-full rounded-lg border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
 
                 <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">

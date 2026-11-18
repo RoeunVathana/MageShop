@@ -397,12 +397,13 @@ export class AdminSecurityService {
   private telegramSettingsData(settings: Map<string, string>): Record<string, unknown> {
     const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
     const defaultUrl = `${this.config.get<string>('APP_URL', 'http://localhost:8080').replace(/\/$/, '')}/api/v1/telegram/webhook`;
-    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot'), telegram_admin_chat_id: this.setting(settings, 'telegram_admin_chat_id', 'TELEGRAM_ADMIN_CHAT_ID', ''), telegram_webhook_secret: this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', 'tyushop_sec_token_99182a'), telegram_mini_app_url: this.setting(settings, 'telegram_mini_app_url', 'TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'), telegram_webhook_url: this.setting(settings, 'telegram_webhook_url', '', defaultUrl) };
+    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.telegramUsername(settings), telegram_admin_chat_id: this.setting(settings, 'telegram_admin_chat_id', 'TELEGRAM_ADMIN_CHAT_ID', ''), telegram_webhook_secret: this.setting(settings, 'telegram_webhook_secret', 'TELEGRAM_WEBHOOK_SECRET', 'tyushop_sec_token_99182a'), telegram_mini_app_url: this.setting(settings, 'telegram_mini_app_url', 'TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'), telegram_webhook_url: this.setting(settings, 'telegram_webhook_url', '', defaultUrl) };
   }
   private sellerTelegramSettingsData(settings: Map<string, string>): Record<string, unknown> {
     const token = this.setting(settings, 'telegram_bot_token', 'TELEGRAM_BOT_TOKEN', '');
-    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TyuShopBot') };
+    return { telegram_bot_token_set: Boolean(token), telegram_bot_token_masked: token.length > 12 ? `${token.slice(0, 9)}...${token.slice(-5)}` : (token ? '********' : ''), telegram_bot_username: this.telegramUsername(settings) };
   }
+  private telegramUsername(settings: Map<string, string>): string { const username = this.setting(settings, 'telegram_bot_username', 'TELEGRAM_BOT_USERNAME', 'TYUSHOP_Bot'); return username.toLowerCase() === 'megacommerceaibot' ? 'TYUSHOP_Bot' : username; }
   private setting(settings: Map<string, string>, key: string, env: string, fallback: string): string { return String(settings.get(key) || this.config.get<string>(env, fallback) || '').trim(); }
   private async registerWebhook(token: string, url: string, secret: string): Promise<string> {
     if (!token || !url) return 'Webhook registration skipped: token or URL is missing';

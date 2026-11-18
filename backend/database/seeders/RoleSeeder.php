@@ -216,7 +216,7 @@ class RoleSeeder extends Seeder
                     'mail_from_address' => env('MAIL_FROM_ADDRESS', 'no-reply@tyushop.blog'),
                     'mail_from_name' => env('MAIL_FROM_NAME', 'TYUSHOP'),
                     'telegram_bot_token' => env('TELEGRAM_BOT_TOKEN', ''),
-                    'telegram_bot_username' => env('TELEGRAM_BOT_USERNAME', 'MegaCommerceAiBot'),
+                    'telegram_bot_username' => env('TELEGRAM_BOT_USERNAME', 'TYUSHOP_Bot'),
                     'telegram_webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET', ''),
                     'telegram_mini_app_url' => env('TELEGRAM_MINI_APP_URL', 'https://tyushop.blog/telegram-app'),
                     'telegram_admin_chat_id' => env('TELEGRAM_ADMIN_CHAT_ID', ''),

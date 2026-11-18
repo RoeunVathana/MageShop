@@ -31,7 +31,7 @@ Update `backend/.env` with your real Telegram BotFather and AI credentials:
 ```ini
 # Telegram Bot & Mini App
 TELEGRAM_BOT_TOKEN=your_botfather_token_here
-TELEGRAM_BOT_USERNAME=MegaCommerceAiBot
+TELEGRAM_BOT_USERNAME=TYUSHOP_Bot
 TELEGRAM_WEBHOOK_SECRET=your_custom_secure_secret_token
 TELEGRAM_MINI_APP_URL=http://localhost:3000/telegram-app
 TELEGRAM_ADMIN_CHAT_ID=your_telegram_numeric_id
@@ -49,8 +49,8 @@ AI_MODEL=gemini-1.5-flash
 ### Step 1: Create Your Bot
 1. Open Telegram and search for `@BotFather`.
 2. Send `/newbot`.
-3. Choose a name: `MegaCommerce Store`.
-4. Choose a username: e.g. `MegaCommerceAiBot`.
+3. Choose a display name: `TYUSHOP`.
+4. Choose an available username ending in `bot`, for example `TYUSHOP_Bot`.
 5. Copy the generated Bot Token into `TELEGRAM_BOT_TOKEN` in `backend/.env`.
 
 ### Step 2: Configure Menu Button for Mini App
@@ -63,8 +63,8 @@ AI_MODEL=gemini-1.5-flash
 Send `/setcommands` to `@BotFather` and paste the following command list:
 
 ```text
-start - Launch MegaCommerce Shopping Assistant
-shop - Open MegaCommerce Mini App
+start - Launch TYUSHOP Shopping Assistant
+shop - Open TYUSHOP Mini App
 products - Browse top featured products
 categories - Explore product departments
 orders - View your recent purchases

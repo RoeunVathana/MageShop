@@ -86,6 +86,7 @@ export class StoreSettingsService {
 
   private applyPublicDefaults(data: Record<string, unknown>): void {
     const env = (key: string, fallback: string): string => this.config.get<string>(key, fallback);
+    if (String(data.telegram_bot_username ?? '').trim().toLowerCase() === 'megacommerceaibot') data.telegram_bot_username = 'TYUSHOP_Bot';
     data.firebase_api_key ||= env('FIREBASE_API_KEY', ''); data.firebase_auth_domain ||= env('FIREBASE_AUTH_DOMAIN', '');
     data.firebase_project_id ||= env('FIREBASE_PROJECT_ID', ''); data.firebase_app_id ||= env('FIREBASE_APP_ID', '');
     data.google_auth_enabled ??= 'false';

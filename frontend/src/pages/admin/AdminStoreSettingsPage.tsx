@@ -108,7 +108,7 @@ export function AdminStoreSettingsPage() {
         bakong_api_url: data.bakong_api_url || 'https://api-bakong.nbc.gov.kh',
         bakong_api_enabled: data.bakong_api_enabled !== false && data.bakong_api_enabled !== 'false',
         bakong_api_token: '',
-        telegram_bot_username: data.telegram_bot_username || 'MegaCommerceAiBot',
+        telegram_bot_username: data.telegram_bot_username || 'TYUSHOP_Bot',
         telegram_support_contact: data.telegram_support_contact || '@MegaCommerceSupport',
       })
       setBakongTokenConfigured(Boolean(data.bakong_api_token_configured))

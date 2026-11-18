@@ -27,7 +27,7 @@ class CommerceAndTelegramSeeder extends Seeder
             'business_email' => 'Vothanarern@gmail.com',
             'support_email' => 'Vothanarern@gmail.com',
             'contact_phone' => '016 555 637',
-            'telegram_bot_username' => 'MegaCommerceAiBot',
+            'telegram_bot_username' => 'TYUSHOP_Bot',
             'telegram_support_contact' => '@MegaCommerceSupport',
             'website_url' => 'http://localhost:3000',
             'country' => 'Cambodia',

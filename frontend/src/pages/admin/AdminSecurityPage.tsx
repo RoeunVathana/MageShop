@@ -68,7 +68,7 @@ export function AdminSecurityPage() {
   const [telegramSettings, setTelegramSettings] = useState<TelegramSettings>({
     telegram_bot_token_set: false,
     telegram_bot_token_masked: '',
-    telegram_bot_username: 'TyuShopBot',
+    telegram_bot_username: 'TYUSHOP_Bot',
     telegram_admin_chat_id: '',
     telegram_webhook_secret: 'tyushop_sec_token_99182a',
     telegram_mini_app_url: 'https://tyushop.blog/telegram-app',
@@ -737,7 +737,7 @@ export function AdminSecurityPage() {
                           onChange={(e) =>
                             setTelegramSettings({ ...telegramSettings, telegram_bot_username: e.target.value })
                           }
-                          placeholder="TyuShopBot"
+                          placeholder="TYUSHOP_Bot"
                           className="w-full px-3 py-2 text-xs rounded-lg border bg-background text-foreground"
                         />
                       </div>

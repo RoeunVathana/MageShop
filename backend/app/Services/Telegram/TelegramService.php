@@ -124,7 +124,7 @@ class TelegramService
 
         if (str_starts_with($text, '/')) {
             $parts = explode(' ', $text, 2);
-            $command = strtolower(explode('@', $parts[0])[0]); // strip bot username if present: /start@TYUSHOPAiBot
+            $command = strtolower(explode('@', $parts[0])[0]); // strip bot username if present: /start@TYUSHOP_Bot
             $param = isset($parts[1]) ? trim($parts[1]) : '';
 
             return $this->executeCommand($command, $param, $chatId, $account, $from);

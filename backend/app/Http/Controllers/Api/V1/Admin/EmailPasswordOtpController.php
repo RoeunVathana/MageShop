@@ -597,7 +597,7 @@ class EmailPasswordOtpController extends Controller
             'data' => [
                 'telegram_bot_token_set' => ! empty($rawToken),
                 'telegram_bot_token_masked' => $maskedToken,
-                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', config('telegram.bot_username', 'TyuShopBot')),
+                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', config('telegram.bot_username', 'TYUSHOP_Bot')),
                 'telegram_admin_chat_id' => (string) StoreSetting::get('telegram_admin_chat_id', config('telegram.admin_chat_id', '')),
                 'telegram_webhook_secret' => (string) StoreSetting::get('telegram_webhook_secret', config('telegram.webhook_secret', 'tyushop_sec_token_99182a')),
                 'telegram_mini_app_url' => (string) StoreSetting::get('telegram_mini_app_url', config('telegram.mini_app_url', 'https://tyushop.blog/telegram-app')),
@@ -662,7 +662,7 @@ class EmailPasswordOtpController extends Controller
             'data' => [
                 'telegram_bot_token_set' => ! empty($activeToken),
                 'telegram_bot_token_masked' => $maskedToken,
-                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', 'TyuShopBot'),
+                'telegram_bot_username' => (string) StoreSetting::get('telegram_bot_username', 'TYUSHOP_Bot'),
                 'telegram_admin_chat_id' => (string) StoreSetting::get('telegram_admin_chat_id', ''),
                 'telegram_webhook_secret' => $webhookSecret,
                 'telegram_mini_app_url' => (string) StoreSetting::get('telegram_mini_app_url', 'https://tyushop.blog/telegram-app'),
