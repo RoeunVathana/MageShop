@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   ShieldAlert,
   TrendingUp,
-  PackageCheck,
   AlertTriangle,
   RefreshCw,
-  Plus,
   Minus,
   CheckCircle2,
 } from 'lucide-react';
@@ -49,7 +47,7 @@ export const TelegramAdminView: React.FC = () => {
         reason: `Telegram Staff Adjustment (${delta > 0 ? '+' : ''}${delta})`,
       });
 
-      setAdjustStatus(`Adjusted ${product.sku} by ${delta > 0 ? '+' : ''}${delta}!`);
+      setAdjustStatus(t(`Adjusted ${product.sku} by ${delta > 0 ? '+' : ''}${delta}!`, `បានកែសម្រួល ${product.sku} ចំនួន ${delta > 0 ? '+' : ''}${delta}!`));
       setTimeout(() => setAdjustStatus(null), 3000);
 
       // Refresh stock in local state
@@ -63,7 +61,7 @@ export const TelegramAdminView: React.FC = () => {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
     } catch (err: any) {
-      alert(`Adjustment error: ${err.response?.data?.message || err.message}`);
+      alert(t(`Adjustment error: ${err.response?.data?.message || err.message}`, `កំហុសក្នុងការកែសម្រួលស្តុក៖ ${err.response?.data?.message || err.message}`));
     } finally {
       setAdjustingId(null);
     }
@@ -95,7 +93,8 @@ export const TelegramAdminView: React.FC = () => {
         <button
           onClick={fetchData}
           className="p-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground"
-          title="Refresh"
+          title={t('Refresh', 'ធ្វើបច្ចុប្បន្នភាព')}
+          aria-label={t('Refresh', 'ធ្វើបច្ចុប្បន្នភាព')}
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -160,7 +159,7 @@ export const TelegramAdminView: React.FC = () => {
                     )}
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono">
-                    {p.sku} • Stock: <strong className="text-foreground">{p.stock_quantity}</strong>
+                    {p.sku} • {t('Stock', 'ស្តុក')}: <strong className="text-foreground">{p.stock_quantity}</strong>
                   </div>
                 </div>
 
@@ -169,7 +168,7 @@ export const TelegramAdminView: React.FC = () => {
                     onClick={() => handleAdjustStock(p, -1)}
                     disabled={isBusy || p.stock_quantity <= 0}
                     className="p-1.5 bg-muted hover:bg-muted/80 rounded-lg text-xs font-bold text-foreground disabled:opacity-30"
-                    title="Deduct 1"
+                    title={t('Deduct 1', 'ដក ១')}
                   >
                     <Minus className="w-3 h-3" />
                   </button>
@@ -177,7 +176,7 @@ export const TelegramAdminView: React.FC = () => {
                     onClick={() => handleAdjustStock(p, 5)}
                     disabled={isBusy}
                     className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold rounded-lg text-[10px] hover:bg-indigo-100"
-                    title="Add 5"
+                    title={t('Add 5', 'បន្ថែម ៥')}
                   >
                     +5
                   </button>
@@ -185,7 +184,7 @@ export const TelegramAdminView: React.FC = () => {
                     onClick={() => handleAdjustStock(p, 10)}
                     disabled={isBusy}
                     className="px-2 py-1 bg-indigo-600 text-white font-bold rounded-lg text-[10px] hover:bg-indigo-700 shadow-xs"
-                    title="Add 10"
+                    title={t('Add 10', 'បន្ថែម ១០')}
                   >
                     +10
                   </button>

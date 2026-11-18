@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Search,
-  SlidersHorizontal,
   Flame,
   Zap,
   Award,
@@ -26,7 +25,6 @@ import { TelegramOrdersView } from '@/components/telegram/TelegramOrdersView';
 import { TelegramAdminView } from '@/components/telegram/TelegramAdminView';
 import { TelegramSellerView } from '@/components/telegram/TelegramSellerView';
 import { TelegramProfileView } from '@/components/telegram/TelegramProfileView';
-import { useTelegramCartStore } from '@/context/telegramCartStore';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
 
 export const TelegramApp: React.FC = () => {
@@ -66,7 +64,7 @@ export const TelegramApp: React.FC = () => {
         const initData = tgApp?.initData || '';
         // If no raw initData (running in dev browser), authenticate in demo mode
         const isDev = !initData;
-        const authRes = await telegramApi.authenticate(initData, isDev, 'customer');
+        await telegramApi.authenticate(initData, isDev, 'customer');
 
         // Fetch Store settings & profile
         const [settings, profileRes, catRes] = await Promise.all([
@@ -359,12 +357,12 @@ export const TelegramApp: React.FC = () => {
               setIsAiChatOpen(true);
             }}
             className="fixed bottom-[4.75rem] right-4 sm:right-[calc(50%-200px)] z-40 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-3.5 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-all group ring-2 ring-white/20"
-            title="Open AI Shopping Assistant"
-            aria-label="Open AI Shopping Assistant"
+            title={t('Open AI Shopping Assistant', 'បើកជំនួយការទិញទំនិញ AI')}
+            aria-label={t('Open AI Shopping Assistant', 'បើកជំនួយការទិញទំនិញ AI')}
           >
             <Sparkles className="w-5 h-5 animate-pulse text-amber-300" />
             <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 text-xs font-bold px-0 group-hover:max-w-xs group-hover:px-1.5">
-              AI Assistant
+              {t('AI Assistant', 'ជំនួយការ AI')}
             </span>
           </button>
         )}

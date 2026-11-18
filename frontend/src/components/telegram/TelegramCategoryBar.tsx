@@ -7,7 +7,6 @@ import {
   Watch,
   Plane,
   Shirt,
-  Sparkles,
   Tag,
 } from 'lucide-react';
 import { CategoryItem } from '@/services/telegramApi';

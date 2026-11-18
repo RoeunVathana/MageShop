@@ -57,6 +57,21 @@ export const TelegramSellerView: React.FC = () => {
   const stats = dashboard?.stats;
   const orders = dashboard?.orders ?? [];
 
+  const getStatusLabel = (status: unknown) => {
+    const normalized = String(status || 'pending').toLowerCase().replaceAll('-', '_');
+    const labels: Record<string, [string, string]> = {
+      pending: ['Pending', 'កំពុងរង់ចាំ'],
+      paid: ['Paid', 'បានទូទាត់'],
+      processing: ['Processing', 'កំពុងរៀបចំ'],
+      shipped: ['In Transit', 'កំពុងដឹកជញ្ជូន'],
+      delivered: ['Delivered', 'បានដឹកជញ្ជូន'],
+      completed: ['Completed', 'បានបញ្ចប់'],
+      cancelled: ['Cancelled', 'បានលុបចោល'],
+    };
+    const label = labels[normalized];
+    return label ? t(label[0], label[1]) : normalized.replaceAll('_', ' ');
+  };
+
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-start justify-between gap-3">
@@ -64,12 +79,12 @@ export const TelegramSellerView: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="rounded-xl bg-emerald-600 p-2 text-white"><Store className="w-4 h-4" /></div>
             <div className="min-w-0">
-              <h2 className="truncate text-base font-extrabold text-foreground">{dashboard?.store.name || 'Seller Workspace'}</h2>
+              <h2 className="truncate text-base font-extrabold text-foreground">{dashboard?.store.name || t('Seller Workspace', 'កន្លែងធ្វើការអ្នកលក់')}</h2>
               <p className="text-[11px] text-muted-foreground">{t('Manage your store from Telegram', 'គ្រប់គ្រងហាងរបស់អ្នកពី Telegram')}</p>
             </div>
           </div>
         </div>
-        <button onClick={() => void loadDashboard(true)} disabled={refreshing} className="rounded-xl bg-muted px-2.5 py-2 text-muted-foreground" title="Refresh seller data">
+        <button onClick={() => void loadDashboard(true)} disabled={refreshing} className="rounded-xl bg-muted px-2.5 py-2 text-muted-foreground" title={t('Refresh seller data', 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យអ្នកលក់')} aria-label={t('Refresh seller data', 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យអ្នកលក់')}>
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -94,11 +109,11 @@ export const TelegramSellerView: React.FC = () => {
               <div key={order.id} className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-xs font-extrabold text-foreground">#{order.order_number}</span>
-                  <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold capitalize text-emerald-700 dark:text-emerald-300">{order.status.replaceAll('_', ' ')}</span>
+                  <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold capitalize text-emerald-700 dark:text-emerald-300">{getStatusLabel(order.status)}</span>
                 </div>
-                <p className="truncate text-[11px] text-muted-foreground">{order.items?.map((item) => `${item.product_name} × ${item.quantity}`).join(', ') || 'Seller items'}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{order.items?.map((item) => `${item.product_name} × ${item.quantity}`).join(', ') || t('Seller items', 'ទំនិញអ្នកលក់')}</p>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">Buyer: {order.customer?.name || 'Customer'}</span>
+                  <span className="text-muted-foreground">{t('Buyer', 'អ្នកទិញ')}: {order.customer?.name || t('Customer', 'អតិថិជន')}</span>
                   <strong className="text-foreground">${Number(order.items?.reduce((sum, item) => sum + Number(item.total_price || 0), 0) || order.total_amount || 0).toFixed(2)}</strong>
                 </div>
               </div>

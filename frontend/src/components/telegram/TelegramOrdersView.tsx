@@ -9,7 +9,7 @@ interface TelegramOrdersViewProps {
 }
 
 export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, onStartShopping }) => {
-  const { t } = useShopEngagement();
+  const { language, t } = useShopEngagement();
   const [trackingOrderNumber, setTrackingOrderNumber] = useState<string | null>(null);
   const [tracking, setTracking] = useState<Record<string, any> | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
@@ -27,10 +27,10 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
     setTrackingLoading(true);
     try {
       const result = await telegramApi.getOrderTracking(orderNumber);
-      if (!result) throw new Error('Delivery tracking is not available yet.');
+      if (!result) throw new Error(t('Delivery tracking is not available yet.', 'មិនទាន់មានព័ត៌មានតាមដានការដឹកជញ្ជូនទេ។'));
       setTracking(result);
     } catch (error: any) {
-      setTrackingError(error?.response?.data?.message || error?.message || 'Unable to load delivery tracking.');
+      setTrackingError(error?.response?.data?.message || error?.message || t('Unable to load delivery tracking.', 'មិនអាចផ្ទុកព័ត៌មានតាមដានការដឹកជញ្ជូនបានទេ។'));
     } finally {
       setTrackingLoading(false);
     }
@@ -84,6 +84,26 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
     }
   };
 
+  const getStatusLabel = (status: unknown) => {
+    const normalized = String(status || 'processing').toLowerCase().replaceAll('-', '_');
+    const labels: Record<string, [string, string]> = {
+      pending: ['Pending', 'កំពុងរង់ចាំ'],
+      awaiting_payment: ['Awaiting payment', 'កំពុងរង់ចាំការទូទាត់'],
+      paid: ['Paid', 'បានទូទាត់'],
+      verified: ['Verified', 'បានផ្ទៀងផ្ទាត់'],
+      confirmed: ['Confirmed', 'បានបញ្ជាក់'],
+      processing: ['Processing', 'កំពុងរៀបចំ'],
+      shipped: ['In Transit', 'កំពុងដឹកជញ្ជូន'],
+      out_for_delivery: ['Out for delivery', 'កំពុងនាំទៅដឹកជញ្ជូន'],
+      delivered: ['Delivered', 'បានដឹកជញ្ជូន'],
+      completed: ['Completed', 'បានបញ្ចប់'],
+      cancelled: ['Cancelled', 'បានលុបចោល'],
+      failed: ['Failed', 'បរាជ័យ'],
+    };
+    const label = labels[normalized];
+    return label ? t(label[0], label[1]) : normalized.replaceAll('_', ' ');
+  };
+
   return (
     <div className="p-4 space-y-3 pb-24">
       <div className="flex items-center justify-between">
@@ -111,7 +131,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                     #{ord.order_number}
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {new Date(ord.created_at).toLocaleDateString()} • {ord.payment_method?.toUpperCase()}
+                    {new Date(ord.created_at).toLocaleDateString(language === 'KM' ? 'km-KH' : 'en-US')} • {String(ord.payment_method || '').toLowerCase().includes('bakong') ? t('Bakong KHQR', 'បាគង KHQR') : t('Cash on Delivery', 'បង់ប្រាក់ពេលទទួល')}
                   </div>
                 </div>
 
@@ -157,7 +177,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                   {trackingLoading ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Loading delivery status…</span>
+                      <span>{t('Loading delivery status…', 'កំពុងផ្ទុកស្ថានភាពដឹកជញ្ជូន…')}</span>
                     </div>
                   ) : trackingError ? (
                     <div className="flex items-start gap-2 text-rose-700 dark:text-rose-300">
@@ -169,7 +189,7 @@ export const TelegramOrdersView: React.FC<TelegramOrdersViewProps> = ({ orders, 
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-emerald-800 dark:text-emerald-200">{t('Delivery status', 'ស្ថានភាពដឹកជញ្ជូន')}</span>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 shadow-xs dark:bg-emerald-950 dark:text-emerald-300">
-                          {String(tracking.status || 'processing').replaceAll('_', ' ')}
+                          {getStatusLabel(tracking.status)}
                         </span>
                       </div>
                       <div className="flex items-start gap-2 text-muted-foreground">

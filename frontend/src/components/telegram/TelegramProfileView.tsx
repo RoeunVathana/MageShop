@@ -1,15 +1,10 @@
 import React from 'react';
 import {
-  User,
   ShieldCheck,
   Mail,
   Phone,
   MapPin,
-  HelpCircle,
-  LogOut,
-  ExternalLink,
   Coins,
-  QrCode,
 } from 'lucide-react';
 import { StoreSettings } from '@/services/telegramApi';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
@@ -31,14 +26,13 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
   isSeller = false,
   sellerModeActive = false,
   onToggleSellerMode,
-  onOpenSupport,
 }) => {
   const user = userProfile?.user;
   const tg = userProfile?.telegram;
   const { t } = useShopEngagement();
   const [failedPhoto, setFailedPhoto] = React.useState<string | null>(null);
   const showPhoto = Boolean(tg?.photo_url && failedPhoto !== tg.photo_url);
-  const profileName = [tg?.first_name, tg?.last_name].filter(Boolean).join(' ') || user?.name || 'Verified Shopper';
+  const profileName = [tg?.first_name, tg?.last_name].filter(Boolean).join(' ') || user?.name || t('Verified Shopper', 'អតិថិជនដែលបានផ្ទៀងផ្ទាត់');
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -95,7 +89,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
         </div>
 
         <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-card px-2.5 py-1 rounded-xl border border-indigo-500/30">
-          Bakong KHQR
+          {t('Bakong KHQR', 'បាគង KHQR')}
         </span>
       </div>
 
@@ -105,7 +99,7 @@ export const TelegramProfileView: React.FC<TelegramProfileViewProps> = ({
         <div className="space-y-1.5 text-xs text-muted-foreground">
           <div className="flex items-start space-x-2">
             <MapPin className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-            <span>{storeSettings?.store_address || 'Phnom Penh, Cambodia'}</span>
+            <span>{storeSettings?.store_address || t('Phnom Penh, Cambodia', 'ភ្នំពេញ ប្រទេសកម្ពុជា')}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Mail className="w-4 h-4 text-indigo-500 flex-shrink-0" />

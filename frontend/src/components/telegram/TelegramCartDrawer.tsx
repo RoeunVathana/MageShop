@@ -66,12 +66,18 @@ interface TelegramCartDrawerProps {
   userProfile?: TelegramProfile | null;
 }
 
-const errorMessage = (error: unknown): string => {
+const errorMessage = (error: unknown, translate: (en: string, km: string) => string): string => {
   if (typeof error === 'object' && error !== null) {
     const response = (error as { response?: { data?: { message?: string } } }).response;
     if (response?.data?.message) return response.data.message;
   }
-  return error instanceof Error ? error.message : 'Telegram checkout could not be completed. Please try again.';
+  const message = error instanceof Error ? error.message : '';
+  const knownMessages: Record<string, string> = {
+    'Telegram checkout could not be completed. Please try again.': 'ការទូទាត់ក្នុង Telegram មិនអាចបញ្ចប់បានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'The server did not return an order number. Please try again.': 'ម៉ាស៊ីនមេមិនបានផ្តល់លេខបញ្ជាទិញទេ។ សូមព្យាយាមម្តងទៀត។',
+    'Bakong payment QR was not created. Your order was not marked as paid. Please try again.': 'មិនអាចបង្កើត QR បង់ប្រាក់បាគងបានទេ។ ការបញ្ជាទិញរបស់អ្នកមិនទាន់បានទូទាត់ទេ។ សូមព្យាយាមម្តងទៀត។',
+  };
+  return translate(message || 'Telegram checkout could not be completed. Please try again.', knownMessages[message] || 'ការទូទាត់ក្នុង Telegram មិនអាចបញ្ចប់បានទេ។ សូមព្យាយាមម្តងទៀត។');
 };
 
 export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
@@ -121,7 +127,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
 
   const handleDetectCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setCheckoutError('Your device does not support GPS location. Please use a device with location services enabled.');
+      setCheckoutError(t('Your device does not support GPS location. Please use a device with location services enabled.', 'ឧបករណ៍របស់អ្នកមិនគាំទ្រទីតាំង GPS ទេ។ សូមបើកសេវាទីតាំង។'));
       return;
     }
     setIsLocating(true);
@@ -137,7 +143,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
       },
       (error) => {
         setIsLocating(false);
-        setCheckoutError(error.code === 1 ? 'Location permission was denied. Enable location access, then try again.' : error.message || 'Unable to read your current GPS location.');
+        setCheckoutError(error.code === 1 ? t('Location permission was denied. Enable location access, then try again.', 'ការអនុញ្ញាតទីតាំងត្រូវបានបដិសេធ។ សូមបើកការអនុញ្ញាត ហើយព្យាយាមម្តងទៀត។') : error.message || t('Unable to read your current GPS location.', 'មិនអាចអានទីតាំង GPS បច្ចុប្បន្នបានទេ។'));
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
@@ -161,13 +167,13 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         if (!cancelled) setQrImage(dataUrl);
       })
       .catch(() => {
-        if (!cancelled) setCheckoutError('The Bakong QR image could not be generated. Please create a new checkout.');
+        if (!cancelled) setCheckoutError(t('The Bakong QR image could not be generated. Please create a new checkout.', 'មិនអាចបង្កើតរូបភាព QR បាគងបានទេ។ សូមបង្កើតការទូទាត់ថ្មី។'));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [checkoutData?.qr_payment?.qr_string]);
+  }, [checkoutData?.qr_payment?.qr_string, t]);
 
   const markPaymentComplete = useCallback((data: TelegramCheckoutData) => {
     setCheckoutData(data);
@@ -192,14 +198,14 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
       if (paymentStatus === 'paid' || paymentStatus === 'completed') {
         markPaymentComplete(data);
       } else if (!silent) {
-        setCheckoutError('Bakong has not confirmed this payment yet. Please wait a few seconds after scanning and try again.');
+        setCheckoutError(t('Bakong has not confirmed this payment yet. Please wait a few seconds after scanning and try again.', 'បាគងមិនទាន់បញ្ជាក់ការទូទាត់នេះទេ។ សូមរង់ចាំបន្តិចបន្ទាប់ពីស្កេន ហើយព្យាយាមម្តងទៀត។'));
       }
     } catch (error) {
-      if (!silent) setCheckoutError(errorMessage(error));
+      if (!silent) setCheckoutError(errorMessage(error, t));
     } finally {
       setIsConfirming(false);
     }
-  }, [isConfirming, markPaymentComplete, orderNumber]);
+  }, [isConfirming, markPaymentComplete, orderNumber, t]);
 
   useEffect(() => {
     if (!isCheckingOut || !orderNumber) return undefined;
@@ -212,16 +218,16 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
   const handleCheckout = async () => {
     if (!items.length || isSubmitting) return;
     if (!customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) {
-      setCheckoutError('Please enter your name, phone number, and delivery address before paying.');
+      setCheckoutError(t('Please enter your name, phone number, and delivery address before paying.', 'សូមបញ្ចូលឈ្មោះ លេខទូរស័ព្ទ និងអាសយដ្ឋានដឹកជញ្ជូន មុនពេលបង់ប្រាក់។'));
       return;
     }
     const email = customerEmail.trim().toLowerCase();
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      setCheckoutError('Please enter a valid email address so we can send your receipt and order report.');
+      setCheckoutError(t('Please enter a valid email address so we can send your receipt and order report.', 'សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ ដើម្បីឱ្យយើងផ្ញើបង្កាន់ដៃ និងរបាយការណ៍បញ្ជាទិញ។'));
       return;
     }
     if (!customerCoords) {
-      setCheckoutError('Use Current GPS Location before paying so your courier can be tracked in real time.');
+      setCheckoutError(t('Use Current GPS Location before paying so your courier can be tracked in real time.', 'សូមប្រើទីតាំង GPS បច្ចុប្បន្ន មុនពេលបង់ប្រាក់ ដើម្បីអាចតាមដានអ្នកដឹកជញ្ជូនបានផ្ទាល់។'));
       return;
     }
 
@@ -286,8 +292,8 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         replaceItems(refreshedItems);
         idempotencyKeyRef.current = null;
         setCheckoutError(unavailableNames.length
-          ? `${unavailableNames.join(', ')} is no longer available. The cart was refreshed; please choose another product.`
-          : 'Your cart was refreshed with the latest product information. Please try checkout again.');
+          ? t(`${unavailableNames.join(', ')} is no longer available. The cart was refreshed; please choose another product.`, `${unavailableNames.join(', ')} មិនមានទៀតទេ។ កន្ត្រកត្រូវបានធ្វើបច្ចុប្បន្នភាព សូមជ្រើសរើសទំនិញផ្សេង។`)
+          : t('Your cart was refreshed with the latest product information. Please try checkout again.', 'កន្ត្រកត្រូវបានធ្វើបច្ចុប្បន្នភាពជាមួយព័ត៌មានទំនិញថ្មី។ សូមព្យាយាមបង់ប្រាក់ម្តងទៀត។'));
         return;
       }
 
@@ -322,7 +328,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
         throw new Error('Bakong payment QR was not created. Your order was not marked as paid. Please try again.');
       }
     } catch (error) {
-      setCheckoutError(errorMessage(error));
+      setCheckoutError(errorMessage(error, t));
     } finally {
       setIsSubmitting(false);
     }
@@ -350,7 +356,7 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
             <h2 className="font-bold text-sm text-foreground truncate">{storeSettings?.store_name || 'TYUSHOP'} {t('Shopping Bag', 'កន្ត្រកទិញទំនិញ')}</h2>
             <span className="text-xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-semibold shrink-0">{items.length} {t('items', 'មុខ')}</span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label="Close shopping bag"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" aria-label={t('Close shopping bag', 'បិទកន្ត្រកទិញទំនិញ')}><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -368,9 +374,9 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
             </div>
           ) : isCheckingOut ? (
             <div className="text-center py-4 space-y-4">
-              <div className="w-64 h-64 mx-auto bg-white p-3 rounded-2xl border-2 border-indigo-500 shadow-md flex items-center justify-center">{qrImage ? <img src={qrImage} alt="Bakong KHQR payment code" className="w-full h-full object-contain" /> : <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin" />}</div>
+              <div className="w-64 h-64 mx-auto bg-white p-3 rounded-2xl border-2 border-indigo-500 shadow-md flex items-center justify-center">{qrImage ? <img src={qrImage} alt={t('Bakong KHQR payment code', 'កូដបង់ប្រាក់បាគង KHQR')} className="w-full h-full object-contain" /> : <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin" />}</div>
               <div>
-                <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1"><QrCode className="w-3.5 h-3.5" /> Bakong KHQR</div>
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1"><QrCode className="w-3.5 h-3.5" /> {t('Bakong KHQR', 'បាគង KHQR')}</div>
                 <h4 className="font-bold text-sm text-foreground">{t('Scan to Pay', 'ស្កេនដើម្បីបង់ប្រាក់')}</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">{t('Order', 'ការបញ្ជាទិញ')} #{orderNumber}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{t('Amount:', 'ចំនួនទឹកប្រាក់៖')} <strong className="text-indigo-600 font-extrabold">${qrAmount.toFixed(2)} USD</strong></p>
@@ -387,9 +393,9 @@ export const TelegramCartDrawer: React.FC<TelegramCartDrawerProps> = ({
               {items.map(({ product, quantity }) => {
                 const price = product.discount_price ? Number(product.discount_price) : Number(product.price);
                 return (
-                  <div key={product.id} className="flex items-center justify-between bg-card p-3 rounded-2xl border border-border/80 shadow-2xs">
+                    <div key={product.id} className="flex items-center justify-between bg-card p-3 rounded-2xl border border-border/80 shadow-2xs">
                     <div className="flex items-center space-x-3 min-w-0"><div className="w-12 h-12 rounded-xl bg-muted/60 p-1 flex-shrink-0 flex items-center justify-center">{product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" /> : <ShoppingBag className="w-5 h-5 text-muted-foreground" />}</div><div className="min-w-0"><h4 className="font-bold text-xs text-foreground truncate">{product.name}</h4><div className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">${price.toFixed(2)}</div></div></div>
-                    <div className="flex items-center space-x-2 flex-shrink-0"><div className="flex items-center space-x-1 bg-muted rounded-xl p-1"><button onClick={() => updateQuantity(product.id, quantity - 1)} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10"><Minus className="w-3 h-3" /></button><span className="w-6 text-center font-bold text-xs text-foreground">{quantity}</span><button onClick={() => updateQuantity(product.id, quantity + 1)} disabled={quantity >= product.stock_quantity} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10 disabled:opacity-30"><Plus className="w-3 h-3" /></button></div><button onClick={() => removeItem(product.id)} className="p-1.5 text-rose-500 hover:text-rose-600 transition-colors" title="Remove"><Trash2 className="w-4 h-4" /></button></div>
+                    <div className="flex items-center space-x-2 flex-shrink-0"><div className="flex items-center space-x-1 bg-muted rounded-xl p-1"><button onClick={() => updateQuantity(product.id, quantity - 1)} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10" aria-label={t('Decrease quantity', 'បន្ថយចំនួន')}><Minus className="w-3 h-3" /></button><span className="w-6 text-center font-bold text-xs text-foreground">{quantity}</span><button onClick={() => updateQuantity(product.id, quantity + 1)} disabled={quantity >= product.stock_quantity} className="w-6 h-6 rounded-lg bg-card flex items-center justify-center text-foreground hover:bg-muted-foreground/10" aria-label={t('Increase quantity', 'បង្កើនចំនួន')}><Plus className="w-3 h-3" /></button></div><button onClick={() => removeItem(product.id)} className="p-1.5 text-rose-500 hover:text-rose-600 transition-colors" title={t('Remove', 'លុប')} aria-label={t('Remove', 'លុប')}><Trash2 className="w-4 h-4" /></button></div>
                   </div>
                 );
               })}

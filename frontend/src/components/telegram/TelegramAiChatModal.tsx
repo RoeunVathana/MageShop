@@ -6,8 +6,6 @@ import {
   Bot,
   User,
   ShoppingBag,
-  ExternalLink,
-  RotateCcw,
   Languages,
 } from 'lucide-react';
 import { telegramApi, AiChatMessage } from '@/services/telegramApi';
@@ -36,6 +34,15 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
   const [sessionId, setSessionId] = useState<number | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const welcomeEnglish = `Hello! 👋 I am your ${storeName} AI Shopping Assistant. Ask me about product availability, genuine specs, current promotions, return policies, or order status in English or ភាសាខ្មែរ!`;
+  const welcomeKhmer = `សួស្តី! 👋 ខ្ញុំជាជំនួយការទិញទំនិញ AI របស់ ${storeName}។ សួរខ្ញុំអំពីស្តុក លក្ខណៈទំនិញ ប្រូម៉ូសិន គោលការណ៍ប្តូរ ឬស្ថានភាពការបញ្ជាទិញបាន។`;
+
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length !== 1 || current[0].sender !== 'assistant') return current;
+      return [{ ...current[0], message: t(welcomeEnglish, welcomeKhmer) }];
+    });
+  }, [appLanguage, storeName]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,13 +54,19 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
     }
   }, [messages, isOpen]);
 
-  const quickPrompts = [
-    { label: '💻 MacBook Pro M3', query: 'Do you have MacBook Pro in stock?' },
-    { label: '🎧 Sony XM5', query: 'Show me Sony WH-1000XM5 details' },
-    { label: '📜 Return Policy', query: 'What is your return and warranty policy?' },
-    { label: '📦 Track #ORD-2026-9041', query: 'Where is order ORD-2026-9041?' },
-    { label: '🇰🇭 គោលការណ៍ប្តូរទំនិញ', query: 'តើមានគោលការណ៍ប្តូរទំនិញវិញទេ?' },
-  ];
+  const quickPrompts = language === 'km'
+    ? [
+        { label: '💻 MacBook Pro M3', query: 'តើមាន MacBook Pro ក្នុងស្តុកទេ?' },
+        { label: '🎧 ព័ត៌មាន Sony XM5', query: 'បង្ហាញព័ត៌មាន Sony WH-1000XM5' },
+        { label: '📜 គោលការណ៍ប្តូរ', query: 'តើគោលការណ៍ប្តូរ និងការធានាមានអ្វីខ្លះ?' },
+        { label: '📦 តាមដាន #ORD-2026-9041', query: 'តើការបញ្ជាទិញ ORD-2026-9041 នៅឯណា?' },
+      ]
+    : [
+        { label: '💻 MacBook Pro M3', query: 'Do you have MacBook Pro in stock?' },
+        { label: '🎧 Sony XM5', query: 'Show me Sony WH-1000XM5 details' },
+        { label: '📜 Return Policy', query: 'What is your return and warranty policy?' },
+        { label: '📦 Track #ORD-2026-9041', query: 'Where is order ORD-2026-9041?' },
+      ];
 
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
@@ -90,12 +103,12 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
-    } catch (err: any) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           sender: 'assistant',
-          message: 'Sorry, I encountered an issue connecting to the store catalog. Please try again.',
+          message: t('Sorry, I encountered an issue connecting to the store catalog. Please try again.', 'សូមអភ័យទោស ប្រព័ន្ធមានបញ្ហាក្នុងការភ្ជាប់ទៅកាតាឡុកហាង។ សូមព្យាយាមម្តងទៀត។'),
         },
       ]);
     } finally {
@@ -138,6 +151,8 @@ export const TelegramAiChatModal: React.FC<TelegramAiChatModalProps> = ({
             {/* Close */}
             <button
               onClick={onClose}
+              title={t('Close assistant', 'បិទជំនួយការ')}
+              aria-label={t('Close assistant', 'បិទជំនួយការ')}
               className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-5 h-5" />

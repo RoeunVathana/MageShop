@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness, Languages } from 'lucide-react';
+import { ShieldCheck, Sun, Moon, ShieldAlert, BriefcaseBusiness, Languages } from 'lucide-react';
 import { useTheme } from '@/context/ThemeProvider';
 import { useShopEngagement } from '@/context/ShopEngagementContext';
 import { StoreSettings } from '@/services/telegramApi';
