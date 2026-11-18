@@ -96,14 +96,21 @@ export function DeliveryDashboard() {
   const { t } = useShopEngagement()
   const { toast } = useToast()
   const currentUser = authService.getStoredUser()
-  const roleNames = (currentUser?.roles || []).map((role: any) =>
-    String(role?.name || role?.slug || role)
-      .trim()
-      .toUpperCase()
-      .replace(/[\s-]+/g, '_')
-  )
+  const rawRoles = Array.isArray((currentUser as any)?.roles)
+    ? (currentUser as any).roles
+    : ((currentUser as any)?.roles ? [(currentUser as any).roles] : [])
+  const roleNames = [
+    ...rawRoles,
+    (currentUser as any)?.role,
+    (currentUser as any)?.role_name,
+    (currentUser as any)?.role_slug,
+  ]
+    .flatMap((role: any) => typeof role === 'string' ? [role] : [role?.name, role?.slug])
+    .filter(Boolean)
+    .map((role: unknown) => String(role).trim().toUpperCase().replace(/[\s-]+/g, '_'))
   const canManagePricing = authService.isAdmin(currentUser)
   const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
+  const canManageLocation = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
   const canEditAssignedDelivery = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
   const isFleetGpsViewer = roleNames.includes('DELIVERY') && !canDispatch
   const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
@@ -551,7 +558,7 @@ export function DeliveryDashboard() {
   // Save updated location coordinates and details
   const handleSaveLocation = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingOrder) return
+    if (!editingOrder || !canManageLocation) return
 
     const hasValidTargetCoordinates = Number.isFinite(editDestLat)
       && Number.isFinite(editDestLng)
@@ -889,7 +896,7 @@ export function DeliveryDashboard() {
               {isDriverOnly
                 ? t('Manage assigned deliveries, share live GPS, and confirm handovers from one route view.', 'គ្រប់គ្រងការដឹកជញ្ជូនដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនពីទិដ្ឋភាពផ្លូវតែមួយ។')
                 : isFleetGpsViewer
-                  ? t('Monitor driver GPS and live delivery status across Cambodia.', 'តាមដាន GPS អ្នកដឹកជញ្ជូន និងស្ថានភាពដឹកជញ្ជូនផ្ទាល់ទូទាំងកម្ពុជា។')
+                  ? t('Manage customer locations and monitor driver GPS across Cambodia.', 'គ្រប់គ្រងទីតាំងអតិថិជន និងតាមដាន GPS អ្នកដឹកជញ្ជូនទូទាំងកម្ពុជា។')
                   : t('Manage delivery locations, share driver GPS, and monitor fulfillment across Cambodia.', 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូន ចែករំលែក GPS អ្នកដឹកជញ្ជូន និងតាមដានការបំពេញការងារទូទាំងកម្ពុជា។')}
             </p>
           </div>
@@ -1199,14 +1206,16 @@ export function DeliveryDashboard() {
                   <Badge className="bg-indigo-600 text-white text-[10px]">
                     ETA ~{selectedOrder.estimated_arrival || '—'}
                   </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openLocationModal(selectedOrder)}
-                    className="h-7 text-xs text-white hover:bg-white/15 gap-1.5"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" /> Edit location
-                  </Button>
+                  {canManageLocation && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openLocationModal(selectedOrder)}
+                      className="h-7 text-xs text-white hover:bg-white/15 gap-1.5"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit location
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -1445,7 +1454,7 @@ export function DeliveryDashboard() {
                           </span>
 
                           <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
-                            {canEditAssignedDelivery && <Button
+                            {canManageLocation && <Button
                               type="button"
                               size="sm"
                               variant="outline"

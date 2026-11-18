@@ -117,7 +117,9 @@ export class DeliveryService {
   async updateLocation(orderNumber: string, body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
     const user = await this.authorizeStaff(userId);
     const order = await this.findOrder(orderNumber);
-    this.authorizeOrder(user, order);
+    // DELIVERY is the fleet-wide Delivery Location Manager. Drivers and
+    // couriers may still edit only orders assigned to their own route.
+    this.authorizeLocationOrder(user, order);
     const nextStatus = this.text(body.status);
     if (nextStatus && nextStatus !== order.status) {
       const transition = this.transitionError(user, order.status, nextStatus, orderNumber);
@@ -205,6 +207,18 @@ export class DeliveryService {
     const driver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
     const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER']);
     if (driver && !supervisor && order.driver_id !== user.id) throw new ForbiddenException({ status: 'error', message: 'This order is not assigned to your delivery route.' });
+  }
+
+  private authorizeLocationOrder(user: AuthUser, order: DeliveryOrderRow): void {
+    const canManageFleetLocations = this.auth.hasAnyRole(user, [
+      'SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY',
+    ]);
+    const isAssignedDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER'])
+      && order.driver_id === user.id;
+
+    if (!canManageFleetLocations && !isAssignedDriver) {
+      throw new ForbiddenException({ status: 'error', message: 'You can only manage locations for delivery orders assigned to your route.' });
+    }
   }
 
   private transitionError(user: AuthUser, from: string, to: string, orderNumber: string): string | null {

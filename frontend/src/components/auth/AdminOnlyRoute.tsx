@@ -63,7 +63,7 @@ export function StaffOrAdminRoute({ children }: { children: React.ReactNode }) {
 
 /**
  * Delivery Courier or Admin Guard:
- * Allows access to users with Delivery (DELIVERY_DRIVER, COURIER, DISPATCHER) or Admin roles.
+ * Allows access to users with delivery, dispatch, or admin roles.
  */
 export function DeliveryOrAdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation()
@@ -83,7 +83,7 @@ export function DeliveryOrAdminRoute({ children }: { children: React.ReactNode }
           <div>
             <h2 className="text-lg font-bold text-foreground">Delivery Fleet Access Required</h2>
             <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-              This dashboard is reserved for <strong>TYUSHOP Delivery Couriers</strong>, <strong>Dispatchers</strong>, and <strong>Administrators</strong>. Your current account ({user.email}) does not have delivery dispatch permissions.
+              This dashboard is reserved for <strong>TYUSHOP delivery drivers</strong>, <strong>location managers</strong>, <strong>dispatchers</strong>, and <strong>administrators</strong>. Your current account ({user.email}) does not have delivery access.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 pt-2">

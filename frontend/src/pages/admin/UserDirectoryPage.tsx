@@ -82,12 +82,12 @@ const AVAILABLE_ROLES = [
   {
     slug: 'delivery',
     name: 'DELIVERY',
-    title: 'Legacy Delivery Operator',
+    title: 'Delivery Location Manager',
     department: 'Logistics & Delivery',
     badge: 'Courier / GPS',
     color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
     icon: Truck,
-    description: 'Backward-compatible delivery role for assigned routes and cash handover confirmation.',
+    description: 'Manage customer delivery locations and monitor the full delivery fleet GPS queue.',
   },
   {
     slug: 'staff',
@@ -143,6 +143,7 @@ const AVAILABLE_ROLES = [
 
 const PERMISSION_OPTIONS = [
   { slug: 'delivery.update', label: 'Update Deliveries & Dispatch', group: 'Logistics' },
+  { slug: 'delivery.location.manage', label: 'Manage Delivery Locations', group: 'Logistics' },
   { slug: 'delivery.tracking.view', label: 'Broadcast & View Live GPS', group: 'Logistics' },
   { slug: 'orders.view', label: 'View Customer Orders', group: 'Orders' },
   { slug: 'orders.update', label: 'Update Order Fulfillment Status', group: 'Orders' },
@@ -154,7 +155,7 @@ const PERMISSION_OPTIONS = [
 const ROLE_TITLES_KM: Record<string, string> = {
   delivery_driver: 'អ្នកបើកបរដឹកជញ្ជូន / អ្នកនាំសំបុត្រ',
   courier: 'អ្នកនាំសំបុត្រ / ប្រតិបត្តិករដឹកជញ្ជូន',
-  delivery: 'ប្រតិបត្តិករដឹកជញ្ជូនចាស់',
+  delivery: 'អ្នកគ្រប់គ្រងទីតាំងដឹកជញ្ជូន',
   staff: 'បុគ្គលិកប្រតិបត្តិការ',
   seller: 'អ្នកលក់ពាណិជ្ជករ',
   warehouse_manager: 'អ្នកគ្រប់គ្រងឃ្លាំង',
@@ -175,6 +176,7 @@ const ROLE_DESCRIPTIONS_KM: Record<string, string> = {
 
 const PERMISSION_LABELS_KM: Record<string, string> = {
   'delivery.update': 'កែប្រែការដឹកជញ្ជូន និងការបែងចែកផ្លូវ',
+  'delivery.location.manage': 'គ្រប់គ្រងទីតាំងដឹកជញ្ជូន',
   'delivery.tracking.view': 'ផ្សព្វផ្សាយ និងមើល GPS ផ្ទាល់',
   'orders.view': 'មើលការបញ្ជាទិញរបស់អតិថិជន',
   'orders.update': 'កែប្រែស្ថានភាពបំពេញការបញ្ជាទិញ',
@@ -339,7 +341,7 @@ export function UserDirectoryPage() {
     setTargetRole(matched ? matched.slug : 'staff')
 
     if (matched?.slug === 'delivery_driver' || matched?.slug === 'courier' || matched?.slug === 'delivery') {
-      setTargetPermissions(['delivery.update', 'delivery.tracking.view', 'orders.view'])
+      setTargetPermissions(['delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'orders.view'])
     } else if (matched?.slug === 'staff') {
       setTargetPermissions(['orders.view', 'orders.update', 'inventory.adjust', 'products.create'])
     } else {
@@ -758,7 +760,7 @@ export function UserDirectoryPage() {
                 <option value="all">{t('All Roles', 'តួនាទីទាំងអស់')}</option>
                 <option value="delivery_driver">{t('Delivery Driver / Courier', 'អ្នកដឹកជញ្ជូន / Courier')}</option>
                 <option value="courier">{t('Courier / Delivery Operator', 'Courier / ប្រតិបត្តិករដឹកជញ្ជូន')}</option>
-                <option value="delivery">{t('Legacy Delivery Operator', 'ប្រតិបត្តិករដឹកជញ្ជូនចាស់')}</option>
+                <option value="delivery">{t('Delivery Location Manager', 'អ្នកគ្រប់គ្រងទីតាំងដឹកជញ្ជូន')}</option>
                 <option value="staff">{t('Staff Operations', 'ប្រតិបត្តិការបុគ្គលិក')}</option>
                 <option value="seller">{t('Merchant Seller', 'អ្នកលក់ពាណិជ្ជកម្ម')}</option>
                 <option value="warehouse">{t('Warehouse Manager', 'អ្នកគ្រប់គ្រងឃ្លាំង')}</option>
@@ -981,8 +983,8 @@ export function UserDirectoryPage() {
                           key={role.slug}
                           onClick={() => {
                             setTargetRole(role.slug)
-                            if (role.slug === 'delivery_driver') {
-                              setTargetPermissions(['delivery.update', 'delivery.tracking.view', 'orders.view'])
+                            if (role.slug === 'delivery_driver' || role.slug === 'courier' || role.slug === 'delivery') {
+                              setTargetPermissions(['delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'orders.view'])
                             } else if (role.slug === 'staff') {
                               setTargetPermissions(['orders.view', 'orders.update', 'inventory.adjust', 'products.create'])
                             }

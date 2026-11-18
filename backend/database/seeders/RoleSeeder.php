@@ -33,7 +33,7 @@ class RoleSeeder extends Seeder
             ['name' => 'DISPATCHER', 'slug' => 'dispatcher', 'description' => 'Assigns parcels to delivery drivers and monitors live transit.'],
             ['name' => 'DELIVERY_DRIVER', 'slug' => 'delivery_driver', 'description' => 'Fulfills delivery packages, broadcasts GPS location, collects proof.'],
             ['name' => 'COURIER', 'slug' => 'courier', 'description' => 'Courier role for assigned delivery routes and cash handover confirmation.'],
-            ['name' => 'DELIVERY', 'slug' => 'delivery', 'description' => 'Legacy delivery operator role kept compatible with assigned routes and cash handovers.'],
+            ['name' => 'DELIVERY', 'slug' => 'delivery', 'description' => 'Delivery Location Manager with fleet-wide access to customer destinations and driver GPS positions.'],
             ['name' => 'SELLER', 'slug' => 'seller', 'description' => 'Multi-vendor merchant store owner managing storefront and products.'],
             ['name' => 'SELLER_STAFF', 'slug' => 'seller_staff', 'description' => 'Staff member assisting an authorized marketplace vendor.'],
             ['name' => 'CUSTOMER', 'slug' => 'customer', 'description' => 'Verified retail customer purchasing goods and managing personal profile.'],
@@ -83,6 +83,7 @@ class RoleSeeder extends Seeder
 
             ['name' => 'Assign Deliveries', 'slug' => 'delivery.assign', 'group' => 'logistics', 'description' => 'Assign orders to delivery drivers'],
             ['name' => 'Update Deliveries', 'slug' => 'delivery.update', 'group' => 'logistics', 'description' => 'Update shipment transit state and proof of delivery'],
+            ['name' => 'Manage Delivery Locations', 'slug' => 'delivery.location.manage', 'group' => 'logistics', 'description' => 'Edit customer delivery addresses, destination coordinates, ETA, and live location data'],
             ['name' => 'View Live Tracking', 'slug' => 'delivery.tracking.view', 'group' => 'logistics', 'description' => 'Monitor real-time GPS fleet positions'],
 
             ['name' => 'Manage Staff', 'slug' => 'staff.manage', 'group' => 'administration', 'description' => 'Invite, suspend, and configure staff accounts'],
@@ -148,12 +149,12 @@ class RoleSeeder extends Seeder
         // Delivery and order workflow permissions. API guards also enforce the
         // role names, while this matrix keeps the dashboard role editor honest.
         $deliveryPermissions = [
-            'order_manager' => ['orders.view', 'orders.update', 'delivery.tracking.view'],
-            'logistics_manager' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.tracking.view'],
-            'dispatcher' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.tracking.view'],
-            'delivery_driver' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
-            'courier' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
-            'delivery' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.tracking.view'],
+            'order_manager' => ['orders.view', 'orders.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'logistics_manager' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'dispatcher' => ['orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'delivery_driver' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'courier' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'delivery' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
         ];
 
         foreach ($deliveryPermissions as $roleSlug => $permissionSlugs) {

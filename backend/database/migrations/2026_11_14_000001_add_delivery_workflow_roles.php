@@ -22,7 +22,7 @@ return new class extends Migration
             [
                 'name' => 'DELIVERY',
                 'slug' => 'delivery',
-                'description' => 'Legacy delivery operator completing assigned routes and cash handovers.',
+                'description' => 'Delivery Location Manager with fleet-wide access to customer destinations and driver GPS positions.',
             ],
         ] as $role) {
             $rolesTable = DB::table('roles');
@@ -42,6 +42,7 @@ return new class extends Migration
             ['name' => 'View Orders', 'slug' => 'orders.view', 'group' => 'orders', 'description' => 'View customer and vendor orders'],
             ['name' => 'Update Orders', 'slug' => 'orders.update', 'group' => 'orders', 'description' => 'Update order statuses and fulfillment'],
             ['name' => 'Update Deliveries', 'slug' => 'delivery.update', 'group' => 'logistics', 'description' => 'Update shipment transit state and proof of delivery'],
+            ['name' => 'Manage Delivery Locations', 'slug' => 'delivery.location.manage', 'group' => 'logistics', 'description' => 'Edit customer delivery addresses, destination coordinates, ETA, and live location data'],
             ['name' => 'View Live Tracking', 'slug' => 'delivery.tracking.view', 'group' => 'logistics', 'description' => 'Monitor real-time GPS fleet positions'],
         ] as $permission) {
             $permissionsTable = DB::table('permissions');
