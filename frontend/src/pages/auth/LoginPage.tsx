@@ -13,6 +13,13 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import {
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+} from 'firebase/auth'
+import { auth, authPersistenceReady, googleAuthProvider } from '@/lib/firebase'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address format'),
@@ -270,8 +277,7 @@ export function LoginPage() {
 
     const finishRedirectLogin = async () => {
       try {
-        const { getRedirectResult, onAuthStateChanged } = await import('firebase/auth')
-        const { auth } = await import('@/lib/firebase')
+        await authPersistenceReady
         const result = await getRedirectResult(auth)
 
         clearGoogleRedirectPending()
@@ -350,8 +356,10 @@ export function LoginPage() {
   const handleGoogleAuth = async () => {
     setLoading(true)
     try {
-      const { signInWithPopup, signInWithRedirect } = await import('firebase/auth')
-      const { auth, googleAuthProvider } = await import('@/lib/firebase')
+      // Initialize durable Firebase auth storage before opening Google. This
+      // prevents Telegram/Safari from losing the redirect state in a
+      // partitioned sessionStorage context.
+      await authPersistenceReady
 
       // Full-page redirect is more reliable than a popup on phones and avoids
       // mobile browsers closing the OAuth window before the API exchange.
@@ -381,6 +389,7 @@ export function LoginPage() {
           if (!canUseRedirectFallback) throw mobilePopupErr
 
           setGoogleRedirectPending()
+          await authPersistenceReady
           await signInWithRedirect(auth, googleAuthProvider)
           return
         }

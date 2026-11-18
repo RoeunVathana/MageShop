@@ -45,6 +45,8 @@ import { cn } from '@/lib/utils'
 import { useShopEngagement, type FreeRewardProduct } from '@/context/ShopEngagementContext'
 import { api } from '@/lib/api'
 import { authService } from '@/services/auth.service'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, authPersistenceReady, googleAuthProvider } from '@/lib/firebase'
 import { couponService } from '@/services/coupon.service'
 import type { User as AuthUser } from '@/types/user.types'
 import { deliveryService, type DeliveryMethod, type DeliverySettingsData } from '@/services/delivery.service'
@@ -558,8 +560,7 @@ export function CartPage() {
         return
       }
 
-      const { signInWithPopup } = await import('firebase/auth')
-      const { auth, googleAuthProvider } = await import('@/lib/firebase')
+      await authPersistenceReady
       const result = await signInWithPopup(auth, googleAuthProvider)
       const firebaseUser = result.user
       const response = await authService.loginWithFirebase({

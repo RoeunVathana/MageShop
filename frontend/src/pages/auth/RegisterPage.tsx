@@ -27,6 +27,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, authPersistenceReady, googleAuthProvider } from '@/lib/firebase'
 
 const registerSchema = z
   .object({
@@ -80,8 +82,7 @@ export function RegisterPage() {
   const handleGoogleAuth = async () => {
     setLoading(true)
     try {
-      const { signInWithPopup } = await import('firebase/auth')
-      const { auth, googleAuthProvider } = await import('@/lib/firebase')
+      await authPersistenceReady
       const result = await signInWithPopup(auth, googleAuthProvider)
       const fbUser = result.user
       const idToken = await fbUser.getIdToken()
