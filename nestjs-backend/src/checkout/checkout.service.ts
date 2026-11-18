@@ -57,7 +57,11 @@ export class CheckoutService {
     const customerName = this.required(body.customer_name, 'customer_name', 120);
     const customerPhone = this.required(body.customer_phone, 'customer_phone', 40);
     const deliveryAddress = this.required(body.delivery_address, 'delivery_address', 500);
-    const customerEmail = this.optional(body.customer_email, 150);
+    const customerEmailInput = this.string(body.customer_email).toLowerCase();
+    if (customerEmailInput && (customerEmailInput.length > 150 || !/^\S+@\S+\.\S+$/.test(customerEmailInput))) {
+      throw new UnprocessableEntityException({ status: 'error', message: 'The customer_email field is invalid.' });
+    }
+    const customerEmail = customerEmailInput || null;
     const paymentMethod = this.string(body.payment_method) || 'bakong_khqr';
     if (!['bakong_khqr', 'cash_on_delivery'].includes(paymentMethod)) {
       throw new UnprocessableEntityException({ status: 'error', message: 'The payment method is invalid.' });
@@ -200,6 +204,9 @@ export class CheckoutService {
     }
     const qr = isQr ? this.buildQr(orderNumber, totalAmount, transactionReference, merchant as MerchantAccount, paymentSettings) : null;
     const customerEmailValue = customerEmail || user.email;
+    if (!customerEmailValue || String(customerEmailValue).endsWith('@megacommerce.internal')) {
+      throw new UnprocessableEntityException({ status: 'error', message: 'Please provide a valid customer email address for the receipt and order report.' });
+    }
     const pointsEarned = this.pointsPerPurchase;
     const newPoints = Math.max(0, user.loyalty_points - pointsRedeemed + (paymentStatus === 'paid' ? pointsEarned : 0));
 

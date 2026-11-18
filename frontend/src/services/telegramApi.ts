@@ -81,7 +81,7 @@ export interface TelegramCheckoutPayload {
   items: Array<{ product_id: number; quantity: number }>;
   customer_name: string;
   customer_phone: string;
-  customer_email?: string;
+  customer_email: string;
   delivery_address: string;
   dest_lat?: number;
   dest_lng?: number;
