@@ -277,7 +277,8 @@ export class ReceiptService {
     const replyMarkup = {
       inline_keyboard: [[
         { text: '🚚 View Delivery', url: trackingUrl },
-        { text: '🛍️ Open Mini App', web_app: { url: miniAppUrl } },
+        // A normal HTTPS URL works in both private admin chats and group chats.
+        { text: '🛍️ Open Mini App', url: miniAppUrl },
       ]],
     };
     try {
