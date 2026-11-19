@@ -1216,9 +1216,9 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
         </Card>
 
         {/* Main 2-Column Split: Left = Interactive Dispatch Map & Route Telemetry | Right = Location Management Queue */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-12">
           {/* LEFT COLUMN (7 Cols): Live GPS Map & Selected Order Focus */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="min-w-0 space-y-4 sm:space-y-6 lg:col-span-7">
             <Card className="delivery-map-card overflow-hidden rounded-3xl border border-indigo-200/80 bg-white shadow-lg transition-shadow duration-500 hover:shadow-xl dark:border-indigo-900/60 dark:bg-slate-900 animate-in fade-in-0 zoom-in-95 duration-500">
               {/* Map Header Bar */}
               <div className="gps-map-header bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -1248,7 +1248,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
               </div>
 
               {/* Dynamic OpenStreetMap Embed */}
-              <div className="gps-map-viewport relative aspect-[4/3] min-h-[18rem] sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem] w-full bg-slate-950">
+              <div className="gps-map-viewport relative aspect-[1/1] min-h-[17rem] w-full bg-slate-950 sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem]">
                 {mapEmbedUrl ? (
                   <iframe
                     title="Staff Fleet Location Live Map"
@@ -1313,26 +1313,26 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
               </div>
 
               {/* Selected Order Detail Bar */}
-              <CardContent className="p-4 sm:p-5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-4 text-xs">
-                <div>
+              <CardContent className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-200/80 bg-slate-50/50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+                <div className="min-w-0">
                   <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <span>{selectedOrder.customer_name}</span>
-                    <Badge variant="outline" className="text-[10px]">
+                    <span className="min-w-0 break-words">{selectedOrder.customer_name}</span>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
                       {selectedOrder.customer_phone}
                     </Badge>
                   </div>
-                  <p className="text-slate-500 mt-0.5">
+                  <p className="mt-0.5 break-words text-slate-500">
                     Assigned Courier: <strong>{selectedOrder.driver_name || 'Unassigned'}</strong>{selectedOrder.driver_vehicle ? ` (${selectedOrder.driver_vehicle})` : ''}
                   </p>
                   {canDispatch && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <label htmlFor="driver-assignment" className="text-[11px] text-slate-500">Assign driver</label>
                       <select
                         id="driver-assignment"
                         value={selectedOrder.driver_id ? String(selectedOrder.driver_id) : ''}
                         onChange={(event) => handleAssignDriver(event.target.value)}
                         disabled={assigningDriver}
-                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-[11px] dark:border-slate-700 dark:bg-slate-900"
+                        className="h-9 min-w-0 max-w-full flex-1 rounded-lg border border-slate-200 bg-white px-2 text-[11px] dark:border-slate-700 dark:bg-slate-900 sm:h-8 sm:flex-none"
                       >
                         <option value="">Unassigned</option>
                         {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.name} ({driver.assigned_orders_count})</option>)}
@@ -1341,9 +1341,9 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <a href={`tel:${selectedOrder.customer_phone}`}>
-                    <Button size="sm" variant="outline" className="rounded-xl h-8 text-xs gap-1.5">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                  <a href={`tel:${selectedOrder.customer_phone}`} className="min-w-0 flex-1 sm:flex-none">
+                    <Button size="sm" variant="outline" className="h-9 w-full rounded-xl text-xs gap-1.5 sm:h-8 sm:w-auto">
                       <Phone className="w-3.5 h-3.5" /> Call Customer
                     </Button>
                   </a>
@@ -1353,7 +1353,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                         size="sm"
                         onClick={() => setIsContinuousDelivering((prev) => !prev)}
                         disabled={!canEditAssignedDelivery}
-                        className={`rounded-xl h-8 text-xs font-bold gap-1.5 shadow-sm transition-all ${
+                        className={`h-9 min-w-0 flex-1 rounded-xl text-xs font-bold gap-1.5 shadow-sm transition-all sm:h-8 sm:flex-none ${
                           isContinuousDelivering
                             ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
                             : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -1366,7 +1366,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                         size="sm"
                         onClick={() => handleAdvanceDelivery(selectedOrder)}
                         disabled={statusUpdating === selectedOrder.order_number || !canEditAssignedDelivery}
-                        className="rounded-xl h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
+                        className="h-9 min-w-0 flex-1 rounded-xl text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow sm:h-8 sm:flex-none"
                       >
                         {statusUpdating === selectedOrder.order_number
                           ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1381,7 +1381,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                       variant="destructive"
                       onClick={() => handleDeleteOrder(selectedOrder)}
                       disabled={deletingOrderId === selectedOrder.id}
-                      className="rounded-xl h-8 text-xs font-bold gap-1.5"
+                      className="h-9 min-w-0 flex-1 rounded-xl text-xs font-bold gap-1.5 sm:h-8 sm:flex-none"
                     >
                       {deletingOrderId === selectedOrder.id ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1397,9 +1397,9 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
           </div>
 
           {/* RIGHT COLUMN (5 Cols): Orders Location Queue & Quick Dispatch */}
-          <div className="lg:col-span-5 self-start space-y-4 lg:sticky lg:top-20">
+          <div className="min-w-0 self-start space-y-4 lg:sticky lg:top-20 lg:col-span-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="min-w-0 font-bold text-sm text-slate-900 dark:text-slate-100 flex items-start gap-2">
+              <h2 className="min-w-0 font-bold text-sm leading-5 text-slate-900 dark:text-slate-100 flex items-start gap-2">
                 <Truck className="w-4 h-4 text-indigo-600" />
                 <span className="min-w-0">
                   {isDriverOnly
@@ -1408,7 +1408,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                   ({filteredOrders.length})
                 </span>
               </h2>
-              <span className="pl-6 text-xs text-slate-600 dark:text-slate-400 sm:pl-0">Select an order to view its route</span>
+              <span className="pl-6 text-[11px] leading-4 text-slate-600 dark:text-slate-400 sm:pl-0 sm:text-xs">Select an order to view its route</span>
             </div>
 
             <div className="space-y-3">
@@ -1432,8 +1432,8 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                           : 'border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900'
                       }`}
                     >
-                      <CardContent className="p-4 space-y-2.5">
-                        <div className="flex items-start justify-between gap-2 text-xs">
+                      <CardContent className="space-y-2.5 p-3.5 sm:p-4">
+                        <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <div className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-sm text-slate-900 dark:text-slate-100">
                               <span className="break-all">#{order.order_number}</span>
@@ -1455,7 +1455,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                             </p>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <span className="font-black text-sm text-slate-900 dark:text-slate-100">
                               ${Number(order.total_amount || 0).toFixed(2)}
                             </span>
@@ -1474,7 +1474,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                         </div>
 
                         {/* Coordinates & Actions Bar */}
-                        <div className="flex flex-col items-start gap-2 text-[11px] pt-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col items-stretch gap-2 pt-1 text-[11px] sm:flex-row sm:items-center sm:justify-between">
                           <span className="max-w-full break-words font-mono text-slate-500 dark:text-slate-400">
                             GPS: {order.dest_lat == null || order.dest_lng == null
                               ? 'Unavailable'
@@ -1490,7 +1490,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                                 e.stopPropagation()
                                 openLocationModal(order)
                               }}
-                              className="h-7 text-[11px] font-bold rounded-lg px-2.5 gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                              className="h-9 min-w-0 flex-1 text-[11px] font-bold rounded-lg px-2.5 gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50 sm:h-7 sm:flex-none"
                             >
                               <Edit3 className="w-3 h-3" /> Edit location
                             </Button>}
@@ -1504,7 +1504,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                                   handleDeleteOrder(order)
                                 }}
                                 disabled={deletingOrderId === order.id}
-                                className="h-7 text-[11px] font-bold rounded-lg px-2.5 gap-1"
+                                className="h-9 min-w-0 flex-1 text-[11px] font-bold rounded-lg px-2.5 gap-1 sm:h-7 sm:flex-none"
                               >
                                 {deletingOrderId === order.id ? (
                                   <RefreshCw className="w-3 h-3 animate-spin" />
