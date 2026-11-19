@@ -130,6 +130,8 @@ export const SEED_PERMISSIONS: SeedPermission[] = [
   ['Update Deliveries', 'delivery.update', 'logistics', 'Update shipment transit state and proof of delivery'],
   ['Manage Delivery Locations', 'delivery.location.manage', 'logistics', 'Edit customer delivery addresses, destination coordinates, ETA, and live location data'],
   ['View Live Tracking', 'delivery.tracking.view', 'logistics', 'Monitor real-time GPS fleet positions'],
+  ['Manage Seller Delivery', 'seller.delivery.manage', 'seller', 'Manage delivery status, locations, dispatch, and tracking for the seller store'],
+  ['Manage Seller Staff', 'seller.staff.manage', 'seller', 'Invite, suspend, and configure staff for the seller store'],
   ['Manage Staff', 'staff.manage', 'administration', 'Invite, suspend, and configure staff accounts'],
   ['Manage Roles', 'roles.manage', 'administration', 'Create and customize role configurations'],
   ['Grant Permissions', 'permissions.grant', 'administration', 'Assign permissions to roles without escalation'],
@@ -146,6 +148,8 @@ export const ROLE_PERMISSION_SLUGS: Record<string, string[]> = {
   delivery_driver: ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
   courier: ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
   delivery: ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+  seller: ['products.view', 'products.create', 'products.update', 'products.delete', 'orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'seller.delivery.manage', 'seller.staff.manage'],
+  seller_staff: ['products.view', 'products.create', 'products.update', 'products.delete', 'orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'seller.delivery.manage'],
 };
 
 export const BASE_CATEGORIES: SeedCategory[] = [

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityE
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
+import { SellerService } from '../sellers/seller.service';
 
 interface DriverRow {
   id: number;
@@ -27,6 +28,7 @@ export class OperationsService {
   constructor(
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly sellers: SellerService,
   ) {}
 
   async overview(userId: number): Promise<Record<string, unknown>> {
@@ -64,16 +66,19 @@ export class OperationsService {
 
   async drivers(userId: number): Promise<Record<string, unknown>> {
     const user = await this.auth.me(userId);
-    this.requireOperationsRole(user);
+    const sellerId = await this.sellers.sellerScopeId(userId);
+    if (sellerId === null) this.requireOperationsRole(user);
     return { status: 'ok', data: (await this.driverRows()).data };
   }
 
   async assignDriver(orderNumber: string, body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
     const user = await this.auth.me(userId);
-    this.requireOperationsRole(user);
+    const sellerId = await this.sellers.sellerScopeId(userId);
+    if (sellerId === null) this.requireOperationsRole(user);
     const order = await this.database.query<Record<string, unknown>>('SELECT * FROM orders WHERE order_number=$1 LIMIT 1', [orderNumber]);
     const current = order.rows[0];
     if (!current) throw new NotFoundException({ status: 'error', message: 'Order not found.' });
+    if (sellerId !== null && !(await this.orderBelongsToSeller(Number(current.id), sellerId))) throw new ForbiddenException({ status: 'error', message: 'You can only dispatch orders containing your seller products.' });
     if (['delivered', 'cancelled'].includes(String(current.status))) throw new UnprocessableEntityException({ status: 'error', message: `Order #${orderNumber} is already ${current.status} and cannot be assigned.` });
     const driverId = this.id(body.driver_id);
     let driver: DriverAssignment | null = null;
@@ -96,7 +101,8 @@ export class OperationsService {
     const user = await this.auth.me(userId);
     if (!this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'SELLER', 'SELLER_STAFF'])) throw new ForbiddenException({ status: 'error', message: 'Seller access is required.' });
     const requestedSellerId = this.id(query.seller_id);
-    const sellerId = requestedSellerId !== null && this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN']) ? requestedSellerId : user.id;
+    const sellerScopeId = await this.sellers.sellerScopeId(userId);
+    const sellerId = requestedSellerId !== null && this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN']) ? requestedSellerId : sellerScopeId ?? user.id;
     const application = await this.database.query<Record<string, unknown>>('SELECT * FROM seller_applications WHERE user_id=$1 LIMIT 1', [sellerId]);
     const products = await this.database.query<{ active: number; total: number }>('SELECT COUNT(*) FILTER (WHERE is_active=TRUE)::int AS active, COUNT(*)::int AS total FROM products WHERE seller_id=$1', [sellerId]);
     const sales = await this.database.query<{ gross_revenue: number | string; pending_orders: number }>(`
@@ -157,6 +163,16 @@ export class OperationsService {
     if (!this.auth.hasAnyRole(user, this.operationsRoles)) {
       throw new ForbiddenException({ status: 'error', message: 'You do not have permission to access this operation.' });
     }
+  }
+
+  private async orderBelongsToSeller(orderId: number, sellerId: number): Promise<boolean> {
+    const result = await this.database.query<{ exists: boolean }>(`
+      SELECT EXISTS(
+        SELECT 1 FROM order_items oi JOIN products p ON p.id=oi.product_id
+        WHERE oi.order_id=$1 AND p.seller_id=$2
+      ) AS exists
+    `, [orderId, sellerId]);
+    return Boolean(result.rows[0]?.exists);
   }
 
   private count(value: string | number | null | undefined): number {

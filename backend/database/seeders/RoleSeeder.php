@@ -85,6 +85,8 @@ class RoleSeeder extends Seeder
             ['name' => 'Update Deliveries', 'slug' => 'delivery.update', 'group' => 'logistics', 'description' => 'Update shipment transit state and proof of delivery'],
             ['name' => 'Manage Delivery Locations', 'slug' => 'delivery.location.manage', 'group' => 'logistics', 'description' => 'Edit customer delivery addresses, destination coordinates, ETA, and live location data'],
             ['name' => 'View Live Tracking', 'slug' => 'delivery.tracking.view', 'group' => 'logistics', 'description' => 'Monitor real-time GPS fleet positions'],
+            ['name' => 'Manage Seller Delivery', 'slug' => 'seller.delivery.manage', 'group' => 'seller', 'description' => 'Manage delivery status, locations, dispatch, and tracking for the seller store'],
+            ['name' => 'Manage Seller Staff', 'slug' => 'seller.staff.manage', 'group' => 'seller', 'description' => 'Invite, suspend, and configure staff for the seller store'],
 
             ['name' => 'Manage Staff', 'slug' => 'staff.manage', 'group' => 'administration', 'description' => 'Invite, suspend, and configure staff accounts'],
             ['name' => 'Manage Roles', 'slug' => 'roles.manage', 'group' => 'administration', 'description' => 'Create and customize role configurations'],
@@ -155,6 +157,8 @@ class RoleSeeder extends Seeder
             'delivery_driver' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
             'courier' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
             'delivery' => ['orders.view', 'orders.update', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view'],
+            'seller' => ['products.view', 'products.create', 'products.update', 'products.delete', 'orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'seller.delivery.manage', 'seller.staff.manage'],
+            'seller_staff' => ['products.view', 'products.create', 'products.update', 'products.delete', 'orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view', 'seller.delivery.manage'],
         ];
 
         foreach ($deliveryPermissions as $roleSlug => $permissionSlugs) {

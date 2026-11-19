@@ -41,7 +41,7 @@ import { AdminBannerController } from './banners/admin-banner.controller';
 import { BannerController } from './banners/banner.controller';
 import { BannerService } from './banners/banner.service';
 import { AdminSellerController } from './sellers/admin-seller.controller';
-import { SellerController } from './sellers/seller.controller';
+import { SellerController, SellerStaffController } from './sellers/seller.controller';
 import { SellerService } from './sellers/seller.service';
 import { AdminCouponController, CouponController, CouponManagementController } from './coupons/coupon.controller';
 import { CouponService } from './coupons/coupon.service';
@@ -74,7 +74,7 @@ import { AdminDnsService } from './admin-dns/admin-dns.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AdminBannerController, AdminCouponController, AdminDeliverySettingsController, AdminDnsController, AdminMaintenanceController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, ReceiptController, SanctumController, SellerController, SellerOperationsController, StoreSettingsController, TelegramAdminController, TelegramAiController, TelegramAuthController, TelegramProductsController, TelegramWebhookController, UserAuthController],
+  controllers: [AdminBannerController, AdminCouponController, AdminDeliverySettingsController, AdminDnsController, AdminMaintenanceController, AdminOrderController, AdminSecurityController, AdminSellerController, ApiTokenController, AuthController, BannerController, CatalogAdminController, CatalogController, CatalogDetailController, CheckoutController, CouponController, CouponManagementController, DeliveryController, DeliverySettingsController, EngagementController, HealthController, InventoryController, MediaController, OperationsController, OrderController, PaymentAccountsController, PaymentConfirmationController, ProductAdminController, ReceiptController, SanctumController, SellerController, SellerOperationsController, SellerStaffController, StoreSettingsController, TelegramAdminController, TelegramAiController, TelegramAuthController, TelegramProductsController, TelegramWebhookController, UserAuthController],
   providers: [AdminDnsService, AdminMaintenanceService, AdminOrderService, AdminSecurityService, ApiTokenService, AuthRecoveryService, AuthService, BannerService, CatalogManagementService, CatalogService, CheckoutService, CouponService, DatabaseService, DeliveryService, DeliverySettingsService, EngagementService, InventoryService, MediaService, N8nService, OperationsService, OrderService, PaymentAccountsService, PaymentConfirmationService, ProductManagementService, ReceiptService, RedisService, SanctumGuard, SeedService, SellerService, StoreSettingsService, TelegramAdminService, TelegramAiService, TelegramAuthService, TelegramWebhookService],
 })
 export class AppModule {}

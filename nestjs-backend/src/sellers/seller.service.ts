@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit, UnprocessableEntityException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 import { AuthService } from '../auth/auth.service';
@@ -31,11 +31,153 @@ interface SellerApplicationRow {
 }
 
 @Injectable()
-export class SellerService {
+export class SellerService implements OnModuleInit {
+  private readonly logger = new Logger(SellerService.name);
   private readonly adminRoles = ['SUPER_ADMIN', 'ADMIN'];
   private readonly statuses = ['pending', 'approved', 'rejected', 'suspended'];
+  private readonly sellerStaffPermissions = [
+    'products.view', 'products.create', 'products.update', 'products.delete',
+    'orders.view', 'orders.update', 'delivery.assign', 'delivery.update', 'delivery.location.manage', 'delivery.tracking.view',
+  ];
 
   constructor(private readonly database: DatabaseService, private readonly auth: AuthService) {}
+
+  async onModuleInit(): Promise<void> {
+    // The NestJS deployment is the production runtime and does not execute the
+    // legacy Laravel migration pipeline. Keep this additive and idempotent so
+    // seller staff can be enabled on an existing database without a manual SQL step.
+    try {
+      await this.database.query(`
+        CREATE TABLE IF NOT EXISTS seller_staff_memberships (
+          id BIGSERIAL PRIMARY KEY,
+          seller_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          staff_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          status VARCHAR(20) NOT NULL DEFAULT 'active',
+          permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+          created_at TIMESTAMP NULL,
+          updated_at TIMESTAMP NULL,
+          CONSTRAINT seller_staff_memberships_unique_pair UNIQUE (seller_user_id, staff_user_id)
+        )
+      `);
+      await this.database.query('CREATE INDEX IF NOT EXISTS seller_staff_memberships_seller_idx ON seller_staff_memberships (seller_user_id, status)');
+      await this.database.query('CREATE INDEX IF NOT EXISTS seller_staff_memberships_staff_idx ON seller_staff_memberships (staff_user_id, status)');
+    } catch (error) {
+      this.logger.warn(`Seller staff schema bootstrap skipped: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async sellerScopeId(userId: number): Promise<number | null> {
+    const user = await this.auth.me(userId);
+    if (this.auth.hasAnyRole(user, ['SELLER'])) return user.id;
+    if (!this.auth.hasAnyRole(user, ['SELLER_STAFF'])) return null;
+
+    const membership = await this.database.query<{ seller_user_id: number }>(`
+      SELECT seller_user_id
+      FROM seller_staff_memberships
+      WHERE staff_user_id=$1 AND status='active'
+      ORDER BY id
+      LIMIT 1
+    `, [userId]);
+    if (!membership.rows[0]) throw new ForbiddenException({ status: 'error', message: 'Your seller staff membership is not active.' });
+    return membership.rows[0].seller_user_id;
+  }
+
+  async staff(userId: number): Promise<Record<string, unknown>> {
+    const sellerId = await this.sellerScopeId(userId);
+    if (sellerId === null) throw new ForbiddenException({ status: 'error', message: 'Seller access is required.' });
+    const result = await this.database.query<Record<string, unknown>>(`
+      SELECT ssm.id, ssm.staff_user_id, ssm.status, ssm.permissions, ssm.created_at, ssm.updated_at,
+             u.name, u.email, u.phone_number, u.status AS user_status,
+             COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::varchar[]) AS roles
+      FROM seller_staff_memberships ssm
+      JOIN users u ON u.id=ssm.staff_user_id
+      LEFT JOIN role_user ru ON ru.user_id=u.id
+      LEFT JOIN roles r ON r.id=ru.role_id
+      WHERE ssm.seller_user_id=$1
+      GROUP BY ssm.id, u.id
+      ORDER BY ssm.id DESC
+    `, [sellerId]);
+    return { status: 'ok', data: result.rows, seller_user_id: sellerId };
+  }
+
+  async createStaff(body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
+    const seller = await this.auth.me(userId);
+    if (!this.auth.hasAnyRole(seller, ['SELLER'])) throw new ForbiddenException({ status: 'error', message: 'Only the seller owner can add seller staff.' });
+    const name = this.limitRequired(body.name, 'name', 255);
+    const email = this.email(body.email);
+    const password = this.limitRequired(body.password, 'password', 255);
+    if (password.length < 8) throw new UnprocessableEntityException({ status: 'error', message: 'The password must be at least 8 characters.' });
+    const phone = this.limitNullable(body.phone_number, 50, 'phone_number');
+    const permissions = this.normalizeStaffPermissions(body.permissions);
+
+    const created = await this.database.transaction(async (client) => {
+      const existing = await client.query<{ id: number; password: string; status: string }>('SELECT id, password, status FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1', [email]);
+      let staffId = existing.rows[0]?.id;
+      if (staffId) {
+        const existingMembership = await client.query<{ id: number }>('SELECT id FROM seller_staff_memberships WHERE seller_user_id=$1 AND staff_user_id=$2 LIMIT 1', [userId, staffId]);
+        if (!existingMembership.rows[0]) throw new UnprocessableEntityException({ status: 'error', message: 'This email already belongs to an account. Ask the user to use a new staff email or have an administrator assign the role.' });
+        const existingRoles = await client.query<{ name: string; slug: string }>(`
+          SELECT r.name, r.slug FROM roles r JOIN role_user ru ON ru.role_id=r.id WHERE ru.user_id=$1
+        `, [staffId]);
+        if (existingRoles.rows.some((role) => ['SUPER_ADMIN', 'ADMIN', 'SELLER'].includes(role.name.toUpperCase()) || ['super_admin', 'admin', 'seller'].includes(role.slug.toLowerCase()))) {
+          throw new UnprocessableEntityException({ status: 'error', message: 'This account already has an owner or administrator role and cannot be added as seller staff.' });
+        }
+        await client.query(`UPDATE users SET name=$1, phone_number=COALESCE($2, phone_number), status='active', updated_at=NOW() WHERE id=$3`, [name, phone, staffId]);
+      } else {
+        const inserted = await client.query<{ id: number }>(`
+          INSERT INTO users (name, email, phone_number, password, status, loyalty_points, email_verified_at, created_at, updated_at)
+          VALUES ($1, LOWER($2), $3, $4, 'active', 0, NOW(), NOW(), NOW()) RETURNING id
+        `, [name, email, phone, await bcrypt.hash(password, 12)]);
+        staffId = inserted.rows[0]?.id;
+      }
+      if (!staffId) throw new Error('Seller staff account was not created.');
+      await client.query("INSERT INTO roles (name, slug, description, created_at, updated_at) VALUES ('SELLER_STAFF','seller_staff','Staff member assisting an authorized marketplace vendor.',NOW(),NOW()) ON CONFLICT (slug) DO NOTHING");
+      const role = await client.query<{ id: number }>("SELECT id FROM roles WHERE LOWER(slug)='seller_staff' OR UPPER(name)='SELLER_STAFF' ORDER BY id LIMIT 1");
+      if (!role.rows[0]) throw new Error('SELLER_STAFF role is missing. Run the role seeder before adding staff.');
+      await client.query('INSERT INTO role_user (user_id, role_id, created_at, updated_at) VALUES ($1,$2,NOW(),NOW()) ON CONFLICT DO NOTHING', [staffId, role.rows[0].id]);
+      const permissionRows = await client.query<{ id: number }>('SELECT id FROM permissions WHERE slug = ANY($1::text[])', [this.sellerStaffPermissions]);
+      for (const permission of permissionRows.rows) await client.query('INSERT INTO role_permissions (role_id, permission_id, created_at, updated_at) VALUES ($1,$2,NOW(),NOW()) ON CONFLICT DO NOTHING', [role.rows[0].id, permission.id]);
+      const membership = await client.query<{ id: number }>(`
+        INSERT INTO seller_staff_memberships (seller_user_id, staff_user_id, status, permissions, created_at, updated_at)
+        VALUES ($1,$2,'active',$3::jsonb,NOW(),NOW())
+        ON CONFLICT (seller_user_id, staff_user_id)
+        DO UPDATE SET status='active', permissions=EXCLUDED.permissions, updated_at=NOW()
+        RETURNING id
+      `, [userId, staffId, JSON.stringify(permissions)]);
+      return { staffId, membershipId: membership.rows[0]?.id };
+    });
+    const list = await this.staff(userId);
+    const staffRows = Array.isArray(list.data) ? list.data as Array<Record<string, unknown>> : [];
+    return { status: 'success', message: 'Seller staff account created and SELLER_STAFF role assigned automatically.', data: staffRows.find((item) => Number(item.staff_user_id) === created.staffId) ?? null };
+  }
+
+  async updateStaff(staffId: number, body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
+    const seller = await this.auth.me(userId);
+    if (!this.auth.hasAnyRole(seller, ['SELLER'])) throw new ForbiddenException({ status: 'error', message: 'Only the seller owner can update seller staff.' });
+    const permissions = body.permissions === undefined ? undefined : this.normalizeStaffPermissions(body.permissions);
+    const status = body.status === undefined ? undefined : this.text(body.status);
+    if (status !== undefined && !['active', 'suspended'].includes(status)) throw new UnprocessableEntityException({ status: 'error', message: 'The staff status is invalid.' });
+    const name = body.name === undefined ? undefined : this.limitRequired(body.name, 'name', 255);
+    const phone = body.phone_number === undefined ? undefined : this.limitNullable(body.phone_number, 50, 'phone_number');
+    const membership = await this.database.query<{ staff_user_id: number }>('SELECT staff_user_id FROM seller_staff_memberships WHERE seller_user_id=$1 AND staff_user_id=$2 LIMIT 1', [userId, staffId]);
+    if (!membership.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller staff member not found.' });
+    await this.database.transaction(async (client) => {
+      if (status !== undefined || permissions !== undefined) await client.query('UPDATE seller_staff_memberships SET status=COALESCE($1,status), permissions=COALESCE($2::jsonb,permissions), updated_at=NOW() WHERE seller_user_id=$3 AND staff_user_id=$4', [status ?? null, permissions === undefined ? null : JSON.stringify(permissions), userId, staffId]);
+      if (name !== undefined || phone !== undefined || status !== undefined) await client.query('UPDATE users SET name=COALESCE($1,name), phone_number=COALESCE($2,phone_number), status=CASE WHEN $3::text=\'suspended\' THEN \'inactive\' WHEN $3::text=\'active\' THEN \'active\' ELSE status END, updated_at=NOW() WHERE id=$4', [name ?? null, phone ?? null, status ?? null, staffId]);
+    });
+    const staffList = await this.staff(userId);
+    const staffRows = Array.isArray(staffList.data) ? staffList.data as Array<Record<string, unknown>> : [];
+    return { status: 'success', message: 'Seller staff member updated.', data: staffRows.find((item) => Number(item.staff_user_id) === staffId) ?? null };
+  }
+
+  async removeStaff(staffId: number, userId: number): Promise<Record<string, unknown>> {
+    const seller = await this.auth.me(userId);
+    if (!this.auth.hasAnyRole(seller, ['SELLER'])) throw new ForbiddenException({ status: 'error', message: 'Only the seller owner can remove seller staff.' });
+    const result = await this.database.query<{ staff_user_id: number }>('UPDATE seller_staff_memberships SET status=\'suspended\', updated_at=NOW() WHERE seller_user_id=$1 AND staff_user_id=$2 RETURNING staff_user_id', [userId, staffId]);
+    if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller staff member not found.' });
+    await this.database.query('UPDATE users SET status=\'inactive\', updated_at=NOW() WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM seller_staff_memberships WHERE staff_user_id=$1 AND status=\'active\')', [staffId]);
+    return { status: 'success', message: 'Seller staff member removed from this store.' };
+  }
 
   async apply(body: Record<string, unknown>, authorization?: string): Promise<Record<string, unknown>> {
     const authenticated = await this.auth.authenticate(authorization);
@@ -254,4 +396,12 @@ export class SellerService {
   private limitRequired(value: unknown, field: string, max: number): string { const text = this.text(value); if (!text || text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text; }
   private limitNullable(value: unknown, max: number, field: string): string | null { const text = this.text(value); if (text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text || null; }
   private slug(value: string): string { return value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 230); }
+
+  private normalizeStaffPermissions(value: unknown): string[] {
+    if (value === undefined || value === null) return [...this.sellerStaffPermissions];
+    if (!Array.isArray(value)) throw new UnprocessableEntityException({ status: 'error', message: 'The permissions field must be an array.' });
+    const permissions = value.map((item) => String(item).trim()).filter(Boolean);
+    if (permissions.some((permission) => !this.sellerStaffPermissions.includes(permission))) throw new UnprocessableEntityException({ status: 'error', message: 'One or more seller staff permissions are not allowed.' });
+    return Array.from(new Set(permissions));
+  }
 }

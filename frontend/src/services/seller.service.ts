@@ -92,9 +92,38 @@ export interface SellerDashboardData {
   }>
 }
 
+export interface SellerStaffMember {
+  id: number
+  staff_user_id: number
+  name: string
+  email: string
+  phone_number?: string | null
+  status: 'active' | 'suspended' | string
+  user_status?: string
+  permissions?: string[]
+  roles?: string[]
+  created_at?: string
+}
+
 export const sellerService = {
   async getDashboard(): Promise<{ data: SellerDashboardData }> {
     return api.get('/seller/dashboard')
+  },
+
+  async getStaff(): Promise<{ data: SellerStaffMember[]; seller_user_id: number }> {
+    return api.get('/seller/staff')
+  },
+
+  async createStaff(payload: { name: string; email: string; password: string; phone_number?: string }): Promise<{ data: SellerStaffMember; message: string }> {
+    return api.post('/seller/staff', payload)
+  },
+
+  async updateStaff(staffId: number, payload: { name?: string; phone_number?: string; status?: 'active' | 'suspended'; permissions?: string[] }): Promise<{ data: SellerStaffMember; message: string }> {
+    return api.patch(`/seller/staff/${staffId}`, payload)
+  },
+
+  async removeStaff(staffId: number): Promise<{ message: string }> {
+    return api.delete(`/seller/staff/${staffId}`)
   },
 
   /**

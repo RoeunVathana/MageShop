@@ -3,6 +3,7 @@ import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityE
 import { AuthService } from '../auth/auth.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { SellerService } from '../sellers/seller.service';
 
 interface DeliveryOrderRow {
   id: number;
@@ -50,11 +51,12 @@ interface OrderItemRow {
 
 @Injectable()
 export class DeliveryService {
-  private readonly deliveryRoles = ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY_DRIVER', 'COURIER', 'DELIVERY'];
+  private readonly deliveryRoles = ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY_DRIVER', 'COURIER', 'DELIVERY', 'SELLER', 'SELLER_STAFF'];
 
   constructor(
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly sellers: SellerService,
   ) {}
 
   async orders(userId: number): Promise<Record<string, unknown>> {
@@ -66,24 +68,31 @@ export class DeliveryService {
     // DELIVERY is the fleet-monitoring role. It can read every driver's live
     // GPS position, while DELIVERY_DRIVER/COURIER remain scoped to assigned
     // routes. Mutation endpoints still enforce assignment separately below.
+    const sellerId = await this.sellers.sellerScopeId(userId);
     const isAssignedDriver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER']);
     const canViewAllFleetGps = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
+    const filters: string[] = [];
+    const values: unknown[] = [];
+    if (isAssignedDriver && !canViewAllFleetGps) { values.push(user.id); filters.push(`o.driver_id = $${values.length}`); }
+    if (sellerId !== null) { values.push(sellerId); filters.push(`EXISTS (SELECT 1 FROM order_items seller_oi JOIN products seller_p ON seller_p.id=seller_oi.product_id WHERE seller_oi.order_id=o.id AND seller_p.seller_id=$${values.length})`); }
     const result = await this.database.query<DeliveryOrderRow>(`
-      SELECT id, order_number, user_id, driver_id, status, subtotal, discount,
+      SELECT o.id, o.order_number, o.user_id, o.driver_id, o.status, o.subtotal, o.discount,
              shipping_fee, tax, total_amount, currency, payment_status,
-             payment_method, customer_name, customer_email, customer_phone,
-             delivery_address, notes, driver_name, driver_phone, driver_vehicle,
-             current_lat, current_lng, dest_lat, dest_lng, estimated_arrival,
-             created_at, updated_at
-      FROM orders
-      ${isAssignedDriver && !canViewAllFleetGps ? 'WHERE driver_id = $1' : ''}
-      ORDER BY id DESC
+             o.payment_method, o.customer_name, o.customer_email, o.customer_phone,
+             o.delivery_address, o.notes, o.driver_name, o.driver_phone, o.driver_vehicle,
+             o.current_lat, o.current_lng, o.dest_lat, o.dest_lng, o.estimated_arrival,
+             o.created_at, o.updated_at
+      FROM orders o
+      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
+      ORDER BY o.id DESC
       LIMIT 30
-    `, isAssignedDriver && !canViewAllFleetGps ? [user.id] : []);
+    `, values);
 
     const orderIds = result.rows.map((order) => order.id);
     const itemResult = orderIds.length
-      ? await this.database.query<OrderItemRow>('SELECT id, order_id, product_id, product_name, product_sku, quantity, unit_price, total_price, created_at, updated_at FROM order_items WHERE order_id = ANY($1::int[]) ORDER BY id', [orderIds])
+      ? sellerId !== null
+        ? await this.database.query<OrderItemRow>('SELECT oi.id, oi.order_id, oi.product_id, oi.product_name, oi.product_sku, oi.quantity, oi.unit_price, oi.total_price, oi.created_at, oi.updated_at FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id = ANY($1::int[]) AND p.seller_id=$2 ORDER BY oi.id', [orderIds, sellerId])
+        : await this.database.query<OrderItemRow>('SELECT id, order_id, product_id, product_name, product_sku, quantity, unit_price, total_price, created_at, updated_at FROM order_items WHERE order_id = ANY($1::int[]) ORDER BY id', [orderIds])
       : { rows: [] } as { rows: OrderItemRow[] };
     const itemsByOrder = new Map<number, OrderItemRow[]>();
     for (const item of itemResult.rows) {
@@ -119,7 +128,7 @@ export class DeliveryService {
     const order = await this.findOrder(orderNumber);
     // DELIVERY is the fleet-wide Delivery Location Manager. Drivers and
     // couriers may still edit only orders assigned to their own route.
-    this.authorizeLocationOrder(user, order);
+    await this.authorizeLocationOrder(user, order);
     const nextStatus = this.text(body.status);
     if (nextStatus && nextStatus !== order.status) {
       const transition = this.transitionError(user, order.status, nextStatus, orderNumber);
@@ -147,7 +156,7 @@ export class DeliveryService {
   async updateStatus(orderNumber: string, body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
     const user = await this.authorizeStaff(userId);
     const order = await this.findOrder(orderNumber);
-    this.authorizeOrder(user, order);
+    await this.authorizeOrder(user, order);
     const status = this.text(body.status);
     if (!['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'].includes(status)) throw new UnprocessableEntityException({ status: 'error', message: 'The status field is invalid.' });
     const transition = this.transitionError(user, order.status, status, orderNumber);
@@ -184,7 +193,7 @@ export class DeliveryService {
     const longitude = this.coordinate(body.longitude);
     if (!orderNumber || latitude === null || longitude === null) throw new UnprocessableEntityException({ status: 'error', message: 'The GPS coordinates and order_number are required.' });
     const order = await this.findOrder(orderNumber);
-    this.authorizeOrder(user, order);
+    await this.authorizeOrder(user, order);
     if (!['shipped', 'out_for_delivery'].includes(order.status)) throw new UnprocessableEntityException({ status: 'error', message: 'The selected order is not currently in delivery.' });
     const driverName = this.optional(body.driver_name, 120);
     await this.database.query('UPDATE orders SET current_lat=$1, current_lng=$2, driver_name=COALESCE($3,driver_name), updated_at=NOW() WHERE id=$4', [latitude, longitude, driverName, order.id]);
@@ -203,13 +212,23 @@ export class DeliveryService {
     return result.rows[0];
   }
 
-  private authorizeOrder(user: AuthUser, order: DeliveryOrderRow): void {
+  private async authorizeOrder(user: AuthUser, order: DeliveryOrderRow): Promise<void> {
+    const sellerId = await this.sellers.sellerScopeId(user.id);
+    if (sellerId !== null) {
+      if (!(await this.orderBelongsToSeller(order.id, sellerId))) throw new ForbiddenException({ status: 'error', message: 'You can only manage deliveries containing your seller products.' });
+      return;
+    }
     const driver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
     const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
     if (driver && !supervisor && order.driver_id !== user.id) throw new ForbiddenException({ status: 'error', message: 'This order is not assigned to your delivery route.' });
   }
 
-  private authorizeLocationOrder(user: AuthUser, order: DeliveryOrderRow): void {
+  private async authorizeLocationOrder(user: AuthUser, order: DeliveryOrderRow): Promise<void> {
+    const sellerId = await this.sellers.sellerScopeId(user.id);
+    if (sellerId !== null) {
+      if (!(await this.orderBelongsToSeller(order.id, sellerId))) throw new ForbiddenException({ status: 'error', message: 'You can only manage locations for your seller products.' });
+      return;
+    }
     const canManageFleetLocations = this.auth.hasAnyRole(user, [
       'SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY',
     ]) || (
@@ -228,8 +247,19 @@ export class DeliveryService {
     if (from === to) return null;
     const driver = this.auth.hasAnyRole(user, ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY']);
     const supervisor = this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'DELIVERY']);
-    const allowed = ['pending', 'confirmed'].includes(from) ? (driver ? ['shipped'] : ['processing', 'shipped', 'cancelled']) : from === 'processing' ? (driver ? ['shipped'] : ['shipped', 'cancelled']) : ['shipped'].includes(from) ? (driver || supervisor ? ['out_for_delivery', 'delivered'] : []) : from === 'out_for_delivery' ? (driver || supervisor ? ['delivered'] : []) : [];
+    const sellerManager = this.auth.hasAnyRole(user, ['SELLER', 'SELLER_STAFF']);
+    const allowed = ['pending', 'confirmed'].includes(from) ? (driver ? ['shipped'] : sellerManager ? ['processing', 'shipped', 'cancelled'] : ['processing', 'shipped', 'cancelled']) : from === 'processing' ? (driver ? ['shipped'] : sellerManager ? ['shipped', 'cancelled'] : ['shipped', 'cancelled']) : ['shipped'].includes(from) ? (driver || supervisor ? ['out_for_delivery', 'delivered'] : sellerManager ? ['out_for_delivery'] : []) : from === 'out_for_delivery' ? (driver || supervisor ? ['delivered'] : []) : [];
     return allowed.includes(to) ? null : `Order #${orderNumber} cannot move from ${from} to ${to} in the current workflow.`;
+  }
+
+  private async orderBelongsToSeller(orderId: number, sellerId: number): Promise<boolean> {
+    const result = await this.database.query<{ exists: boolean }>(`
+      SELECT EXISTS(
+        SELECT 1 FROM order_items oi JOIN products p ON p.id=oi.product_id
+        WHERE oi.order_id=$1 AND p.seller_id=$2
+      ) AS exists
+    `, [orderId, sellerId]);
+    return Boolean(result.rows[0]?.exists);
   }
 
   private async orderPayload(orderId: number): Promise<Record<string, unknown>> {

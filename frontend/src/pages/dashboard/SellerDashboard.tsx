@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   AlertCircle,
   Bot,
+  Truck,
+  Users,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
@@ -28,6 +30,8 @@ export const sellerNav: NavItem[] = [
   { label: 'Product Catalog', labelKm: 'បញ្ជីមុខទំនិញ', href: '/dashboard/seller/products', icon: Package },
   { label: 'Discount Coupons', labelKm: 'គូប៉ុងបញ្ចុះតម្លៃ', href: '/dashboard/seller/coupons', icon: Tag, badge: 'Promos', badgeKm: 'ប្រូម៉ូសិន' },
   { label: 'Orders & Fulfillment', labelKm: 'ការបញ្ជាទិញ & ការរៀបចំ', href: '/dashboard/seller', icon: Clock },
+  { label: 'Delivery Management', labelKm: 'គ្រប់គ្រងការដឹកជញ្ជូន', href: '/dashboard/seller/delivery', icon: Truck, badge: 'GPS', badgeKm: 'GPS' },
+  { label: 'Seller Staff', labelKm: 'បុគ្គលិកហាង', href: '/dashboard/seller/staff', icon: Users },
   { label: 'Revenue & Payouts', labelKm: 'ចំណូល & ការទូទាត់', href: '/dashboard/seller', icon: DollarSign },
   { label: 'Telegram Bot Settings', labelKm: 'ការកំណត់ Telegram Bot', href: '/dashboard/seller/telegram', icon: Bot },
 ]
@@ -156,7 +160,7 @@ export function SellerDashboard() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-bold text-sm">${Number(order.items?.reduce((sum, item) => sum + Number(item.total_price || 0), 0) || 0).toFixed(2)}</span>
-                  <Link to="/dashboard/delivery"><Button size="sm" variant="outline" className="h-7 text-xs">{t('Track fulfillment', 'តាមដានការរៀបចំ')}</Button></Link>
+                  <Link to="/dashboard/seller/delivery"><Button size="sm" variant="outline" className="h-7 text-xs">{t('Track fulfillment', 'តាមដានការរៀបចំ')}</Button></Link>
                 </div>
               </div>
             ))}

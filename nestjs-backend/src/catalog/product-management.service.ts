@@ -4,6 +4,7 @@ import type { PoolClient } from 'pg';
 import { AuthService } from '../auth/auth.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { SellerService } from '../sellers/seller.service';
 
 interface ProductRow {
   id: number;
@@ -73,6 +74,7 @@ export class ProductManagementService {
   constructor(
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
+    private readonly sellers: SellerService,
   ) {}
 
   async detail(idOrSlug: string): Promise<Record<string, unknown>> {
@@ -86,7 +88,7 @@ export class ProductManagementService {
     this.requireProductRole(user);
     const input = this.validate(body, false);
     const created = await this.database.transaction(async (client) => {
-      const sellerId = this.isSeller(user) && !this.isAdmin(user) ? user.id : null;
+      const sellerId = this.isSeller(user) && !this.isAdmin(user) ? await this.sellers.sellerScopeId(user.id) : null;
       const brandId = await this.resolveBrand(client, input.brand_id, input.brand);
       await this.ensureCategory(client, input.category_id);
       const categoryIds = await this.categoryIds(client, input.category_id, input.category_ids);
@@ -122,7 +124,7 @@ export class ProductManagementService {
     const user = await this.currentUser(userId);
     this.requireProductRole(user);
     const existing = await this.findProduct(String(productId));
-    this.requireOwnership(user, existing);
+    await this.requireOwnership(user, existing);
     const input = this.validate(body, true);
     await this.database.transaction(async (client) => {
       const brandId = input.brand_id !== undefined || input.brand !== undefined ? await this.resolveBrand(client, input.brand_id, input.brand) : existing.brand_id;
@@ -175,7 +177,7 @@ export class ProductManagementService {
     const user = await this.currentUser(userId);
     this.requireProductRole(user);
     const existing = await this.findProduct(String(productId));
-    this.requireOwnership(user, existing);
+    await this.requireOwnership(user, existing);
     await this.database.query('UPDATE products SET status=\'archived\', is_active=FALSE, updated_at=NOW() WHERE id=$1', [productId]);
     const archived = await this.findProduct(String(productId));
     return { status: 'success', message: `Product '${existing.name}' (${existing.sku}) has been safely archived.`, data: await this.resource(archived, user) };
@@ -187,8 +189,11 @@ export class ProductManagementService {
     if (!this.auth.hasAnyRole(user, this.productRoles)) throw new ForbiddenException({ status: 'error', message: 'You are not authorized to manage products.' });
   }
 
-  private requireOwnership(user: AuthUser, product: ProductRow): void {
-    if (this.isSeller(user) && !this.isAdmin(user) && product.seller_id !== user.id) throw new ForbiddenException({ status: 'error', message: 'You can only manage your own products.' });
+  private async requireOwnership(user: AuthUser, product: ProductRow): Promise<void> {
+    if (this.isSeller(user) && !this.isAdmin(user)) {
+      const sellerId = await this.sellers.sellerScopeId(user.id);
+      if (product.seller_id !== sellerId) throw new ForbiddenException({ status: 'error', message: 'You can only manage your own seller products.' });
+    }
   }
 
   private isAdmin(user: AuthUser): boolean { return this.auth.hasAnyRole(user, ['SUPER_ADMIN', 'ADMIN', 'PRODUCT_MANAGER', 'STAFF']); }

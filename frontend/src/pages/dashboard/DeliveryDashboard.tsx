@@ -92,7 +92,13 @@ const deliveryNav: NavItem[] = [
   { label: 'Admin Governance', labelKm: 'ការគ្រប់គ្រងរដ្ឋបាល', href: '/dashboard/admin', icon: Shield },
 ]
 
-export function DeliveryDashboard() {
+const sellerDeliveryNav: NavItem[] = [
+  { label: 'Seller Overview', labelKm: 'ទិដ្ឋភាពទូទៅហាង', href: '/dashboard/seller', icon: Package },
+  { label: 'Delivery Management', labelKm: 'គ្រប់គ្រងការដឹកជញ្ជូន', href: '/dashboard/seller/delivery', icon: MapPin, badge: 'GPS', badgeKm: 'GPS' },
+  { label: 'Seller Staff', labelKm: 'បុគ្គលិកហាង', href: '/dashboard/seller/staff', icon: User },
+]
+
+export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean }) {
   const { t } = useShopEngagement()
   const { toast } = useToast()
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser())
@@ -128,15 +134,15 @@ export function DeliveryDashboard() {
     .filter(Boolean)
     .map((role: unknown) => String(role).trim().toUpperCase().replace(/[\s-]+/g, '_'))
   const canManagePricing = authService.isAdmin(currentUser)
-  const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER'].includes(role))
+  const canDispatch = canManagePricing || roleNames.some((role) => ['STAFF', 'ORDER_MANAGER', 'LOGISTICS_MANAGER', 'DISPATCHER', 'SELLER', 'SELLER_STAFF'].includes(role))
   const canManageLocation = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
   const canEditAssignedDelivery = canDispatch || roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
   const isFleetGpsViewer = roleNames.includes('DELIVERY') && !canDispatch
   const isDriverOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER'].includes(role))
-  const isDeliveryWorkspaceOnly = !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
+  const isDeliveryWorkspaceOnly = !sellerMode && !canDispatch && roleNames.some((role) => ['DELIVERY_DRIVER', 'COURIER', 'DELIVERY'].includes(role))
   const visibleDeliveryNav = isDeliveryWorkspaceOnly
     ? deliveryNav.filter((item) => item.href === '/dashboard/delivery')
-    : deliveryNav
+    : sellerMode ? sellerDeliveryNav : deliveryNav
 
   // Active Tab: 'location' | 'pricing'
   const [activeTab, setActiveTab] = useState<'location' | 'pricing'>('location')
@@ -894,26 +900,28 @@ export function DeliveryDashboard() {
 
   return (
     <DashboardLayout
-      roleTitle="Delivery Operations"
-      roleTitleKm="ប្រតិបត្តិការដឹកជញ្ជូន"
-      roleSlug="delivery"
+      roleTitle={sellerMode ? 'Seller Delivery Management' : 'Delivery Operations'}
+      roleTitleKm={sellerMode ? 'គ្រប់គ្រងការដឹកជញ្ជូនរបស់ហាង' : 'ប្រតិបត្តិការដឹកជញ្ជូន'}
+      roleSlug={sellerMode ? 'seller' : 'delivery'}
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={visibleDeliveryNav}
     >
-      <div className="delivery-dashboard relative space-y-5" aria-busy={loading}>
+      <div className="delivery-dashboard relative min-w-0 space-y-4 overflow-x-clip sm:space-y-5" aria-busy={loading}>
         {/* Page Header */}
-        <div className="delivery-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/85 sm:p-5">
-          <div>
+        <div className="delivery-page-header flex flex-col justify-between gap-3 rounded-3xl border border-slate-200/80 bg-white/90 p-3.5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/85 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+          <div className="min-w-0">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-              <h1 className="text-xl leading-tight sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                {isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Delivery Operations', 'ប្រតិបត្តិការដឹកជញ្ជូន')}
+              <h1 className="max-w-full text-xl leading-tight sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
+                {sellerMode ? t('Seller Delivery Management', 'គ្រប់គ្រងការដឹកជញ្ជូនរបស់ហាង') : isDriverOnly ? t('My Delivery Route', 'ផ្លូវដឹកជញ្ជូនរបស់ខ្ញុំ') : t('Delivery Operations', 'ប្រតិបត្តិការដឹកជញ្ជូន')}
               </h1>
               <Badge className="w-fit max-w-full whitespace-normal bg-indigo-600 text-center text-[10px] leading-5 sm:text-[11px] font-bold animate-pulse">
                 {t('Live GPS Active', 'GPS កំពុងដំណើរការ')}
               </Badge>
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400 sm:text-xs sm:leading-5">
-              {isDriverOnly
+              {sellerMode
+                ? t('Manage delivery status, locations, dispatch, and tracking for your store orders.', 'គ្រប់គ្រងស្ថានភាព ទីតាំង ការចាត់ចែង និងការតាមដានសម្រាប់ការបញ្ជាទិញរបស់ហាងអ្នក។')
+                : isDriverOnly
                 ? t('Manage assigned deliveries, share live GPS, and confirm handovers from one route view.', 'គ្រប់គ្រងការដឹកជញ្ជូនដែលបានចាត់តាំង ចែករំលែក GPS ផ្ទាល់ និងបញ្ជាក់ការប្រគល់ជូនពីទិដ្ឋភាពផ្លូវតែមួយ។')
                 : isFleetGpsViewer
                   ? t('Manage customer locations and monitor driver GPS across Cambodia.', 'គ្រប់គ្រងទីតាំងអតិថិជន និងតាមដាន GPS អ្នកដឹកជញ្ជូនទូទាំងកម្ពុជា។')
@@ -921,13 +929,13 @@ export function DeliveryDashboard() {
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
             <Button
               type="button"
               size="sm"
               onClick={() => setIsContinuousDelivering((prev) => !prev)}
               disabled={!selectedOrder || !canEditAssignedDelivery}
-              className={`w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all sm:w-auto ${
+              className={`col-span-2 w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all sm:col-span-1 sm:w-auto ${
                 isContinuousDelivering
                   ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -976,12 +984,12 @@ export function DeliveryDashboard() {
         </div>
 
         {/* View Switcher: live fleet map vs delivery rates */}
-        <div className="delivery-view-switcher flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="delivery-view-switcher flex flex-col items-stretch justify-between gap-1.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:gap-3">
           <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('location')}
-              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:px-4 ${
+              className={`min-w-0 flex-1 justify-center shrink-0 px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:flex-none sm:px-4 ${
                 activeTab === 'location'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
@@ -993,7 +1001,7 @@ export function DeliveryDashboard() {
             {canManagePricing && <button
               type="button"
               onClick={() => setActiveTab('pricing')}
-              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:px-4 ${
+              className={`min-w-0 flex-1 justify-center shrink-0 px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer sm:flex-none sm:px-4 ${
                 activeTab === 'pricing'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
@@ -1013,7 +1021,7 @@ export function DeliveryDashboard() {
             </button>}
           </div>
 
-          <div className="text-xs text-slate-600 dark:text-slate-300 font-medium px-2 hidden sm:block">
+          <div className="hidden px-2 text-xs font-medium text-slate-600 dark:text-slate-300 sm:block">
             {activeTab === 'pricing'
               ? t('Delivery rate settings', 'ការកំណត់តម្លៃដឹកជញ្ជូន')
               : t('Live fleet tracking', 'ការតាមដានកងដឹកជញ្ជូនផ្ទាល់')}
@@ -1043,84 +1051,84 @@ export function DeliveryDashboard() {
           ) : selectedOrder ? (
           <>
             {/* 4 Stat Cards with Percentage Indicators */}
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
-          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-75">
-            <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Active Deliveries', 'ការដឹកជញ្ជូនសកម្ម')}</p>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          <Card className="delivery-stat-card min-w-0 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-75">
+            <CardContent className="flex min-w-0 items-center justify-between gap-2 p-3 sm:p-5">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-[10px] leading-4 text-slate-600 dark:text-slate-300 font-medium sm:text-xs">{t('Active Deliveries', 'ការដឹកជញ្ជូនសកម្ម')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
+                  <span className="text-xl font-black text-slate-900 dark:text-slate-50 sm:text-2xl">
                     {orders.filter((o) => o.status !== 'delivered').length} {t('stops', 'កន្លែងឈប់')}
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
+                  <span className="hidden text-[11px] font-bold text-emerald-600 items-center gap-0.5 sm:flex">
                     <TrendingUp className="w-3 h-3" /> +14.2%
                   </span>
                 </div>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                <Truck className="w-5 h-5" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 sm:h-11 sm:w-11 sm:rounded-2xl">
+                <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
-            <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Completed Today', 'បានបញ្ចប់ថ្ងៃនេះ')}</p>
+          <Card className="delivery-stat-card min-w-0 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
+            <CardContent className="flex min-w-0 items-center justify-between gap-2 p-3 sm:p-5">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-[10px] leading-4 text-slate-600 dark:text-slate-300 font-medium sm:text-xs">{t('Completed Today', 'បានបញ្ចប់ថ្ងៃនេះ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 sm:text-2xl">
                     {orders.filter((o) => o.status === 'delivered').length}
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
+                  <span className="hidden text-[11px] font-bold text-emerald-600 items-center gap-0.5 sm:flex">
                     <TrendingUp className="w-3 h-3" /> +24.8%
                   </span>
                 </div>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 sm:h-11 sm:w-11 sm:rounded-2xl">
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-200">
-            <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('Route Distance', 'ចម្ងាយផ្លូវ')}</p>
+          <Card className="delivery-stat-card min-w-0 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-200">
+            <CardContent className="flex min-w-0 items-center justify-between gap-2 p-3 sm:p-5">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-[10px] leading-4 text-slate-600 dark:text-slate-300 font-medium sm:text-xs">{t('Route Distance', 'ចម្ងាយផ្លូវ')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-slate-900 dark:text-slate-50">
+                  <span className="text-xl font-black text-slate-900 dark:text-slate-50 sm:text-2xl">
                     {orders.reduce((sum, order) => {
                       if (order.current_lat == null || order.current_lng == null || order.dest_lat == null || order.dest_lng == null) return sum
                       return sum + Math.hypot(order.dest_lat - order.current_lat, order.dest_lng - order.current_lng) * 111
                     }, 0).toFixed(1)} km
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
+                  <span className="hidden text-[11px] font-bold text-emerald-600 items-center gap-0.5 sm:flex">
                     <TrendingUp className="w-3 h-3" /> +8.4%
                   </span>
                 </div>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                <Navigation className="w-5 h-5" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400 sm:h-11 sm:w-11 sm:rounded-2xl">
+                <Navigation className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="delivery-stat-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-300">
-            <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{t('On-Time Dispatch', 'ចាត់ចែងទាន់ពេល')}</p>
+          <Card className="delivery-stat-card min-w-0 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-300">
+            <CardContent className="flex min-w-0 items-center justify-between gap-2 p-3 sm:p-5">
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-[10px] leading-4 text-slate-600 dark:text-slate-300 font-medium sm:text-xs">{t('On-Time Dispatch', 'ចាត់ចែងទាន់ពេល')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                  <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 sm:text-2xl">
                     {orders.length > 0
                       ? `${Math.round((orders.filter((o) => o.status === 'delivered').length / orders.length) * 100)}%`
                       : '—'}
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
+                  <span className="hidden text-[11px] font-bold text-emerald-600 items-center gap-0.5 sm:flex">
                     <TrendingUp className="w-3 h-3" /> +3.2%
                   </span>
                 </div>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 sm:h-11 sm:w-11 sm:rounded-2xl">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -28,12 +28,14 @@ import {
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { adminNavItems } from '@/components/admin/adminNav'
+import { sellerNav } from '@/pages/dashboard/SellerDashboard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { authService } from '@/services/auth.service'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService } from '@/services/brand.service'
@@ -98,7 +100,10 @@ function formatProductError(error: unknown): string {
 export function ProductCreatePage() {
   const { t } = useShopEngagement()
   const navigate = useNavigate()
+  const location = useLocation()
   const { toast } = useToast()
+  const sellerView = authService.isSeller() || location.pathname.startsWith('/dashboard/seller')
+  const catalogPath = sellerView ? '/dashboard/seller/products' : '/admin/products'
 
   const [categories, setCategories] = useState<Array<{ id: number; name: string; parent_name?: string | null }>>([])
   const [brands, setBrands] = useState<Brand[]>([])
@@ -424,7 +429,7 @@ export function ProductCreatePage() {
         type: 'success',
       })
 
-      navigate('/admin/products')
+      navigate(catalogPath)
     } catch (err: unknown) {
       const message = formatProductError(err)
       setServerError(message)
@@ -440,24 +445,25 @@ export function ProductCreatePage() {
 
   return (
     <DashboardLayout
-      roleTitle="Product Management"
-      roleSlug="admin"
-      roleColor="text-purple-500"
-      navItems={adminNavItems}
+      roleTitle={sellerView ? 'Seller Product Catalog' : 'Product Management'}
+      roleTitleKm={sellerView ? 'បញ្ជីមុខទំនិញអ្នកលក់' : undefined}
+      roleSlug={sellerView ? 'seller' : 'admin'}
+      roleColor={sellerView ? 'text-emerald-500' : 'text-purple-500'}
+      navItems={sellerView ? sellerNav : adminNavItems}
     >
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/admin/products">
+            <Link to={catalogPath}>
               <Button variant="outline" size="sm" className="h-8 w-8 p-0">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-black tracking-tight">{t('Create Universal Product', 'បង្កើតមុខទំនិញសកល')}</h1>
+              <h1 className="text-xl font-black tracking-tight">{sellerView ? t('Add Seller Product', 'បន្ថែមមុខទំនិញអ្នកលក់') : t('Create Universal Product', 'បង្កើតមុខទំនិញសកល')}</h1>
               <p className="text-xs text-muted-foreground">
-                Universal marketplace item with dynamic category specifications, multi-attribute variants, and pricing.
+                {sellerView ? 'List computers, laptops, parts, accessories, and other marketplace items in your store.' : 'Universal marketplace item with dynamic category specifications, multi-attribute variants, and pricing.'}
               </p>
             </div>
           </div>
@@ -512,6 +518,7 @@ export function ProductCreatePage() {
                       </option>
                     ))}
                   </select>
+                  {sellerView && <p className="mt-1 text-[11px] leading-4 text-emerald-600 dark:text-emerald-400">Tip: choose “Electronics &amp; Computers” for laptops, desktop PCs, components, monitors, and computer accessories. This listing is automatically assigned to your seller store.</p>}
                 </div>
               </div>
 
