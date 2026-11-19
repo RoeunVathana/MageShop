@@ -18,6 +18,7 @@ import { TelegramHeader } from '@/components/telegram/TelegramHeader';
 import { TelegramHeroBanner } from '@/components/telegram/TelegramHeroBanner';
 import { TelegramCategoryBar } from '@/components/telegram/TelegramCategoryBar';
 import { TelegramProductCard } from '@/components/telegram/TelegramProductCard';
+import { TelegramProductDetail } from '@/components/telegram/TelegramProductDetail';
 import { TelegramBottomNav, TelegramViewTab } from '@/components/telegram/TelegramBottomNav';
 import { TelegramAiChatModal } from '@/components/telegram/TelegramAiChatModal';
 import { TelegramCartDrawer } from '@/components/telegram/TelegramCartDrawer';
@@ -46,6 +47,8 @@ export const TelegramApp: React.FC = () => {
   // Modals & Panels
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [productDetailLoading, setProductDetailLoading] = useState(false);
   const [adminModeActive, setAdminModeActive] = useState(false);
   const [sellerModeActive, setSellerModeActive] = useState(false);
 
@@ -135,6 +138,25 @@ export const TelegramApp: React.FC = () => {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProductSelect = async (product: ProductItem) => {
+    setSelectedProduct(product);
+    setProductDetailLoading(true);
+
+    try {
+      const detail = await telegramApi.getProduct(product.id);
+      if (detail) {
+        setSelectedProduct((currentProduct) => currentProduct?.id === product.id
+          ? { ...currentProduct, ...detail }
+          : currentProduct);
+      }
+    } catch (error) {
+      // Keep the catalog product visible when the optional detail request is unavailable.
+      console.warn('Could not load extended product details', error);
+    } finally {
+      setProductDetailLoading(false);
     }
   };
 
@@ -278,7 +300,7 @@ export const TelegramApp: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     {products.map((product) => (
-                      <TelegramProductCard key={product.id} product={product} />
+                      <TelegramProductCard key={product.id} product={product} onSelect={handleProductSelect} />
                     ))}
                   </div>
                 )}
@@ -344,6 +366,18 @@ export const TelegramApp: React.FC = () => {
           storeSettings={storeSettings}
           userProfile={effectiveUserProfile}
         />
+
+        {selectedProduct && (
+          <TelegramProductDetail
+            key={selectedProduct.id}
+            product={selectedProduct}
+            isLoading={productDetailLoading}
+            onClose={() => {
+              setSelectedProduct(null);
+              setProductDetailLoading(false);
+            }}
+          />
+        )}
 
         {/* Bottom Navigation */}
         <TelegramBottomNav currentTab={currentTab} onTabChange={setCurrentTab} />

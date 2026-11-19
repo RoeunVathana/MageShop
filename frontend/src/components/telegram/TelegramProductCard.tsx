@@ -38,6 +38,14 @@ export const TelegramProductCard: React.FC<TelegramProductCardProps> = ({ produc
   return (
     <div
       onClick={() => onSelect?.(product)}
+      onKeyDown={(event) => {
+        if (onSelect && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onSelect(product);
+        }
+      }}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
       className="group relative bg-card rounded-2xl border border-border/80 overflow-hidden shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between active:scale-[0.99] cursor-pointer"
     >
       {/* Top Media & Badges */}
