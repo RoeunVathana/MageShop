@@ -653,6 +653,7 @@ html.khmer-mode .dashboard-breadcrumb-role {
 
 .dashboard-shell .dashboard-table-scroll {
   width: 100%;
+  inline-size: 100%;
   max-width: 100%;
   min-width: 0;
   display: block;
@@ -686,7 +687,10 @@ html.khmer-mode .dashboard-breadcrumb-role {
 }
 
 .dashboard-shell .dashboard-data-table {
-  width: max-content !important;
+  /* Fill the entire dashboard card on desktop. The minimum width keeps the
+     data grid readable on phones, where the wrapper provides horizontal
+     scrolling instead of compressing every column. */
+  width: 100% !important;
   min-width: 980px;
   max-width: none;
 }
