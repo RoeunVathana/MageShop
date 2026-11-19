@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { SanctumGuard } from '../auth/sanctum.guard';
@@ -34,6 +34,7 @@ export class SellerStaffController {
 
   @Post('staff')
   @UseGuards(SanctumGuard)
+  @HttpCode(HttpStatus.CREATED)
   async createStaff(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.sellers.createStaff(body, request.authUserId as number); }
 
   @Patch('staff/:staffId')
