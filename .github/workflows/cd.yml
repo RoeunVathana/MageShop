@@ -76,6 +76,31 @@ jobs:
             fi
           done
 
+      - name: Probe Seller Staff API Route
+        run: |
+          # This route requires authentication, so 401/403 proves the NestJS
+          # controller is deployed. A 404 means Railway is still serving an
+          # older backend image and must fail the deployment verification.
+          URLS=(
+            "https://api.tyushop.blog/api/v1/seller/staff"
+            "https://nestjs-api-production-b0523d97.up.railway.app/api/v1/seller/staff"
+          )
+          ROUTE_FOUND=false
+          for url in "${URLS[@]}"; do
+            echo "Checking seller staff route: $url"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
+            echo "Seller staff route HTTP status: $HTTP_CODE"
+            if [ "$HTTP_CODE" -eq 401 ] || [ "$HTTP_CODE" -eq 403 ]; then
+              ROUTE_FOUND=true
+              break
+            fi
+          done
+
+          if [ "$ROUTE_FOUND" != "true" ]; then
+            echo "::error::Seller staff route is not deployed. Expected 401/403, got 404 or unavailable."
+            exit 1
+          fi
+
       - name: Probe Live Universal Brands API
         run: |
           URLS=("https://nestjs-api-production-b0523d97.up.railway.app/api/v1/brands")
