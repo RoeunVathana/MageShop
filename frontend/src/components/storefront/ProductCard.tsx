@@ -176,9 +176,9 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
         </div>
 
         {/* Card Body Details */}
-        <div className="min-w-0 !m-0 p-3.5 sm:p-4 space-y-2.5">
+        <div className="product-card-body min-w-0 !m-0 p-3.5 sm:p-4 space-y-2.5">
           {/* Brand & Star Rating Row */}
-          <div className="flex items-center justify-between gap-1 text-[10px]">
+          <div className="product-card-meta flex items-center justify-between gap-1 text-[10px]">
             <Link
               to={`/products?brand=${encodeURIComponent(brandName)}`}
               className="font-bold text-muted-foreground uppercase tracking-wider hover:text-primary transition-colors truncate flex items-center gap-1 max-w-[62%]"
@@ -197,15 +197,15 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
           {/* Product Title */}
           <Link
             to={`/products/${p.slug || p.id}`}
-            className="font-bold text-[13px] sm:text-sm text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors line-clamp-2 block leading-snug min-h-[2.25rem]"
+            className="product-card-title font-bold text-[13px] sm:text-sm text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors line-clamp-2 block leading-snug min-h-[2.25rem]"
           >
             {p.name}
           </Link>
 
           {/* Price & Live Stock Indicator */}
-          <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="product-card-price-row flex items-center justify-between gap-2 pt-1">
             <div className="flex items-baseline gap-1.5 flex-wrap">
-                <span className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                <span className="product-card-price text-lg font-black text-slate-900 dark:text-white tracking-tight">
                 {formatPrice(effPrice)}
               </span>
               {hasDiscount && (
@@ -216,7 +216,7 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
             </div>
 
             {/* Smart Live Stock Badge */}
-            <div className="shrink-0">
+            <div className="product-card-stock shrink-0">
               {isOutOfStock ? (
                   <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -237,7 +237,7 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
           </div>
 
           {/* Fast Delivery & Points Perk Chips */}
-          <div className="flex items-center gap-1.5 text-[9px] font-medium text-muted-foreground pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="product-card-perks flex items-center gap-1.5 text-[9px] font-medium text-muted-foreground pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
             <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
               <Truck className="w-2.5 h-2.5 text-primary" />
               <span>{t('Fast Delivery', 'ដឹកជញ្ជូនរហ័ស')}</span>
@@ -252,12 +252,12 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
       </div>
 
       {/* Card Action Buttons Footer */}
-      <div className="!m-0 p-3.5 pt-0 sm:p-4 sm:pt-0 flex items-center gap-1.5">
+      <div className="product-card-actions !m-0 p-3.5 pt-0 sm:p-4 sm:pt-0 flex items-center gap-1.5">
         <Button
           size="sm"
           disabled={isOutOfStock}
           onClick={handleAddToCart}
-          className={`flex-1 h-9 rounded-xl text-xs font-bold gap-1.5 transition-all shadow-md active:scale-[0.98] ${
+          className={`product-card-add-button flex-1 h-9 rounded-xl text-xs font-bold gap-1.5 transition-all shadow-md active:scale-[0.98] ${
             justAdded
               ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25'
               : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30'
@@ -266,12 +266,12 @@ export function ProductCard({ product: p, className = '' }: ProductCardProps) {
           {justAdded ? (
             <>
               <Check className="w-4 h-4 animate-in zoom-in" />
-              <span>{t('Added!', 'បានដាក់ចូល!')}</span>
+              <span className="product-card-add-label">{t('Added!', 'បានដាក់ចូល!')}</span>
             </>
           ) : (
             <>
               <ShoppingCart className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
-              <span>{t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}</span>
+              <span className="product-card-add-label">{t('Add to Cart', 'ដាក់ចូលកន្ត្រក')}</span>
             </>
           )}
         </Button>

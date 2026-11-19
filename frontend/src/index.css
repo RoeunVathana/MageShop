@@ -1133,6 +1133,61 @@ html[lang="km"] .bilingual-badge {
 
   .product-card {
     border-radius: 1.15rem;
+    margin: 0 !important;
+  }
+
+  /* Match the Telegram mini app's compact two-column product tiles on phones. */
+  .product-card-media {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .product-card-body {
+    padding: 0.7rem !important;
+    gap: 0.45rem !important;
+  }
+
+  .product-card-meta {
+    font-size: 0.62rem !important;
+  }
+
+  .product-card-title {
+    font-size: 0.75rem !important;
+    line-height: 1.25 !important;
+    min-height: 2rem !important;
+  }
+
+  .product-card-price-row {
+    gap: 0.35rem !important;
+  }
+
+  .product-card-price {
+    font-size: 0.95rem !important;
+  }
+
+  .product-card-stock {
+    font-size: 0.58rem !important;
+  }
+
+  .product-card-perks {
+    display: none !important;
+  }
+
+  .product-card-actions {
+    padding: 0.7rem !important;
+    padding-top: 0 !important;
+    gap: 0.4rem !important;
+  }
+
+  .product-card-add-button {
+    flex: 0 0 2.15rem !important;
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    padding: 0 !important;
+    border-radius: 0.75rem !important;
+  }
+
+  .product-card-add-label {
+    display: none;
   }
 
   .dashboard-topbar {
