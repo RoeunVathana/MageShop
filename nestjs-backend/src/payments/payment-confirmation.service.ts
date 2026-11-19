@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
 import { AuthService } from '../auth/auth.service';
@@ -8,6 +8,7 @@ import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
 import { N8nService } from '../n8n/n8n.service';
 import { ReceiptService } from '../receipts/receipt.service';
+import { decryptBakongToken, normalizeBakongToken } from './bakong-token.crypto';
 
 interface OrderRow {
   id: number;
@@ -33,6 +34,8 @@ interface PaymentRow {
   status: string;
   khqr_md5: string | null;
   merchant_account: string | null;
+  merchant_payment_account_id: number | null;
+  merchant_api_token_encrypted: string | null;
   created_at: Date | string;
 }
 
@@ -81,7 +84,12 @@ export class PaymentConfirmationService {
     }
 
     const paymentResult = await this.database.query<PaymentRow>(
-      'SELECT id, order_id, transaction_reference, payment_method, amount, currency, status, khqr_md5, merchant_account, created_at FROM payments WHERE order_id = $1 ORDER BY id DESC LIMIT 1',
+      `SELECT p.id, p.order_id, p.transaction_reference, p.payment_method, p.amount, p.currency,
+              p.status, p.khqr_md5, p.merchant_account, p.merchant_payment_account_id,
+              mpa.api_token_encrypted AS merchant_api_token_encrypted, p.created_at
+       FROM payments p
+       LEFT JOIN merchant_payment_accounts mpa ON mpa.id = p.merchant_payment_account_id
+       WHERE p.order_id = $1 ORDER BY p.id DESC LIMIT 1`,
       [order.id],
     );
     const payment = paymentResult.rows[0];
@@ -106,7 +114,7 @@ export class PaymentConfirmationService {
         throw new UnprocessableEntityException({ status: 'error', message: 'This QR payment has expired. Please create a new checkout.' });
       }
 
-      const token = this.bakongToken(paymentSettings);
+      const token = this.bakongToken(paymentSettings, payment.merchant_api_token_encrypted);
       if (!this.bool(paymentSettings.get('bakong_api_enabled') ?? this.config.get<string>('BAKONG_API_ENABLED', 'true')) || !token) {
         throw new ServiceUnavailableException({ status: 'error', message: 'Bakong verification is not configured on the server yet.' });
       }
@@ -187,7 +195,11 @@ export class PaymentConfirmationService {
     if (!lockedOrder) throw new NotFoundException({ status: 'error', message: 'Order not found.' });
     if (['paid', 'completed'].includes(lockedOrder.payment_status ?? '')) return { alreadyConfirmed: true, receiptNumber: null, transactionReference: payment.transaction_reference, orderStatus: lockedOrder.status, newPointsBalance: null };
 
-    const lockedPaymentResult = await client.query<PaymentRow>('SELECT id, order_id, transaction_reference, payment_method, amount, currency, status, khqr_md5, merchant_account, created_at FROM payments WHERE order_id = $1 ORDER BY id DESC LIMIT 1 FOR UPDATE', [lockedOrder.id]);
+    const lockedPaymentResult = await client.query<PaymentRow>(`SELECT id, order_id, transaction_reference, payment_method, amount, currency,
+      status, khqr_md5, merchant_account, merchant_payment_account_id,
+      NULL::text AS merchant_api_token_encrypted, created_at
+      FROM payments
+      WHERE order_id = $1 ORDER BY id DESC LIMIT 1 FOR UPDATE`, [lockedOrder.id]);
     const lockedPayment = lockedPaymentResult.rows[0];
     if (!lockedPayment) throw new UnprocessableEntityException({ status: 'error', message: 'This order has no payment record.' });
     const transactionReference = gatewayReference || lockedPayment.transaction_reference;
@@ -218,7 +230,12 @@ export class PaymentConfirmationService {
   }
 
   private async alreadyConfirmed(order: OrderRow): Promise<Record<string, unknown>> {
-    const payment = await this.database.query<PaymentRow>('SELECT id, order_id, transaction_reference, payment_method, amount, currency, status, khqr_md5, merchant_account, created_at FROM payments WHERE order_id = $1 ORDER BY id DESC LIMIT 1', [order.id]);
+    const payment = await this.database.query<PaymentRow>(`SELECT p.id, p.order_id, p.transaction_reference, p.payment_method, p.amount, p.currency,
+      p.status, p.khqr_md5, p.merchant_account, p.merchant_payment_account_id,
+      mpa.api_token_encrypted AS merchant_api_token_encrypted, p.created_at
+      FROM payments p
+      LEFT JOIN merchant_payment_accounts mpa ON mpa.id = p.merchant_payment_account_id
+      WHERE p.order_id = $1 ORDER BY p.id DESC LIMIT 1`, [order.id]);
     const receipt = await this.database.query<{ receipt_number: string; email_status: string }>('SELECT receipt_number, email_status FROM receipts WHERE order_id = $1 LIMIT 1', [order.id]);
     return {
       status: 'ok',
@@ -281,29 +298,15 @@ export class PaymentConfirmationService {
     return new Map(result.rows.map((row) => [row.setting_key, row.setting_value]));
   }
 
-  private bakongToken(settings: Map<string, string>): string {
+  private bakongToken(settings: Map<string, string>, sellerEncryptedToken?: string | null): string {
+    const sellerToken = decryptBakongToken(sellerEncryptedToken, this.config.get<string>('APP_KEY', ''));
+    if (sellerToken) return sellerToken;
     const encrypted = String(settings.get('bakong_api_token_encrypted') ?? '').trim();
     if (encrypted) {
-      try {
-        return this.decryptLaravel(encrypted);
-      } catch {
-        // If an old APP_KEY is still present, fall back to the process secret
-        // rather than sending a malformed token to Bakong.
-      }
+      const token = decryptBakongToken(encrypted, this.config.get<string>('APP_KEY', ''));
+      if (token) return token;
     }
-    return String(this.config.get<string>('BAKONG_API_TOKEN', '') ?? '').trim().replace(/^["']|["']$/g, '').replace(/\\$/g, '');
-  }
-
-  private decryptLaravel(payload: string): string {
-    const rawKey = this.config.get<string>('APP_KEY', '').trim();
-    if (!rawKey) return '';
-    const key = rawKey.startsWith('base64:') ? Buffer.from(rawKey.slice(7), 'base64') : Buffer.from(rawKey);
-    if (key.length !== 32) return '';
-    const parsed = JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as { iv: string; value: string; mac: string };
-    const expected = createHmac('sha256', key).update(parsed.iv + parsed.value).digest('hex');
-    if (!parsed.mac || parsed.mac.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.mac), Buffer.from(expected))) return '';
-    const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(parsed.iv, 'base64'));
-    return Buffer.concat([decipher.update(Buffer.from(parsed.value, 'base64')), decipher.final()]).toString('utf8').trim();
+    return normalizeBakongToken(this.config.get<string>('BAKONG_API_TOKEN', ''));
   }
 
   private bakongUrl(settings: Map<string, string>): string {

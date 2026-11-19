@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from 'pg';
 
 @Injectable()
-export class DatabaseService implements OnModuleDestroy {
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
   private readonly pool: Pool | null;
 
@@ -45,6 +45,20 @@ export class DatabaseService implements OnModuleDestroy {
           waiting: this.pool.waitingCount,
         }
       : { total: 0, idle: 0, waiting: 0 };
+  }
+
+  async onModuleInit(): Promise<void> {
+    if (!this.pool) return;
+
+    // The NestJS service is deployed independently from the legacy Laravel
+    // service. Keep this additive and idempotent so a Railway deploy can start
+    // against an existing database without requiring a destructive migration.
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS merchant_payment_accounts
+        ADD COLUMN IF NOT EXISTS api_token_encrypted TEXT NULL;
+      ALTER TABLE IF EXISTS payments
+        ADD COLUMN IF NOT EXISTS merchant_payment_account_id BIGINT NULL;
+    `);
   }
 
   async query<T extends QueryResultRow = QueryResultRow>(text: string, values: unknown[] = []): Promise<QueryResult<T>> {

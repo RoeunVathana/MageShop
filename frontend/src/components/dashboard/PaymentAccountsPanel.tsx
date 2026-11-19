@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, CreditCard, Pencil, Plus, ShieldCheck, Star, Trash2, X } from 'lucide-react'
+import { CheckCircle2, CreditCard, Eye, EyeOff, KeyRound, Pencil, Plus, ShieldCheck, Star, Trash2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,7 @@ const emptyForm: PaymentAccountPayload = {
   merchant_name: 'TYUSHOP',
   merchant_city: 'Phnom Penh',
   merchant_phone: '',
+  api_token: '',
   currency: 'USD',
   is_active: true,
 }
@@ -37,6 +38,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [accountToRemove, setAccountToRemove] = useState<MerchantPaymentAccount | null>(null)
+  const [showApiToken, setShowApiToken] = useState(false)
 
   const defaultAccount = useMemo(() => accounts.find((account) => account.is_default), [accounts])
 
@@ -62,6 +64,7 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
   const resetForm = () => {
     setForm({ ...emptyForm })
     setEditingId(null)
+    setShowApiToken(false)
   }
 
   const startEdit = (account: MerchantPaymentAccount) => {
@@ -73,9 +76,11 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
       merchant_name: account.merchant_name,
       merchant_city: account.merchant_city,
       merchant_phone: account.merchant_phone || '',
+      api_token: '',
       currency: account.currency,
       is_active: account.is_active,
     })
+    setShowApiToken(false)
   }
 
   const submit = async (event: FormEvent) => {
@@ -219,8 +224,44 @@ export function PaymentAccountsPanel({ adminMode = false }: PaymentAccountsPanel
               </label>
             </div>
             {!adminMode && (
+              <div className="space-y-1.5 rounded-xl border border-amber-200/70 bg-amber-50/60 p-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-1.5 text-xs font-bold">
+                    <KeyRound className="h-3.5 w-3.5 text-amber-600" />
+                    {t('Bakong API Token Key (optional)', 'សោ Bakong API Token (ជាជម្រើស)')}
+                  </label>
+                  {editingId && accounts.find((account) => account.id === editingId)?.api_token_configured && (
+                    <span className="font-mono text-[10px] font-semibold text-emerald-600">
+                      {accounts.find((account) => account.id === editingId)?.api_token_masked}
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showApiToken ? 'text' : 'password'}
+                    value={form.api_token || ''}
+                    onChange={(event) => setForm({ ...form, api_token: event.target.value })}
+                    placeholder={editingId ? t('Leave blank to keep the current token', 'ទុកទទេដើម្បីរក្សា Token បច្ចុប្បន្ន') : 'Paste Bakong API token'}
+                    autoComplete="new-password"
+                    className="h-10 rounded-xl pr-10 font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiToken((visible) => !visible)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                    aria-label={showApiToken ? t('Hide token', 'លាក់ Token') : t('Show token', 'បង្ហាញ Token')}
+                  >
+                    {showApiToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[11px] leading-5 text-muted-foreground">
+                  {t('Encrypted on the server and used for this seller account when verifying Bakong payments. Leave blank to use the platform token.', 'Token ត្រូវបានអ៊ិនគ្រីបនៅលើ server និងប្រើសម្រាប់ផ្ទៀងផ្ទាត់ការទូទាត់របស់អ្នកលក់នេះ។ ទុកទទេដើម្បីប្រើ Token របស់ Platform។')}
+                </p>
+              </div>
+            )}
+            {!adminMode && (
               <p className="text-[11px] text-muted-foreground">
-                {t('Your active default account receives QR payments for your products. Bakong API URL and token remain controlled by the platform admin for security.', 'គណនីលំនាំដើមសកម្មរបស់អ្នកនឹងទទួល QR សម្រាប់ទំនិញរបស់អ្នក។ Bakong API URL និង token ត្រូវបានគ្រប់គ្រងដោយ Admin សម្រាប់សុវត្ថិភាព។')}
+                {t('Your active default account receives QR payments for your products. The platform token remains available as a fallback.', 'គណនីលំនាំដើមសកម្មរបស់អ្នកនឹងទទួល QR សម្រាប់ទំនិញរបស់អ្នក។ Token របស់ Platform នៅតែអាចប្រើជាជម្រើសបម្រុង។')}
               </p>
             )}
             <Button type="submit" disabled={saving} className="rounded-xl text-xs font-bold">

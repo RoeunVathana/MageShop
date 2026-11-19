@@ -19,6 +19,7 @@ class MerchantPaymentAccount extends Model
         'merchant_name',
         'merchant_city',
         'merchant_phone',
+        'api_token_encrypted',
         'currency',
         'is_default',
         'is_active',
@@ -34,6 +35,7 @@ class MerchantPaymentAccount extends Model
     protected $hidden = [
         'user_id',
         'seller_application_id',
+        'api_token_encrypted',
     ];
 
     public function owner(): BelongsTo

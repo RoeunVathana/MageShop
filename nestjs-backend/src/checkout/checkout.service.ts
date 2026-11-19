@@ -1,12 +1,13 @@
 import { ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 import { AuthService } from '../auth/auth.service';
 import { DatabaseService } from '../database/database.service';
 import { N8nService } from '../n8n/n8n.service';
 import { ReceiptService } from '../receipts/receipt.service';
+import { decryptBakongToken, normalizeBakongToken } from '../payments/bakong-token.crypto';
 
 interface ProductRow {
   id: number;
@@ -31,10 +32,12 @@ interface CheckoutItem {
 }
 
 interface MerchantAccount {
+  id?: number;
   account_id: string;
   merchant_name: string;
   merchant_city: string;
   user_id?: number | null;
+  api_token_encrypted?: string | null;
   source?: string;
   seller_id?: number | null;
 }
@@ -199,7 +202,7 @@ export class CheckoutService {
       'usd_to_khr_rate',
       'payment_qr_expires_minutes',
     ]) : new Map<string, string>();
-    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id) || !(await this.bakongPaymentReady(paymentSettings)))) {
+    if (isQr && (!merchant || !/^[^@\s]+@[^@\s]+$/.test(merchant.account_id) || !(await this.bakongPaymentReady(paymentSettings, merchant)))) {
       throw new ServiceUnavailableException({ status: 'error', message: 'Bakong payment is not configured for verification. Please contact support or choose Cash on Delivery.' });
     }
     const qr = isQr ? this.buildQr(orderNumber, totalAmount, transactionReference, merchant as MerchantAccount, paymentSettings) : null;
@@ -226,9 +229,9 @@ export class CheckoutService {
         `, [id, item.product_id, item.product_name, item.product_sku, item.quantity, item.unit_price, item.total_price]);
       }
       await client.query(`
-        INSERT INTO payments (order_id, transaction_reference, payment_method, amount, currency, status, khqr_string, khqr_md5, merchant_account, merchant_name, merchant_city, verified_at, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, 'USD', $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-      `, [id, transactionReference, paymentMethod, totalAmount, isCash ? 'pending_arrival' : (isQr ? 'pending_qr' : 'completed'), qr?.qr_string ?? null, qr?.md5 ?? null, merchant?.account_id ?? null, merchant?.merchant_name ?? null, merchant?.merchant_city ?? null, paymentStatus === 'paid' ? new Date() : null]);
+        INSERT INTO payments (order_id, transaction_reference, payment_method, amount, currency, status, khqr_string, khqr_md5, merchant_account, merchant_name, merchant_city, merchant_payment_account_id, verified_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'USD', $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      `, [id, transactionReference, paymentMethod, totalAmount, isCash ? 'pending_arrival' : (isQr ? 'pending_qr' : 'completed'), qr?.qr_string ?? null, qr?.md5 ?? null, merchant?.account_id ?? null, merchant?.merchant_name ?? null, merchant?.merchant_city ?? null, merchant?.id ?? null, paymentStatus === 'paid' ? new Date() : null]);
       await client.query('UPDATE users SET loyalty_points = $1, updated_at = NOW() WHERE id = $2', [newPoints, userId]);
       if (pointsRedeemed) {
         await client.query(`INSERT INTO loyalty_transactions (user_id, order_id, type, points, description, created_at, updated_at) VALUES ($1, $2, 'redeemed', $3, $4, NOW(), NOW())`, [userId, id, -pointsRedeemed, `Exchanged ${pointsRedeemed} points for a free product`]);
@@ -317,7 +320,7 @@ export class CheckoutService {
   private async merchantAccount(products: ProductRow[]): Promise<MerchantAccount | null> {
     const sellerIds = [...new Set(products.map((product) => product.seller_id).filter((id): id is number => id !== null))];
     const hasAdminOwnedProduct = products.some((product) => product.seller_id === null);
-    const accounts = await this.database.query<MerchantAccount>(`SELECT account_id, merchant_name, merchant_city, user_id
+    const accounts = await this.database.query<MerchantAccount>(`SELECT id, account_id, merchant_name, merchant_city, user_id, api_token_encrypted
       FROM merchant_payment_accounts
       WHERE is_active = TRUE AND currency IN ('USD', 'BOTH')
         AND (user_id IS NULL OR user_id = ANY($1::int[]))
@@ -392,28 +395,14 @@ export class CheckoutService {
     return { qr_string: qrString, md5: createHash('md5').update(qrString).digest('hex'), merchant_account: merchant.account_id, merchant_name: merchant.merchant_name, merchant_city: merchant.merchant_city, merchant_source: merchant.source ?? 'admin', seller_id: merchant.seller_id ?? null, amount_usd: amount, amount_khr: Math.round(amount * this.exchangeRate(settings)), order_number: orderNumber, transaction_reference: transaction, expires_in_seconds: this.qrExpirySeconds(settings) };
   }
 
-  private async bakongPaymentReady(settings: Map<string, string>): Promise<boolean> {
+  private async bakongPaymentReady(settings: Map<string, string>, merchant: MerchantAccount): Promise<boolean> {
     const enabledValue = settings.get('bakong_api_enabled') ?? this.config.get<string>('BAKONG_API_ENABLED', 'true');
     if (!['true', '1', 'yes', 'on'].includes(String(enabledValue).toLowerCase())) return false;
+    const sellerToken = decryptBakongToken(merchant.api_token_encrypted, this.config.get<string>('APP_KEY', ''));
+    if (sellerToken) return true;
     const encrypted = String(settings.get('bakong_api_token_encrypted') ?? '').trim();
-    if (encrypted && this.decryptLaravel(encrypted)) return true;
-    return Boolean(String(this.config.get<string>('BAKONG_API_TOKEN', '') ?? '').trim().replace(/^['"]|['"]$/g, '').replace(/\\$/g, ''));
-  }
-
-  private decryptLaravel(payload: string): string {
-    try {
-      const rawKey = this.config.get<string>('APP_KEY', '').trim();
-      if (!rawKey) return '';
-      const key = rawKey.startsWith('base64:') ? Buffer.from(rawKey.slice(7), 'base64') : Buffer.from(rawKey);
-      if (key.length !== 32) return '';
-      const parsed = JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as { iv: string; value: string; mac: string };
-      const expected = createHmac('sha256', key).update(parsed.iv + parsed.value).digest('hex');
-      if (!parsed.mac || parsed.mac.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.mac), Buffer.from(expected))) return '';
-      const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(parsed.iv, 'base64'));
-      return Buffer.concat([decipher.update(Buffer.from(parsed.value, 'base64')), decipher.final()]).toString('utf8').trim();
-    } catch {
-      return '';
-    }
+    if (encrypted && decryptBakongToken(encrypted, this.config.get<string>('APP_KEY', ''))) return true;
+    return Boolean(normalizeBakongToken(this.config.get<string>('BAKONG_API_TOKEN', '')));
   }
 
   private crc(data: string): string {

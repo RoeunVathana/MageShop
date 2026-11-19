@@ -461,6 +461,7 @@ class CommerceEngagementController extends Controller
         $merchantAccount = $initiateQr
             ? $this->resolveCheckoutMerchantAccount($products)
             : null;
+        $merchantAccountRecordId = $merchantAccount['account_record_id'] ?? null;
 
         if ($initiateQr && app()->environment('production') && ! $this->isBakongPaymentReady($merchantAccount)) {
             return response()->json([
@@ -497,6 +498,7 @@ class CommerceEngagementController extends Controller
                 $isCashOnArrival,
                 $initiateQr,
                 $qrPaymentData,
+                $merchantAccountRecordId,
                 $txnRef,
                 $availablePoints,
                 $hasIdempotencyColumn
@@ -573,6 +575,7 @@ class CommerceEngagementController extends Controller
                 'merchant_account' => $qrPaymentData['merchant_account'] ?? null,
                 'merchant_name' => $qrPaymentData['merchant_name'] ?? null,
                 'merchant_city' => $qrPaymentData['merchant_city'] ?? null,
+                'merchant_payment_account_id' => $merchantAccountRecordId,
             ]);
 
             // Deduct redeemed points immediately, but award purchase points only after payment is final.
@@ -794,7 +797,7 @@ class CommerceEngagementController extends Controller
         $accountId = (string) ($merchantAccount['account_id'] ?? $this->bakongSetting('bakong_account_id', 'bakong.account_id'));
 
         return filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN)
-            && $this->bakongApiToken() !== ''
+            && $this->bakongApiToken($merchantAccount) !== ''
             && preg_match('/^[^@\s]+@[^@\s]+$/', $accountId) === 1;
     }
 
@@ -880,8 +883,26 @@ class CommerceEngagementController extends Controller
         ];
     }
 
-    protected function bakongApiToken(): string
+    protected function bakongApiToken(?array $merchantAccount = null): string
     {
+        $accountRecordId = (int) ($merchantAccount['account_record_id'] ?? 0);
+        if ($accountRecordId > 0) {
+            $encryptedAccountToken = trim((string) MerchantPaymentAccount::query()
+                ->whereKey($accountRecordId)
+                ->value('api_token_encrypted'));
+
+            if ($encryptedAccountToken !== '') {
+                try {
+                    $accountToken = $this->cleanBakongValue(Crypt::decryptString($encryptedAccountToken));
+                    if ($accountToken !== '') {
+                        return $accountToken;
+                    }
+                } catch (\Throwable) {
+                    // Fall back to the platform token if the seller token cannot be decrypted.
+                }
+            }
+        }
+
         // Read the encrypted token directly so verification never depends on
         // a stale or unavailable cache entry after an admin update.
         $encrypted = trim((string) StoreSetting::query()
@@ -1404,7 +1425,11 @@ class CommerceEngagementController extends Controller
                 ], 422);
             }
 
-            $apiToken = $this->bakongApiToken();
+            $apiToken = $this->bakongApiToken(
+                $payment->merchant_payment_account_id
+                    ? ['account_record_id' => $payment->merchant_payment_account_id]
+                    : null
+            );
             if (! filter_var($this->bakongSetting('bakong_api_enabled', 'bakong.enabled', 'true'), FILTER_VALIDATE_BOOLEAN) || $apiToken === '') {
                 return response()->json([
                     'status' => 'error',

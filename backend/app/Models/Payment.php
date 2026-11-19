@@ -22,6 +22,7 @@ class Payment extends Model
         'merchant_account',
         'merchant_name',
         'merchant_city',
+        'merchant_payment_account_id',
         'gateway_payload',
         'verified_at',
     ];

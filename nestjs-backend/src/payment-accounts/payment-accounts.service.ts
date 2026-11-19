@@ -4,6 +4,8 @@ import type { PoolClient } from 'pg';
 import { AuthService } from '../auth/auth.service';
 import type { AuthUser } from '../auth/auth.types';
 import { DatabaseService } from '../database/database.service';
+import { ConfigService } from '@nestjs/config';
+import { decryptBakongToken, encryptBakongToken, maskBakongToken, normalizeBakongToken } from '../payments/bakong-token.crypto';
 
 interface AccountRow {
   id: number;
@@ -21,6 +23,7 @@ interface AccountRow {
   verified_at: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
+  api_token_encrypted?: string | null;
   owner_name?: string | null;
   owner_email?: string | null;
 }
@@ -31,6 +34,7 @@ export class PaymentAccountsService {
   private readonly sellerRoles = ['SELLER', 'SELLER_STAFF'];
 
   constructor(
+    private readonly config: ConfigService,
     private readonly database: DatabaseService,
     private readonly auth: AuthService,
   ) {}
@@ -61,12 +65,12 @@ export class PaymentAccountsService {
         INSERT INTO merchant_payment_accounts
           (user_id, seller_application_id, account_type, bank_name, account_id,
            merchant_name, merchant_city, merchant_phone, currency, is_default,
-           is_active, verified_at, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL, NOW(), NOW())
+           is_active, verified_at, api_token_encrypted, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL, $12, NOW(), NOW())
         RETURNING id, user_id, seller_application_id, account_type, bank_name,
                   account_id, merchant_name, merchant_city, merchant_phone,
-                  currency, is_default, is_active, verified_at, created_at, updated_at
-      `, [ownerId, sellerApplicationId, input.account_type, input.bank_name ?? '', input.account_id ?? '', input.merchant_name ?? '', input.merchant_city ?? '', input.merchant_phone, input.currency ?? 'USD', isActive, isActive]);
+                  currency, is_default, is_active, verified_at, api_token_encrypted, created_at, updated_at
+      `, [ownerId, sellerApplicationId, input.account_type, input.bank_name ?? '', input.account_id ?? '', input.merchant_name ?? '', input.merchant_city ?? '', input.merchant_phone, input.currency ?? 'USD', isActive, isActive, this.encryptToken(input.api_token)]);
       const created = inserted.rows[0];
       if (!created) throw new Error('Payment account was not created.');
       if (admin && created.is_default) await this.syncGlobalSettings(client, created);
@@ -98,6 +102,9 @@ export class PaymentAccountsService {
         currency: input.currency ?? existing.currency,
         is_active: input.is_active ?? existing.is_active,
         is_default: input.is_default ?? existing.is_default,
+        api_token_encrypted: input.api_token_clear
+          ? null
+          : (input.api_token ? this.encryptToken(input.api_token) : (existing.api_token_encrypted ?? null)),
       };
       if (values.is_default) await this.clearDefault(client, existing.user_id, accountId);
       else if (existing.is_default) values.is_default = true;
@@ -105,12 +112,13 @@ export class PaymentAccountsService {
         UPDATE merchant_payment_accounts
         SET account_type = $1, bank_name = $2, account_id = $3,
             merchant_name = $4, merchant_city = $5, merchant_phone = $6,
-            currency = $7, is_active = $8, is_default = $9, updated_at = NOW()
-        WHERE id = $10
+            currency = $7, is_active = $8, is_default = $9,
+            api_token_encrypted = $10, updated_at = NOW()
+        WHERE id = $11
         RETURNING id, user_id, seller_application_id, account_type, bank_name,
                   account_id, merchant_name, merchant_city, merchant_phone,
-                  currency, is_default, is_active, verified_at, created_at, updated_at
-      `, [values.account_type, values.bank_name, values.account_id, values.merchant_name, values.merchant_city, values.merchant_phone, values.currency, values.is_active, values.is_default, accountId]);
+                  currency, is_default, is_active, verified_at, api_token_encrypted, created_at, updated_at
+      `, [values.account_type, values.bank_name, values.account_id, values.merchant_name, values.merchant_city, values.merchant_phone, values.currency, values.is_active, values.is_default, values.api_token_encrypted, accountId]);
       const updated = result.rows[0];
       if (!updated) throw new NotFoundException({ status: 'error', message: 'Payment account not found.' });
       if (this.isAdmin(user) && updated.is_default && updated.user_id === null) await this.syncGlobalSettings(client, updated);
@@ -137,7 +145,7 @@ export class PaymentAccountsService {
         const replacement = await client.query<AccountRow>(`
           SELECT id, user_id, seller_application_id, account_type, bank_name,
                  account_id, merchant_name, merchant_city, merchant_phone,
-                 currency, is_default, is_active, verified_at, created_at, updated_at
+                 currency, is_default, is_active, verified_at, api_token_encrypted, created_at, updated_at
           FROM merchant_payment_accounts
           WHERE user_id IS NOT DISTINCT FROM $1 AND is_active = TRUE
           ORDER BY id DESC LIMIT 1
@@ -165,7 +173,7 @@ export class PaymentAccountsService {
         WHERE id = $1
         RETURNING id, user_id, seller_application_id, account_type, bank_name,
                   account_id, merchant_name, merchant_city, merchant_phone,
-                  currency, is_default, is_active, verified_at, created_at, updated_at
+                  currency, is_default, is_active, verified_at, api_token_encrypted, created_at, updated_at
       `, [accountId]);
       const updated = result.rows[0];
       if (!updated) throw new NotFoundException({ status: 'error', message: 'Payment account not found.' });
@@ -207,7 +215,7 @@ export class PaymentAccountsService {
                    mpa.bank_name, mpa.account_id, mpa.merchant_name,
                    mpa.merchant_city, mpa.merchant_phone, mpa.currency,
                    mpa.is_default, mpa.is_active, mpa.verified_at,
-                   mpa.created_at, mpa.updated_at,
+                   mpa.api_token_encrypted, mpa.created_at, mpa.updated_at,
                    owner.name AS owner_name, owner.email AS owner_email
             FROM merchant_payment_accounts mpa
             LEFT JOIN users owner ON owner.id = mpa.user_id
@@ -258,6 +266,8 @@ export class PaymentAccountsService {
     merchant_city: string | null;
     merchant_phone: string | null;
     currency: string | null;
+    api_token?: string;
+    api_token_clear?: boolean;
     is_active?: boolean;
     is_default?: boolean;
   } {
@@ -275,6 +285,10 @@ export class PaymentAccountsService {
     const merchantCity = text('merchant_city', 100, !partial);
     const merchantPhone = text('merchant_phone', 50, false);
     const currency = text('currency', 10, !partial);
+    const apiTokenValue = body.api_token === undefined ? undefined : normalizeBakongToken(body.api_token);
+    if (apiTokenValue !== undefined && apiTokenValue.length > 2048) {
+      throw new UnprocessableEntityException({ status: 'error', message: 'The api_token field is invalid.' });
+    }
     if (accountType !== 'bakong' || (accountId !== null && !/^[^@\s]+@[^@\s]+$/.test(accountId))) throw new UnprocessableEntityException({ status: 'error', message: 'The payment account details are invalid.' });
     if (currency !== null && !['USD', 'KHR', 'BOTH'].includes(currency)) throw new UnprocessableEntityException({ status: 'error', message: 'The currency is invalid.' });
     const booleanValue = (key: string): boolean | undefined => {
@@ -284,10 +298,25 @@ export class PaymentAccountsService {
       if (['false', '0', 'no', 'off'].includes(String(body[key]).toLowerCase())) return false;
       throw new UnprocessableEntityException({ status: 'error', message: `The ${key} field is invalid.` });
     };
-    return { account_type: accountType, bank_name: bankName, account_id: accountId, merchant_name: merchantName, merchant_city: merchantCity, merchant_phone: merchantPhone, currency: currency ?? (partial ? null : 'USD'), is_active: booleanValue('is_active'), is_default: booleanValue('is_default') };
+    return { account_type: accountType, bank_name: bankName, account_id: accountId, merchant_name: merchantName, merchant_city: merchantCity, merchant_phone: merchantPhone, currency: currency ?? (partial ? null : 'USD'), api_token: apiTokenValue || undefined, api_token_clear: booleanValue('api_token_clear'), is_active: booleanValue('is_active'), is_default: booleanValue('is_default') };
   }
 
   private publicAccount(account: AccountRow): Record<string, unknown> {
-    return { ...account, owner: account.user_id ? { id: account.user_id, name: account.owner_name, email: account.owner_email } : null };
+    const { api_token_encrypted, owner_name, owner_email, ...publicFields } = account;
+    const apiToken = decryptBakongToken(api_token_encrypted, this.config.get<string>('APP_KEY', ''));
+    return {
+      ...publicFields,
+      api_token_configured: Boolean(apiToken),
+      api_token_masked: maskBakongToken(apiToken),
+      owner: account.user_id ? { id: account.user_id, name: owner_name, email: owner_email } : null,
+    };
+  }
+
+  private encryptToken(token: string | undefined): string | null {
+    const normalized = normalizeBakongToken(token);
+    if (!normalized) return null;
+    const encrypted = encryptBakongToken(normalized, this.config.get<string>('APP_KEY', ''));
+    if (!encrypted) throw new UnprocessableEntityException({ status: 'error', message: 'Bakong token encryption is not configured on the server.' });
+    return encrypted;
   }
 }

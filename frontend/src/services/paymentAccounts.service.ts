@@ -8,6 +8,8 @@ export interface MerchantPaymentAccount {
   merchant_name: string
   merchant_city: string
   merchant_phone?: string | null
+  api_token_configured: boolean
+  api_token_masked?: string
   currency: 'USD' | 'KHR' | 'BOTH'
   is_default: boolean
   is_active: boolean
@@ -22,6 +24,8 @@ export interface PaymentAccountPayload {
   merchant_name: string
   merchant_city: string
   merchant_phone?: string
+  api_token?: string
+  api_token_clear?: boolean
   currency: 'USD' | 'KHR' | 'BOTH'
   is_active: boolean
 }

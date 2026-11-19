@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -35,9 +36,11 @@ class MerchantPaymentAccountController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        $accounts = $query->get()->map(fn (MerchantPaymentAccount $account): array => $this->presentAccount($account));
+
         return response()->json([
             'status' => 'success',
-            'data' => $query->get(),
+            'data' => $accounts,
         ]);
     }
 
@@ -47,8 +50,9 @@ class MerchantPaymentAccountController extends Controller
         $this->authorizeAccountAccess($user);
         $validated = $this->validateAccount($request);
         $isAdmin = $this->isAdmin($user);
+        [$apiToken, $clearApiToken] = $this->extractApiToken($validated);
 
-        $account = DB::transaction(function () use ($validated, $user, $isAdmin) {
+        $account = DB::transaction(function () use ($validated, $user, $isAdmin, $apiToken, $clearApiToken) {
             $sellerApplication = null;
             if (! $isAdmin) {
                 $sellerApplication = SellerApplication::where('user_id', $user->id)->first();
@@ -65,6 +69,9 @@ class MerchantPaymentAccountController extends Controller
 
             $account = MerchantPaymentAccount::create([
                 ...$validated,
+                'api_token_encrypted' => $clearApiToken
+                    ? null
+                    : ($apiToken !== null ? Crypt::encryptString($apiToken) : null),
                 'user_id' => $ownerId,
                 'seller_application_id' => $sellerApplication?->id,
                 'is_default' => $isActive,
@@ -88,7 +95,7 @@ class MerchantPaymentAccountController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Payment account added successfully.',
-            'data' => $account->fresh('owner:id,name,email'),
+            'data' => $this->presentAccount($account->fresh('owner:id,name,email')),
         ], 201);
     }
 
@@ -98,6 +105,7 @@ class MerchantPaymentAccountController extends Controller
         $this->authorizeAccountAccess($user);
         $this->authorizeAccountMutation($user, $account);
         $validated = $this->validateAccount($request, true);
+        [$apiToken, $clearApiToken] = $this->extractApiToken($validated);
 
         if (array_key_exists('is_active', $validated) && ! $validated['is_active'] && $account->is_default) {
             return response()->json([
@@ -106,9 +114,15 @@ class MerchantPaymentAccountController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($account, $validated, $user) {
+        DB::transaction(function () use ($account, $validated, $user, $apiToken, $clearApiToken) {
             $wasDefault = $account->is_default;
             $account->fill($validated);
+
+            if ($clearApiToken) {
+                $account->api_token_encrypted = null;
+            } elseif ($apiToken !== null) {
+                $account->api_token_encrypted = Crypt::encryptString($apiToken);
+            }
 
             if ($account->is_default) {
                 $this->clearDefaultForOwner($account->user_id, $account->id);
@@ -133,7 +147,7 @@ class MerchantPaymentAccountController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Payment account updated successfully.',
-            'data' => $account->fresh('owner:id,name,email'),
+            'data' => $this->presentAccount($account->fresh('owner:id,name,email')),
         ]);
     }
 
@@ -207,7 +221,7 @@ class MerchantPaymentAccountController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Default payment account updated.',
-            'data' => $account->fresh('owner:id,name,email'),
+            'data' => $this->presentAccount($account->fresh('owner:id,name,email')),
         ]);
     }
 
@@ -222,10 +236,64 @@ class MerchantPaymentAccountController extends Controller
             'merchant_name' => [$required, 'string', 'max:100'],
             'merchant_city' => [$required, 'string', 'max:100'],
             'merchant_phone' => ['nullable', 'string', 'max:50'],
+            'api_token' => ['nullable', 'string', 'max:2048'],
+            'api_token_clear' => ['nullable', 'boolean'],
             'currency' => [$required, Rule::in(['USD', 'KHR', 'BOTH'])],
             'is_active' => [$partial ? 'sometimes' : 'nullable', 'boolean'],
             'is_default' => [$partial ? 'sometimes' : 'nullable', 'boolean'],
         ]);
+    }
+
+    /**
+     * Extract a token without ever allowing the plain value into the model's
+     * normal mass-assignment or JSON response path.
+     *
+     * A blank token on update keeps the existing encrypted token. Use the
+     * explicit clear flag when an owner wants to remove it.
+     *
+     * @return array{0: string|null, 1: bool}
+     */
+    protected function extractApiToken(array &$validated): array
+    {
+        $rawToken = array_key_exists('api_token', $validated)
+            ? trim((string) $validated['api_token'])
+            : null;
+        $clearToken = (bool) ($validated['api_token_clear'] ?? false);
+
+        unset($validated['api_token'], $validated['api_token_clear']);
+
+        return [$rawToken === '' ? null : $rawToken, $clearToken];
+    }
+
+    /**
+     * Return an account with only safe token metadata for the dashboard.
+     *
+     * @return array<string, mixed>
+     */
+    protected function presentAccount(MerchantPaymentAccount $account): array
+    {
+        $data = $account->toArray();
+        $token = $this->decryptApiToken($account->api_token_encrypted);
+        $data['api_token_configured'] = $token !== '';
+        $data['api_token_masked'] = $token === '' ? '' : '••••••••'.substr($token, -4);
+
+        unset($data['api_token_encrypted']);
+
+        return $data;
+    }
+
+    protected function decryptApiToken(?string $encryptedToken): string
+    {
+        $encryptedToken = trim((string) $encryptedToken);
+        if ($encryptedToken === '') {
+            return '';
+        }
+
+        try {
+            return trim(Crypt::decryptString($encryptedToken));
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     protected function currentUser(Request $request): ?User
