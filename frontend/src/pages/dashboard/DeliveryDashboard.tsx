@@ -906,9 +906,9 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
       roleColor="text-indigo-600 dark:text-indigo-400"
       navItems={visibleDeliveryNav}
     >
-      <div className="delivery-dashboard relative min-w-0 space-y-4 overflow-x-clip sm:space-y-5" aria-busy={loading}>
+      <div className="delivery-dashboard relative min-w-0 space-y-3 overflow-x-clip sm:space-y-5" aria-busy={loading}>
         {/* Page Header */}
-        <div className="delivery-page-header flex flex-col justify-between gap-3 rounded-3xl border border-slate-200/80 bg-white/90 p-3.5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/85 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+        <div className="delivery-page-header flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/85 sm:rounded-3xl sm:flex-row sm:items-center sm:gap-4 sm:p-5">
           <div className="min-w-0">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
               <h1 className="max-w-full text-xl leading-tight sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
@@ -935,7 +935,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
               size="sm"
               onClick={() => setIsContinuousDelivering((prev) => !prev)}
               disabled={!selectedOrder || !canEditAssignedDelivery}
-              className={`col-span-2 w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all sm:col-span-1 sm:w-auto ${
+              className={`delivery-toolbar-button col-span-2 w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 shadow-sm transition-all sm:col-span-1 sm:w-auto ${
                 isContinuousDelivering
                   ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -951,7 +951,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
               size="sm"
               onClick={handleBroadcastDeviceGps}
               disabled={broadcastingGps || !selectedOrder || !canEditAssignedDelivery}
-              className="w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm sm:w-auto"
+              className="delivery-toolbar-button w-full justify-center rounded-xl h-9 text-xs font-bold gap-2 border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-sm sm:w-auto"
             >
               {broadcastingGps ? (
                 <>
@@ -975,7 +975,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                 if (canManagePricing) fetchDeliverySettings()
               }}
               disabled={loading || loadingSettings}
-              className="w-full justify-center rounded-xl h-9 text-xs gap-1.5 sm:w-auto"
+              className="delivery-toolbar-button w-full justify-center rounded-xl h-9 text-xs gap-1.5 sm:w-auto"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || loadingSettings ? 'animate-spin' : ''}`} />
               {loading ? t('Refreshing…', 'កំពុងផ្ទុក…') : t('Refresh', 'ផ្ទុកឡើងវិញ')}
@@ -984,7 +984,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
         </div>
 
         {/* View Switcher: live fleet map vs delivery rates */}
-        <div className="delivery-view-switcher flex flex-col items-stretch justify-between gap-1.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:gap-3">
+        <div className="delivery-view-switcher flex flex-col items-stretch justify-between gap-1 rounded-2xl border border-slate-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:gap-3 sm:p-1.5">
           <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
@@ -1136,7 +1136,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
 
         {/* Real-Time Search & Category Filters */}
         <Card className="delivery-filter-card rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 shadow-sm animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
-          <CardContent className="p-4 sm:p-5 space-y-3.5">
+          <CardContent className="p-3.5 sm:p-5 space-y-3.5">
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
               {/* Search Bar */}
               <div className="relative flex-1">
@@ -1184,8 +1184,8 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
             </div>
 
             {/* Cambodia Zone Filter Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1">
+            <div className="delivery-zone-filter flex flex-nowrap items-center gap-1.5 overflow-x-auto pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <span className="shrink-0 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1">
                 Delivery zones:
               </span>
               {[
@@ -1202,7 +1202,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                   key={zone.key}
                   type="button"
                   onClick={() => setZoneFilter(zone.key)}
-                  className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
+                  className={`shrink-0 text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
                     zoneFilter === zone.key
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-indigo-400'
@@ -1219,7 +1219,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
         <div className="grid min-w-0 grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-12">
           {/* LEFT COLUMN (7 Cols): Live GPS Map & Selected Order Focus */}
           <div className="min-w-0 space-y-4 sm:space-y-6 lg:col-span-7">
-            <Card className="delivery-map-card overflow-hidden rounded-3xl border border-indigo-200/80 bg-white shadow-lg transition-shadow duration-500 hover:shadow-xl dark:border-indigo-900/60 dark:bg-slate-900 animate-in fade-in-0 zoom-in-95 duration-500">
+            <Card className="delivery-map-card overflow-hidden rounded-2xl border border-indigo-200/80 bg-white shadow-lg transition-shadow duration-500 hover:shadow-xl dark:border-indigo-900/60 dark:bg-slate-900 sm:rounded-3xl animate-in fade-in-0 zoom-in-95 duration-500">
               {/* Map Header Bar */}
               <div className="gps-map-header bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="gps-map-coordinates flex min-w-0 flex-wrap items-center gap-2">
@@ -1248,7 +1248,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
               </div>
 
               {/* Dynamic OpenStreetMap Embed */}
-              <div className="gps-map-viewport relative aspect-[1/1] min-h-[17rem] w-full bg-slate-950 sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem]">
+              <div className="gps-map-viewport relative aspect-[4/3] min-h-[15rem] w-full bg-slate-950 sm:aspect-[16/9] sm:min-h-[24rem] lg:aspect-auto lg:h-[28rem]">
                 {mapEmbedUrl ? (
                   <iframe
                     title="Staff Fleet Location Live Map"
@@ -1304,10 +1304,12 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                 <div className="gps-map-bottom-overlay absolute bottom-4 left-4 right-4 pointer-events-none flex items-center justify-between text-xs">
                   <div className="gps-map-origin bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
                     <Package className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Origin: TYUSHOP Central Hub (Phnom Penh)</span>
+                    <span className="hidden sm:inline">Origin: TYUSHOP Central Hub (Phnom Penh)</span>
+                    <span className="sm:hidden">TYUSHOP Hub</span>
                   </div>
                   <div className="gps-map-status bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold shadow-md">
-                    Courier GPS: {selectedOrder.current_lat == null || selectedOrder.current_lng == null ? 'Waiting' : 'Connected'}
+                    <span className="hidden sm:inline">Courier GPS: </span>
+                    {selectedOrder.current_lat == null || selectedOrder.current_lng == null ? 'Waiting' : 'Connected'}
                   </div>
                 </div>
               </div>
@@ -1341,7 +1343,7 @@ export function DeliveryDashboard({ sellerMode = false }: { sellerMode?: boolean
                   )}
                 </div>
 
-                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                <div className="delivery-selected-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                   <a href={`tel:${selectedOrder.customer_phone}`} className="min-w-0 flex-1 sm:flex-none">
                     <Button size="sm" variant="outline" className="h-9 w-full rounded-xl text-xs gap-1.5 sm:h-8 sm:w-auto">
                       <Phone className="w-3.5 h-3.5" /> Call Customer

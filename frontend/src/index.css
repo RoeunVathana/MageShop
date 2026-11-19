@@ -803,6 +803,97 @@ html.khmer-mode .dashboard-shell .dashboard-data-table {
 }
 
 @media (max-width: 639px) {
+  .delivery-dashboard .delivery-page-header {
+    gap: 0.75rem;
+  }
+
+  .delivery-dashboard .delivery-page-header h1 {
+    max-width: 100%;
+    font-size: clamp(1.08rem, 5.2vw, 1.35rem);
+    line-height: 1.35;
+  }
+
+  .delivery-dashboard .delivery-page-header > div:last-child {
+    gap: 0.4rem;
+  }
+
+  .delivery-dashboard .delivery-toolbar-button {
+    height: auto !important;
+    min-height: 2.75rem;
+    padding-block: 0.55rem !important;
+    line-height: 1.25;
+  }
+
+  .delivery-dashboard .delivery-view-switcher button {
+    min-height: 2.75rem;
+    line-height: 1.25;
+  }
+
+  .delivery-dashboard .delivery-zone-filter {
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 0.15rem;
+  }
+
+  .delivery-dashboard .delivery-zone-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .delivery-dashboard .delivery-filter-card {
+    border-radius: 1.15rem;
+  }
+
+  .delivery-dashboard .delivery-filter-card input {
+    min-height: 2.75rem;
+  }
+
+  .delivery-dashboard .delivery-order-card {
+    border-radius: 1.15rem;
+  }
+
+  .delivery-dashboard .delivery-selected-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .delivery-dashboard .delivery-selected-actions > *,
+  .delivery-dashboard .delivery-selected-actions a,
+  .delivery-dashboard .delivery-selected-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .delivery-dashboard .delivery-selected-actions a {
+    display: flex;
+  }
+
+  .delivery-dashboard .delivery-selected-actions button {
+    justify-content: center;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .delivery-dashboard .gps-map-header {
+    border-radius: 0;
+  }
+
+  .delivery-dashboard .gps-map-top-overlay {
+    top: 0.625rem;
+    left: 0.625rem;
+    right: 0.625rem;
+  }
+
+  .delivery-dashboard .gps-map-destination-card {
+    max-height: 5.25rem;
+    overflow: hidden;
+  }
+
+  .delivery-dashboard .gps-map-bottom-overlay {
+    gap: 0.35rem;
+  }
+
   .delivery-dashboard .delivery-page-header > div:first-child > p {
     max-width: 30rem;
   }
