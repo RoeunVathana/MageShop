@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutGrid,
@@ -16,11 +16,26 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
+import { authService } from '@/services/auth.service'
+import type { User } from '@/types/user.types'
 
 export function Navbar() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getStoredUser())
   const location = useLocation()
   const { t } = useShopEngagement()
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(authService.getStoredUser())
+    window.addEventListener('tyushop-auth-changed', syncAuth)
+    window.addEventListener('storage', syncAuth)
+    return () => {
+      window.removeEventListener('tyushop-auth-changed', syncAuth)
+      window.removeEventListener('storage', syncAuth)
+    }
+  }, [])
+
+  const isSeller = authService.isSeller(currentUser)
 
   const navLinks = [
     { label: t('Home', 'ទំព័រដើម'), path: '/' },
@@ -151,27 +166,29 @@ export function Navbar() {
         </div>
 
         {/* Right: Vendor Callout - Animated Glowing Button to /sell */}
-        <div className="shrink-0 hidden xl:flex items-center">
-          <Link
-            to="/sell"
-            className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/10 via-primary/15 to-indigo-500/10 hover:from-primary hover:via-blue-600 hover:to-indigo-600 text-foreground hover:text-white border border-primary/25 hover:border-transparent transition-all duration-300 shadow-xs hover:shadow-lg hover:shadow-primary/20 active:scale-95"
-          >
-            {/* Pulsing beacon indicator */}
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 group-hover:bg-white" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary group-hover:bg-white transition-colors duration-300" />
-            </span>
+        {!isSeller && (
+          <div className="shrink-0 hidden xl:flex items-center">
+            <Link
+              to="/sell"
+              className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/10 via-primary/15 to-indigo-500/10 hover:from-primary hover:via-blue-600 hover:to-indigo-600 text-foreground hover:text-white border border-primary/25 hover:border-transparent transition-all duration-300 shadow-xs hover:shadow-lg hover:shadow-primary/20 active:scale-95"
+            >
+              {/* Pulsing beacon indicator */}
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 group-hover:bg-white" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary group-hover:bg-white transition-colors duration-300" />
+              </span>
 
-            <span className="text-muted-foreground group-hover:text-white/90 transition-colors duration-300">
-              {t('Sell on TyuShop?', 'ចង់លក់ទំនិញ?')}
-            </span>
+              <span className="text-muted-foreground group-hover:text-white/90 transition-colors duration-300">
+                {t('Sell on TyuShop?', 'ចង់លក់ទំនិញ?')}
+              </span>
 
-            <span className="text-primary group-hover:text-white font-bold transition-colors duration-300 flex items-center gap-1">
-              <span>{t('Join as Seller', 'ចុះឈ្មោះជាអ្នកលក់')}</span>
-              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform duration-300 ease-out" />
-            </span>
-          </Link>
-        </div>
+              <span className="text-primary group-hover:text-white font-bold transition-colors duration-300 flex items-center gap-1">
+                <span>{t('Join as Seller', 'ចុះឈ្មោះជាអ្នកលក់')}</span>
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform duration-300 ease-out" />
+              </span>
+            </Link>
+          </div>
+        )}
       </div>
     </nav>
   )

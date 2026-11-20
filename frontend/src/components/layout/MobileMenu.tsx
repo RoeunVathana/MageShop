@@ -296,18 +296,19 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </div>
         )}
 
-        {/* Sell on TyuShop Vendor Callout */}
-        <div className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs">
-          <p className="font-semibold text-foreground text-[11px]">{t('Sell on TyuShop?', 'ចង់លក់ទំនិញលើ TyuShop?')}</p>
-          <Link
-            to="/register"
-            onClick={onClose}
-            className="text-primary font-bold text-xs hover:underline mt-1 inline-flex items-center gap-1"
-          >
-            <span>{t('Join as Seller & Open Store', 'ចុះឈ្មោះជាអ្នកលក់')}</span>
-            <span>→</span>
-          </Link>
-        </div>
+        {!authService.isSeller(currentUser) && (
+          <div className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs">
+            <p className="font-semibold text-foreground text-[11px]">{t('Sell on TyuShop?', 'ចង់លក់ទំនិញលើ TyuShop?')}</p>
+            <Link
+              to="/register"
+              onClick={onClose}
+              className="text-primary font-bold text-xs hover:underline mt-1 inline-flex items-center gap-1"
+            >
+              <span>{t('Join as Seller & Open Store', 'ចុះឈ្មោះជាអ្នកលក់')}</span>
+              <span>→</span>
+            </Link>
+          </div>
+        )}
 
         {/* Drawer Footer */}
         <div className="mt-auto pt-4 text-center text-xs text-muted-foreground border-t">
