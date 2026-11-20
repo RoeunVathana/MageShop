@@ -11,6 +11,8 @@ export interface SellerApplicationData {
   telegram_username?: string
   city?: string
   address?: string
+  latitude?: number | string | null
+  longitude?: number | string | null
   bank_name?: string
   bakong_account_id?: string
   logo_url?: string
@@ -105,6 +107,16 @@ export interface SellerStaffMember {
   created_at?: string
 }
 
+export interface SellerLocation {
+  id: number
+  store_name: string
+  city: string
+  address: string | null
+  latitude: number | string | null
+  longitude: number | string | null
+  google_maps_url: string | null
+}
+
 export const sellerService = {
   async getDashboard(): Promise<{ data: SellerDashboardData }> {
     return api.get('/seller/dashboard')
@@ -114,7 +126,7 @@ export const sellerService = {
     return api.get('/seller/staff')
   },
 
-  async createStaff(payload: { name: string; email: string; password: string; phone_number?: string }): Promise<{ data: SellerStaffMember; message: string }> {
+  async createStaff(payload: { name: string; email: string; password: string; phone_number?: string; permissions?: string[] }): Promise<{ data: SellerStaffMember; message: string }> {
     return api.post('/seller/staff', payload)
   },
 
@@ -124,6 +136,14 @@ export const sellerService = {
 
   async removeStaff(staffId: number): Promise<{ message: string }> {
     return api.delete(`/seller/staff/${staffId}`)
+  },
+
+  async getLocation(): Promise<{ data: SellerLocation }> {
+    return api.get('/seller/location')
+  },
+
+  async updateLocation(payload: { city: string; address: string; latitude?: number | string | null; longitude?: number | string | null }): Promise<{ data: SellerLocation; message: string }> {
+    return api.patch('/seller/location', payload)
   },
 
   /**

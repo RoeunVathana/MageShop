@@ -44,4 +44,14 @@ export class SellerStaffController {
   @Delete('staff/:staffId')
   @UseGuards(SanctumGuard)
   async removeStaff(@Param('staffId') staffId: string, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.sellers.removeStaff(Number(staffId), request.authUserId as number); }
+
+  @Get('location')
+  @UseGuards(SanctumGuard)
+  async location(@Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> { return this.sellers.location(request.authUserId as number); }
+
+  @Patch('location')
+  @UseGuards(SanctumGuard)
+  async updateLocation(@Body() body: Record<string, unknown>, @Req() request: AuthenticatedRequest): Promise<Record<string, unknown>> {
+    return this.sellers.updateLocation(body, request.authUserId as number);
+  }
 }

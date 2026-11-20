@@ -45,6 +45,7 @@ const CustomerDashboard = lazy(() => import('@/pages/dashboard/CustomerDashboard
 const SellerDashboard = lazy(() => import('@/pages/dashboard/SellerDashboard').then((m) => ({ default: m.SellerDashboard })))
 const SellerTelegramSettingsPage = lazy(() => import('@/pages/dashboard/SellerTelegramSettingsPage').then((m) => ({ default: m.SellerTelegramSettingsPage })))
 const SellerStaffPage = lazy(() => import('@/pages/dashboard/SellerStaffPage').then((m) => ({ default: m.SellerStaffPage })))
+const SellerLocationPage = lazy(() => import('@/pages/dashboard/SellerLocationPage').then((m) => ({ default: m.SellerLocationPage })))
 const AdminDashboard = lazy(() => import('@/pages/dashboard/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
 const StaffDashboard = lazy(() => import('@/pages/dashboard/StaffDashboard').then((m) => ({ default: m.StaffDashboard })))
 const DeliveryDashboard = lazy(() => import('@/pages/dashboard/DeliveryDashboard').then((m) => ({ default: m.DeliveryDashboard })))
@@ -149,6 +150,7 @@ export default function App() {
               <Route path="/dashboard/seller/telegram" element={<AdminOrSellerRoute><SellerTelegramSettingsPage /></AdminOrSellerRoute>} />
               <Route path="/dashboard/seller/delivery" element={<AdminOrSellerRoute><DeliveryDashboard sellerMode /></AdminOrSellerRoute>} />
               <Route path="/dashboard/seller/staff" element={<AdminOrSellerRoute><SellerStaffPage /></AdminOrSellerRoute>} />
+              <Route path="/dashboard/seller/location" element={<AdminOrSellerRoute><SellerLocationPage /></AdminOrSellerRoute>} />
               <Route path="/dashboard/staff" element={<StaffOrAdminRoute><StaffDashboard /></StaffOrAdminRoute>} />
               <Route path="/dashboard/delivery" element={<DeliveryOrAdminRoute><DeliveryDashboard /></DeliveryOrAdminRoute>} />
               <Route path="/dashboard/warehouse" element={<WarehouseOrAdminRoute><WarehouseDashboard /></WarehouseOrAdminRoute>} />

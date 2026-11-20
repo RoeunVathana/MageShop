@@ -15,6 +15,8 @@ interface SellerApplicationRow {
   telegram_username: string | null;
   city: string;
   address: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   bank_name: string;
   bakong_account_id: string | null;
   logo_url: string | null;
@@ -59,6 +61,8 @@ export class SellerService implements OnModuleInit {
           CONSTRAINT seller_staff_memberships_unique_pair UNIQUE (seller_user_id, staff_user_id)
         )
       `);
+      await this.database.query('ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,7)');
+      await this.database.query('ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS longitude NUMERIC(10,7)');
       await this.database.query('CREATE INDEX IF NOT EXISTS seller_staff_memberships_seller_idx ON seller_staff_memberships (seller_user_id, status)');
       await this.database.query('CREATE INDEX IF NOT EXISTS seller_staff_memberships_staff_idx ON seller_staff_memberships (staff_user_id, status)');
     } catch (error) {
@@ -177,6 +181,34 @@ export class SellerService implements OnModuleInit {
     if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller staff member not found.' });
     await this.database.query('UPDATE users SET status=\'inactive\', updated_at=NOW() WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM seller_staff_memberships WHERE staff_user_id=$1 AND status=\'active\')', [staffId]);
     return { status: 'success', message: 'Seller staff member removed from this store.' };
+  }
+
+  async location(userId: number): Promise<Record<string, unknown>> {
+    await this.authorizeSellerOwner(userId, 'manage store location');
+    const result = await this.database.query<SellerApplicationRow>(`
+      SELECT id, user_id, store_name, city, address, latitude, longitude
+      FROM seller_applications
+      WHERE user_id=$1
+      LIMIT 1
+    `, [userId]);
+    if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller store application not found.' });
+    return { status: 'ok', data: this.locationData(result.rows[0]) };
+  }
+
+  async updateLocation(body: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
+    await this.authorizeSellerOwner(userId, 'update store location');
+    const city = this.limitRequired(body.city, 'city', 100);
+    const address = this.limitRequired(body.address, 'address', 500);
+    const latitude = this.coordinate(body.latitude, 'latitude', -90, 90);
+    const longitude = this.coordinate(body.longitude, 'longitude', -180, 180);
+    const result = await this.database.query<SellerApplicationRow>(`
+      UPDATE seller_applications
+      SET city=$1, address=$2, latitude=$3, longitude=$4, updated_at=NOW()
+      WHERE user_id=$5
+      RETURNING id, user_id, store_name, city, address, latitude, longitude
+    `, [city, address, latitude, longitude, userId]);
+    if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller store application not found.' });
+    return { status: 'success', message: 'Store location updated successfully.', data: this.locationData(result.rows[0]) };
   }
 
   async apply(body: Record<string, unknown>, authorization?: string): Promise<Record<string, unknown>> {
@@ -344,6 +376,11 @@ export class SellerService implements OnModuleInit {
 
   private async authorizeAdmin(userId: number): Promise<void> { const user = await this.auth.me(userId); if (!this.auth.hasAnyRole(user, this.adminRoles)) throw new ForbiddenException({ status: 'error', message: 'Unauthorized. Super administrator privileges required.' }); }
 
+  private async authorizeSellerOwner(userId: number, action: string): Promise<void> {
+    const user = await this.auth.me(userId);
+    if (!this.auth.hasAnyRole(user, ['SELLER'])) throw new ForbiddenException({ status: 'error', message: `Only the seller owner can ${action}.` });
+  }
+
   private async find(id: number): Promise<SellerApplicationRow> {
     const result = await this.database.query<SellerApplicationRow>('SELECT sa.*, u.name AS user_name, u.email AS user_email, u.created_at AS user_created_at FROM seller_applications sa JOIN users u ON u.id=sa.user_id WHERE sa.id=$1 LIMIT 1', [id]);
     if (!result.rows[0]) throw new NotFoundException({ status: 'error', message: 'Seller application not found.' });
@@ -358,6 +395,20 @@ export class SellerService implements OnModuleInit {
   private application(row: SellerApplicationRow): Record<string, unknown> {
     const { user_name, user_email, user_created_at, ...application } = row;
     return { ...application, user: row.user_name ? { id: row.user_id, name: user_name, email: user_email, created_at: user_created_at } : null };
+  }
+
+  private locationData(row: SellerApplicationRow): Record<string, unknown> {
+    const latitude = row.latitude ?? null;
+    const longitude = row.longitude ?? null;
+    return {
+      id: row.id,
+      store_name: row.store_name,
+      city: row.city,
+      address: row.address,
+      latitude,
+      longitude,
+      google_maps_url: latitude !== null && longitude !== null ? `https://maps.google.com/?q=${latitude},${longitude}` : null,
+    };
   }
 
   private async uniqueSlug(baseSlug: string, userId: number): Promise<string> {
@@ -393,6 +444,12 @@ export class SellerService implements OnModuleInit {
 
   private text(value: unknown): string { return value === undefined || value === null ? '' : String(value).trim(); }
   private number(value: unknown): number | null { const text = this.text(value); if (!text) return null; const number = Number(text); return Number.isFinite(number) ? number : null; }
+  private coordinate(value: unknown, field: string, minimum: number, maximum: number): number | null {
+    if (value === undefined || value === null || this.text(value) === '') return null;
+    const number = this.number(value);
+    if (number === null || number < minimum || number > maximum) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` });
+    return number;
+  }
   private limitRequired(value: unknown, field: string, max: number): string { const text = this.text(value); if (!text || text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text; }
   private limitNullable(value: unknown, max: number, field: string): string | null { const text = this.text(value); if (text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text || null; }
   private slug(value: string): string { return value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 230); }

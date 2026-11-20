@@ -13,6 +13,7 @@ import {
   Bot,
   Truck,
   Users,
+  MapPin,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout, NavItem } from '@/components/dashboard/DashboardLayout'
@@ -32,6 +33,7 @@ export const sellerNav: NavItem[] = [
   { label: 'Orders & Fulfillment', labelKm: 'ការបញ្ជាទិញ & ការរៀបចំ', href: '/dashboard/seller', icon: Clock },
   { label: 'Delivery Management', labelKm: 'គ្រប់គ្រងការដឹកជញ្ជូន', href: '/dashboard/seller/delivery', icon: Truck, badge: 'GPS', badgeKm: 'GPS' },
   { label: 'Seller Staff', labelKm: 'បុគ្គលិកហាង', href: '/dashboard/seller/staff', icon: Users },
+  { label: 'Store Location', labelKm: 'ទីតាំងហាង', href: '/dashboard/seller/location', icon: MapPin },
   { label: 'Revenue & Payouts', labelKm: 'ចំណូល & ការទូទាត់', href: '/dashboard/seller', icon: DollarSign },
   { label: 'Telegram Bot Settings', labelKm: 'ការកំណត់ Telegram Bot', href: '/dashboard/seller/telegram', icon: Bot },
 ]
