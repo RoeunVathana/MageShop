@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 const resetSchema = z
   .object({
@@ -35,6 +36,7 @@ export function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   const {
     register,
@@ -47,8 +49,8 @@ export function ResetPasswordPage() {
   const onSubmit = async (data: ResetFormData) => {
     if (!email || !token) {
       toast({
-        title: 'Missing Authorization Token',
-        description: 'Password reset link is invalid or expired. Please request a new recovery code.',
+        title: t('Missing Authorization Token', 'បាត់ Token ផ្ទៀងផ្ទាត់'),
+        description: t('Password reset link is invalid or expired. Please request a new recovery code.', 'តំណកំណត់ពាក្យសម្ងាត់មិនត្រឹមត្រូវ ឬផុតកំណត់។ សូមស្នើកូដសង្គ្រោះថ្មី។'),
         type: 'error',
       })
       navigate('/forgot-password')
@@ -63,15 +65,15 @@ export function ResetPasswordPage() {
         password: data.password,
       })
       toast({
-        title: 'Password Updated Successfully! 🎉',
-        description: 'Your password has been changed. Please sign in with your new credentials.',
+        title: t('Password Updated Successfully! 🎉', 'បានកែប្រែពាក្យសម្ងាត់ជោគជ័យ! 🎉'),
+        description: t('Your password has been changed. Please sign in with your new credentials.', 'ពាក្យសម្ងាត់របស់អ្នកត្រូវបានកែប្រែ។ សូមចូលដោយព័ត៌មានថ្មី។'),
         type: 'success',
       })
       navigate('/login')
     } catch (err: any) {
       toast({
-        title: 'Reset Failed',
-        description: err.message || err.response?.data?.message || 'Invalid or expired reset token.',
+        title: t('Reset Failed', 'កំណត់ឡើងវិញបរាជ័យ'),
+        description: err.message || err.response?.data?.message || t('Invalid or expired reset token.', 'Token មិនត្រឹមត្រូវ ឬផុតកំណត់។'),
         type: 'error',
       })
     } finally {
@@ -89,9 +91,9 @@ export function ResetPasswordPage() {
           <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">
             <Lock className="w-6 h-6" />
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight">Create New Password</CardTitle>
+          <CardTitle className="text-2xl font-black tracking-tight">{t('Create New Password', 'បង្កើតពាក្យសម្ងាត់ថ្មី')}</CardTitle>
           <CardDescription className="text-xs">
-            Choose a strong password with at least 8 characters, an uppercase letter, and a number.
+            {t('Choose a strong password with at least 8 characters, an uppercase letter, and a number.', 'ជ្រើសពាក្យសម្ងាត់រឹងមាំដែលមានយ៉ាងតិច ៨ តួ មានអក្សរធំ និងលេខ។')}
           </CardDescription>
         </CardHeader>
 
@@ -99,18 +101,18 @@ export function ResetPasswordPage() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
-              <strong>Argon2id Zero-Trust Security:</strong> Your new password is encrypted with Argon2id and automatically revokes all previous active sessions.
+              <strong>{t('Argon2id Zero-Trust Security:', 'សុវត្ថិភាព Zero-Trust ជាមួយ Argon2id៖')}</strong> {t('Your new password is encrypted with Argon2id and automatically revokes all previous active sessions.', 'ពាក្យសម្ងាត់ថ្មីត្រូវបានអ៊ិនគ្រីបដោយ Argon2id និងបិទវគ្គចាស់ទាំងអស់ដោយស្វ័យប្រវត្តិ។')}
             </span>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* New Password */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">New Password</label>
+              <label className="text-xs font-semibold text-foreground">{t('New Password', 'ពាក្យសម្ងាត់ថ្មី')}</label>
               <div className="relative">
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 characters"
+                  placeholder={t('Min. 8 characters', 'យ៉ាងតិច ៨ តួ')}
                   {...register('password')}
                   className={errors.password ? 'border-destructive pl-9 pr-10' : 'pl-9 pr-10'}
                 />
@@ -130,11 +132,11 @@ export function ResetPasswordPage() {
 
             {/* Confirm Password */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">Confirm New Password</label>
+              <label className="text-xs font-semibold text-foreground">{t('Confirm New Password', 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី')}</label>
               <div className="relative">
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Repeat new password"
+                  placeholder={t('Repeat new password', 'បញ្ចូលម្តងទៀត')}
                   {...register('confirmPassword')}
                   className={errors.confirmPassword ? 'border-destructive pl-9' : 'pl-9'}
                 />
@@ -146,13 +148,13 @@ export function ResetPasswordPage() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full rounded-lg font-semibold shadow-md">
-              {loading ? 'Updating Password...' : 'Reset Password & Sign In'}
+              {loading ? t('Updating Password...', 'កំពុងកែប្រែពាក្យសម្ងាត់...') : t('Reset Password & Sign In', 'កំណត់ពាក្យសម្ងាត់ និងចូល')}
             </Button>
           </form>
 
           <div className="text-center text-xs text-muted-foreground pt-2">
             <Link to="/login" className="font-semibold text-primary hover:underline">
-              Cancel & Return to Sign In
+              {t('Cancel & Return to Sign In', 'បោះបង់ និងត្រឡប់ទៅចូល')}
             </Link>
           </div>
         </CardContent>

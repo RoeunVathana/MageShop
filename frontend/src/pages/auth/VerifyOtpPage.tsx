@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth.service'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 
 export function VerifyOtpPage() {
   const [searchParams] = useSearchParams()
@@ -16,6 +17,7 @@ export function VerifyOtpPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useShopEngagement()
 
   // Countdown timer effect
   useEffect(() => {
@@ -63,8 +65,8 @@ export function VerifyOtpPage() {
     const fullOtp = otp.join('')
     if (fullOtp.length < 6) {
       toast({
-        title: 'Incomplete OTP',
-        description: 'Please enter all 6 digits of the code.',
+        title: t('Incomplete OTP', 'OTP មិនទាន់ពេញ'),
+        description: t('Please enter all 6 digits of the code.', 'សូមបញ្ចូលលេខកូដទាំង ៦ ខ្ទង់។'),
         type: 'warning',
       })
       return
@@ -75,15 +77,15 @@ export function VerifyOtpPage() {
       const res = await authService.verifyOtp(email, fullOtp)
       const token = res.data?.reset_token || (res as any)?.reset_token
       toast({
-        title: 'OTP Verified Successfully',
-        description: 'Code confirmed. Please set your new password.',
+        title: t('OTP Verified Successfully', 'បានផ្ទៀងផ្ទាត់ OTP ជោគជ័យ'),
+        description: t('Code confirmed. Please set your new password.', 'កូដត្រូវបានបញ្ជាក់។ សូមកំណត់ពាក្យសម្ងាត់ថ្មី។'),
         type: 'success',
       })
       navigate(`/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`)
     } catch (err: any) {
       toast({
-        title: 'Verification Failed',
-        description: err.message || err.response?.data?.message || 'Invalid or expired verification code.',
+        title: t('Verification Failed', 'ការផ្ទៀងផ្ទាត់បរាជ័យ'),
+        description: err.message || err.response?.data?.message || t('Invalid or expired verification code.', 'កូដផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ ឬផុតកំណត់។'),
         type: 'error',
       })
     } finally {
@@ -97,14 +99,14 @@ export function VerifyOtpPage() {
       await authService.forgotPassword(email)
       setCountdown(60)
       toast({
-        title: 'Code Resent',
-        description: 'A new 6-digit verification code has been dispatched.',
+        title: t('Code Resent', 'បានផ្ញើកូដម្តងទៀត'),
+        description: t('A new 6-digit verification code has been dispatched.', 'កូដផ្ទៀងផ្ទាត់ថ្មី ៦ ខ្ទង់ត្រូវបានផ្ញើ។'),
         type: 'success',
       })
     } catch (err: any) {
       toast({
-        title: 'Resend Failed',
-        description: err.message || err.response?.data?.message || 'Please wait before requesting another code.',
+        title: t('Resend Failed', 'ការផ្ញើម្តងទៀតបរាជ័យ'),
+        description: err.message || err.response?.data?.message || t('Please wait before requesting another code.', 'សូមរង់ចាំសិន មុនស្នើកូដថ្មី។'),
         type: 'error',
       })
     }
@@ -120,9 +122,9 @@ export function VerifyOtpPage() {
           <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight">Verify Six-Digit OTP</CardTitle>
+          <CardTitle className="text-2xl font-black tracking-tight">{t('Verify Six-Digit OTP', 'ផ្ទៀងផ្ទាត់ OTP ៦ ខ្ទង់')}</CardTitle>
           <CardDescription className="text-xs">
-            We sent a verification code to <strong className="text-foreground">{email}</strong>
+            {t('We sent a verification code to', 'យើងបានផ្ញើកូដផ្ទៀងផ្ទាត់ទៅ')} <strong className="text-foreground">{email}</strong>
           </CardDescription>
         </CardHeader>
 
@@ -130,7 +132,7 @@ export function VerifyOtpPage() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200">
             <AlertCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
-              <strong>Security Verification:</strong> Enter or paste the 6-digit OTP sent to your email (expires in 5 minutes, max 5 attempts).
+              <strong>{t('Security Verification:', 'ការផ្ទៀងផ្ទាត់សុវត្ថិភាព៖')}</strong> {t('Enter or paste the 6-digit OTP sent to your email (expires in 5 minutes, max 5 attempts).', 'បញ្ចូល ឬបិទភ្ជាប់ OTP ៦ ខ្ទង់ដែលបានផ្ញើទៅអ៊ីមែល (ផុតកំណត់ក្នុង ៥ នាទី និងព្យាយាមបាន ៥ ដង)។')}
             </span>
           </div>
 
@@ -156,7 +158,7 @@ export function VerifyOtpPage() {
             </div>
 
             <Button type="submit" disabled={isVerifying} className="w-full rounded-lg font-semibold shadow-md">
-              {isVerifying ? 'Verifying Code...' : 'Verify & Continue'}
+              {isVerifying ? t('Verifying Code...', 'កំពុងផ្ទៀងផ្ទាត់កូដ...') : t('Verify & Continue', 'ផ្ទៀងផ្ទាត់ និងបន្ត')}
             </Button>
           </form>
 
@@ -164,7 +166,7 @@ export function VerifyOtpPage() {
           <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
             {countdown > 0 ? (
               <p>
-                Resend code in <strong className="text-primary font-bold">{countdown}s</strong>
+                {t('Resend code in', 'ផ្ញើកូដម្តងទៀតក្នុង')} <strong className="text-primary font-bold">{countdown}s</strong>
               </p>
             ) : (
               <button
@@ -172,14 +174,14 @@ export function VerifyOtpPage() {
                 onClick={handleResend}
                 className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Resend 6-Digit Code
+                <RotateCcw className="w-3.5 h-3.5" /> {t('Resend 6-Digit Code', 'ផ្ញើកូដ ៦ ខ្ទង់ម្តងទៀត')}
               </button>
             )}
           </div>
 
           <div className="text-center text-xs text-muted-foreground">
             <Link to="/login" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
+              <ArrowLeft className="w-3.5 h-3.5" /> {t('Back to Sign In', 'ត្រឡប់ទៅចូល')}
             </Link>
           </div>
         </CardContent>

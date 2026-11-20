@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { sellerService } from '@/services/seller.service'
+import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { sellerNav } from './SellerDashboard'
 
 type LocationForm = {
@@ -18,6 +19,7 @@ type LocationForm = {
 
 export function SellerLocationPage() {
   const { toast } = useToast()
+  const { t } = useShopEngagement()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [detecting, setDetecting] = useState(false)
@@ -38,7 +40,7 @@ export function SellerLocationPage() {
         })
       })
       .catch((error: any) => {
-        if (mounted) toast({ title: 'Location unavailable', description: error?.message || 'Only the seller owner can manage this store location.', type: 'error' })
+        if (mounted) toast({ title: t('Location unavailable', 'មិនអាចទាញទីតាំងបានទេ'), description: error?.message || t('Only the seller owner can manage this store location.', 'មានតែម្ចាស់ហាងប៉ុណ្ណោះដែលអាចគ្រប់គ្រងទីតាំងហាងនេះបាន។'), type: 'error' })
       })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
@@ -56,7 +58,7 @@ export function SellerLocationPage() {
 
   const detectLocation = () => {
     if (!navigator.geolocation) {
-      toast({ title: 'GPS unavailable', description: 'This browser does not provide location access.', type: 'error' })
+      toast({ title: t('GPS unavailable', 'មិនមាន GPS'), description: t('This browser does not provide location access.', 'កម្មវិធីរុករកនេះមិនអាចផ្តល់សិទ្ធិចូលប្រើទីតាំងបានទេ។'), type: 'error' })
       return
     }
     setDetecting(true)
@@ -64,11 +66,11 @@ export function SellerLocationPage() {
       (position) => {
         setForm((current) => ({ ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }))
         setDetecting(false)
-        toast({ title: 'GPS location detected', description: `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`, type: 'success' })
+        toast({ title: t('GPS location detected', 'រកឃើញទីតាំង GPS'), description: `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`, type: 'success' })
       },
       (error) => {
         setDetecting(false)
-        toast({ title: 'Could not detect GPS', description: error.message, type: 'error' })
+        toast({ title: t('Could not detect GPS', 'មិនអាចរកទីតាំង GPS បានទេ'), description: error.message, type: 'error' })
       },
       { enableHighAccuracy: true, timeout: 10000 },
     )
@@ -77,11 +79,11 @@ export function SellerLocationPage() {
   const saveLocation = async (event: FormEvent) => {
     event.preventDefault()
     if (!form.city.trim() || !form.address.trim()) {
-      toast({ title: 'Location details required', description: 'Enter the city and full store address before saving.', type: 'error' })
+      toast({ title: t('Location details required', 'ត្រូវការព័ត៌មានទីតាំង'), description: t('Enter the city and full store address before saving.', 'សូមបញ្ចូលទីក្រុង និងអាសយដ្ឋានហាងពេញលេញមុនរក្សាទុក។'), type: 'error' })
       return
     }
     if ((form.latitude.trim() || form.longitude.trim()) && !coordinates) {
-      toast({ title: 'Invalid GPS coordinates', description: 'Latitude must be between -90 and 90 and longitude between -180 and 180.', type: 'error' })
+      toast({ title: t('Invalid GPS coordinates', 'កូអរដោនេ GPS មិនត្រឹមត្រូវ'), description: t('Latitude must be between -90 and 90 and longitude between -180 and 180.', 'រយៈទទឹងត្រូវនៅចន្លោះ -90 និង 90 ហើយរយៈបណ្ដោយនៅចន្លោះ -180 និង 180។'), type: 'error' })
       return
     }
     setSaving(true)
@@ -92,9 +94,9 @@ export function SellerLocationPage() {
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
       })
-      toast({ title: 'Store location saved', description: response.message || `${storeName} location was updated.`, type: 'success' })
+      toast({ title: t('Store location saved', 'បានរក្សាទុកទីតាំងហាង'), description: response.message || t(`${storeName} location was updated.`, `ទីតាំងរបស់ ${storeName} ត្រូវបានកែប្រែ។`), type: 'success' })
     } catch (error: any) {
-      toast({ title: 'Could not save location', description: error?.message || 'The server did not update this seller location.', type: 'error' })
+      toast({ title: t('Could not save location', 'មិនអាចរក្សាទុកទីតាំងបានទេ'), description: error?.message || t('The server did not update this seller location.', 'ម៉ាស៊ីនមេមិនបានកែប្រែទីតាំងហាងនេះទេ។'), type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -105,38 +107,38 @@ export function SellerLocationPage() {
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center dark:border-slate-800">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Store Location</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Manage the address and map coordinates shown for {storeName}.</p>
+            <h1 className="text-2xl font-black tracking-tight">{t('Store Location', 'ទីតាំងហាង')}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t('Manage the address and map coordinates shown for', 'គ្រប់គ្រងអាសយដ្ឋាន និងកូអរដោនេផែនទីសម្រាប់')} {storeName}.</p>
           </div>
-          <Badge className="w-fit gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><Store className="h-3.5 w-3.5" /> Seller owner only</Badge>
+          <Badge className="w-fit gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><Store className="h-3.5 w-3.5" /> {t('Seller owner only', 'សម្រាប់ម្ចាស់ហាង')}</Badge>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-emerald-600" /> Store address and GPS</CardTitle>
-            <CardDescription>This location belongs only to your seller store. It does not change the platform headquarters address.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-emerald-600" /> {t('Store address and GPS', 'អាសយដ្ឋានហាង និង GPS')}</CardTitle>
+            <CardDescription>{t('This location belongs only to your seller store. It does not change the platform headquarters address.', 'ទីតាំងនេះជារបស់ហាងអ្នកតែប៉ុណ្ណោះ។ វាមិនប្តូរអាសយដ្ឋានការិយាល័យកណ្តាលរបស់ប្រព័ន្ធទេ។')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <div className="h-56 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /> : <form onSubmit={saveLocation} className="space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-1.5 text-sm font-semibold">City
-                  <Input required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} placeholder="Phnom Penh" />
+                <label className="space-y-1.5 text-sm font-semibold">{t('City', 'ទីក្រុង')}
+                  <Input required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} placeholder={t('Phnom Penh', 'ភ្នំពេញ')} />
                 </label>
-                <div className="flex items-end"><Button type="button" variant="outline" onClick={detectLocation} disabled={detecting} className="w-full gap-2 sm:w-auto"><Navigation className="h-4 w-4" /> {detecting ? 'Detecting GPS…' : 'Use current location'}</Button></div>
+                <div className="flex items-end"><Button type="button" variant="outline" onClick={detectLocation} disabled={detecting} className="w-full gap-2 sm:w-auto"><Navigation className="h-4 w-4" /> {detecting ? t('Detecting GPS…', 'កំពុងរក GPS…') : t('Use current location', 'ប្រើទីតាំងបច្ចុប្បន្ន')}</Button></div>
               </div>
-              <label className="block space-y-1.5 text-sm font-semibold">Full address
-                <Input required value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder="Street, district, city, country" />
+              <label className="block space-y-1.5 text-sm font-semibold">{t('Full address', 'អាសយដ្ឋានពេញលេញ')}
+                <Input required value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder={t('Street, district, city, country', 'ផ្លូវ ខណ្ឌ ទីក្រុង ប្រទេស')} />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-1.5 text-sm font-semibold">Latitude
+                <label className="space-y-1.5 text-sm font-semibold">{t('Latitude', 'រយៈទទឹង')}
                   <Input type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(event) => setForm({ ...form, latitude: event.target.value })} placeholder="11.5564" />
                 </label>
-                <label className="space-y-1.5 text-sm font-semibold">Longitude
+                <label className="space-y-1.5 text-sm font-semibold">{t('Longitude', 'រយៈបណ្ដោយ')}
                   <Input type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(event) => setForm({ ...form, longitude: event.target.value })} placeholder="104.9282" />
                 </label>
               </div>
-              {mapUrl && <div className="flex flex-col justify-between gap-3 rounded-xl border bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900/40 sm:flex-row sm:items-center"><div><p className="font-semibold">Map preview ready</p><p className="text-xs text-muted-foreground">{coordinates?.latitude.toFixed(6)}, {coordinates?.longitude.toFixed(6)}</p></div><a href={mapUrl} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 hover:underline">Open Google Maps</a></div>}
-              <div className="flex justify-end"><Button type="submit" disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save location</Button></div>
+              {mapUrl && <div className="flex flex-col justify-between gap-3 rounded-xl border bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900/40 sm:flex-row sm:items-center"><div><p className="font-semibold">{t('Map preview ready', 'ត្រៀមមើលផែនទី')}</p><p className="text-xs text-muted-foreground">{coordinates?.latitude.toFixed(6)}, {coordinates?.longitude.toFixed(6)}</p></div><a href={mapUrl} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 hover:underline">{t('Open Google Maps', 'បើក Google Maps')}</a></div>}
+              <div className="flex justify-end"><Button type="submit" disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t('Save location', 'រក្សាទុកទីតាំង')}</Button></div>
             </form>}
           </CardContent>
         </Card>

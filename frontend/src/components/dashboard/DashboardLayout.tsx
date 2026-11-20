@@ -85,6 +85,10 @@ const DASHBOARD_PAGE_LABELS_KM: Record<string, string> = {
   settings: 'ការកំណត់',
   inventory: 'សារពើភ័ណ្ឌ',
   profile: 'ប្រវត្តិរូប',
+  location: 'ទីតាំងហាង',
+  coupons: 'គូប៉ុងបញ្ចុះតម្លៃ',
+  telegram: 'ការកំណត់ Telegram Bot',
+  payouts: 'ចំណូល និងការទូទាត់',
 }
 
 interface DashboardLayoutProps {
@@ -142,8 +146,8 @@ export function DashboardLayout({
   const handleLogout = async () => {
     await authService.logout()
     toast({
-      title: 'Signed Out',
-      description: 'Your session has been securely terminated.',
+      title: t('Signed Out', 'បានចាកចេញ'),
+      description: t('Your session has been securely terminated.', 'វគ្គប្រើប្រាស់របស់អ្នកត្រូវបានបញ្ចប់ដោយសុវត្ថិភាព។'),
       type: 'info',
     })
     navigate('/login')
