@@ -33,8 +33,8 @@ export function SellerLocationPage() {
         setForm({
           city: response.data.city || '',
           address: response.data.address || '',
-          latitude: response.data.latitude === null ? '' : String(response.data.latitude || ''),
-          longitude: response.data.longitude === null ? '' : String(response.data.longitude || ''),
+          latitude: response.data.latitude === null || response.data.latitude === undefined ? '' : String(response.data.latitude),
+          longitude: response.data.longitude === null || response.data.longitude === undefined ? '' : String(response.data.longitude),
         })
       })
       .catch((error: any) => {
@@ -45,6 +45,7 @@ export function SellerLocationPage() {
   }, [toast])
 
   const coordinates = useMemo(() => {
+    if (!form.latitude.trim() || !form.longitude.trim()) return null
     const latitude = Number(form.latitude)
     const longitude = Number(form.longitude)
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null
