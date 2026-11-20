@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Store,
   Sparkles,
@@ -57,12 +57,9 @@ const STORE_CATEGORIES = [
 export function JoinSellerPage() {
   const { toast } = useToast()
   const { t } = useShopEngagement()
-  const navigate = useNavigate()
-  const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser())
+  const [currentUser] = useState(() => authService.getStoredUser())
 
   const [existingApp, setExistingApp] = useState<SellerApplicationData | null>(null)
-  const [isSellerRole, setIsSellerRole] = useState(false)
-  const [loadingInitial, setLoadingInitial] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   // Form State
@@ -82,9 +79,10 @@ export function JoinSellerPage() {
   const [guestEmail, setGuestEmail] = useState('')
   const [guestPassword, setGuestPassword] = useState('')
 
+  const hasSellerRole = authService.isSeller(currentUser)
+
   useEffect(() => {
     const checkApp = async () => {
-      setLoadingInitial(true)
       try {
         const res = await sellerService.getMyApplication()
         if (res?.data) {
@@ -100,18 +98,17 @@ export function JoinSellerPage() {
           setBakongId(res.data.bakong_account_id || '')
           setLogoUrl(res.data.logo_url || '')
         }
-        if (res?.is_seller) {
-          setIsSellerRole(true)
-        }
       } catch {
         // Guest user or offline
-      } finally {
-        setLoadingInitial(false)
       }
     }
 
     checkApp()
-  }, [])
+  }, [hasSellerRole])
+
+  if (hasSellerRole) {
+    return <Navigate to="/dashboard/seller" replace />
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
