@@ -1503,3 +1503,36 @@ html.khmer-mode :where(p, li, dt, dd, label, figcaption) {
     text-wrap: pretty;
   }
 }
+
+/* Shared surface polish: keep wide dashboards readable and give mobile cards
+   a lighter, more intentional rhythm without changing page-specific layouts. */
+.dashboard-content > div {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+.ui-card:hover {
+  border-color: hsl(var(--primary) / 0.18);
+  box-shadow: 0 14px 34px hsl(222 47% 11% / 0.09);
+}
+
+@media (max-width: 639px) {
+  .ui-card {
+    border-radius: 1.15rem;
+  }
+
+  .dashboard-content > div {
+    max-width: none;
+  }
+
+  .dashboard-shell .dashboard-nav-link {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-card:hover {
+    transform: none;
+  }
+}

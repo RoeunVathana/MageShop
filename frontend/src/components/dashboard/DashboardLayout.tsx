@@ -305,7 +305,7 @@ export function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="dashboard-topbar min-h-14 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2 sm:h-14 sm:px-5 sm:py-0 lg:px-6">
+        <header className="dashboard-topbar min-h-14 border-b border-slate-200/80 bg-white/92 shadow-[0_4px_18px_hsl(222_47%_11%_/_0.04)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/92 sticky top-0 z-20 flex items-center justify-between gap-3 px-3 py-2 sm:h-14 sm:px-5 sm:py-0 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Button
               variant="ghost"
