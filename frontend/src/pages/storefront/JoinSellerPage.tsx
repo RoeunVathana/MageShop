@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   Store,
   Sparkles,
@@ -83,6 +83,8 @@ export function JoinSellerPage() {
 
   useEffect(() => {
     const checkApp = async () => {
+      if (hasSellerRole) return
+
       try {
         const res = await sellerService.getMyApplication()
         if (res?.data) {
@@ -105,10 +107,6 @@ export function JoinSellerPage() {
 
     checkApp()
   }, [hasSellerRole])
-
-  if (hasSellerRole) {
-    return <Navigate to="/dashboard/seller" replace />
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -216,8 +214,32 @@ export function JoinSellerPage() {
       </div>
 
       <div className="container mx-auto max-w-4xl px-4 -mt-8 relative z-20 space-y-8">
-        {/* EXISTING APPLICATION STATUS CALLOUT BANNER */}
-        {existingApp && (
+        {hasSellerRole ? (
+          <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center shadow-xl dark:border-emerald-900/60 dark:bg-slate-900">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <h2 className="mt-4 text-xl font-black text-slate-900 dark:text-slate-100">
+              {t('Your seller workspace is already active', 'កន្លែងធ្វើការអ្នកលក់របស់អ្នកបានដំណើរការរួចហើយ')}
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              {t(
+                'This account already has seller access. Manage your products, orders, payouts, and store settings from the seller workspace.',
+                'គណនីនេះមានសិទ្ធិអ្នកលក់រួចហើយ។ គ្រប់គ្រងផលិតផល ការបញ្ជាទិញ ការទូទាត់ និងការកំណត់ហាងរបស់អ្នកនៅកន្លែងធ្វើការអ្នកលក់។'
+              )}
+            </p>
+            <Link to="/dashboard/seller" className="mt-6 inline-flex">
+              <Button className="h-11 rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-md hover:bg-emerald-700">
+                <Store className="h-4 w-4" />
+                {t('Open Seller Dashboard', 'បើកផ្ទាំងអ្នកលក់')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* EXISTING APPLICATION STATUS CALLOUT BANNER */}
+            {existingApp && (
           <div className="rounded-3xl border shadow-xl overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -281,10 +303,10 @@ export function JoinSellerPage() {
               )}
             </div>
           </div>
-        )}
+            )}
 
-        {/* APPLICATION FORM CARD */}
-        {(!existingApp || existingApp.status !== 'approved') && (
+            {/* APPLICATION FORM CARD */}
+            {(!existingApp || existingApp.status !== 'approved') && (
           <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 sm:p-8">
             <div className="border-b border-slate-200 dark:border-slate-800 pb-5 mb-6">
               <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -546,6 +568,8 @@ export function JoinSellerPage() {
               </div>
             </form>
           </div>
+            )}
+          </>
         )}
       </div>
     </div>
