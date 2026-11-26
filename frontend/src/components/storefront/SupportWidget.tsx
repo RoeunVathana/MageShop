@@ -75,6 +75,8 @@ export function SupportWidget() {
   const [speechError, setSpeechError] = useState('')
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
   const speakingMessageIdRef = useRef<string | null>(null)
+  const speechRequestIdRef = useRef(0)
+  const sendingRef = useRef(false)
   const speechAudioRef = useRef<HTMLAudioElement | null>(null)
   const speechAudioUrlRef = useRef<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(() => [{
@@ -103,6 +105,7 @@ export function SupportWidget() {
   }
 
   const stopReading = () => {
+    speechRequestIdRef.current += 1
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     clearSpeechAudio()
     speakingMessageIdRef.current = null
@@ -127,11 +130,12 @@ export function SupportWidget() {
     })
   }
 
-  const readWithServerAudio = async (message: ChatMessage) => {
+  const readWithServerAudio = async (message: ChatMessage, requestId: number) => {
     const response = await api.post<any>('/support/speech', {
       text: message.text,
       language: message.language === 'KM' ? 'km' : 'en',
     }, { preferPublicApi: true, timeout: 30000 })
+    if (speechRequestIdRef.current !== requestId) return
     const data = response?.data || response
     if (!data?.audioBase64) throw new Error('No speech audio was returned.')
 
@@ -145,6 +149,7 @@ export function SupportWidget() {
     setSpeakingMessageId(message.id)
 
     const finish = () => {
+      if (speechAudioRef.current !== audio) return
       if (speakingMessageIdRef.current === message.id) {
         clearSpeechAudio()
         speakingMessageIdRef.current = null
@@ -169,18 +174,22 @@ export function SupportWidget() {
     }
 
     stopReading()
+    const requestId = speechRequestIdRef.current
     setSpeechError('')
     const isKhmer = (message.language || language) === 'KM'
     const voices = await loadSpeechVoices()
+    if (speechRequestIdRef.current !== requestId) return
     const preferredVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(isKhmer ? 'km' : 'en'))
 
     // Chrome/Windows often has no Khmer voice. Use the backend audio fallback
     // in that case, while keeping native browser speech for English.
     if (isKhmer && !preferredVoice) {
       try {
-        await readWithServerAudio(message)
+        if (speechRequestIdRef.current !== requestId) return
+        await readWithServerAudio(message, requestId)
         return
       } catch {
+        if (speechRequestIdRef.current !== requestId) return
         setSpeechError('មិនអាចអានសំឡេងខ្មែរបានទេ។ សូមពិនិត្យការតភ្ជាប់ ហើយសាកល្បងម្តងទៀត។')
         return
       }
@@ -213,7 +222,7 @@ export function SupportWidget() {
 
   const sendQuestion = async (questionText: string) => {
     const trimmed = questionText.trim()
-    if (!trimmed || sending) return
+    if (!trimmed || sending || sendingRef.current) return
 
     const userMessage: ChatMessage = { id: makeMessageId('user'), role: 'user', text: trimmed, language }
     const action = actionForQuestion(trimmed, isAuthenticated)
@@ -226,6 +235,7 @@ export function SupportWidget() {
     setInput('')
     setError('')
     setSending(true)
+    sendingRef.current = true
     setIsOpen(true)
 
     try {
@@ -261,6 +271,7 @@ export function SupportWidget() {
       setMessages((current) => [...current, errorMessage])
       void readMessageAloud(errorMessage)
     } finally {
+      sendingRef.current = false
       setSending(false)
     }
   }
