@@ -165,11 +165,14 @@ export class EngagementService {
         }
       }
 
+      try {
+        return await this.translateSpeech(text, language);
+      } catch (error) {
+        errors.push(`Fallback TTS: ${error instanceof Error ? error.message : 'request failed'}`);
+      }
+
       console.warn(`TYUSHOP speech generation unavailable. ${errors.join(' | ') || 'No speech provider key is configured.'}`);
-      throw new ServiceUnavailableException({
-        message: 'Speech generation is temporarily unavailable.',
-        providers: errors.map((error) => error.slice(0, 240)),
-      });
+      throw new ServiceUnavailableException('Speech generation is temporarily unavailable.');
     })();
 
     this.speechInFlight.set(cacheKey, generation);
@@ -301,6 +304,46 @@ export class EngagementService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async translateSpeech(text: string, language: string): Promise<Record<string, unknown>> {
+    const chunks = this.splitSpeechText(text, 180);
+    const audioParts: Buffer[] = [];
+    for (const chunk of chunks) {
+      const query = encodeURIComponent(chunk);
+      const response = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${language}&q=${query}`, {
+        headers: { 'User-Agent': 'TYUSHOP/1.0' },
+      });
+      if (!response.ok) throw new Error(`fallback TTS returned HTTP ${response.status}`);
+      const audio = Buffer.from(await response.arrayBuffer());
+      if (!audio.length) throw new Error('fallback TTS returned no audio');
+      audioParts.push(audio);
+    }
+    return {
+      status: 'ok',
+      data: {
+        audioBase64: Buffer.concat(audioParts).toString('base64'),
+        mimeType: 'audio/mpeg',
+        language,
+      },
+    };
+  }
+
+  private splitSpeechText(text: string, maxCharacters: number): string[] {
+    const words = text.replace(/\s+/gu, ' ').trim().split(' ').filter(Boolean);
+    const chunks: string[] = [];
+    let current = '';
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (current && candidate.length > maxCharacters) {
+        chunks.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) chunks.push(current);
+    return chunks.slice(0, 8);
   }
 
   private async openAiSupport(apiKey: string, prompt: string): Promise<string> {
