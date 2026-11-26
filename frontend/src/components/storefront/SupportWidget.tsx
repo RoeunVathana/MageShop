@@ -182,54 +182,60 @@ export function SupportWidget() {
   }
 
   return (
-    <div className="fixed bottom-20 right-3 z-40 flex flex-col items-end sm:right-5 md:bottom-5">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 z-40 flex w-[calc(100vw-1.5rem)] flex-col items-end sm:right-5 md:bottom-5 md:w-auto">
       {isOpen && (
-        <section className="mb-3 flex w-[calc(100vw-1.5rem)] max-w-[25rem] flex-col overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-2xl animate-in fade-in slide-in-from-bottom-4" aria-label="TYUSHOP AI support">
-          <header className="bg-gradient-to-r from-primary via-blue-600 to-indigo-600 p-4 text-white">
+        <section className="mb-3 flex max-h-[calc(100dvh-5.5rem)] min-h-0 w-full max-w-[25rem] flex-col overflow-hidden rounded-3xl border border-primary/15 bg-card text-card-foreground shadow-2xl shadow-primary/10 animate-in fade-in slide-in-from-bottom-4" aria-label="TYUSHOP AI support">
+          <header className="shrink-0 bg-gradient-to-r from-primary via-blue-600 to-indigo-600 px-4 py-3.5 text-white">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
                   <Bot className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5 text-sm font-black">
-                    TYUSHOP AI Support
+                    <span className="truncate">TYUSHOP AI Support</span>
                     <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_0_3px_rgba(110,231,183,.2)]" />
                   </div>
-                  <p className="mt-0.5 text-[11px] text-white/80">
-                    {language === 'KM' ? `ពិន្ទុរង្វាន់៖ ${loyaltyPoints}` : `Rewards balance: ${loyaltyPoints} pts`}
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-white/85">
+                    <span>{language === 'KM' ? `ពិន្ទុរង្វាន់៖ ${loyaltyPoints}` : `Rewards: ${loyaltyPoints} pts`}</span>
+                    {canReadAloud && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-1.5 py-0.5 text-white/90">
+                        <Volume2 className="h-3 w-3" />
+                        {language === 'KM' ? 'អានស្វ័យប្រវត្តិ' : 'Auto read'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <button type="button" onClick={() => setIsOpen(false)} className="rounded-lg p-1.5 hover:bg-white/15" aria-label="Close AI support">
+              <button type="button" onClick={() => setIsOpen(false)} className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-white/15" aria-label="Close AI support">
                 <X className="h-4 w-4" />
               </button>
             </div>
           </header>
 
-          <div className="flex flex-wrap gap-1.5 border-b bg-muted/50 px-3 py-2">
-            <button type="button" onClick={() => void sendQuestion(quickQuestions[0])} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-300">
+          <div className="no-scrollbar flex shrink-0 gap-1.5 overflow-x-auto border-b bg-muted/50 px-3 py-2">
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[0])} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold text-emerald-700 transition-colors hover:bg-emerald-500/25 dark:text-emerald-300">
               <PackageSearch className="h-3 w-3" /> {language === 'KM' ? 'តាមដានការបញ្ជាទិញ' : 'Track order'}
             </button>
-            <button type="button" onClick={() => void sendQuestion(quickQuestions[1])} className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-500/25 dark:text-blue-300">
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[1])} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-[10px] font-bold text-blue-700 transition-colors hover:bg-blue-500/25 dark:text-blue-300">
               <Truck className="h-3 w-3" /> {language === 'KM' ? 'ការដឹកជញ្ជូន' : 'Delivery help'}
             </button>
-            <button type="button" onClick={() => void sendQuestion(quickQuestions[2])} className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2.5 py-1 text-[10px] font-bold text-purple-700 hover:bg-purple-500/25 dark:text-purple-300">
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[2])} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-purple-500/15 px-2.5 py-1 text-[10px] font-bold text-purple-700 transition-colors hover:bg-purple-500/25 dark:text-purple-300">
               <Tag className="h-3 w-3" /> {language === 'KM' ? 'អ្នកលក់' : 'Seller help'}
             </button>
           </div>
 
-          <div className="h-72 space-y-3 overflow-y-auto bg-background/70 p-3 text-xs">
+          <div className="min-h-[10.5rem] max-h-[min(22rem,calc(100dvh-18rem))] flex-1 space-y-3 overflow-y-auto bg-background/70 p-3 text-[0.78rem]">
             {messages.map((message) => (
               <div key={message.id} className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[88%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 leading-relaxed ${message.role === 'user' ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm border bg-muted text-foreground'}`}>
+                <div className={`max-w-[90%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 leading-relaxed shadow-sm ${message.role === 'user' ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm border bg-muted/80 text-foreground'}`}>
                   {message.text}
                 </div>
                 {message.role === 'assistant' && canReadAloud && (
                   <button
                     type="button"
                     onClick={() => readMessageAloud(message)}
-                    className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted hover:text-primary"
+                    className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors ${speakingMessageId === message.id ? 'border-primary/25 bg-primary/10 text-primary' : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-primary'}`}
                     aria-label={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
                     title={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
                   >
@@ -238,7 +244,7 @@ export function SupportWidget() {
                   </button>
                 )}
                 {message.action && message.role === 'assistant' && (
-                  <Link to={message.action.to} onClick={() => setIsOpen(false)} className="mt-1.5 inline-flex items-center gap-1 px-1 text-[10px] font-bold text-primary hover:underline">
+                  <Link to={message.action.to} onClick={() => setIsOpen(false)} className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary/15 hover:underline">
                     {message.action.label} <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
@@ -249,13 +255,13 @@ export function SupportWidget() {
 
           {error && <p className="border-t bg-amber-500/10 px-3 py-2 text-[10px] text-amber-700 dark:text-amber-300">{error}</p>}
 
-          <form onSubmit={(event) => { event.preventDefault(); void sendQuestion(input) }} className="flex items-center gap-2 border-t bg-card p-2.5">
-            <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={language === 'KM' ? 'សួរ TYUSHOP AI…' : 'Ask TYUSHOP anything…'} className="h-9 min-w-0 flex-1 rounded-full border bg-background px-3 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary" aria-label="Ask TYUSHOP AI" />
-            <button type="submit" disabled={sending || !input.trim()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send question">
+          <form onSubmit={(event) => { event.preventDefault(); void sendQuestion(input) }} className="flex shrink-0 items-center gap-2 border-t bg-card p-3">
+            <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={language === 'KM' ? 'សួរ TYUSHOP AI…' : 'Ask TYUSHOP anything…'} className="h-10 min-w-0 flex-1 rounded-full border bg-background px-3 text-xs text-foreground shadow-inner outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" aria-label="Ask TYUSHOP AI" />
+            <button type="submit" disabled={sending || !input.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send question">
               <Send className="h-3.5 w-3.5" />
             </button>
           </form>
-          <div className="flex items-center justify-between border-t bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground">
+          <div className="flex shrink-0 items-center justify-between border-t bg-muted/40 px-3 py-2 text-[10px] text-muted-foreground">
             <Link to="/contact" onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 font-semibold hover:text-primary"><Headphones className="h-3 w-3" /> {language === 'KM' ? 'ទាក់ទង Support' : 'Contact support'}</Link>
             <span>016 555 637</span>
           </div>
