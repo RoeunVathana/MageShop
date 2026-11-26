@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -11,6 +11,8 @@ import {
   Sparkles,
   Tag,
   Truck,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -28,6 +30,7 @@ interface ChatMessage {
   id: string
   role: ChatRole
   text: string
+  language?: 'EN' | 'KM'
   action?: ChatAction | null
 }
 
@@ -69,23 +72,66 @@ export function SupportWidget() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
+  const speakingMessageIdRef = useRef<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(() => [{
     id: 'welcome',
     role: 'assistant',
     text: welcomeMessage(language),
+    language,
   }])
 
   const isAuthenticated = authService.isAuthenticated()
   const apiLanguage = language === 'KM' ? 'km' : 'en'
+  const canReadAloud = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
   const quickQuestions = useMemo(() => language === 'KM'
     ? ['តើខ្ញុំតាមដានការបញ្ជាទិញដោយរបៀបណា?', 'តើការទូទាត់ KHQR ដំណើរការដូចម្តេច?', 'តើខ្ញុំអាចលក់ទំនិញលើ TYUSHOP បានទេ?']
     : ['How do I track my order?', 'How does KHQR payment work?', 'How can I sell on TYUSHOP?'], [language])
+
+  const stopReading = () => {
+    if (canReadAloud) window.speechSynthesis.cancel()
+    speakingMessageIdRef.current = null
+    setSpeakingMessageId(null)
+  }
+
+  const readMessageAloud = (message: ChatMessage) => {
+    if (!canReadAloud) return
+    if (speakingMessageIdRef.current === message.id) {
+      stopReading()
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(message.text)
+    const speechLocale = (message.language || language) === 'KM' ? 'km-KH' : 'en-US'
+    const localePrefix = speechLocale.slice(0, 2).toLowerCase()
+    const preferredVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith(localePrefix))
+
+    utterance.lang = speechLocale
+    utterance.rate = speechLocale === 'km-KH' ? 0.88 : 1
+    if (preferredVoice) utterance.voice = preferredVoice
+
+    speakingMessageIdRef.current = message.id
+    setSpeakingMessageId(message.id)
+    utterance.onend = () => {
+      if (speakingMessageIdRef.current === message.id) {
+        speakingMessageIdRef.current = null
+        setSpeakingMessageId(null)
+      }
+    }
+    utterance.onerror = utterance.onend
+    window.speechSynthesis.speak(utterance)
+  }
+
+  useEffect(() => () => {
+    if (canReadAloud) window.speechSynthesis.cancel()
+  }, [canReadAloud])
 
   const sendQuestion = async (questionText: string) => {
     const trimmed = questionText.trim()
     if (!trimmed || sending) return
 
-    const userMessage: ChatMessage = { id: makeMessageId('user'), role: 'user', text: trimmed }
+    const userMessage: ChatMessage = { id: makeMessageId('user'), role: 'user', text: trimmed, language }
     const action = actionForQuestion(trimmed, isAuthenticated)
     const history = messages
       .filter((message) => message.id !== 'welcome' && message.text.trim())
@@ -110,6 +156,7 @@ export function SupportWidget() {
         id: makeMessageId('assistant'),
         role: 'assistant',
         text: answer,
+        language,
         action,
       }])
     } catch (requestError: any) {
@@ -120,6 +167,7 @@ export function SupportWidget() {
         text: language === 'KM'
           ? 'សូមសាកល្បងម្តងទៀត ឬទាក់ទងក្រុម Support តាមទំព័រ Contact & Support។'
           : 'Please try again, or contact our support team from the Contact & Support page.',
+        language,
         action: { label: 'Contact support', to: '/contact' },
       }])
     } finally {
@@ -171,6 +219,18 @@ export function SupportWidget() {
                 <div className={`max-w-[88%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 leading-relaxed ${message.role === 'user' ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm border bg-muted text-foreground'}`}>
                   {message.text}
                 </div>
+                {message.role === 'assistant' && canReadAloud && (
+                  <button
+                    type="button"
+                    onClick={() => readMessageAloud(message)}
+                    className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted hover:text-primary"
+                    aria-label={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
+                    title={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
+                  >
+                    {speakingMessageId === message.id ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                    {speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់' : 'Stop') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
+                  </button>
+                )}
                 {message.action && message.role === 'assistant' && (
                   <Link to={message.action.to} onClick={() => setIsOpen(false)} className="mt-1.5 inline-flex items-center gap-1 px-1 text-[10px] font-bold text-primary hover:underline">
                     {message.action.label} <ArrowRight className="h-3 w-3" />
