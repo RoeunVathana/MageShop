@@ -15,27 +15,67 @@ export function StorefrontLayout() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isAnnouncementHidden, setIsAnnouncementHidden] = useState(false)
   const lastScrollY = useRef(0)
+  const scrollDirection = useRef(0)
+  const directionDistance = useRef(0)
+  const announcementHiddenRef = useRef(false)
+  const scrollFrame = useRef<number | null>(null)
 
   useEffect(() => {
-    const handleScroll = () => {
+    const applyScrollState = () => {
+      scrollFrame.current = null
       const currentScrollY = Math.max(window.scrollY, 0)
       const previousScrollY = lastScrollY.current
       const scrollDelta = currentScrollY - previousScrollY
+      const nextDirection = scrollDelta > 0 ? 1 : scrollDelta < 0 ? -1 : 0
 
       setIsScrolled(currentScrollY > 15)
-      if (currentScrollY <= 8) {
-        setIsAnnouncementHidden(false)
-      } else if (scrollDelta > 2) {
-        setIsAnnouncementHidden(true)
-      } else if (scrollDelta < -2) {
-        setIsAnnouncementHidden(false)
+
+      // Use separate hide/show thresholds so small wheel or touchpad reversals
+      // cannot make the announcement bar rapidly toggle while scrolling.
+      if (currentScrollY <= 20) {
+        scrollDirection.current = 0
+        directionDistance.current = 0
+        if (announcementHiddenRef.current) {
+          announcementHiddenRef.current = false
+          setIsAnnouncementHidden(false)
+        }
+      } else if (nextDirection !== 0) {
+        if (nextDirection !== scrollDirection.current) {
+          scrollDirection.current = nextDirection
+          directionDistance.current = 0
+        }
+        directionDistance.current += Math.abs(scrollDelta)
+
+        if (!announcementHiddenRef.current && nextDirection > 0 && currentScrollY > 64 && directionDistance.current >= 20) {
+          announcementHiddenRef.current = true
+          setIsAnnouncementHidden(true)
+          directionDistance.current = 0
+        } else if (announcementHiddenRef.current && nextDirection < 0 && directionDistance.current >= 80) {
+          announcementHiddenRef.current = false
+          setIsAnnouncementHidden(false)
+          directionDistance.current = 0
+        }
       }
 
       lastScrollY.current = currentScrollY
     }
-    lastScrollY.current = window.scrollY
+
+    const handleScroll = () => {
+      if (scrollFrame.current !== null) return
+      scrollFrame.current = window.requestAnimationFrame(applyScrollState)
+    }
+
+    lastScrollY.current = Math.max(window.scrollY, 0)
+    setIsScrolled(lastScrollY.current > 15)
+    if (lastScrollY.current > 64) {
+      announcementHiddenRef.current = true
+      setIsAnnouncementHidden(true)
+    }
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollFrame.current !== null) window.cancelAnimationFrame(scrollFrame.current)
+    }
   }, [])
 
   return (
@@ -53,8 +93,8 @@ export function StorefrontLayout() {
         )}
         id="storefront-navigation"
       >
-        {/* Keep the utility bar mounted at a stable height so scrolling does
-            not collapse the navbar and make the page jump. */}
+        {/* The utility bar stays mounted while its height and opacity animate
+            so the scroll transition remains smooth. */}
         <AnnouncementBar isHidden={isAnnouncementHidden} />
 
         {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
