@@ -1,4 +1,4 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 
@@ -136,59 +136,81 @@ export class EngagementService {
     const language = this.text(body.language).toLowerCase() === 'en' ? 'en' : 'km';
     const provider = this.text(this.config.get<string>('AI_PROVIDER') || 'gemini').toLowerCase();
     const compatibilityKey = this.config.get<string>('AI_API_KEY')?.trim() || '';
-    const apiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() || (provider === 'gemini' ? compatibilityKey : '');
-    if (!apiKey) throw new Error('Gemini speech generation is not configured.');
+    const geminiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() || (provider === 'gemini' ? compatibilityKey : '');
+    const openAiKey = this.config.get<string>('OPENAI_API_KEY')?.trim() || (provider === 'openai' ? compatibilityKey : '');
+    const errors: string[] = [];
 
-    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-3.8-flash-lite-tts').trim() || 'gemini-3.8-flash-lite-tts').replace(/^models\//u, '');
+    if (geminiKey) {
+      try {
+        return await this.geminiSpeech(geminiKey, text, language);
+      } catch (error) {
+        errors.push(`Gemini: ${error instanceof Error ? error.message : 'request failed'}`);
+      }
+    }
+
+    if (openAiKey) {
+      try {
+        return await this.openAiSpeech(openAiKey, text, language);
+      } catch (error) {
+        errors.push(`OpenAI: ${error instanceof Error ? error.message : 'request failed'}`);
+      }
+    }
+
+    console.warn(`TYUSHOP speech generation unavailable. ${errors.join(' | ') || 'No speech provider key is configured.'}`);
+    throw new ServiceUnavailableException('Speech generation is temporarily unavailable.');
+  }
+
+  private async geminiSpeech(apiKey: string, text: string, language: string): Promise<Record<string, unknown>> {
+    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts').trim() || 'gemini-2.5-flash-preview-tts').replace(/^models\//u, '');
     const models = Array.from(new Set([
       configuredModel,
-      'gemini-3.8-flash-lite-tts',
-      'gemini-3.8-flash-tts',
+      'gemini-2.5-flash-preview-tts',
       'gemini-3.1-flash-tts-preview',
+      'gemini-3.8-flash-lite-tts',
     ]));
     let lastError: Error | null = null;
+
     for (const model of models) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       try {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
           method: 'POST',
           headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model,
-            input: [{
-              type: 'user_input',
-              content: [{
-                type: 'text',
-                text,
-                annotations: [{
-                  type: 'speech_metadata',
-                  style: language === 'km' ? 'speak naturally and clearly in Khmer' : 'speak naturally and clearly in English',
-                }],
+            contents: [{
+              parts: [{
+                text: `${language === 'km' ? 'Speak naturally and clearly in Khmer.' : 'Speak naturally and clearly in English.'}\n\n${text}`,
               }],
             }],
-            response_format: { type: 'audio' },
-            generation_config: {
-              speech_config: [{ voice: this.config.get<string>('GEMINI_TTS_VOICE', 'Kore') }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: this.config.get<string>('GEMINI_TTS_VOICE', 'Kore'),
+                  },
+                },
+              },
             },
           }),
           signal: controller.signal,
         });
         const data = await response.json() as {
-          output_audio?: { data?: string; mime_type?: string };
-          steps?: Array<{ type?: string; content?: Array<{ type?: string; data?: string; mime_type?: string }> }>;
+          candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> } }>;
           error?: { message?: string };
         };
         if (!response.ok) throw new Error(data.error?.message || `Gemini speech returned HTTP ${response.status}`);
-        const stepAudioPart = data.steps?.flatMap((step) => step.type === 'model_output' ? step.content || [] : [])
-          .find((part) => part.type === 'audio' && part.data);
-        const audioBase64 = data.output_audio?.data || stepAudioPart?.data;
-        if (!audioBase64) throw new Error(`Gemini returned no audio for model ${model}.`);
+        const audioPart = data.candidates?.flatMap((candidate) => candidate.content?.parts || [])
+          .map((part) => part.inlineData)
+          .find((part) => Boolean(part?.data));
+        if (!audioPart?.data) throw new Error(`Gemini returned no audio for model ${model}.`);
+
         return {
           status: 'ok',
           data: {
-            audioBase64,
-            mimeType: data.output_audio?.mime_type || stepAudioPart?.mime_type || 'audio/wav',
+            audioBase64: audioPart.data,
+            mimeType: audioPart.mimeType || 'audio/wav',
             language,
           },
         };
@@ -200,6 +222,34 @@ export class EngagementService {
     }
 
     throw lastError || new Error('Gemini speech generation failed.');
+  }
+
+  private async openAiSpeech(apiKey: string, text: string, language: string): Promise<Record<string, unknown>> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.config.get<string>('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts'),
+          voice: this.config.get<string>('OPENAI_TTS_VOICE', 'alloy'),
+          input: text,
+          response_format: 'mp3',
+          instructions: language === 'km' ? 'Speak naturally and clearly in Khmer.' : 'Speak naturally and clearly in English.',
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error(details || `OpenAI speech returned HTTP ${response.status}`);
+      }
+      const audioBase64 = Buffer.from(await response.arrayBuffer()).toString('base64');
+      if (!audioBase64) throw new Error('OpenAI returned no audio.');
+      return { status: 'ok', data: { audioBase64, mimeType: 'audio/mpeg', language } };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async openAiSupport(apiKey: string, prompt: string): Promise<string> {
