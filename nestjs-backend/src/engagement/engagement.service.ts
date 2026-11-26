@@ -138,8 +138,13 @@ export class EngagementService {
     const apiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() || (provider === 'gemini' ? compatibilityKey : '');
     if (!apiKey) throw new Error('Gemini speech generation is not configured.');
 
-    const configuredModel = this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-3.8-flash-tts').trim() || 'gemini-3.8-flash-tts';
-    const models = Array.from(new Set([configuredModel, 'gemini-2.5-flash-preview-tts']));
+    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-3.8-flash-lite-tts').trim() || 'gemini-3.8-flash-lite-tts').replace(/^models\//u, '');
+    const models = Array.from(new Set([
+      configuredModel,
+      'gemini-3.8-flash-lite-tts',
+      'gemini-3.8-flash-tts',
+      'gemini-3.1-flash-tts-preview',
+    ]));
     let lastError: Error | null = null;
     for (const model of models) {
       const controller = new AbortController();
