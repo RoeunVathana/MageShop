@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Store,
   Sparkles,
@@ -107,6 +107,10 @@ export function JoinSellerPage() {
 
     checkApp()
   }, [hasSellerRole])
+
+  if (hasSellerRole) {
+    return <Navigate to="/dashboard/seller" replace />
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
