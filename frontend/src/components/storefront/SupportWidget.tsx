@@ -72,8 +72,11 @@ export function SupportWidget() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [speechError, setSpeechError] = useState('')
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
   const speakingMessageIdRef = useRef<string | null>(null)
+  const speechAudioRef = useRef<HTMLAudioElement | null>(null)
+  const speechAudioUrlRef = useRef<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(() => [{
     id: 'welcome',
     role: 'assistant',
@@ -83,29 +86,109 @@ export function SupportWidget() {
 
   const isAuthenticated = authService.isAuthenticated()
   const apiLanguage = language === 'KM' ? 'km' : 'en'
-  const canReadAloud = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+  const canReadAloud = typeof window !== 'undefined' && ('speechSynthesis' in window || 'Audio' in window)
   const quickQuestions = useMemo(() => language === 'KM'
     ? ['តើខ្ញុំតាមដានការបញ្ជាទិញដោយរបៀបណា?', 'តើការទូទាត់ KHQR ដំណើរការដូចម្តេច?', 'តើខ្ញុំអាចលក់ទំនិញលើ TYUSHOP បានទេ?']
     : ['How do I track my order?', 'How does KHQR payment work?', 'How can I sell on TYUSHOP?'], [language])
 
+  const clearSpeechAudio = () => {
+    speechAudioRef.current?.pause()
+    speechAudioRef.current?.removeAttribute('src')
+    speechAudioRef.current?.load()
+    speechAudioRef.current = null
+    if (speechAudioUrlRef.current) {
+      URL.revokeObjectURL(speechAudioUrlRef.current)
+      speechAudioUrlRef.current = null
+    }
+  }
+
   const stopReading = () => {
-    if (canReadAloud) window.speechSynthesis.cancel()
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    clearSpeechAudio()
     speakingMessageIdRef.current = null
     setSpeakingMessageId(null)
   }
 
-  const readMessageAloud = (message: ChatMessage) => {
+  const loadSpeechVoices = (): Promise<SpeechSynthesisVoice[]> => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return Promise.resolve([])
+    const availableVoices = window.speechSynthesis.getVoices()
+    if (availableVoices.length) return Promise.resolve(availableVoices)
+
+    return new Promise((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        window.speechSynthesis.removeEventListener('voiceschanged', finish)
+        resolve(window.speechSynthesis.getVoices())
+      }
+      window.speechSynthesis.addEventListener('voiceschanged', finish)
+      window.setTimeout(finish, 1200)
+    })
+  }
+
+  const readWithServerAudio = async (message: ChatMessage) => {
+    const response = await api.post<any>('/support/speech', {
+      text: message.text,
+      language: message.language === 'KM' ? 'km' : 'en',
+    }, { preferPublicApi: true, timeout: 30000 })
+    const data = response?.data || response
+    if (!data?.audioBase64) throw new Error('No speech audio was returned.')
+
+    const binary = window.atob(data.audioBase64)
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+    const audioUrl = URL.createObjectURL(new Blob([bytes], { type: data.mimeType || 'audio/mpeg' }))
+    const audio = new Audio(audioUrl)
+    speechAudioRef.current = audio
+    speechAudioUrlRef.current = audioUrl
+    speakingMessageIdRef.current = message.id
+    setSpeakingMessageId(message.id)
+
+    const finish = () => {
+      if (speakingMessageIdRef.current === message.id) {
+        clearSpeechAudio()
+        speakingMessageIdRef.current = null
+        setSpeakingMessageId(null)
+      }
+    }
+    audio.onended = finish
+    audio.onerror = finish
+    try {
+      await audio.play()
+    } catch (playError) {
+      finish()
+      throw playError
+    }
+  }
+
+  const readMessageAloud = async (message: ChatMessage) => {
     if (!canReadAloud) return
     if (speakingMessageIdRef.current === message.id) {
       stopReading()
       return
     }
 
-    window.speechSynthesis.cancel()
+    stopReading()
+    setSpeechError('')
+    const isKhmer = (message.language || language) === 'KM'
+    const voices = await loadSpeechVoices()
+    const preferredVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(isKhmer ? 'km' : 'en'))
+
+    // Chrome/Windows often has no Khmer voice. Use the backend audio fallback
+    // in that case, while keeping native browser speech for English.
+    if (isKhmer && !preferredVoice) {
+      try {
+        await readWithServerAudio(message)
+        return
+      } catch {
+        setSpeechError('មិនអាចអានសំឡេងខ្មែរបានទេ។ សូមពិនិត្យការតភ្ជាប់ ហើយសាកល្បងម្តងទៀត។')
+        return
+      }
+    }
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return
     const utterance = new SpeechSynthesisUtterance(message.text)
-    const speechLocale = (message.language || language) === 'KM' ? 'km-KH' : 'en-US'
-    const localePrefix = speechLocale.slice(0, 2).toLowerCase()
-    const preferredVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith(localePrefix))
+    const speechLocale = isKhmer ? 'km-KH' : 'en-US'
 
     utterance.lang = speechLocale
     utterance.rate = speechLocale === 'km-KH' ? 0.88 : 1
@@ -124,7 +207,8 @@ export function SupportWidget() {
   }
 
   useEffect(() => () => {
-    if (canReadAloud) window.speechSynthesis.cancel()
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    clearSpeechAudio()
   }, [canReadAloud])
 
   const sendQuestion = async (questionText: string) => {
@@ -162,7 +246,7 @@ export function SupportWidget() {
       setMessages((current) => [...current, assistantMessage])
       // Read each new AI answer automatically after the user submits a question.
       // Keep the manual read button below for replaying or stopping the voice.
-      readMessageAloud(assistantMessage)
+      void readMessageAloud(assistantMessage)
     } catch (requestError: any) {
       setError(requestError?.message || t('AI support is temporarily unavailable.', 'ជំនួយ AI មិនអាចប្រើបានជាបណ្តោះអាសន្នទេ។'))
       const errorMessage: ChatMessage = {
@@ -175,7 +259,7 @@ export function SupportWidget() {
         action: { label: 'Contact support', to: '/contact' },
       }
       setMessages((current) => [...current, errorMessage])
-      readMessageAloud(errorMessage)
+      void readMessageAloud(errorMessage)
     } finally {
       setSending(false)
     }
@@ -234,7 +318,7 @@ export function SupportWidget() {
                 {message.role === 'assistant' && canReadAloud && (
                   <button
                     type="button"
-                    onClick={() => readMessageAloud(message)}
+                    onClick={() => void readMessageAloud(message)}
                     className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors ${speakingMessageId === message.id ? 'border-primary/25 bg-primary/10 text-primary' : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-primary'}`}
                     aria-label={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
                     title={speakingMessageId === message.id ? (language === 'KM' ? 'បញ្ឈប់ការអាន' : 'Stop reading') : (language === 'KM' ? 'អានជាសំឡេង' : 'Read aloud')}
@@ -254,6 +338,7 @@ export function SupportWidget() {
           </div>
 
           {error && <p className="border-t bg-amber-500/10 px-3 py-2 text-[10px] text-amber-700 dark:text-amber-300">{error}</p>}
+          {speechError && <p className="border-t bg-amber-500/10 px-3 py-2 text-[10px] text-amber-700 dark:text-amber-300">{speechError}</p>}
 
           <form onSubmit={(event) => { event.preventDefault(); void sendQuestion(input) }} className="flex shrink-0 items-center gap-2 border-t bg-card p-3">
             <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={language === 'KM' ? 'សួរ TYUSHOP AI…' : 'Ask TYUSHOP anything…'} className="h-10 min-w-0 flex-1 rounded-full border bg-background px-3 text-xs text-foreground shadow-inner outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" aria-label="Ask TYUSHOP AI" />
