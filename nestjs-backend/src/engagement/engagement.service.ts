@@ -1,4 +1,5 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 
 import { AuthService } from '../auth/auth.service';
@@ -8,7 +9,9 @@ import { ReceiptService } from '../receipts/receipt.service';
 
 @Injectable()
 export class EngagementService {
-  constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly receipts: ReceiptService) {}
+  private readonly lastSupportRequestByKey = new Map<string, number>();
+
+  constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly receipts: ReceiptService, private readonly config: ConfigService) {}
 
   async loyalty(request: AuthenticatedRequest): Promise<Record<string, unknown>> {
     const userId = await this.optionalUserId(request);
@@ -86,17 +89,163 @@ export class EngagementService {
     return { status: 'ok', message: `Support Ticket #${ticketNumber} received! Our 24/7 Cambodia Support Specialist will respond shortly.`, data: { ticket_number: ticketNumber, status: 'open' } };
   }
 
-  async chat(body: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const message = this.required(body.message, 'message', 1000).toLowerCase();
-    let reply = '👋 Welcome to **TYUSHOP 24/7 Supporter**! I can help you with:\n• **Loyalty Points**: Earn +5 pts per order, redeem 100 pts for a FREE item under $20–$30\n• **Discount Coupons**: Try `WELCOME10`, `MEGA20`, or `KHQR5` at checkout\n• **Live GPS Tracking**: Watch your courier in real time on `/track-order`\n• **Direct Hotline**: 016 555 637 or submit a ticket on `/contact`.';
-    if (/(point|free|100|ពិន្ទុ)/.test(message)) reply = '🎁 **TYUSHOP Loyalty Rewards**: Every order earns **+5 Points**. Once you reach **100 Points**, exchange them for an eligible product priced up to **$30.00** free!';
-    else if (/(discount|coupon|code|promo)/.test(message)) reply = '🏷️ **Active Discount Codes**: Use **`WELCOME10`**, **`MEGA20`**, **`KHQR5`**, or **`VIP30`** at checkout.';
-    else if (/(track|delivery|location|where)/.test(message)) reply = '🚚 **Real-Time GPS Delivery Tracking**: Open **Track Live Delivery** or visit `/track-order` to view the courier location and ETA.';
-    return { status: 'ok', data: { reply, timestamp: new Date().toISOString() } };
+  async chat(body: Record<string, unknown>, authorization?: string): Promise<Record<string, unknown>> {
+    const question = this.required(body.message, 'message', 1000);
+    const language = this.text(body.language) === 'km' || /[\u1780-\u17ff]/u.test(question) ? 'Khmer' : 'English';
+    const history = this.normalizeSupportHistory(body.history);
+    const identity = authorization ? await this.auth.authenticate(authorization) : null;
+    const userId = identity?.userId ?? null;
+    const supportKey = userId ? `user:${userId}` : 'guest';
+    const now = Date.now();
+    const lastRequest = this.lastSupportRequestByKey.get(supportKey) ?? 0;
+    if (now - lastRequest < 900) throw new UnprocessableEntityException({ status: 'error', message: 'Please wait a moment before asking TYUSHOP AI again.' });
+    this.lastSupportRequestByKey.set(supportKey, now);
+
+    const context = await this.supportContext(question, userId);
+    const prompt = this.supportPrompt(question, history, language, context);
+    const provider = this.text(this.config.get<string>('AI_PROVIDER') || 'gemini').toLowerCase();
+    const compatibilityKey = this.config.get<string>('AI_API_KEY')?.trim() || '';
+    const openAiKey = this.config.get<string>('OPENAI_API_KEY')?.trim() || (provider === 'openai' ? compatibilityKey : '');
+    const geminiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() || (provider === 'gemini' ? compatibilityKey : '');
+
+    if (openAiKey) {
+      try {
+        const answer = await this.openAiSupport(openAiKey, prompt);
+        return { status: 'ok', data: { answer, reply: answer, source: 'ai', configured: true, timestamp: new Date().toISOString() } };
+      } catch (error) {
+        console.warn(`TYUSHOP OpenAI support failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      }
+    }
+
+    if (geminiKey) {
+      try {
+        const answer = await this.geminiSupport(geminiKey, prompt, language);
+        return { status: 'ok', data: { answer, reply: answer, source: 'ai', configured: true, timestamp: new Date().toISOString() } };
+      } catch (error) {
+        console.warn(`TYUSHOP Gemini support failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      }
+    }
+
+    const reply = this.supportFallback(question, language, context);
+    return { status: 'ok', data: { answer: reply, reply, source: 'fallback', configured: Boolean(openAiKey || geminiKey), timestamp: new Date().toISOString() } };
+  }
+
+  private async openAiSupport(apiKey: string, prompt: string): Promise<string> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: this.config.get<string>('OPENAI_MODEL', 'gpt-4o-mini'), instructions: this.supportInstructions(), input: prompt, max_output_tokens: 320 }),
+        signal: controller.signal,
+      });
+      const data = await response.json() as { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }>; error?: { message?: string } };
+      if (!response.ok) throw new Error(data.error?.message || `OpenAI returned HTTP ${response.status}`);
+      const answer = data.output_text || data.output?.flatMap((item) => item.content || []).map((content) => content.text || '').join('').trim();
+      if (!answer) throw new Error('OpenAI returned an empty support answer.');
+      return answer;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async geminiSupport(apiKey: string, prompt: string, language: string): Promise<string> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        method: 'POST',
+        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.config.get<string>('GEMINI_TEXT_MODEL', this.config.get<string>('AI_MODEL', 'gemini-2.5-flash')),
+          system_instruction: this.supportInstructions(),
+          input: prompt,
+          generation_config: { max_output_tokens: 320, temperature: 0.35 },
+          store: false,
+        }),
+        signal: controller.signal,
+      });
+      const data = await response.json() as { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }>; steps?: Array<{ content?: Array<{ type?: string; text?: string }> }>; error?: { message?: string } };
+      if (!response.ok) throw new Error(data.error?.message || `Gemini returned HTTP ${response.status}`);
+      const answer = data.output_text
+        || data.output?.flatMap((item) => item.content || []).map((content) => content.text || '').join('').trim()
+        || data.steps?.flatMap((step) => step.content || []).filter((content) => content.type === 'text').map((content) => content.text || '').join('').trim();
+      if (!answer) throw new Error(`Gemini returned an empty ${language} support answer.`);
+      return answer;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private supportInstructions(): string {
+    return 'You are TYUSHOP AI Support, a warm bilingual customer-support assistant for the TYUSHOP multi-vendor e-commerce website in Cambodia. Help with the catalog, product search, categories, brands, cart, checkout, KHQR/Bakong and cash-on-delivery payments, discount coupons, loyalty points, order status, delivery and GPS tracking, returns, customer accounts, seller applications, seller products and seller orders, contact support, and FAQ. Use only the website capabilities described here and the verified context provided in the prompt. Never invent a product price, stock count, order status, refund approval, delivery ETA, policy, password, payment credential, or private account data. If the question needs private order/account data and no verified context is provided, tell the user to sign in and contact support. Answer entirely in the requested language, keep it under 120 words, use short helpful steps, and mention the exact page or button name when useful.';
+  }
+
+  private supportPrompt(question: string, history: Array<{ role: 'user' | 'assistant'; text: string }>, language: string, context: string): string {
+    const transcript = history.length ? history.map((message) => `${message.role === 'user' ? 'Customer' : 'TYUSHOP AI'}: ${message.text}`).join('\n') : '(No previous conversation.)';
+    return `Answer entirely in ${language}.\n\nConversation history:\n${transcript}\n\nVerified TYUSHOP context:\n${context}\n\nCurrent customer question:\n${question}`;
+  }
+
+  private async supportContext(question: string, userId: number | null): Promise<string> {
+    const facts: string[] = [
+      'Storefront pages: /products, /categories, /brands, /cart, /track-order, /contact, /faq, /sell.',
+      'Support hotline: 016 555 637. Customers can open a support ticket from Contact & Support.',
+      'Payments include Bakong KHQR and Cash on Delivery when available. Delivery can be tracked from Track Live Delivery.',
+      'Loyalty rewards and coupon availability are shown by the storefront and must not be invented when not verified.',
+    ];
+    try {
+      const settings = await this.readSettings(['support_phone', 'support_email', 'shipping_policy', 'return_policy_days', 'business_hours']);
+      for (const [key, value] of settings.entries()) facts.push(`${key}: ${value}`);
+
+      const orderNumber = question.match(/(?:ORD|RWD)-[A-Z0-9-]+/i)?.[0];
+      if (orderNumber && userId) {
+        const order = await this.database.query<{ order_number: string; status: string; payment_status: string; total_amount: number | string; tracking_number: string | null }>('SELECT order_number,status,payment_status,total_amount,tracking_number FROM orders WHERE user_id=$1 AND UPPER(order_number)=UPPER($2) LIMIT 1', [userId, orderNumber]);
+        if (order.rows[0]) facts.push(`Verified customer order: ${JSON.stringify(order.rows[0])}`);
+        else facts.push(`No verified order matching ${orderNumber} was found for the signed-in customer.`);
+      } else if (orderNumber) {
+        facts.push('An order number was mentioned, but order details are not disclosed until the customer signs in.');
+      }
+
+      if (/(product|item|catalog|price|stock|find|search|ផលិតផល|តម្លៃ|ស្តុក)/iu.test(question)) {
+        const term = question.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().slice(0, 80);
+        const products = await this.database.query<{ name: string; sku: string | null; selling_price: number | string | null; discount_price: number | string | null }>('SELECT name,sku,selling_price,discount_price FROM products WHERE is_active=TRUE AND (name ILIKE $1 OR sku ILIKE $1 OR description ILIKE $1) ORDER BY is_featured DESC,id DESC LIMIT 5', [`%${term}%`]);
+        if (products.rows.length) facts.push(`Verified matching products: ${JSON.stringify(products.rows)}`);
+      }
+    } catch (error) {
+      console.warn(`TYUSHOP support context lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+    return facts.join('\n');
+  }
+
+  private normalizeSupportHistory(value: unknown): Array<{ role: 'user' | 'assistant'; text: string }> {
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter((item): item is { role: 'user' | 'assistant'; text: string } => Boolean(item) && typeof item === 'object' && ['user', 'assistant'].includes(String((item as { role?: unknown }).role)) && typeof (item as { text?: unknown }).text === 'string')
+      .map((item) => ({ role: item.role, text: item.text.trim().slice(0, 800) }))
+      .filter((item) => item.text.length > 0)
+      .slice(-8);
+  }
+
+  private supportFallback(question: string, language: string, context: string): string {
+    const text = question.toLowerCase();
+    if (language === 'Khmer') {
+      if (/(track|delivery|gps|ដឹក|តាមដាន)/u.test(text)) return 'បើក «Track Live Delivery» ឬ «Track Order» ដើម្បីមើលស្ថានភាព និងព័ត៌មាន GPS។ ប្រសិនបើអ្នកមានលេខបញ្ជាទិញ សូមចូលគណនីដើម្បីទទួលបានព័ត៌មានលម្អិត។';
+      if (/(seller|sell|vendor|អ្នកលក់|ហាង)/u.test(text)) return 'អ្នកអាចចូលទៅ «Sell on TYUSHOP» ដើម្បីដាក់ពាក្យបើកហាង។ អ្នកលក់ដែលបានអនុម័តអាចគ្រប់គ្រងផលិតផល ការបញ្ជាទិញ និងការទូទាត់ពី Seller Dashboard។';
+      if (/(coupon|discount|promo|កូដ|បញ្ចុះ)/u.test(text)) return 'បញ្ចូល coupon code នៅក្នុង Cart ឬ Checkout។ ប្រសិនបើកូដមិនដំណើរការ សូមពិនិត្យថ្ងៃផុតកំណត់ និងលក្ខខណ្ឌរបស់ប្រូម៉ូសិន។';
+      if (/(payment|khqr|bakong|ទូទាត់|បង់)/u.test(text)) return 'នៅ Checkout អ្នកអាចប្រើ Bakong KHQR ឬ Cash on Delivery ប្រសិនបើជម្រើសនេះមានសម្រាប់ការបញ្ជាទិញរបស់អ្នក។';
+      return 'ខ្ញុំអាចជួយអំពីផលិតផល ការបញ្ជាទិញ ការដឹកជញ្ជូន KHQR គូប៉ុង ហាងអ្នកលក់ និងគណនី។ សូមសួរខ្ញុំអំពីបញ្ហាដែលអ្នកចង់ដោះស្រាយ។';
+    }
+    if (/(track|delivery|gps|shipping)/.test(text)) return 'Open Track Live Delivery or Track Order to view delivery status and GPS information. If you have an order number, sign in for private order details.';
+    if (/(seller|sell|vendor|store|merchant)/.test(text)) return 'Open Sell on TYUSHOP to apply for a store. Approved sellers manage products, orders, payouts, staff, and store settings from the Seller Dashboard.';
+    if (/(coupon|discount|promo|code)/.test(text)) return 'Enter a coupon code in the Cart or Checkout. If it fails, check the code spelling, expiry date, and promotion conditions.';
+    if (/(payment|khqr|bakong|pay)/.test(text)) return 'At Checkout, choose Bakong KHQR or Cash on Delivery when the option is available for your order.';
+    return `I can help with products, orders, delivery, KHQR payments, coupons, seller stores, accounts, and support. ${context.includes('Verified matching products') ? 'I also found matching catalog information for your question.' : 'Ask me what you need and I’ll guide you to the right page.'}`;
   }
 
   private async optionalUserId(request: AuthenticatedRequest): Promise<number | null> { const identity = await this.auth.authenticate(request.headers.authorization); return identity?.userId ?? null; }
   private async readSettings(keys: string[]): Promise<Map<string, string>> { const result = await this.database.query<{ setting_key: string; setting_value: string }>('SELECT setting_key,setting_value FROM store_settings WHERE setting_key=ANY($1::text[])', [keys]); return new Map(result.rows.map((row) => [row.setting_key, row.setting_value])); }
+  private text(value: unknown): string { return value === undefined || value === null ? '' : String(value).trim(); }
   private required(value: unknown, field: string, max: number): string { const text = String(value ?? '').trim(); if (!text || text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text; }
   private optional(value: unknown, max: number): string | null { const text = String(value ?? '').trim(); if (!text) return null; if (text.length > max) throw new UnprocessableEntityException({ status: 'error', message: 'The given data was invalid.' }); return text; }
   private email(value: unknown): string { const email = this.required(value, 'email', 150).toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(email)) throw new UnprocessableEntityException({ status: 'error', message: 'The email must be a valid email address.' }); return email; }

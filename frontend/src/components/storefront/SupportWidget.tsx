@@ -1,207 +1,206 @@
-import React, { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  ArrowRight,
+  Bot,
+  ChevronDown,
   Headphones,
-  X,
-  Send,
-  Gift,
-  Truck,
-  Tag,
   MessageSquare,
+  PackageSearch,
+  Send,
   Sparkles,
-  PhoneCall,
+  Tag,
+  Truck,
+  X,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
+import { authService } from '@/services/auth.service'
 import { useShopEngagement } from '@/context/ShopEngagementContext'
 
-interface ChatMsg {
-  sender: 'bot' | 'user'
-  text: string
-  time: string
+type ChatRole = 'assistant' | 'user'
+
+interface ChatAction {
+  label: string
+  to: string
 }
 
+interface ChatMessage {
+  id: string
+  role: ChatRole
+  text: string
+  action?: ChatAction | null
+}
+
+const makeMessageId = (role: ChatRole) => `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const actionForQuestion = (question: string, isAuthenticated: boolean): ChatAction | null => {
+  const text = question.toLowerCase()
+  if (/(track|delivery|courier|shipping|where.*order|gps|ដឹក|តាមដាន)/u.test(text)) {
+    return { label: 'Track delivery', to: '/track-order' }
+  }
+  if (/(order|purchase|buy|checkout|cart|ទិញ|បញ្ជាទិញ|កន្ត្រក)/u.test(text)) {
+    return { label: 'Open shopping cart', to: '/cart' }
+  }
+  if (/(seller|sell|vendor|store|merchant|អ្នកលក់|ហាង)/u.test(text)) {
+    return { label: 'Seller information', to: isAuthenticated && authService.isSeller() ? '/dashboard/seller' : '/sell' }
+  }
+  if (/(coupon|discount|promo|code|បញ្ចុះ|កូដ)/u.test(text)) {
+    return { label: 'Browse products', to: '/products' }
+  }
+  if (/(product|item|catalog|price|stock|find|search|ផលិតផល|តម្លៃ|ស្តុក)/u.test(text)) {
+    return { label: 'Browse all products', to: '/products' }
+  }
+  if (/(account|profile|login|sign in|គណនី|ចូល)/u.test(text)) {
+    return { label: isAuthenticated ? 'Open my profile' : 'Sign in', to: isAuthenticated ? '/profile' : '/login' }
+  }
+  if (/(support|contact|refund|return|help|ជំនួយ|ប្តូរ|សងប្រាក់)/u.test(text)) {
+    return { label: 'Contact support', to: '/contact' }
+  }
+  return null
+}
+
+const welcomeMessage = (language: 'EN' | 'KM') => language === 'KM'
+  ? 'សួស្តី! ខ្ញុំជា TYUSHOP AI Support។ ខ្ញុំអាចជួយអំពីផលិតផល ការបញ្ជាទិញ ការដឹកជញ្ជូន ការទូទាត់ គូប៉ុង ហាងអ្នកលក់ និងគណនី។'
+  : 'Hi! I’m TYUSHOP AI Support. I can help with products, orders, delivery, payments, coupons, seller stores, and accounts.'
+
 export function SupportWidget() {
+  const { language, loyaltyPoints, t } = useShopEngagement()
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const { loyaltyPoints, recentOrders, t } = useShopEngagement()
+  const [error, setError] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [{
+    id: 'welcome',
+    role: 'assistant',
+    text: welcomeMessage(language),
+  }])
 
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
-      sender: 'bot',
-      text: '👋 សួស្តី! Welcome to TYUSHOP 24/7 Supporter! Ask me about Loyalty Points (+5 pts/buy, 100 pts = FREE item under $20–$30), Discount Coupons, or Real-Time GPS Delivery Tracking!',
-      time: 'Just now',
-    },
-  ])
+  const isAuthenticated = authService.isAuthenticated()
+  const apiLanguage = language === 'KM' ? 'km' : 'en'
+  const quickQuestions = useMemo(() => language === 'KM'
+    ? ['តើខ្ញុំតាមដានការបញ្ជាទិញដោយរបៀបណា?', 'តើការទូទាត់ KHQR ដំណើរការដូចម្តេច?', 'តើខ្ញុំអាចលក់ទំនិញលើ TYUSHOP បានទេ?']
+    : ['How do I track my order?', 'How does KHQR payment work?', 'How can I sell on TYUSHOP?'], [language])
 
   const sendQuestion = async (questionText: string) => {
     const trimmed = questionText.trim()
-    if (!trimmed) return
+    if (!trimmed || sending) return
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender: 'user',
-        text: trimmed,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ])
+    const userMessage: ChatMessage = { id: makeMessageId('user'), role: 'user', text: trimmed }
+    const action = actionForQuestion(trimmed, isAuthenticated)
+    const history = messages
+      .filter((message) => message.id !== 'welcome' && message.text.trim())
+      .slice(-8)
+      .map(({ role, text }) => ({ role, text: text.slice(0, 1000) }))
+
+    setMessages((current) => [...current, userMessage])
     setInput('')
+    setError('')
     setSending(true)
+    setIsOpen(true)
 
     try {
-      const res = await api.post<any>('/support/chat', { message: trimmed })
-      const reply =
-        res?.data?.reply ||
-        'Every order earns +5 Loyalty Points! At 100 Points, exchange for any product under $20–$30 FREE. Use coupon WELCOME10 or MEGA20 at checkout!'
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: reply,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ])
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: '🎁 Earn +5 Points per order! Collect 100 Points to redeem any item under $20–$30 FREE in the Cart. Use promo code WELCOME10 (10% OFF) or KHQR5 ($5 OFF)!',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ])
+      const response = await api.post<any>('/support/chat', {
+        message: trimmed,
+        language: apiLanguage,
+        history,
+      }, { preferPublicApi: true, timeout: 40000 })
+      const data = response?.data || response
+      const answer = data?.answer || data?.reply || 'I’m sorry, I could not prepare an answer right now.'
+      setMessages((current) => [...current, {
+        id: makeMessageId('assistant'),
+        role: 'assistant',
+        text: answer,
+        action,
+      }])
+    } catch (requestError: any) {
+      setError(requestError?.message || t('AI support is temporarily unavailable.', 'ជំនួយ AI មិនអាចប្រើបានជាបណ្តោះអាសន្នទេ។'))
+      setMessages((current) => [...current, {
+        id: makeMessageId('assistant'),
+        role: 'assistant',
+        text: language === 'KM'
+          ? 'សូមសាកល្បងម្តងទៀត ឬទាក់ទងក្រុម Support តាមទំព័រ Contact & Support។'
+          : 'Please try again, or contact our support team from the Contact & Support page.',
+        action: { label: 'Contact support', to: '/contact' },
+      }])
     } finally {
       setSending(false)
     }
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-5 right-3 sm:right-5 z-40 flex flex-col items-end">
+    <div className="fixed bottom-20 right-3 z-40 flex flex-col items-end sm:right-5 md:bottom-5">
       {isOpen && (
-        <div className="mb-3 w-[calc(100vw-1.5rem)] max-w-96 rounded-2xl border bg-card text-card-foreground shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-primary via-indigo-600 to-purple-600 p-4 text-white flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                <Headphones className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="font-bold text-sm flex items-center gap-1.5">
-                  24/7 Live Supporter
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <section className="mb-3 flex w-[calc(100vw-1.5rem)] max-w-[25rem] flex-col overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-2xl animate-in fade-in slide-in-from-bottom-4" aria-label="TYUSHOP AI support">
+          <header className="bg-gradient-to-r from-primary via-blue-600 to-indigo-600 p-4 text-white">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                  <Bot className="h-5 w-5" />
                 </div>
-                <p className="text-[11px] text-white/80">
-                  Your Balance: <strong>{loyaltyPoints} pts</strong> (100 pts = Free Item ≤ $30)
-                </p>
+                <div>
+                  <div className="flex items-center gap-1.5 text-sm font-black">
+                    TYUSHOP AI Support
+                    <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_0_3px_rgba(110,231,183,.2)]" />
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-white/80">
+                    {language === 'KM' ? `ពិន្ទុរង្វាន់៖ ${loyaltyPoints}` : `Rewards balance: ${loyaltyPoints} pts`}
+                  </p>
+                </div>
               </div>
+              <button type="button" onClick={() => setIsOpen(false)} className="rounded-lg p-1.5 hover:bg-white/15" aria-label="Close AI support">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg hover:bg-white/20 transition-colors"
-              aria-label="Close Supporter Chat"
-            >
-              <X className="w-4 h-4" />
+          </header>
+
+          <div className="flex flex-wrap gap-1.5 border-b bg-muted/50 px-3 py-2">
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[0])} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-300">
+              <PackageSearch className="h-3 w-3" /> {language === 'KM' ? 'តាមដានការបញ្ជាទិញ' : 'Track order'}
+            </button>
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[1])} className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-500/25 dark:text-blue-300">
+              <Truck className="h-3 w-3" /> {language === 'KM' ? 'ការដឹកជញ្ជូន' : 'Delivery help'}
+            </button>
+            <button type="button" onClick={() => void sendQuestion(quickQuestions[2])} className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2.5 py-1 text-[10px] font-bold text-purple-700 hover:bg-purple-500/25 dark:text-purple-300">
+              <Tag className="h-3 w-3" /> {language === 'KM' ? 'អ្នកលក់' : 'Seller help'}
             </button>
           </div>
 
-          {/* Quick Action Pills */}
-          <div className="px-3 py-2 bg-muted/50 border-b flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => sendQuestion('How do 100 Loyalty Points work for a free item?')}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 flex items-center gap-1 transition-colors"
-            >
-              <Gift className="w-3 h-3" /> 100 Pts = Free Item
-            </button>
-            <button
-              type="button"
-              onClick={() => sendQuestion('What discount coupon codes are available?')}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 hover:bg-purple-500/25 flex items-center gap-1 transition-colors"
-            >
-              <Tag className="w-3 h-3" /> Discount Codes
-            </button>
-            <Link
-              to={recentOrders[0] ? `/track-order/${recentOrders[0]}` : '/track-order'}
-              onClick={() => setIsOpen(false)}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 flex items-center gap-1 transition-colors"
-            >
-              <Truck className="w-3 h-3" /> Live GPS Track
-            </Link>
-          </div>
-
-          {/* Messages */}
-          <div className="p-3 h-64 overflow-y-auto space-y-3 text-xs bg-background/60">
-            {messages.map((m, idx) => (
-              <div
-                key={idx}
-                className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-line ${
-                    m.sender === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-xs'
-                      : 'bg-muted text-foreground border rounded-bl-xs'
-                  }`}
-                >
-                  {m.text}
+          <div className="h-72 space-y-3 overflow-y-auto bg-background/70 p-3 text-xs">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`max-w-[88%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 leading-relaxed ${message.role === 'user' ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm border bg-muted text-foreground'}`}>
+                  {message.text}
                 </div>
-                <span className="text-[10px] text-muted-foreground mt-1 px-1">{m.time}</span>
+                {message.action && message.role === 'assistant' && (
+                  <Link to={message.action.to} onClick={() => setIsOpen(false)} className="mt-1.5 inline-flex items-center gap-1 px-1 text-[10px] font-bold text-primary hover:underline">
+                    {message.action.label} <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
               </div>
             ))}
-            {sending && (
-              <div className="text-[11px] text-muted-foreground italic px-2">
-                Supporter is typing...
-              </div>
-            )}
+            {sending && <div className="flex items-center gap-2 px-2 text-[11px] italic text-muted-foreground"><Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" /> {language === 'KM' ? 'កំពុងគិត…' : 'Thinking…'}</div>}
           </div>
 
-          {/* Input */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              sendQuestion(input)
-            }}
-            className="p-2.5 border-t bg-card flex items-center gap-2"
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about points, discounts, delivery..."
-              className="flex-1 text-xs px-3 py-2 rounded-full border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <Button type="submit" size="icon" className="h-8 w-8 rounded-full shrink-0" disabled={sending}>
-              <Send className="w-3.5 h-3.5" />
-            </Button>
+          {error && <p className="border-t bg-amber-500/10 px-3 py-2 text-[10px] text-amber-700 dark:text-amber-300">{error}</p>}
+
+          <form onSubmit={(event) => { event.preventDefault(); void sendQuestion(input) }} className="flex items-center gap-2 border-t bg-card p-2.5">
+            <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={language === 'KM' ? 'សួរ TYUSHOP AI…' : 'Ask TYUSHOP anything…'} className="h-9 min-w-0 flex-1 rounded-full border bg-background px-3 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary" aria-label="Ask TYUSHOP AI" />
+            <button type="submit" disabled={sending || !input.trim()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send question">
+              <Send className="h-3.5 w-3.5" />
+            </button>
           </form>
-
-          {/* Footer Links */}
-          <div className="px-3 py-1.5 bg-muted/40 border-t flex items-center justify-between text-[10px] text-muted-foreground">
-            <Link to="/contact" onClick={() => setIsOpen(false)} className="hover:text-primary font-medium flex items-center gap-1">
-              <PhoneCall className="w-3 h-3" /> Open Support Ticket
-            </Link>
-            <span>Hotline: 016 555 637</span>
+          <div className="flex items-center justify-between border-t bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground">
+            <Link to="/contact" onClick={() => setIsOpen(false)} className="inline-flex items-center gap-1 font-semibold hover:text-primary"><Headphones className="h-3 w-3" /> {language === 'KM' ? 'ទាក់ទង Support' : 'Contact support'}</Link>
+            <span>016 555 637</span>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Floating Toggle Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-primary via-indigo-600 to-purple-600 text-white p-2.5 sm:px-4 sm:py-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all cursor-pointer"
-        aria-label="24/7 Live Supporter"
-      >
-        <div className="relative">
-          <MessageSquare className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-indigo-600" />
-        </div>
-        <span className="text-xs font-bold tracking-wide hidden sm:inline">{t('24/7 Supporter', 'ជំនួយ 24/7')}</span>
-        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+      <button type="button" onClick={() => setIsOpen((open) => !open)} className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-primary via-blue-600 to-indigo-600 p-2.5 text-white shadow-xl transition-all hover:scale-105 hover:shadow-2xl sm:px-4 sm:py-3" aria-expanded={isOpen} aria-label={isOpen ? 'Close TYUSHOP AI Support' : 'Open TYUSHOP AI Support'}>
+        <span className="relative"><MessageSquare className="h-5 w-5" /><span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-indigo-600" /></span>
+        <span className="hidden text-xs font-black tracking-wide sm:inline">{t('AI Support', 'ជំនួយ AI')}</span>
+        {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5 text-amber-300" />}
       </button>
     </div>
   )
 }
-
