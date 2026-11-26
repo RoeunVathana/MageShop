@@ -228,7 +228,7 @@ export class EngagementService {
     // Put the low-latency support model first. The configured model remains a
     // fallback so a slower or temporarily unavailable model cannot delay every
     // customer question before a usable answer is attempted.
-    const models = Array.from(new Set(['gemini-2.5-flash-lite', 'gemini-3.5-flash-lite', model, 'gemini-3.6-flash']));
+    const models = Array.from(new Set(['gemini-3.5-flash-lite', model, 'gemini-3.6-flash', 'gemini-2.5-flash-lite']));
     let lastError: Error | null = null;
     for (let index = 0; index < models.length; index += 1) {
       const candidateModel = models[index];
