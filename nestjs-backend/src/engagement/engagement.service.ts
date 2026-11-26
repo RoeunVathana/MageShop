@@ -181,10 +181,10 @@ export class EngagementService {
   }
 
   private async geminiSpeech(apiKey: string, text: string, language: string): Promise<Record<string, unknown>> {
-    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-3.8-flash-lite-tts').trim() || 'gemini-3.8-flash-lite-tts').replace(/^models\//u, '');
+    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts').trim() || 'gemini-2.5-flash-preview-tts').replace(/^models\//u, '');
     const models = Array.from(new Set([
-      'gemini-3.8-flash-lite-tts',
       configuredModel,
+      'gemini-3.8-flash-lite-tts',
       'gemini-2.5-flash-preview-tts',
       'gemini-3.1-flash-tts-preview',
     ]));
