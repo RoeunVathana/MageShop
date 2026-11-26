@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutGrid,
@@ -21,6 +22,8 @@ import type { User } from '@/types/user.types'
 
 export function Navbar() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const [categoryMenuPosition, setCategoryMenuPosition] = useState({ top: 0, left: 0, width: 352 })
+  const categoryButtonRef = useRef<HTMLButtonElement>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getStoredUser())
   const location = useLocation()
   const { t } = useShopEngagement()
@@ -36,6 +39,44 @@ export function Navbar() {
   }, [])
 
   const isSeller = authService.isSeller(currentUser)
+
+  useLayoutEffect(() => {
+    if (!isCategoryOpen) return
+
+    const updateCategoryMenuPosition = () => {
+      const button = categoryButtonRef.current
+      if (!button) return
+
+      const rect = button.getBoundingClientRect()
+      const width = Math.min(352, Math.max(0, window.innerWidth - 16))
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+
+      setCategoryMenuPosition({
+        top: Math.max(8, rect.bottom + 4),
+        left,
+        width,
+      })
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsCategoryOpen(false)
+    }
+
+    updateCategoryMenuPosition()
+    window.addEventListener('resize', updateCategoryMenuPosition)
+    window.addEventListener('scroll', updateCategoryMenuPosition, true)
+    window.visualViewport?.addEventListener('resize', updateCategoryMenuPosition)
+    window.visualViewport?.addEventListener('scroll', updateCategoryMenuPosition)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('resize', updateCategoryMenuPosition)
+      window.removeEventListener('scroll', updateCategoryMenuPosition, true)
+      window.visualViewport?.removeEventListener('resize', updateCategoryMenuPosition)
+      window.visualViewport?.removeEventListener('scroll', updateCategoryMenuPosition)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isCategoryOpen])
 
   const navLinks = [
     { label: t('Home', 'ទំព័រដើម'), path: '/' },
@@ -66,6 +107,7 @@ export function Navbar() {
         {/* Left: Animated Categories Dropdown Menu */}
         <div className={`relative shrink-0 ${isCategoryOpen ? 'z-[110]' : ''}`}>
           <button
+            ref={categoryButtonRef}
             type="button"
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
             aria-haspopup="menu"
@@ -80,16 +122,24 @@ export function Navbar() {
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-300 ease-out relative z-10', isCategoryOpen && 'rotate-180')} />
           </button>
 
-          {isCategoryOpen && (
+          {isCategoryOpen && typeof document !== 'undefined' && createPortal(
             <>
               <div
-                className="fixed inset-0 z-[90] bg-slate-950/25 transition-opacity duration-200"
+                className="fixed inset-0 z-[9998] bg-slate-950/20 animate-in fade-in-0 duration-200"
                 onClick={() => setIsCategoryOpen(false)}
+                aria-hidden="true"
               />
               <div
                 role="menu"
-                className="isolate absolute left-0 top-full z-[120] w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-b-2xl border border-border bg-white p-1.5 text-card-foreground shadow-[0_18px_45px_rgba(15,23,42,0.22)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out dark:bg-slate-900"
-                style={{ backgroundColor: 'hsl(var(--background))', opacity: 1, mixBlendMode: 'normal' }}
+                className="isolate pointer-events-auto fixed z-[9999] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-border bg-white p-1.5 text-card-foreground shadow-[0_18px_45px_rgba(15,23,42,0.22)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 ease-out dark:bg-slate-900"
+                style={{
+                  top: categoryMenuPosition.top,
+                  left: categoryMenuPosition.left,
+                  width: categoryMenuPosition.width,
+                  backgroundColor: 'hsl(var(--background))',
+                  opacity: 1,
+                  mixBlendMode: 'normal',
+                }}
               >
                 <div className="flex items-center justify-between border-b border-border/70 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   <span>{t('Department Catalog', 'បញ្ជីប្រភេទទំនិញ')}</span>
@@ -121,7 +171,7 @@ export function Navbar() {
                 </div>
               </div>
             </>
-          )}
+          , document.body)}
         </div>
 
         {/* Center: Primary Navigation Links with Floating Hover & Animated Indicator */}
