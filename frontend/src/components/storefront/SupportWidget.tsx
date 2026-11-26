@@ -76,6 +76,7 @@ export function SupportWidget() {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
   const speakingMessageIdRef = useRef<string | null>(null)
   const speechRequestIdRef = useRef(0)
+  const autoReadMessageIdRef = useRef<string | null>(null)
   const sendingRef = useRef(false)
   const speechAudioRef = useRef<HTMLAudioElement | null>(null)
   const speechAudioUrlRef = useRef<string | null>(null)
@@ -180,22 +181,31 @@ export function SupportWidget() {
     const voices = await loadSpeechVoices()
     if (speechRequestIdRef.current !== requestId) return
     const preferredVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(isKhmer ? 'km' : 'en'))
+    const canUseNativeSpeech = typeof window !== 'undefined'
+      && 'speechSynthesis' in window
+      && 'SpeechSynthesisUtterance' in window
 
-    // Chrome/Windows often has no Khmer voice. Use the backend audio fallback
-    // in that case, while keeping native browser speech for English.
-    if (isKhmer && !preferredVoice) {
+    // Chrome/Windows often has no Khmer voice. Prefer the backend TTS voice in
+    // that case, and use it as a fallback whenever native speech is missing.
+    if ((isKhmer && !preferredVoice) || !canUseNativeSpeech) {
       try {
         if (speechRequestIdRef.current !== requestId) return
         await readWithServerAudio(message, requestId)
         return
       } catch {
         if (speechRequestIdRef.current !== requestId) return
-        setSpeechError('មិនអាចអានសំឡេងខ្មែរបានទេ។ សូមពិនិត្យការតភ្ជាប់ ហើយសាកល្បងម្តងទៀត។')
-        return
+        // If the server voice is unavailable but the browser can speak, still
+        // attempt the answer with the requested locale instead of failing
+        // silently. The manual speaker button remains available for replay.
+        if (!canUseNativeSpeech) {
+          setSpeechError(isKhmer
+            ? 'មិនអាចអានសំឡេងខ្មែរបានទេ។ សូមចុចប៊ូតុងសំឡេង ដើម្បីសាកល្បងម្តងទៀត។'
+            : 'Audio playback is unavailable. Please use the speaker button to try again.')
+          return
+        }
       }
     }
 
-    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return
     const utterance = new SpeechSynthesisUtterance(message.text)
     const speechLocale = isKhmer ? 'km-KH' : 'en-US'
 
@@ -214,6 +224,18 @@ export function SupportWidget() {
     utterance.onerror = utterance.onend
     window.speechSynthesis.speak(utterance)
   }
+
+  useEffect(() => {
+    const latestMessage = messages[messages.length - 1]
+    if (!latestMessage || latestMessage.role !== 'assistant' || latestMessage.id === 'welcome') return
+    if (autoReadMessageIdRef.current === latestMessage.id) return
+
+    // The rendered assistant message is the one source of truth for automatic
+    // playback. This prevents a response from being spoken twice when React
+    // updates the chat and keeps error responses readable too.
+    autoReadMessageIdRef.current = latestMessage.id
+    void readMessageAloud(latestMessage)
+  }, [messages])
 
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
@@ -254,9 +276,6 @@ export function SupportWidget() {
         action,
       }
       setMessages((current) => [...current, assistantMessage])
-      // Read each new AI answer automatically after the user submits a question.
-      // Keep the manual read button below for replaying or stopping the voice.
-      void readMessageAloud(assistantMessage)
     } catch (requestError: any) {
       setError(requestError?.message || t('AI support is temporarily unavailable.', 'ជំនួយ AI មិនអាចប្រើបានជាបណ្តោះអាសន្នទេ។'))
       const errorMessage: ChatMessage = {
@@ -269,7 +288,6 @@ export function SupportWidget() {
         action: { label: 'Contact support', to: '/contact' },
       }
       setMessages((current) => [...current, errorMessage])
-      void readMessageAloud(errorMessage)
     } finally {
       sendingRef.current = false
       setSending(false)
