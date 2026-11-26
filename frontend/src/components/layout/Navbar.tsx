@@ -62,7 +62,7 @@ export function Navbar() {
 
   return (
     <nav className="relative z-[100] hidden overflow-visible border-b bg-background/95 shadow-sm backdrop-blur-xl transition-colors duration-300 lg:block">
-      <div className="container mx-auto flex min-h-12 items-center justify-between gap-4 px-4">
+      <div className="container mx-auto flex min-h-10 items-center justify-between gap-3 px-4">
         {/* Left: Animated Categories Dropdown Menu */}
         <div className={`relative shrink-0 ${isCategoryOpen ? 'z-[110]' : ''}`}>
           <button
@@ -70,7 +70,7 @@ export function Navbar() {
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
             aria-haspopup="menu"
             aria-expanded={isCategoryOpen}
-            className="group relative flex h-12 items-center gap-2 overflow-hidden rounded-t-xl bg-gradient-to-r from-primary via-blue-600 to-indigo-600 px-4 text-xs font-bold uppercase tracking-wider whitespace-nowrap text-primary-foreground shadow-xs transition-all duration-300 hover:from-primary/95 hover:to-indigo-700 hover:shadow-md active:scale-[.98]"
+            className="group relative flex h-10 items-center gap-1.5 overflow-hidden rounded-t-xl bg-gradient-to-r from-primary via-blue-600 to-indigo-600 px-3.5 text-[11px] font-bold uppercase tracking-wider !leading-[1.2] whitespace-nowrap text-primary-foreground shadow-xs transition-all duration-300 hover:from-primary/95 hover:to-indigo-700 hover:shadow-md active:scale-[.98]"
           >
             {/* Shimmer sweep animation */}
             <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
@@ -133,7 +133,7 @@ export function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  'group relative text-[13px] font-medium py-3 px-1.5 transition-all duration-200 inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-md',
+                  'group relative text-[12px] font-medium py-2 px-1.5 !leading-[1.2] transition-all duration-200 inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-md',
                   isActive
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground hover:-translate-y-0.5',
@@ -170,7 +170,7 @@ export function Navbar() {
           <div className="shrink-0 hidden xl:flex items-center">
             <Link
               to="/sell"
-              className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/10 via-primary/15 to-indigo-500/10 hover:from-primary hover:via-blue-600 hover:to-indigo-600 text-foreground hover:text-white border border-primary/25 hover:border-transparent transition-all duration-300 shadow-xs hover:shadow-lg hover:shadow-primary/20 active:scale-95"
+              className="group relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold !leading-[1.2] bg-gradient-to-r from-blue-500/10 via-primary/15 to-indigo-500/10 hover:from-primary hover:via-blue-600 hover:to-indigo-600 text-foreground hover:text-white border border-primary/25 hover:border-transparent transition-all duration-300 shadow-xs hover:shadow-lg hover:shadow-primary/20 active:scale-95"
             >
               {/* Pulsing beacon indicator */}
               <span className="relative flex h-2 w-2 shrink-0">

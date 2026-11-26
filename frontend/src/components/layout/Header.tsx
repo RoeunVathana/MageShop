@@ -129,7 +129,7 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
         isAccountOpen ? 'z-[150]' : 'z-30'
       }`}
     >
-      <div className="container mx-auto flex min-h-16 items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-2.5 lg:min-h-[4.25rem] lg:gap-4">
+      <div className="container mx-auto flex min-h-14 items-center justify-between gap-2 px-3 py-1.5 sm:px-4 sm:py-1.5 lg:min-h-[3.75rem] lg:gap-3">
         {/* Left: Mobile/iPad Navigation Toggle & Brand Logo */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
           <Button
@@ -162,13 +162,13 @@ export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
               )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-24 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary shadow-inner transition-all duration-300"
+              className="pl-10 pr-24 h-9 rounded-full border-muted-foreground/20 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary shadow-inner transition-all duration-300"
             />
             <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-200" />
             <Button
               type="submit"
               size="sm"
-              className="absolute right-1 rounded-full h-8 px-4 text-xs font-semibold hover:shadow-md hover:scale-102 active:scale-95 transition-all duration-200"
+              className="absolute right-1 rounded-full h-7 px-3.5 text-xs font-semibold hover:shadow-md hover:scale-102 active:scale-95 transition-all duration-200"
             >
               {t('Search', 'ស្វែងរក')}
             </Button>

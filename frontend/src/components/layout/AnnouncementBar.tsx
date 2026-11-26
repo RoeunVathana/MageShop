@@ -94,8 +94,8 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="relative z-[160] isolate border-b border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-200 sm:px-4 sm:py-2">
-      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap overflow-visible">
+    <div className="relative z-[160] isolate border-b border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-200 sm:px-4 sm:py-1.5">
+      <div className="container mx-auto flex min-h-9 items-center justify-between gap-2 sm:min-h-10 sm:gap-4 flex-nowrap overflow-visible">
         {/* Left message */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
           <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 py-0.5 rounded-full font-bold text-[10px] shrink-0 shadow-xs">
