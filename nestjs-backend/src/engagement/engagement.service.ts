@@ -166,7 +166,10 @@ export class EngagementService {
       }
 
       console.warn(`TYUSHOP speech generation unavailable. ${errors.join(' | ') || 'No speech provider key is configured.'}`);
-      throw new ServiceUnavailableException('Speech generation is temporarily unavailable.');
+      throw new ServiceUnavailableException({
+        message: 'Speech generation is temporarily unavailable.',
+        providers: errors.map((error) => error.slice(0, 240)),
+      });
     })();
 
     this.speechInFlight.set(cacheKey, generation);
