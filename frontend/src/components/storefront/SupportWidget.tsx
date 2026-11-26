@@ -152,16 +152,20 @@ export function SupportWidget() {
       }, { preferPublicApi: true, timeout: 40000 })
       const data = response?.data || response
       const answer = data?.answer || data?.reply || 'I’m sorry, I could not prepare an answer right now.'
-      setMessages((current) => [...current, {
+      const assistantMessage: ChatMessage = {
         id: makeMessageId('assistant'),
         role: 'assistant',
         text: answer,
         language,
         action,
-      }])
+      }
+      setMessages((current) => [...current, assistantMessage])
+      // Read each new AI answer automatically after the user submits a question.
+      // Keep the manual read button below for replaying or stopping the voice.
+      readMessageAloud(assistantMessage)
     } catch (requestError: any) {
       setError(requestError?.message || t('AI support is temporarily unavailable.', 'ជំនួយ AI មិនអាចប្រើបានជាបណ្តោះអាសន្នទេ។'))
-      setMessages((current) => [...current, {
+      const errorMessage: ChatMessage = {
         id: makeMessageId('assistant'),
         role: 'assistant',
         text: language === 'KM'
@@ -169,7 +173,9 @@ export function SupportWidget() {
           : 'Please try again, or contact our support team from the Contact & Support page.',
         language,
         action: { label: 'Contact support', to: '/contact' },
-      }])
+      }
+      setMessages((current) => [...current, errorMessage])
+      readMessageAloud(errorMessage)
     } finally {
       setSending(false)
     }
