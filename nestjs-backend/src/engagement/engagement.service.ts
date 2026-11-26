@@ -184,9 +184,9 @@ export class EngagementService {
     const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts').trim() || 'gemini-2.5-flash-preview-tts').replace(/^models\//u, '');
     const models = Array.from(new Set([
       configuredModel,
-      'gemini-3.8-flash-lite-tts',
       'gemini-2.5-flash-preview-tts',
       'gemini-3.1-flash-tts-preview',
+      'gemini-3.8-flash-lite-tts',
     ]));
     let lastError: Error | null = null;
 
