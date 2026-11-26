@@ -156,34 +156,47 @@ export class EngagementService {
     try {
       const configuredModel = this.config.get<string>('GEMINI_TEXT_MODEL', this.config.get<string>('AI_MODEL', 'gemini-3.6-flash'));
       const model = configuredModel.replace(/^models\//, '').trim() || 'gemini-3.6-flash';
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-        method: 'POST',
-        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          input: prompt,
-          system_instruction: this.supportInstructions(),
-          generation_config: { max_output_tokens: 320, temperature: 0.35 },
-          store: false,
-        }),
-        signal: controller.signal,
-      });
-      const data = await response.json() as {
-        output_text?: string;
-        steps?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
-        status?: string;
-        error?: { message?: string };
-      };
-      if (!response.ok) throw new Error(data.error?.message || `Gemini returned HTTP ${response.status}`);
-      const answer = data.output_text?.trim() || data.steps
-        ?.filter((step) => step.type === 'model_output')
-        .flatMap((step) => step.content || [])
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text || '')
-        .join('')
-        .trim();
-      if (!answer) throw new Error(`Gemini returned an empty ${language} support answer.`);
-      return answer;
+      const models = Array.from(new Set([model, 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite']));
+      let lastError: Error | null = null;
+      for (let index = 0; index < models.length; index += 1) {
+        const candidateModel = models[index];
+        try {
+          const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+            method: 'POST',
+            headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: candidateModel,
+              input: prompt,
+              system_instruction: this.supportInstructions(),
+              generation_config: { max_output_tokens: 320, temperature: 0.35 },
+              store: false,
+            }),
+            signal: controller.signal,
+          });
+          const data = await response.json() as {
+            output_text?: string;
+            steps?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
+            status?: string;
+            error?: { message?: string };
+          };
+          if (!response.ok) throw new Error(data.error?.message || `Gemini returned HTTP ${response.status}`);
+          const answer = data.output_text?.trim() || data.steps
+            ?.filter((step) => step.type === 'model_output')
+            .flatMap((step) => step.content || [])
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text || '')
+            .join('')
+            .trim();
+          if (!answer) throw new Error(`Gemini returned an empty ${language} support answer.`);
+          return answer;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown Gemini error';
+          const canRetry = index < models.length - 1 && /high demand|temporarily|try again|overloaded|429|503/iu.test(message);
+          if (!canRetry) throw error;
+          lastError = error instanceof Error ? error : new Error(message);
+        }
+      }
+      throw lastError || new Error(`Gemini could not generate a ${language} support answer.`);
     } finally {
       clearTimeout(timeout);
     }
