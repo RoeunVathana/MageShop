@@ -152,27 +152,33 @@ export class EngagementService {
 
   private async geminiSupport(apiKey: string, prompt: string, language: string): Promise<string> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 30000);
     try {
       const configuredModel = this.config.get<string>('GEMINI_TEXT_MODEL', this.config.get<string>('AI_MODEL', 'gemini-3.8-flash'));
       const model = configuredModel.replace(/^models\//, '').trim() || 'gemini-3.8-flash';
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
         method: 'POST',
         headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: this.supportInstructions() }] },
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 320, temperature: 0.35 },
+          model,
+          input: prompt,
+          system_instruction: this.supportInstructions(),
+          generation_config: { max_output_tokens: 320, temperature: 0.35 },
+          store: false,
         }),
         signal: controller.signal,
       });
       const data = await response.json() as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-        promptFeedback?: { blockReason?: string };
+        output_text?: string;
+        steps?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
+        status?: string;
         error?: { message?: string };
       };
       if (!response.ok) throw new Error(data.error?.message || `Gemini returned HTTP ${response.status}`);
-      const answer = data.candidates?.flatMap((candidate) => candidate.content?.parts || [])
+      const answer = data.output_text?.trim() || data.steps
+        ?.filter((step) => step.type === 'model_output')
+        .flatMap((step) => step.content || [])
+        .filter((part) => part.type === 'text')
         .map((part) => part.text || '')
         .join('')
         .trim();
