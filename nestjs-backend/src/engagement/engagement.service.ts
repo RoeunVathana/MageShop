@@ -228,7 +228,7 @@ export class EngagementService {
     // Put the low-latency support model first. The configured model remains a
     // fallback so a slower or temporarily unavailable model cannot delay every
     // customer question before a usable answer is attempted.
-    const models = Array.from(new Set(['gemini-3.5-flash-lite', model, 'gemini-3.6-flash', 'gemini-2.5-flash-lite']));
+    const models = Array.from(new Set(['gemini-2.5-flash-lite', 'gemini-3.5-flash-lite', model, 'gemini-3.6-flash']));
     let lastError: Error | null = null;
     for (let index = 0; index < models.length; index += 1) {
       const candidateModel = models[index];
@@ -245,7 +245,7 @@ export class EngagementService {
             generation_config: {
               max_output_tokens: 220,
               temperature: 0.25,
-              thinking_level: candidateModel.startsWith('gemini-2.5-') ? 'low' : 'minimal',
+              ...(candidateModel === 'gemini-2.5-flash-lite' ? {} : { thinking_level: 'minimal' }),
             },
             store: false,
           }),
