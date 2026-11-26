@@ -57,7 +57,8 @@ const STORE_CATEGORIES = [
 export function JoinSellerPage() {
   const { toast } = useToast()
   const { t } = useShopEngagement()
-  const [currentUser] = useState(() => authService.getStoredUser())
+  const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser())
+  const [checkingSellerRole, setCheckingSellerRole] = useState(() => authService.isAuthenticated())
 
   const [existingApp, setExistingApp] = useState<SellerApplicationData | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -82,12 +83,31 @@ export function JoinSellerPage() {
   const hasSellerRole = authService.isSeller(currentUser)
 
   useEffect(() => {
+    let mounted = true
+
     const checkApp = async () => {
-      if (hasSellerRole) return
+      let resolvedUser = currentUser
+
+      if (authService.isAuthenticated()) {
+        try {
+          const profile = await authService.getCurrentUser()
+          if (profile?.data?.user) {
+            resolvedUser = profile.data.user
+            if (mounted) setCurrentUser(resolvedUser)
+          }
+        } catch {
+          // Keep the cached profile during a temporary API outage.
+        }
+      }
+
+      if (authService.isSeller(resolvedUser)) {
+        if (mounted) setCheckingSellerRole(false)
+        return
+      }
 
       try {
         const res = await sellerService.getMyApplication()
-        if (res?.data) {
+        if (mounted && res?.data) {
           setExistingApp(res.data)
           setStoreName(res.data.store_name || '')
           setCategory(res.data.category || STORE_CATEGORIES[0])
@@ -102,11 +122,18 @@ export function JoinSellerPage() {
         }
       } catch {
         // Guest user or offline
+      } finally {
+        if (mounted) setCheckingSellerRole(false)
       }
     }
 
-    checkApp()
-  }, [hasSellerRole])
+    void checkApp()
+    return () => { mounted = false }
+  }, [])
+
+  if (checkingSellerRole) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400">{t('Checking your seller access…', 'កំពុងពិនិត្យសិទ្ធិអ្នកលក់របស់អ្នក…')}</div>
+  }
 
   if (hasSellerRole) {
     return <Navigate to="/dashboard/seller" replace />
