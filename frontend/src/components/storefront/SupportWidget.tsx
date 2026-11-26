@@ -35,6 +35,7 @@ interface ChatMessage {
 }
 
 const makeMessageId = (role: ChatRole) => `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+const SILENT_AUDIO_DATA_URL = 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
 
 const actionForQuestion = (question: string, isAuthenticated: boolean): ChatAction | null => {
   const text = question.toLowerCase()
@@ -77,6 +78,7 @@ export function SupportWidget() {
   const speakingMessageIdRef = useRef<string | null>(null)
   const speechRequestIdRef = useRef(0)
   const autoReadMessageIdRef = useRef<string | null>(null)
+  const speechAudioPrimedRef = useRef(false)
   const sendingRef = useRef(false)
   const speechAudioRef = useRef<HTMLAudioElement | null>(null)
   const speechAudioUrlRef = useRef<string | null>(null)
@@ -95,14 +97,41 @@ export function SupportWidget() {
     : ['How do I track my order?', 'How does KHQR payment work?', 'How can I sell on TYUSHOP?'], [language])
 
   const clearSpeechAudio = () => {
-    speechAudioRef.current?.pause()
-    speechAudioRef.current?.removeAttribute('src')
-    speechAudioRef.current?.load()
-    speechAudioRef.current = null
+    const audio = speechAudioRef.current
+    audio?.pause()
+    audio?.removeAttribute('src')
+    audio?.load()
+    if (audio) {
+      audio.muted = false
+      audio.volume = 1
+    }
     if (speechAudioUrlRef.current) {
       URL.revokeObjectURL(speechAudioUrlRef.current)
       speechAudioUrlRef.current = null
     }
+  }
+
+  const primeSpeechPlayback = () => {
+    if (typeof window === 'undefined' || !('Audio' in window) || speechAudioPrimedRef.current) return
+
+    const audio = speechAudioRef.current || new Audio()
+    audio.preload = 'auto'
+    audio.setAttribute('playsinline', 'true')
+    audio.src = SILENT_AUDIO_DATA_URL
+    audio.muted = true
+    audio.volume = 0
+    speechAudioRef.current = audio
+    speechAudioPrimedRef.current = true
+
+    void audio.play().then(() => {
+      audio.pause()
+      audio.currentTime = 0
+      audio.muted = false
+      audio.volume = 1
+    }).catch(() => {
+      // Browsers that do not require an unlock will still play the real audio.
+      speechAudioPrimedRef.current = false
+    })
   }
 
   const stopReading = () => {
@@ -143,7 +172,13 @@ export function SupportWidget() {
     const binary = window.atob(data.audioBase64)
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
     const audioUrl = URL.createObjectURL(new Blob([bytes], { type: data.mimeType || 'audio/mpeg' }))
-    const audio = new Audio(audioUrl)
+    const audio = speechAudioRef.current || new Audio()
+    audio.preload = 'auto'
+    audio.setAttribute('playsinline', 'true')
+    audio.muted = false
+    audio.volume = 1
+    audio.src = audioUrl
+    audio.load()
     speechAudioRef.current = audio
     speechAudioUrlRef.current = audioUrl
     speakingMessageIdRef.current = message.id
@@ -169,6 +204,7 @@ export function SupportWidget() {
 
   const readMessageAloud = async (message: ChatMessage) => {
     if (!canReadAloud) return
+    primeSpeechPlayback()
     if (speakingMessageIdRef.current === message.id) {
       stopReading()
       return
@@ -245,6 +281,10 @@ export function SupportWidget() {
   const sendQuestion = async (questionText: string) => {
     const trimmed = questionText.trim()
     if (!trimmed || sending || sendingRef.current) return
+
+    // Unlock the shared player during the submit click. The AI response and
+    // Khmer TTS arrive asynchronously, after browser autoplay activation ends.
+    primeSpeechPlayback()
 
     const userMessage: ChatMessage = { id: makeMessageId('user'), role: 'user', text: trimmed, language }
     const action = actionForQuestion(trimmed, isAuthenticated)
