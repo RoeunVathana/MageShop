@@ -280,7 +280,7 @@ export class EngagementService {
   }
 
   private supportInstructions(): string {
-    return 'You are TYUSHOP AI Support, a warm bilingual customer-support assistant for the TYUSHOP multi-vendor e-commerce website in Cambodia. Help with the catalog, product search, categories, brands, cart, checkout, KHQR/Bakong and cash-on-delivery payments, discount coupons, loyalty points, order status, delivery and GPS tracking, returns, customer accounts, seller applications, seller products and seller orders, contact support, and FAQ. Use only the website capabilities described here and the verified context provided in the prompt. Never invent a product price, stock count, order status, refund approval, delivery ETA, policy, password, payment credential, or private account data. If the question needs private order/account data and no verified context is provided, tell the user to sign in and contact support. Answer entirely in the requested language, keep it under 120 words, use short helpful steps, and mention the exact page or button name when useful.';
+    return 'You are TYUSHOP AI Support, a warm bilingual customer-support assistant for the TYUSHOP multi-vendor e-commerce website in Cambodia. Answer the customer’s exact current question using the conversation history and verified TYUSHOP context. Help with the live catalog, product search, categories, brands, cart, checkout, KHQR/Bakong and cash-on-delivery payments, discount coupons, loyalty points, order status, delivery and GPS tracking, returns, customer accounts, seller applications, seller products and seller orders, contact support, and FAQ. Do not greet on every turn. If the request is missing one important detail, ask one short, specific follow-up question instead of giving a generic answer. When verified matching products are provided, mention their exact names and verified prices and never say that a filter found products unless the context contains matching products. When no verified match is provided, say that clearly and suggest the next useful page or question. Never invent a product price, stock count, order status, refund approval, delivery ETA, policy, password, payment credential, or private account data. If the question needs private order/account data and no verified context is provided, tell the user to sign in and contact support. Answer entirely in the requested language, keep it under 120 words, use short helpful steps, and mention the exact page or button name when useful.';
   }
 
   private supportPrompt(question: string, history: Array<{ role: 'user' | 'assistant'; text: string }>, language: string, context: string): string {
@@ -308,10 +308,20 @@ export class EngagementService {
         facts.push('An order number was mentioned, but order details are not disclosed until the customer signs in.');
       }
 
-      if (/(product|item|catalog|price|stock|find|search|ផលិតផល|តម្លៃ|ស្តុក)/iu.test(question)) {
-        const term = question.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().slice(0, 80);
-        const products = await this.database.query<{ name: string; sku: string | null; selling_price: number | string | null; discount_price: number | string | null }>('SELECT name,sku,selling_price,discount_price FROM products WHERE is_active=TRUE AND (name ILIKE $1 OR sku ILIKE $1 OR description ILIKE $1) ORDER BY is_featured DESC,id DESC LIMIT 5', [`%${term}%`]);
-        if (products.rows.length) facts.push(`Verified matching products: ${JSON.stringify(products.rows)}`);
+      if (/(product|item|catalog|price|stock|find|search|ផលិតផល|តម្លៃ|ស្តុក|កុំព្យូទ័រ|ទូរស័ព្ទ)/iu.test(question)) {
+        const terms = this.supportSearchTerms(question);
+        if (terms.length) {
+          const values = terms.map((term) => `%${term}%`);
+          const clauses = terms.map((_, index) => `(name ILIKE $${index + 1} OR sku ILIKE $${index + 1} OR description ILIKE $${index + 1})`).join(' OR ');
+          const maxPriceMatch = question.match(/(?:under|below|less than|ក្រោម|មិនលើស|តម្លៃក្រោម)\s*\$?\s*([\d,.]+)/iu);
+          const maxPrice = maxPriceMatch ? Number(maxPriceMatch[1].replace(/,/gu, '')) : null;
+          const priceClause = maxPrice && Number.isFinite(maxPrice) ? ` AND COALESCE(NULLIF(discount_price,0),NULLIF(selling_price,0),NULLIF(price,0),0) <= $${values.length + 1}` : '';
+          const queryValues = maxPrice && Number.isFinite(maxPrice) ? [...values, maxPrice] : values;
+          const products = await this.database.query<{ name: string; sku: string | null; price: number | string | null; selling_price: number | string | null; discount_price: number | string | null }>(`SELECT name,sku,price,selling_price,discount_price FROM products WHERE is_active=TRUE AND (${clauses})${priceClause} ORDER BY is_featured DESC,id DESC LIMIT 5`, queryValues);
+          facts.push(`Customer catalog search terms: ${JSON.stringify(terms)}${maxPrice ? `; maximum price: ${maxPrice}` : ''}`);
+          if (products.rows.length) facts.push(`Verified matching products: ${JSON.stringify(products.rows)}`);
+          else facts.push('No verified matching products were found for the extracted catalog terms and price constraint.');
+        }
       }
     } catch (error) {
       console.warn(`TYUSHOP support context lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`);
@@ -326,6 +336,19 @@ export class EngagementService {
       .map((item) => ({ role: item.role, text: item.text.trim().slice(0, 800) }))
       .filter((item) => item.text.length > 0)
       .slice(-8);
+  }
+
+  private supportSearchTerms(question: string): string[] {
+    const stopWords = new Set([
+      'តើ', 'ខ្ញុំ', 'អាច', 'បាន', 'ទេ', 'ចង់', 'ទិញ', 'រក', 'ស្វែងរក', 'មាន', 'អ្វី', 'ខ្លះ', 'តម្លៃ', 'ក្រោម', 'មិន', 'លើស', 'ដុល្លារ',
+      'how', 'what', 'where', 'which', 'can', 'could', 'please', 'find', 'search', 'show', 'me', 'want', 'buy', 'under', 'below', 'less', 'than', 'price', 'product', 'products', 'item', 'items', 'catalog', 'stock', 'available', 'the', 'for', 'with', 'and', 'or', 'is', 'are',
+    ]);
+    return question
+      .replace(/[,$?!.៖។]/gu, ' ')
+      .split(/\s+/u)
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 2 && !stopWords.has(term.toLowerCase()) && !/^\d+(?:\.\d+)?$/u.test(term))
+      .slice(0, 6);
   }
 
   private supportFallback(question: string, language: string, context: string): string {
