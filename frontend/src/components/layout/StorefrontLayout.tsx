@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AnnouncementBar } from './AnnouncementBar'
 import { Header } from './Header'
@@ -13,11 +13,27 @@ export function StorefrontLayout() {
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isAnnouncementHidden, setIsAnnouncementHidden] = useState(false)
+  const lastScrollY = useRef(0)
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 15)
+      const currentScrollY = Math.max(window.scrollY, 0)
+      const previousScrollY = lastScrollY.current
+      const scrollDelta = currentScrollY - previousScrollY
+
+      setIsScrolled(currentScrollY > 15)
+      if (currentScrollY <= 8) {
+        setIsAnnouncementHidden(false)
+      } else if (scrollDelta > 2) {
+        setIsAnnouncementHidden(true)
+      } else if (scrollDelta < -2) {
+        setIsAnnouncementHidden(false)
+      }
+
+      lastScrollY.current = currentScrollY
     }
+    lastScrollY.current = window.scrollY
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -39,7 +55,7 @@ export function StorefrontLayout() {
       >
         {/* Keep the utility bar mounted at a stable height so scrolling does
             not collapse the navbar and make the page jump. */}
-        <AnnouncementBar />
+        <AnnouncementBar isHidden={isAnnouncementHidden} />
 
         {/* Main Header with Logo, Search, Cart, Wishlist, Account, Theme Toggle */}
         <Header

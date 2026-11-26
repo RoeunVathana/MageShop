@@ -6,7 +6,11 @@ import { useShopEngagement } from '@/context/ShopEngagementContext'
 import { useToast } from '@/components/ui/toast'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 
-export function AnnouncementBar() {
+interface AnnouncementBarProps {
+  isHidden?: boolean
+}
+
+export function AnnouncementBar({ isHidden = false }: AnnouncementBarProps) {
   const { currency, setCurrency, usdToKhrRate, allowedCurrencies, t } = useShopEngagement()
   const { toast } = useToast()
   const [currOpen, setCurrOpen] = useState(false)
@@ -74,6 +78,10 @@ export function AnnouncementBar() {
     }
   }, [currOpen])
 
+  useEffect(() => {
+    if (isHidden) setCurrOpen(false)
+  }, [isHidden])
+
   const handleSelectCurrency = (nextCurr: 'USD' | 'KHR') => {
     setCurrency(nextCurr)
     setCurrOpen(false)
@@ -94,7 +102,14 @@ export function AnnouncementBar() {
   }
 
   return (
-    <div className="relative z-[160] isolate border-b border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-200 sm:px-4 sm:py-1.5">
+    <div
+      aria-hidden={isHidden}
+      className={`relative z-[160] isolate overflow-hidden border-b border-slate-800 bg-slate-900 px-2.5 text-xs text-slate-200 transition-[max-height,opacity,transform,padding,border-color] duration-300 ease-out sm:px-4 ${
+        isHidden
+          ? 'pointer-events-none max-h-0 -translate-y-full border-transparent py-0 opacity-0'
+          : 'max-h-20 translate-y-0 py-1 opacity-100 sm:py-1.5'
+      }`}
+    >
       <div className="container mx-auto flex min-h-9 items-center justify-between gap-2 sm:min-h-10 sm:gap-4 flex-nowrap overflow-visible">
         {/* Left message */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
