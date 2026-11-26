@@ -11,6 +11,8 @@ import { ReceiptService } from '../receipts/receipt.service';
 export class EngagementService {
   private readonly lastSupportRequestByKey = new Map<string, number>();
   private readonly supportSettingsCache = new Map<string, { value: string; expiresAt: number }>();
+  private readonly speechCache = new Map<string, { response: Record<string, unknown>; expiresAt: number }>();
+  private readonly speechInFlight = new Map<string, Promise<Record<string, unknown>>>();
 
   constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly receipts: ReceiptService, private readonly config: ConfigService) {}
 
@@ -134,39 +136,57 @@ export class EngagementService {
   async speech(body: Record<string, unknown>): Promise<Record<string, unknown>> {
     const text = this.required(body.text, 'text', 1000);
     const language = this.text(body.language).toLowerCase() === 'en' ? 'en' : 'km';
+    const cacheKey = `${language}:${text}`;
+    const cached = this.speechCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.response;
+    if (cached) this.speechCache.delete(cacheKey);
+    const inFlight = this.speechInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+
     const provider = this.text(this.config.get<string>('AI_PROVIDER') || 'gemini').toLowerCase();
     const compatibilityKey = this.config.get<string>('AI_API_KEY')?.trim() || '';
     const geminiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() || (provider === 'gemini' ? compatibilityKey : '');
     const openAiKey = this.config.get<string>('OPENAI_API_KEY')?.trim() || (provider === 'openai' ? compatibilityKey : '');
-    const errors: string[] = [];
-
-    if (geminiKey) {
-      try {
-        return await this.geminiSpeech(geminiKey, text, language);
-      } catch (error) {
-        errors.push(`Gemini: ${error instanceof Error ? error.message : 'request failed'}`);
+    const generation = (async () => {
+      const errors: string[] = [];
+      if (geminiKey) {
+        try {
+          return await this.geminiSpeech(geminiKey, text, language);
+        } catch (error) {
+          errors.push(`Gemini: ${error instanceof Error ? error.message : 'request failed'}`);
+        }
       }
-    }
 
-    if (openAiKey) {
-      try {
-        return await this.openAiSpeech(openAiKey, text, language);
-      } catch (error) {
-        errors.push(`OpenAI: ${error instanceof Error ? error.message : 'request failed'}`);
+      if (openAiKey) {
+        try {
+          return await this.openAiSpeech(openAiKey, text, language);
+        } catch (error) {
+          errors.push(`OpenAI: ${error instanceof Error ? error.message : 'request failed'}`);
+        }
       }
-    }
 
-    console.warn(`TYUSHOP speech generation unavailable. ${errors.join(' | ') || 'No speech provider key is configured.'}`);
-    throw new ServiceUnavailableException('Speech generation is temporarily unavailable.');
+      console.warn(`TYUSHOP speech generation unavailable. ${errors.join(' | ') || 'No speech provider key is configured.'}`);
+      throw new ServiceUnavailableException('Speech generation is temporarily unavailable.');
+    })();
+
+    this.speechInFlight.set(cacheKey, generation);
+    try {
+      const response = await generation;
+      this.speechCache.set(cacheKey, { response, expiresAt: Date.now() + 10 * 60 * 1000 });
+      if (this.speechCache.size > 50) this.speechCache.delete(this.speechCache.keys().next().value as string);
+      return response;
+    } finally {
+      this.speechInFlight.delete(cacheKey);
+    }
   }
 
   private async geminiSpeech(apiKey: string, text: string, language: string): Promise<Record<string, unknown>> {
-    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts').trim() || 'gemini-2.5-flash-preview-tts').replace(/^models\//u, '');
+    const configuredModel = (this.config.get<string>('GEMINI_TTS_MODEL', 'gemini-3.8-flash-lite-tts').trim() || 'gemini-3.8-flash-lite-tts').replace(/^models\//u, '');
     const models = Array.from(new Set([
+      'gemini-3.8-flash-lite-tts',
       configuredModel,
       'gemini-2.5-flash-preview-tts',
       'gemini-3.1-flash-tts-preview',
-      'gemini-3.8-flash-lite-tts',
     ]));
     let lastError: Error | null = null;
 

@@ -142,10 +142,11 @@ export function SupportWidget() {
     setSpeakingMessageId(null)
   }
 
-  const loadSpeechVoices = (): Promise<SpeechSynthesisVoice[]> => {
+  const loadSpeechVoices = (waitForVoices = true): Promise<SpeechSynthesisVoice[]> => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return Promise.resolve([])
     const availableVoices = window.speechSynthesis.getVoices()
     if (availableVoices.length) return Promise.resolve(availableVoices)
+    if (!waitForVoices) return Promise.resolve([])
 
     return new Promise((resolve) => {
       let settled = false
@@ -214,7 +215,9 @@ export function SupportWidget() {
     const requestId = speechRequestIdRef.current
     setSpeechError('')
     const isKhmer = (message.language || language) === 'KM'
-    const voices = await loadSpeechVoices()
+    // Khmer normally has no local Chrome voice, so do not wait 1.2s for the
+    // voiceschanged event before starting the server TTS request.
+    const voices = await loadSpeechVoices(!isKhmer)
     if (speechRequestIdRef.current !== requestId) return
     const preferredVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(isKhmer ? 'km' : 'en'))
     const canUseNativeSpeech = typeof window !== 'undefined'
