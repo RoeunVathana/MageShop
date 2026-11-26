@@ -10,6 +10,7 @@ import { ReceiptService } from '../receipts/receipt.service';
 @Injectable()
 export class EngagementService {
   private readonly lastSupportRequestByKey = new Map<string, number>();
+  private readonly supportSettingsCache = new Map<string, { value: string; expiresAt: number }>();
 
   constructor(private readonly database: DatabaseService, private readonly auth: AuthService, private readonly receipts: ReceiptService, private readonly config: ConfigService) {}
 
@@ -222,14 +223,17 @@ export class EngagementService {
   }
 
   private async geminiSupport(apiKey: string, prompt: string, language: string): Promise<string> {
-    const configuredModel = this.config.get<string>('GEMINI_TEXT_MODEL', this.config.get<string>('AI_MODEL', 'gemini-3.6-flash'));
-    const model = configuredModel.replace(/^models\//, '').trim() || 'gemini-3.6-flash';
-    const models = Array.from(new Set([model, 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite']));
+    const configuredModel = this.config.get<string>('GEMINI_TEXT_MODEL', this.config.get<string>('AI_MODEL', 'gemini-3.5-flash-lite'));
+    const model = configuredModel.replace(/^models\//u, '').trim() || 'gemini-3.5-flash-lite';
+    // Put the low-latency support model first. The configured model remains a
+    // fallback so a slower or temporarily unavailable model cannot delay every
+    // customer question before a usable answer is attempted.
+    const models = Array.from(new Set(['gemini-3.5-flash-lite', model, 'gemini-3.6-flash', 'gemini-2.5-flash-lite']));
     let lastError: Error | null = null;
     for (let index = 0; index < models.length; index += 1) {
       const candidateModel = models[index];
       const attemptController = new AbortController();
-      const attemptTimeout = setTimeout(() => attemptController.abort(), 8000);
+      const attemptTimeout = setTimeout(() => attemptController.abort(), 6500);
       try {
         const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
           method: 'POST',
@@ -238,7 +242,11 @@ export class EngagementService {
             model: candidateModel,
             input: prompt,
             system_instruction: this.supportInstructions(),
-            generation_config: { max_output_tokens: 320, temperature: 0.35 },
+            generation_config: {
+              max_output_tokens: 220,
+              temperature: 0.25,
+              thinking_level: candidateModel.startsWith('gemini-2.5-') ? 'low' : 'minimal',
+            },
             store: false,
           }),
           signal: attemptController.signal,
@@ -288,7 +296,7 @@ export class EngagementService {
       'Loyalty rewards and coupon availability are shown by the storefront and must not be invented when not verified.',
     ];
     try {
-      const settings = await this.readSettings(['support_phone', 'support_email', 'shipping_policy', 'return_policy_days', 'business_hours']);
+      const settings = await this.readSupportSettings(['support_phone', 'support_email', 'shipping_policy', 'return_policy_days', 'business_hours']);
       for (const [key, value] of settings.entries()) facts.push(`${key}: ${value}`);
 
       const orderNumber = question.match(/(?:ORD|RWD)-[A-Z0-9-]+/i)?.[0];
@@ -338,6 +346,23 @@ export class EngagementService {
 
   private async optionalUserId(request: AuthenticatedRequest): Promise<number | null> { const identity = await this.auth.authenticate(request.headers.authorization); return identity?.userId ?? null; }
   private async readSettings(keys: string[]): Promise<Map<string, string>> { const result = await this.database.query<{ setting_key: string; setting_value: string }>('SELECT setting_key,setting_value FROM store_settings WHERE setting_key=ANY($1::text[])', [keys]); return new Map(result.rows.map((row) => [row.setting_key, row.setting_value])); }
+  private async readSupportSettings(keys: string[]): Promise<Map<string, string>> {
+    const now = Date.now();
+    const missingKeys = keys.filter((key) => {
+      const cached = this.supportSettingsCache.get(key);
+      return !cached || cached.expiresAt <= now;
+    });
+
+    if (missingKeys.length) {
+      const result = await this.database.query<{ setting_key: string; setting_value: string }>('SELECT setting_key,setting_value FROM store_settings WHERE setting_key=ANY($1::text[])', [missingKeys]);
+      for (const row of result.rows) this.supportSettingsCache.set(row.setting_key, { value: row.setting_value, expiresAt: now + 30000 });
+    }
+
+    return new Map(keys.flatMap((key) => {
+      const cached = this.supportSettingsCache.get(key);
+      return cached && cached.expiresAt > now ? [[key, cached.value] as [string, string]] : [];
+    }));
+  }
   private text(value: unknown): string { return value === undefined || value === null ? '' : String(value).trim(); }
   private required(value: unknown, field: string, max: number): string { const text = String(value ?? '').trim(); if (!text || text.length > max) throw new UnprocessableEntityException({ status: 'error', message: `The ${field} field is invalid.` }); return text; }
   private optional(value: unknown, max: number): string | null { const text = String(value ?? '').trim(); if (!text) return null; if (text.length > max) throw new UnprocessableEntityException({ status: 'error', message: 'The given data was invalid.' }); return text; }
