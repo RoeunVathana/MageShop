@@ -67,6 +67,31 @@ const welcomeMessage = (language: 'EN' | 'KM') => language === 'KM'
   ? 'សួស្តី! ខ្ញុំជា TYUSHOP AI Support។ ខ្ញុំអាចជួយអំពីផលិតផល ការបញ្ជាទិញ ការដឹកជញ្ជូន ការទូទាត់ គូប៉ុង ហាងអ្នកលក់ និងគណនី។'
   : 'Hi! I’m TYUSHOP AI Support. I can help with products, orders, delivery, payments, coupons, seller stores, and accounts.'
 
+const preferredSpeechVoice = (voices: SpeechSynthesisVoice[], language: 'EN' | 'KM') => {
+  const prefix = language === 'KM' ? 'km' : 'en'
+  const compatibleVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith(prefix))
+  if (!compatibleVoices.length) return undefined
+  if (language === 'KM') return compatibleVoices[0]
+
+  // Chrome can return several English voices in an unpredictable order. Prefer
+  // natural-sounding US/UK voices instead of whichever system voice is first.
+  const scoreVoice = (voice: SpeechSynthesisVoice) => {
+    const name = voice.name.toLowerCase()
+    const locale = voice.lang.toLowerCase()
+    let score = locale === 'en-us' ? 20 : locale.startsWith('en-us') ? 12 : 0
+    if (name.includes('google us english')) score += 100
+    if (name.includes('natural')) score += 90
+    if (/(aria|jenny|ava|samantha|karen|moira|zira|susan|hazel)/u.test(name)) score += 70
+    if (/(alex|guy|david|daniel)/u.test(name)) score += 60
+    if (/(compact|espeak|festival)/u.test(name)) score -= 40
+    return score
+  }
+
+  return compatibleVoices
+    .slice()
+    .sort((left, right) => scoreVoice(right) - scoreVoice(left))[0]
+}
+
 export function SupportWidget() {
   const { language, loyaltyPoints, t } = useShopEngagement()
   const [isOpen, setIsOpen] = useState(false)
@@ -220,7 +245,7 @@ export function SupportWidget() {
     // voiceschanged event before starting the server TTS request.
     const voices = await loadSpeechVoices(!isKhmer)
     if (speechRequestIdRef.current !== requestId) return
-    const preferredVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(isKhmer ? 'km' : 'en'))
+    const preferredVoice = preferredSpeechVoice(voices, language)
     const canUseNativeSpeech = typeof window !== 'undefined'
       && 'speechSynthesis' in window
       && 'SpeechSynthesisUtterance' in window
@@ -250,7 +275,9 @@ export function SupportWidget() {
     const speechLocale = isKhmer ? 'km-KH' : 'en-US'
 
     utterance.lang = speechLocale
-    utterance.rate = speechLocale === 'km-KH' ? 0.88 : 1
+    utterance.rate = speechLocale === 'km-KH' ? 0.88 : 0.94
+    utterance.pitch = speechLocale === 'km-KH' ? 1 : 1.02
+    utterance.volume = 1
     if (preferredVoice) utterance.voice = preferredVoice
 
     speakingMessageIdRef.current = message.id

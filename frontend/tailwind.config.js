@@ -24,9 +24,9 @@ export default {
     extend: {
       fontFamily: {
         // Keep Latin UI text on the product font. Khmer mode is applied by
-        // index.css with Kantumruy Pro, so English labels do not inherit a
+        // index.css with Khmer OS Siemreap, so English labels do not inherit a
         // Khmer-only face through Tailwind's font-sans utility.
-        sans: ['"Plus Jakarta Sans"', '"Kantumruy Pro"', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', '"Khmer OS Siemreap"', '"Kantumruy Pro"', 'system-ui', 'sans-serif'],
         serif: ['Georgia', '"Plus Jakarta Sans"', 'serif'],
         mono: ['"SFMono-Regular"', 'Consolas', '"Liberation Mono"', 'monospace'],
       },

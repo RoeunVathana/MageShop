@@ -11,6 +11,16 @@
   font-display: swap;
 }
 
+/* Prefer the Windows Khmer OS Siemreap face when it is installed. The local
+   aliases keep the same choice working across Windows font name variants. */
+@font-face {
+  font-family: 'Khmer OS Siemreap';
+  src: local('Khmer OS Siemreap'), local('KhmerOSSiemreap'), local('Siemreap');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Use a real Khmer UI face instead of the browser's serif fallback.  The
    fallback chain still keeps Latin labels clean when the font is loading. */
 @font-face {
@@ -1393,8 +1403,9 @@ html[lang="km"] .bilingual-badge {
   :root {
     --font-ui: 'Plus Jakarta Sans', 'Segoe UI Variable', 'Segoe UI', 'Inter',
       system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-khmer: 'Kantumruy Pro', 'Khmer OS Battambang', 'Battambang',
-      var(--font-ui);
+    --font-khmer: 'Plus Jakarta Sans', 'Khmer OS Siemreap',
+      'KhmerOSSiemreap', 'Siemreap', 'Kantumruy Pro', 'Khmer OS Battambang',
+      'Battambang', var(--font-ui);
   }
 
   html {
@@ -1535,4 +1546,16 @@ html.khmer-mode :where(p, li, dt, dd, label, figcaption) {
   .ui-card:hover {
     transform: none;
   }
+}
+
+/* Final Khmer font selection. Keep Latin glyphs on the product font while
+   letting Khmer glyphs resolve to Khmer OS Siemreap on Windows. */
+html[lang='km'] :where(body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, li, label, a, span, div),
+html.khmer-mode :where(body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, li, label, a, span, div) {
+  font-family: var(--font-khmer) !important;
+}
+
+html[lang='km'] :where(code, pre, .font-mono),
+html.khmer-mode :where(code, pre, .font-mono) {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
 }
